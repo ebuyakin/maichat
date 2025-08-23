@@ -1,6 +1,6 @@
 # MaiChat Implementation Plan
 
-_Last updated: 2025-08-22_
+_Last updated: 2025-08-23_
 
 ## High-Level Architecture Snapshot
 - **Runtime**: Pure vanilla JS (ES modules), no framework.
@@ -22,13 +22,13 @@ _Last updated: 2025-08-22_
 - Add implementation plan doc (this)
 **Acceptance**: Docs present; skeleton modules compile.
 
-### Phase 1 – Core Data & Storage
+### Phase 1 – Core Data & Storage (UPDATED)
 - In‑memory store + event pub/sub
-- IndexedDB adapter (async init, basic CRUD)
-- ID generator + clock
-- Topic tree (single topic per pair) CRUD
+- IndexedDB content persistence (pairs + topics) with autosave on mutations (debounced)
+- Initial schema version (v1) recorded in `meta` store
+- Topic tree CRUD (add, rename, delete-if-empty) in data layer (UI minimal placeholder)
 - Basic indexes (by topic, by model, by star, allow/exclude)
-**Acceptance**: Add topics, add pairs, query store programmatically, persist + reload.
+**Acceptance**: Reloading page restores pairs & topics; can add/rename/delete topics (if empty); indexes reflect new data.
 
 ### Phase 2 – UI Skeleton & Modes
 - Static HTML structure (panes: topic tree, history, context preview, input/command bar)
@@ -38,11 +38,11 @@ _Last updated: 2025-08-22_
 **Acceptance**: Switch modes with keys; dummy data renders; no filtering yet.
 
 ### Phase 3 – Message Lifecycle & Provider (Single Model)
-- API key entry flow (ephemeral in memory)
+- API key management panel (persist multiple provider keys locally, unencrypted)
 - Provider adapter (OpenAI or chosen)
-- Send request: user text → pending → response → store pair
+- Send request: user text → pending → response → store pair (auto-persist)
 - Error handling (retry, inline status)
-**Acceptance**: Round trip works; new pair appears; loading state visible.
+**Acceptance**: Round trip works; keys retained across reload; new pair appears; loading state visible.
 
 ### Phase 4 – Filtering Language (MVP Subset)
 - Lexer + parser (subset per decisions)
@@ -74,9 +74,9 @@ _Last updated: 2025-08-22_
 **Acceptance**: Full spec examples evaluate correctly; perf acceptable (<30ms typical on 5k pairs).
 
 ### Phase 8 – Persistence UX
-- Export JSON (full workspace)
+- Export JSON (full workspace snapshot)
 - Import (merge or replace)
-- Auto-save checkpoints
+- Manual clear-all data command
 **Acceptance**: Export then clear & import restores identical state.
 
 ### Phase 9 – Testing & Quality Layer
@@ -109,109 +109,49 @@ _Last updated: 2025-08-22_
 - Error reporting consistency
 - Logging (dev flag vs production minimal)
 - Performance budgets (render <16ms frame budget)
-- Memory stewardship (avoid duplicating large strings)
-- Data version tag for forward migrations
-
-## File / Module Layout (Initial)
-```
-src/
-  appState.js
-  store/
-    memoryStore.js
-    indexedDbAdapter.js
-    indexes.js
-  models/
-    messagePair.js
-    topic.js
-  filter/
-    lexer.js
-    parser.js
-    evaluator.js
-    predicates.js
-  context/
-    assembler.js
-    tokenEstimate.js
-  provider/
-    openaiAdapter.js
-    providerRegistry.js
-  ui/
-    domUtil.js
-    layout.js
-    modes.js
-    keyRouter.js
-    render/
-      renderTopics.js
-      renderHistory.js
-      renderContext.js
-      renderStatusBar.js
-  utils/
-    id.js
-    time.js
-    events.js
-    escape.js
-tests/
-  unit/
-  integration/
-docs/
-  ADRs/
-```
-
-## Data Model (Draft)
-```js
-/** @typedef {Object} MessagePair
- *  @property {string} id
- *  @property {number} createdAt  // ms epoch
- *  @property {string} topicId
- *  @property {string} model
- *  @property {number} star       // 0-3 (max for pair)
- *  @property {boolean} includeInContext
- *  @property {string} userText
- *  @property {string} assistantText
- */
-
-/** @typedef {Object} Topic
- *  @property {string} id
- *  @property {string} name
- *  @property {string|null} parentId
- *  @property {number} createdAt
- */
-```
+## Persistence Strategy (UPDATED)
+Two categories:
+1. Content Data (pairs, topics) – authoritative. Stored in IndexedDB from Phase 1 with autosave.
+2. Preferences (UI layout, last topic, command history) – will begin later (Phase 4–6) using either localStorage or a `prefs` store. API keys are stored (unencrypted) in IndexedDB `keys` store starting Phase 3.
 
 ## Detailed Checklist
-Foundation
-[ ] ADR-000 Architecture
-[ ] Implementation Plan doc committed
-[ ] Data models defined (JSDoc)
+Legend: [x] done, [ ] not started, [~] partial, (→ Phase N) deferred
 
-Storage & Data
-[ ] In-memory store
-[ ] IndexedDB adapter
-[ ] Topic CRUD
-[ ] Index builder (topic/model/star/allow)
-[ ] Export JSON
-[ ] Import JSON
+Foundation & Architecture
+[x] ADR-000 Architecture
+[x] Implementation Plan doc
+[x] Data models (MessagePair, Topic)
 
-UI & Modes
-[ ] Base HTML skeleton
-[ ] CSS theme
-[ ] Mode state machine
-[ ] KeyRouter
-[ ] Rendering functions (topics/history/context/status)
+Storage & Core Data (Phase 1)
+[x] In-memory store
+[x] IndexedDB adapter (basic CRUD)
+[ ] Autosave integration (persist on mutation) **(in progress target)**
+[ ] Topic CRUD (rename/delete-if-empty exposed via API)
+[x] Index builder
+[ ] Schema version record (meta store) – write on init
 
-Messaging
-[ ] API key input flow
+UI & Modes (Phase 2)
+[x] Base HTML skeleton (placeholder panes)
+[~] CSS theme (basic layout only)
+[x] Mode state machine
+[x] KeyRouter
+[~] Rendering modularization (some functions split; further extraction pending)
+
+Messaging (Phase 3)
+[ ] API key management panel
+[ ] Key persistence (IndexedDB keys store)
 [ ] Provider adapter (OpenAI)
 [ ] Send pipeline
 [ ] Abort support
 
-Filtering (Subset)
-[ ] Lexer (subset)
-[ ] Parser (subset)
-[ ] Evaluator
-[ ] Command input integration
-[ ] Error display
+Filtering (Subset Phase 4)
+[x] Lexer (subset)
+[x] Parser (subset)
+[x] Evaluator (basic semantics)
+[~] Command input integration (no distinct command mode yet)
+[~] Error display (inline string, no highlighting)
 
-Filtering (Full Spec)
+Filtering (Full Spec Phase 7)
 [ ] Wildcards
 [ ] Descendants (...)
 [ ] Date absolute
@@ -219,34 +159,94 @@ Filtering (Full Spec)
 [ ] Escapes full
 [ ] Optimization pass
 
-Context
+Context Assembly (Phase 5)
 [ ] Context selection logic
-[ ] Token estimation
+[ ] Token estimation heuristic
 [ ] Preview panel
 [ ] Send using context
 
-Metadata UX
+Metadata UX (Phase 6)
 [ ] Allow/exclude toggle
 [ ] Star rating shortcuts
 [ ] Topic reassignment
-[ ] Navigation keys
-[ ] Recent focusing (scroll/highlight)
+[ ] Navigation keys (j/k/gg/G)
+[ ] Recent focusing
 
-Persistence UX
-[ ] Auto-save intervals
-[ ] Import/merge strategy
-[ ] Data versioning tag
+Persistence UX (Phase 8)
+[ ] Export JSON
+[ ] Import JSON
+[ ] Clear all data command
+[ ] Merge strategy (replace/merge)
 
-Testing
-[ ] Unit: lexer
-[ ] Unit: parser precedence
-[ ] Unit: evaluator logic
-[ ] Unit: topic filters
-[ ] Unit: date parsing
+Preferences (Phase 6+)
+[ ] Preference store scaffold
+[ ] Persist last topic
+[ ] Persist command history
+[ ] Persist layout/theme
+
+Testing & Quality (Phases 1–9 incremental)
+[x] Unit: parser precedence basic
+[x] Unit: evaluator logic
+[x] Unit: lexer basic via parser tests
+[ ] Unit: indexes edge cases
+[ ] Unit: topic CRUD
+[ ] Unit: persistence (load/save roundtrip)
+[ ] Unit: date parsing (→ Phase 7)
+[ ] Integration: sample queries set
+[ ] Performance micro-bench
+[ ] Lint config
+[x] Test script in package.json
+
+Help & Polish (Phase 10)
+[ ] Cheat sheet overlay
+[ ] Status/Mode line hints
+[ ] Theming variables
+[ ] Accessibility pass
+
+Extensibility (Phase 11)
+[ ] Provider interface doc
+[ ] Saved filter reserved syntax
+[ ] Plug-in tokenizers stub
+
+Docs (Ongoing / Release)
+[ ] README user guide
+[ ] Developer guide
+[ ] ADR-001 Filtering engine
+[ ] ADR-002 Storage choice
+[ ] ADR-003 Context assembly strategy
+
+Release (Phase 12)
+[ ] Manual regression checklist
+[ ] Version bump & tag instructions
+
+## Security / Privacy Notes (MVP)
+- API keys stored locally unencrypted (explicit warning banner planned). Future: optional passphrase encryption.
+- Export excludes preferences & keys.
+
+## Risks & Mitigations
+| Risk | Mitigation |
+|------|------------|
+| Parser complexity creep | Phased features + unit coverage |
+| IndexedDB reliability | Graceful fallback to memory + warning banner |
+| Rendering performance | Batch DOM updates; consider virtualization if >5k pairs |
+| Token overflow | Heuristic pruning strategy later |
+| Data migrations | Version stamp & migration registry from v1 |
+| Unencrypted API keys | User warning; future encryption option |
+
+## Immediate Next Actions (Phase 1 Remainder)
+1. Implement autosave wiring (store event → debounce → persist changed record).
+2. Add schema version write/read logic.
+3. Topic CRUD functions (rename/delete-if-empty) + minimal invocation hooks.
+4. Add persistence smoke test (roundtrip save/load) later in tests.
+
+(End of plan)
+[x] Unit: evaluator logic (initial)
+[ ] Unit: topic filters (deferred until topic semantics refined)
+[ ] Unit: date parsing (→ Phase 7)
 [ ] Integration: sample queries
 [ ] Performance micro-bench
 [ ] Lint config
-[ ] Test script in package.json
+[x] Test script in package.json
 
 Help & Polish
 [ ] Cheat sheet overlay
