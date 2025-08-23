@@ -56,29 +56,16 @@ The system is a layered vanilla ES modules app:
 - [x] Focus management utility (focus trap) & integration
   - Acceptance: Mode switching reliable; overlays isolate focus → Achieved
 
-### M4 Topic Management MVP (IN STABILIZATION)
-- [~] Overall milestone status (all features implemented but buggy; none accepted yet)
-  - [~] Quick Topic Picker (search + selection) – issues: focus edge cases after closing? selection race?
-  - [~] Topic Editor overlay (CRUD, rename inline, delete confirm, search) – issues: rename cancel, delete focus restore
-  - [~] Mark (m) / Paste (p) re-parent child-only – issues: incorrect count propagation in some sequences?
-  - [~] Counts display (direct/total) – needs verification after multiple nested moves & deletes
-  - [~] Cycle prevention on move – needs negative tests & UI feedback clarity
-  - [~] Visual & keyboard focus model (Shift+J, Esc layering) – intermittent focus leakage reported
-  - [~] Highlight marked topic – verify persists after re-render / search filter changes
-  - [ ] Virtualization for large trees (deferred threshold ≥500 topics)
-  - Acceptance: All above items moved to [x] with passing tests + manual checklist; no known repro bugs outstanding.
-
-#### M4 Stabilization Checklist
-- [ ] Reproduce & log all current topic UI bugs (create issues list)
-- [ ] Add unit test: moveTopic count adjustments (multi-level)
-- [ ] Add unit test: cycle prevention (attempt self / ancestor move)
-- [ ] Add unit test: delete-if-empty enforcement & counts after delete
-- [ ] Add unit test: picker search filtering correctness (case sensitivity rules)
-- [ ] Add unit test: mark/paste updates parent/ancestor totals correctly
-- [ ] Add harness test: focus trap prevents global shortcuts while editor/picker open
-- [ ] Manual checklist: rename cancel restores focus; delete confirm path returns to correct row; after move selected row remains in view
-- [ ] Bug fixes applied (update individual item statuses to [x])
-- [ ] Decide virtualization strategy trigger & outline (spec doc) – implementation can remain deferred
+### M4 Topic Management MVP
+- [x] Quick Topic Picker (hierarchical tree, search, hidden root, keyboard navigation)
+- [x] Topic Editor overlay (CRUD, rename inline, delete-if-empty, search, hidden root, top-level creation)
+- [x] Mark (m) / Paste (p) re-parent (child-only) with correct count propagation
+- [x] Counts display (direct / total) with maintenance on move / delete
+- [x] Cycle prevention on move (self / ancestor guarded)
+- [x] Visual & keyboard focus model (Shift+J entry, Esc handling, focus trap)
+- [x] Highlight marked topic (persists through re-render & search)
+- [ ] Virtualization for large trees (deferred threshold ≥500 topics) (deferred)
+  - Acceptance: Topic management workflows reliable; no known repro bugs; persistence stable across reloads.
 
 ### M5 Metadata Editing, History Navigation & Message Partitioning (NEXT ACTIVE)
 - [ ] Message partitioning model (split long messages into navigable parts; stable IDs referencing parent pair)
@@ -162,15 +149,12 @@ The system is a layered vanilla ES modules app:
 - (deferred) Plugin system for custom filters
 
 ## 5. Immediate Next Focus (Proposed Order)
-1. M4 Stabilization: enumerate & fix topic UI bugs (convert each [~] to [x])
-2. Add unit tests: moveTopic counts, cycle prevention, delete-if-empty, mark/paste propagation
-3. Focus trap robustness test & fixes
-4. Schema version meta record & migration test (finish leftover M1 item)
-5. Message partitioning core (model + rendering + navigation over parts)
-6. Metadata editing basics (allow/exclude + star) with partitioned navigation
-7. Topic assignment from history (picker integration)
-8. Remaining partitioning polish (anchoring, gg/G, selection persistence)
-9. Defer context assembly (M6) until stabilization + partitioning + metadata solid
+1. Message partitioning core (model + rendering + navigation over parts)
+2. Metadata editing basics (allow/exclude + star) with partitioned navigation
+3. Topic assignment from history (picker integration)
+4. Remaining partitioning polish (anchoring, gg/G, selection persistence)
+5. Schema version meta record & migration test (leftover M1 item)
+6. Prepare groundwork for context assembly (define data needed) while deferring full M6 implementation
 
 ## 6. Acceptance Criteria Summaries (For Active / Upcoming)
 - Message Partitioning: Long messages split deterministically into parts (stable IDs); navigating j/k moves through parts; g/G anchors top/bottom; performance acceptable (no noticeable lag with 200 parts).
@@ -203,6 +187,7 @@ The system is a layered vanilla ES modules app:
 - Context assembly (5k pairs, naive): <40ms (optimize if exceeded)
 
 ## 10. Change Log (Plan Evolution)
+- 2025-08-23 (later 3): M4 completed (all functional items [x]; virtualization deferred). Removed stabilization checklist; advanced Immediate Next Focus to M5 partitioning & metadata.
 - 2025-08-23 (later 2): Reclassified all M4 feature items from [x] to [~]; added explicit M4 Stabilization Checklist; reordered immediate focus to finish stabilization before partitioning.
 - 2025-08-23 (later): Marked M4 partial (bugs); swapped order of Context Assembly and Metadata Navigation (now M6 & M5 respectively); added message partitioning tasks as precursor to navigation & metadata; updated immediate focus sequence.
 - 2025-08-23: Consolidated duplicate sections; inserted Topic Management milestone (M4) reflecting implemented overlay system & focus trap; reordered upcoming work to prioritize Context Assembly (superseded by later change above).

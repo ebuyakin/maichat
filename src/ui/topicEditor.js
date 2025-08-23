@@ -2,7 +2,7 @@
 import { createFocusTrap } from './focusTrap.js'
 // Keyboard:
 //  j/k navigate, h collapse/go parent, l expand/first child
-//  n new child, r rename, d delete, M mark, P place under current, Shift+P place at root
+//  n new child, N new top-level, r rename, d delete, m mark, p paste
 //  Enter selects (optional callback), Esc cancel / exit edit
 
 export function openTopicEditor({ store, onSelect, onClose }) {
@@ -17,12 +17,19 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   let inTreeFocus = false // start with search focus
   const previousActive = document.activeElement // fallback; focusTrap will restore
 
-  // expand all ancestors of existing topics initially (shallow: root children)
-  for (const id of (store.children.get(null) || [])) expanded.add(id)
+  // Expand initial top-level nodes (children of root). Root itself is hidden.
+  const rootId = store.rootTopicId
+  for (const id of (store.children.get(null) || [])) {
+    if (id === rootId) {
+      for (const cid of (store.children.get(rootId) || [])) expanded.add(cid)
+    } else {
+      expanded.add(id)
+    }
+  }
 
   const backdrop = document.createElement('div')
   backdrop.className = 'topic-editor-backdrop'
-  backdrop.innerHTML = `\n    <div class="topic-editor">\n      <div class="te-header">Topic Editor – Shift+J focus tree · Esc (tree→search / search→close) · j/k nav · h/l collapse/expand · n new · r rename · d delete (confirm) · m mark · p paste</div>\n      <input type="text" class="te-search" placeholder="Search (name / path substring)"/>\n      <div class="te-tree" role="tree" tabindex="0"></div>\n      <div class="te-warning" aria-live="polite"></div>\n    </div>`
+  backdrop.innerHTML = `\n    <div class="topic-editor">\n      <div class="te-header">Topic Editor – Shift+J focus tree · Esc (tree→search / search→close) · j/k nav · h/l collapse/expand · n child · N top-level · r rename · d delete · m mark · p paste</div>\n      <input type="text" class="te-search" placeholder="Search (name / path substring)"/>\n      <div class="te-tree" role="tree" tabindex="0"></div>\n      <div class="te-warning" aria-live="polite"></div>\n    </div>`
   const searchInput = backdrop.querySelector('.te-search')
   const treeEl = backdrop.querySelector('.te-tree')
   const warningEl = backdrop.querySelector('.te-warning')
@@ -38,7 +45,9 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     const names = []
     let cur = store.topics.get(id)
     while (cur) { names.push(cur.name); cur = cur.parentId ? store.topics.get(cur.parentId) : null }
-    return names.reverse().join(' > ')
+    const full = names.reverse()
+    if (full[0] === 'Root') full.shift()
+    return full.join(' > ')
   }
 
   function buildFlat() {
@@ -46,14 +55,12 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     const lowerFilter = filter.toLowerCase()
     const match = (t)=> !lowerFilter || t.name.toLowerCase().includes(lowerFilter) || topicPathNames(t.id).toLowerCase().includes(lowerFilter)
 
-    // Determine which nodes should be force-expanded due to filter matches under them
     const forceExpand = new Set()
     if (lowerFilter) {
       for (const t of store.topics.values()) {
         if (match(t)) {
-          // add ancestors
-            let cur = t.parentId ? store.topics.get(t.parentId) : null
-            while (cur) { forceExpand.add(cur.id); cur = cur.parentId ? store.topics.get(cur.parentId) : null }
+          let cur = t.parentId ? store.topics.get(t.parentId) : null
+          while (cur) { forceExpand.add(cur.id); cur = cur.parentId ? store.topics.get(cur.parentId) : null }
         }
       }
     }
@@ -61,11 +68,9 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     function dfs(id, depth) {
       const t = store.topics.get(id); if(!t) return
       const m = match(t)
-      // include if match OR any descendant matches (descendant match => id in forceExpand set or recursively discovered)
       let include = m
       let hasDescendantMatch = false
       if (!m) {
-        // check descendants only if needed
         for (const cid of (store.children.get(id)||[])) {
           if (descendantHasMatch(cid)) { hasDescendantMatch = true; break }
         }
@@ -88,8 +93,13 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       }
       cacheDescMatch.set(id,false); return false
     }
-    // Start at roots
-    for (const rid of (store.children.get(null)||[])) dfs(rid, 0)
+    for (const rid of (store.children.get(null)||[])) {
+      if (rid === rootId) {
+        for (const cid of (store.children.get(rootId)||[])) dfs(cid, 0)
+      } else {
+        dfs(rid,0)
+      }
+    }
   }
 
   function render() {
@@ -97,7 +107,6 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     if (activeIndex >= flat.length) activeIndex = flat.length? flat.length-1:0
     treeEl.innerHTML = flat.map((row,i)=> renderRow(row, i===activeIndex)).join('') + (editing && editing.mode==='create' ? renderCreateRow(): '')
     if (editing && editing.inputEl) {
-      // reattach input focus
       const el = treeEl.querySelector('input.te-edit')
       if (el) { editing.inputEl = el; setTimeout(()=>el.focus(),0) }
     }
@@ -117,17 +126,20 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   }
 
   function renderCreateRow() {
-    // appended after current children; indent one deeper than active node when creating child
-    const baseDepth = flat[activeIndex] ? flat[activeIndex].depth : 0
-    return `<div class="te-row creating" style="padding-left:${(baseDepth+1)*16}px"> + <input class="te-edit" type="text" placeholder="New topic name" /></div>`
+    let depth
+    if(editing && editing.topicId === store.rootTopicId){
+      depth = 0
+    } else {
+      const baseDepth = flat[activeIndex] ? flat[activeIndex].depth : 0
+      depth = baseDepth + 1
+    }
+    return `<div class="te-row creating" style="padding-left:${depth*16}px"> + <input class="te-edit" type="text" placeholder="New topic name" /></div>`
   }
 
   function escapeHtml(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) }
-
   function currentTopic() { return flat[activeIndex]?.topic || null }
 
   function ensureVisible(topicId) {
-    // Expand ancestors
     let cur = store.topics.get(topicId)
     while (cur && cur.parentId) { expanded.add(cur.parentId); cur = store.topics.get(cur.parentId) }
   }
@@ -135,7 +147,13 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   function createChild() {
     if (editing) return
     editing = { mode:'create', topicId: currentTopic()?.id || null, inputEl: null }
-    expanded.add(editing.topicId) // ensure parent expanded
+    if(editing.topicId) expanded.add(editing.topicId)
+    render()
+    const input = treeEl.querySelector('input.te-edit'); if(input){ editing.inputEl = input; input.focus() }
+  }
+  function createTopLevel(){
+    if(editing) return
+    editing = { mode:'create', topicId: store.rootTopicId, inputEl: null }
     render()
     const input = treeEl.querySelector('input.te-edit'); if(input){ editing.inputEl = input; input.focus() }
   }
@@ -143,16 +161,14 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   function finishCreate(commit) {
     if (!editing || editing.mode!=='create') return
     const val = editing.inputEl?.value.trim()
-    const parentId = editing.topicId
+    const parentId = editing.topicId === store.rootTopicId ? store.rootTopicId : editing.topicId
     if (commit) {
       if (!val) { showWarning('Name required'); return }
-      // sibling uniqueness
       if (siblingNameExists(parentId, val)) { showWarning('Duplicate sibling name'); return }
       const id = store.addTopic(val, parentId)
       ensureVisible(id)
       editing = null
       filter = ''
-      // move focus to new topic
       buildFlat(); activeIndex = flat.findIndex(r=>r.topic.id===id)
       render()
     } else {
@@ -236,10 +252,8 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     const row = flat[activeIndex]; if(!row) return
     const id = row.topic.id
     if (expanded.has(id)) { expanded.delete(id); render(); return }
-    // move to parent
     const parentId = row.topic.parentId
     if (!parentId) return
-    // find parent index
     const pIndex = flat.findIndex(r=>r.topic.id===parentId)
     if (pIndex>=0) { activeIndex = pIndex; render() }
   }
@@ -250,7 +264,6 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     const children = store.children.get(id)
     if (!children || children.size===0) return
     if (!expanded.has(id)) { expanded.add(id); render(); return }
-    // move to first child
     buildFlat()
     const firstChildId = [...children][0]
     const idx = flat.findIndex(r=>r.topic.id===firstChildId)
@@ -258,24 +271,20 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   }
 
   function onKey(e) {
-    // Inline edit
     if (editing) {
       if (e.key==='Escape'){ e.preventDefault(); if(editing.mode==='create') finishCreate(false); else finishRename(false); setTimeout(()=>{ inTreeFocus?treeEl.focus():searchInput.focus() },0); return }
       if (e.key==='Enter'){ e.preventDefault(); if(editing.mode==='create') finishCreate(true); else finishRename(true); setTimeout(()=>{ inTreeFocus?treeEl.focus():searchInput.focus() },0); return }
       return
     }
-    // Delete confirmation
     if(deleteConfirmId){
       if(e.key==='y' || e.key==='Y'){ e.preventDefault(); executeDelete(deleteConfirmId); return }
       if(e.key==='n' || e.key==='N' || e.key==='Escape'){ e.preventDefault(); deleteConfirmId=null; showWarning('Cancelled'); return }
     }
-    // Search focus layer
     if(!inTreeFocus){
       if(e.key==='Escape'){ e.preventDefault(); teardown(); return }
       if(e.key==='J' && e.shiftKey){ e.preventDefault(); inTreeFocus=true; treeEl.focus(); return }
       return
     }
-    // Tree focus layer
     switch(e.key){
       case 'Escape': e.preventDefault(); inTreeFocus=false; searchInput.focus(); return
       case 'Enter': e.preventDefault(); selectCurrent(); return
@@ -284,10 +293,11 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       case 'h': case 'ArrowLeft': e.preventDefault(); collapseOrParent(); return
       case 'l': case 'ArrowRight': e.preventDefault(); expandOrChild(); return
       case 'n': e.preventDefault(); createChild(); return
+      case 'N': e.preventDefault(); createTopLevel(); return
       case 'r': e.preventDefault(); startRename(); return
       case 'd': e.preventDefault(); attemptDelete(); return
-  case 'm': e.preventDefault(); markTopic(); return
-  case 'p': e.preventDefault(); placeTopic(); return
+      case 'm': e.preventDefault(); markTopic(); return
+      case 'p': e.preventDefault(); placeTopic(); return
       default: break
     }
   }

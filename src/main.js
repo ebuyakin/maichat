@@ -108,12 +108,13 @@ function renderPart(pt){
   if(pt.role === 'meta'){
     const pair = store.pairs.get(pt.pairId)
     const topic = store.topics.get(pair.topicId)
-    const ts = new Date(pair.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})
+	const ts = new Date(pair.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})
+	const topicPath = topic ? formatTopicPath(topic.id) : ''
     return `<div class="part meta" data-part-id="${pt.id}">
       <div class="meta-left">
         <span class="badge include" data-include="${pair.includeInContext}">${pair.includeInContext? 'in':'out'}</span>
         <span class="badge stars">${'★'.repeat(pair.star)}${'☆'.repeat(Math.max(0,3-pair.star))}</span>
-        <span class="badge topic" title="${topic?escapeHtml(topic.name):''}">${topic?escapeHtml(topic.name):''}</span>
+	<span class="badge topic" title="${topic?escapeHtml(topicPath):''}">${topic?escapeHtml(middleTruncate(topicPath, 72)):''}</span>
       </div>
       <div class="meta-right">
         <span class="badge model">${pair.model}</span>
@@ -412,8 +413,28 @@ function renderPendingMeta(){
   if(pm) pm.textContent = pendingMessageMeta.model || 'gpt'
   if(pt){
     const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId)
-    pt.textContent = topic? topic.name : ''
+    if(topic){
+      const path = formatTopicPath(topic.id)
+      pt.textContent = middleTruncate(path, 90)
+      pt.title = path
+    } else {
+      pt.textContent = ''
+      pt.title = ''
+    }
   }
+}
+
+function formatTopicPath(id){
+  const parts = store.getTopicPath(id)
+  if(parts[0] === 'Root') parts.shift()
+  return parts.join(' > ')
+}
+function middleTruncate(str, max){
+  if(str.length <= max) return str
+  const keep = max - 3
+  const head = Math.ceil(keep/2)
+  const tail = Math.floor(keep/2)
+  return str.slice(0, head) + '…' + str.slice(str.length - tail)
 }
 function updateSendDisabled(){
   if(!sendBtn) return

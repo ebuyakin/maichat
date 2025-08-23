@@ -1,8 +1,8 @@
 # Keyboard Reference
 
-Status: v0.1 (living document)
+Status: v0.4 (living document)
 
-Canonical source for all key bindings, per-mode behavior, and reserved combinations. Updated alongside implementation.
+Canonical source for all key bindings, per-mode behavior, overlays, and reserved combinations. Updated alongside implementation.
 
 ## 1. Modes Overview
 Modes: VIEW, INPUT, COMMAND.
@@ -21,9 +21,9 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+v | Switch to VIEW | Blurs inputs |
 | Ctrl+i | Switch to INPUT | Focuses bottom input |
 | Ctrl+d | Switch to COMMAND | Focuses command input |
-| Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection Mode) |
+| Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection) |
 | Ctrl+M | Open model selector (INPUT only) | Overlay |
-| Ctrl+E | Open topic editor | Overlay (Edit Mode) |
+| Ctrl+E | Open topic editor | Overlay (Edit) |
 
 ## 3. VIEW Mode Keys
 | Key | Action | Remarks |
@@ -45,10 +45,10 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Key | Action | Notes |
 |-----|--------|-------|
 | Enter | Send message & remain in INPUT | Active part moves to new last part |
-| Escape | Return to VIEW | Restores active part selection |
+| Escape | Return to VIEW | Restores active selection |
 | Ctrl+v / Ctrl+d / Ctrl+i | Direct mode switch | Overrides cycle |
 
-(Deliberately NOT enabling * / a / number star keys here yet to avoid accidental metadata edits while typing. Future: allow when input empty.)
+(Star / include keys intentionally disabled while typing to avoid accidental edits. Future: enable when input empty.)
 
 ## 5. COMMAND Mode Keys
 | Key | Action | Notes |
@@ -57,40 +57,75 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Escape | Clear filter (if any), stay COMMAND | Restores full history |
 | Ctrl+v / Ctrl+i / Ctrl+d | Direct mode switch | |
 
-## 6. Navigation Semantics
-- Active Part: exactly one part is active; movement changes only index, not selection state inside text.
-- Auto-Scroll: After movement, active part is scrolled into view (center bias; may adjust later to top-third rule).
-- Pair Association: Star/include actions operate on the whole pair containing the active part (regardless of user, assistant, or meta part chosen).
+## 6. Topic Quick Picker (Ctrl+T)
+Hidden root: the conceptual root node is not displayed; top-level rows are its children.
+| Key | Context | Action |
+|-----|---------|--------|
+| (typing) | Search field | Filter topics by name or any ancestor path substring |
+| Shift+J | Search field | Move focus into tree |
+| Esc | Search field | Close picker |
+| Esc | Tree | Return focus to search (second Esc closes) |
+| j / k | Tree | Move down / up |
+| ArrowDown / ArrowUp | Tree | Alternate movement |
+| h / ArrowLeft | Tree | Collapse or go to parent |
+| l / ArrowRight | Tree | Expand or go to first child |
+| Enter | Tree | Select highlighted topic (applies & closes) |
 
-## 7. Metadata Editing
-Current shortcuts (*, a) are VIEW-only. Rationale: avoid conflicts while typing prompt or command lines. Potential future behavior: enable in INPUT when input field is empty or behind a meta-edit prefix.
+## 7. Topic Editor (Ctrl+E)
+Hidden root; operations occur on visible hierarchy.
+| Key | Layer | Action |
+|-----|-------|--------|
+| (typing) | Search | Filter by name/path substring (forces ancestor expansion for matches) |
+| Shift+J | Search | Focus tree |
+| Esc | Search | Close editor |
+| Esc | Tree | Return to search (Esc again closes) |
+| j / k | Tree | Move down / up |
+| h / ArrowLeft | Tree | Collapse / go to parent |
+| l / ArrowRight | Tree | Expand / go to first child |
+| n | Tree | New child under active topic |
+| N (Shift+n) | Tree | New top-level topic (child of hidden root) |
+| r | Tree | Rename active topic |
+| d then y / n | Tree | Delete (if no children & no direct messages) / cancel |
+| m | Tree | Mark topic for move |
+| p | Tree | Paste marked topic as child of active (re-parent) |
+| Enter | Tree | Select topic (apply callback & close) |
 
-## 8. Reserved / Future Keys
+Notes:
+- Marked + Paste updates counts and prevents cycles; root cannot be marked.
+- Top-level creation (N) ensures consistent indentation (depth 0).
+
+## 8. Navigation Semantics
+- Active Part: exactly one part is active; movement changes only index.
+- Auto-Scroll: Active part scrolled into view after movement.
+- Pair Association: Star / include act on the entire pair.
+
+## 9. Metadata Editing
+Current shortcuts (*, a) are VIEW-only to prevent accidental edits while typing. Potential future: enable when input empty.
+
+## 10. Reserved / Future Keys
 | Keys | Planned Purpose | Status |
 |------|------------------|--------|
 | Ctrl+u / Ctrl+d | Half-page up/down | Planned |
-| Ctrl+T | Topic selector | Implemented |
-| Ctrl+M | Model selector | Implemented |
 | ? | Help / cheat sheet overlay | Planned |
-| t | Topic palette overlay | Planned |
 | p | Context preview overlay | Planned |
-| / | Inline search (maybe) | TBD |
-| Shift+* variations | Direct star set | TBD |
+| / | Inline search (history) | TBD |
+| Shift+* variants | Direct star set | TBD |
 
-## 9. Extension Interference
-Extensions like Vimium may intercept j/k. Users should exclude the site to retain primary Vim-style navigation. Arrow keys exist as a fallback only. We intentionally do not consume Ctrl+j / Ctrl+k so they remain available for future features.
+## 11. Extension Interference
+Vim-style navigation (j/k) may be intercepted by browser extensions (e.g. Vimium). Exclude this site for full functionality. Arrow keys remain as fallback.
 
-## 10. Design Principles Recap for Keys
-1. Primary keys (j/k, g/G) must remain frictionless (no modifiers).
-2. Core mode cycle uses Enter/Escape to minimize mnemonic burden.
-3. Direct Ctrl+<mode-initial> shortcuts provide muscle memory bypass.
-4. Avoid overloading same key across modes with different destructive behaviors.
-5. Fallbacks (arrows) never displace primaries visually or conceptually.
+## 12. Design Principles Recap
+1. Primary keys (j/k, g/G) frictionless (no modifiers).
+2. Enter/Escape cycle reduces mnemonic load.
+3. Direct Ctrl+<mode> shortcuts allow instant mode jumps.
+4. Avoid overloading same key with conflicting semantics across modes.
+5. Fallbacks (arrows) never overshadow primary Vim-style keys.
 
-## 11. Change Log
-- v0.3: Topic Editor focus model (search focus; Shift+J -> tree; Esc tree->search / search->close); mark/paste keys changed to m / p; delete confirmation (d then y/n); global key router suppression when modal active.
-- v0.2: Implemented topic (Ctrl+T) & model (Ctrl+M) selectors; replaced gg with g; numeric star keys (1/2/3) + Space clear.
-- v0.1: Initial extraction from `ui_layout.md`; added mode cycle, direct shortcuts, current & future sets.
+## 13. Change Log
+- v0.4: Hidden root topic; hierarchical quick picker; Topic Editor adds top-level creation (N) and updated help; path-based search & display.
+- v0.3: Topic Editor focus model (Shift+J tree focus; Esc layering); mark/paste m/p; delete confirm; global key router modal suppression.
+- v0.2: Topic (Ctrl+T) & model (Ctrl+M) selectors; replaced gg with g; numeric star keys (1/2/3) + Space clear.
+- v0.1: Initial extraction from `ui_layout.md`; mode cycle, direct shortcuts, initial sets.
 
 ---
-Edits welcome; propose changes via PR or spec discussion before implementation.
+Edits welcome; propose changes via spec discussion before implementation.
