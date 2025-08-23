@@ -36,16 +36,41 @@ export class ContentPersistence {
     // load topics & pairs into store (skip if already have user-added beyond root?)
     const topics = await this.adapter.getAllTopics()
     const pairs = await this.adapter.getAllPairs()
-    // Add topics except existing root; we assume root always present in store.
-    const rootId = this.store.rootTopicId
+    const stableRootId = this.store.rootTopicId
+    // If a persisted topic had a different randomly generated root previously, treat any topic with parentId===null and id!==stableRootId named 'Root' as a duplicate root and re-parent its children.
+    // First import all topics (excluding duplicate root placeholders) so that remapping can occur.
+    const legacyRootIds = new Set()
     for (const t of topics) {
-      if (t.id === rootId) continue
-      this.store._importTopic(t) // internal import bypassing new id generation
+      if (t.id === stableRootId) continue
+      if (t.parentId === null && t.name === 'Root') { legacyRootIds.add(t.id); continue }
+      this.store._importTopic(t)
+    }
+    // Re-parent any topics pointing at legacy root ids to the stable root.
+    if (legacyRootIds.size) {
+      for (const t of this.store.topics.values()) {
+        if (legacyRootIds.has(t.parentId)) {
+          t.parentId = stableRootId
+        }
+      }
+    }
+    // Now recompute children index if any re-parenting happened.
+    if (legacyRootIds.size) {
+      // rebuild children map from scratch
+      this.store.children = new Map()
+      for (const topic of this.store.topics.values()) {
+        const pid = topic.parentId
+        if (!this.store.children.has(pid)) this.store.children.set(pid, new Set())
+        this.store.children.get(pid).add(topic.id)
+      }
     }
     for (const p of pairs) {
       this.store._importPair(p)
     }
     this._wire()
+    // Defensive initial sweep: queue everything currently in memory so it persists even if added before wire.
+    for (const t of this.store.topics.values()) this._topicQueue.add(t.id)
+    for (const p of this.store.pairs.values()) this._pairQueue.add(p.id)
+    this._schedule()
   }
 
   async _ensureSchema(){

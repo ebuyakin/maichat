@@ -44,6 +44,21 @@ appEl.innerHTML = `
   </div>
 `
 
+// Loading guard overlay (removed after bootstrap)
+const loadingEl = document.createElement('div')
+loadingEl.id = 'appLoading'
+loadingEl.style.position = 'fixed'
+loadingEl.style.inset = '0'
+loadingEl.style.display = 'flex'
+loadingEl.style.alignItems = 'center'
+loadingEl.style.justifyContent = 'center'
+loadingEl.style.background = 'rgba(0,0,0,0.4)'
+loadingEl.style.fontSize = '0.9rem'
+loadingEl.style.letterSpacing = '0.05em'
+loadingEl.style.fontFamily = 'inherit'
+loadingEl.textContent = 'Loading…'
+document.body.appendChild(loadingEl)
+
 // Initial layout pass
 requestAnimationFrame(layoutHistoryPane)
 
@@ -138,6 +153,8 @@ async function bootstrap(){
   applyActivePart()
   if(!pendingMessageMeta.topicId) pendingMessageMeta.topicId = store.rootTopicId
   layoutHistoryPane()
+  // Remove loading guard
+  loadingEl.remove()
 }
 bootstrap()
 
@@ -257,8 +274,8 @@ window.addEventListener('keydown', e=>{
   if(k==='i'){ e.preventDefault(); modeManager.set(MODES.INPUT) }
   else if(k==='d'){ e.preventDefault(); modeManager.set(MODES.COMMAND) }
   else if(k==='v'){ e.preventDefault(); modeManager.set(MODES.VIEW) }
-  else if(k==='t'){ e.preventDefault(); openQuickTopicPicker() }
-  else if(k==='e'){ e.preventDefault(); openTopicEditorOverlay() }
+  else if(k==='t'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openQuickTopicPicker() } }
+  else if(k==='e'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openTopicEditorOverlay() } }
   else if(k==='m'){ if(modeManager.mode===MODES.INPUT){ e.preventDefault(); openSelector('model') } }
 })
 

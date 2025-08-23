@@ -19,7 +19,15 @@ export class MemoryStore {
   /** children index: parentId -> Set<childId> */
   this.children = new Map()
     this.emitter = new Emitter()
-    this.rootTopicId = this.addTopic('Root', null)
+  // Stable root ID so persisted topics always point to the same root across sessions.
+  this.rootTopicId = 'root'
+  const root = createTopic({ id: this.rootTopicId, name: 'Root', parentId: null })
+  root.directCount = 0
+  root.totalCount = 0
+  this.topics.set(this.rootTopicId, root)
+  if(!this.children.has(null)) this.children.set(null, new Set())
+  this.children.get(null).add(this.rootTopicId)
+  this.emitter.emit('topic:add', root)
   }
 
   on(evt, fn){ return this.emitter.on(evt, fn) }
