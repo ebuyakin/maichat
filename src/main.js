@@ -8,6 +8,9 @@ import { createKeyRouter } from './ui/keyRouter.js'
 import { buildParts, ActivePartController, scrollActiveIntoView } from './ui/parts.js'
 import { createIndexedDbAdapter } from './store/indexedDbAdapter.js'
 import { attachContentPersistence } from './persistence/contentPersistence.js'
+import { createTopicPicker } from './ui/topicPicker.js'
+import { openTopicEditor } from './ui/topicEditor.js'
+import { modalIsActive } from './ui/focusTrap.js'
 
 // Mode management
 const modeManager = createModeManager()
@@ -118,6 +121,9 @@ async function bootstrap(){
 }
 bootstrap()
 
+// Ensure pending persistence queued writes flushed on tab close
+window.addEventListener('beforeunload', ()=>{ if(persistence && persistence.flush) persistence.flush() })
+
 // Inputs
 const commandInput = document.getElementById('commandInput')
 const commandErrEl = document.getElementById('commandError')
@@ -227,10 +233,12 @@ document.addEventListener('click', e=>{
 window.addEventListener('keydown', e=>{
   if(!e.ctrlKey) return
   const k = e.key.toLowerCase()
+  if(modalIsActive && modalIsActive()) return
   if(k==='i'){ e.preventDefault(); modeManager.set(MODES.INPUT) }
   else if(k==='d'){ e.preventDefault(); modeManager.set(MODES.COMMAND) }
   else if(k==='v'){ e.preventDefault(); modeManager.set(MODES.VIEW) }
-  else if(k==='t'){ e.preventDefault(); openSelector('topic') }
+  else if(k==='t'){ e.preventDefault(); openQuickTopicPicker() }
+  else if(k==='e'){ e.preventDefault(); openTopicEditorOverlay() }
   else if(k==='m'){ if(modeManager.mode===MODES.INPUT){ e.preventDefault(); openSelector('model') } }
 })
 
@@ -240,6 +248,42 @@ function openSelector(type){
   const list = type==='topic' ? store.getAllTopics() : getModelList()
   overlay = { type, list, activeIndex: 0 }
   renderOverlay()
+}
+
+function openQuickTopicPicker(){
+  // selection context differs by mode
+  createTopicPicker({
+    store,
+    onSelect: (topicId)=>{
+      if(modeManager.mode === MODES.INPUT){
+        pendingMessageMeta.topicId = topicId
+        renderPendingMeta()
+      } else if(modeManager.mode === MODES.VIEW){
+        const act = activeParts.active(); if(act){
+          const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id, { topicId }); renderHistory(store.getAllPairs()); activeParts.setActiveById(act.id); applyActivePart() }
+        }
+      }
+    },
+    onCancel: ()=>{}
+  })
+}
+
+function openTopicEditorOverlay(){
+  openTopicEditor({
+    store,
+    onSelect: (topicId)=>{
+      // Treat selecting in editor same as quick picker selection context
+      if(modeManager.mode === MODES.INPUT){
+        pendingMessageMeta.topicId = topicId
+        renderPendingMeta()
+      } else if(modeManager.mode === MODES.VIEW){
+        const act = activeParts.active(); if(act){
+          const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id, { topicId }); renderHistory(store.getAllPairs()); activeParts.setActiveById(act.id); applyActivePart() }
+        }
+      }
+    },
+    onClose: ()=>{}
+  })
 }
 function closeSelector(){
   if(!overlay) return

@@ -94,3 +94,28 @@ input:focus { outline:none; border-color: var(--accent); }
 /* Reduce selection flash */
 ::selection { background: #25527a; }
 
+/* Topic Picker (quick) */
+.topic-picker-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:flex-start; justify-content:center; padding-top:14vh; z-index:1300; }
+.topic-picker { background:#111; border:1px solid #222; border-radius:6px; width:360px; max-height:60vh; display:flex; flex-direction:column; font:13px/1.4 var(--font-ui); }
+.topic-picker .tp-search { background:#0c0c0c; border:1px solid #333; color:#eee; padding:6px 8px; margin:8px; border-radius:4px; font:13px var(--font-ui); }
+.topic-picker .tp-tree { overflow:auto; padding:4px 0 8px; }
+.topic-picker .tp-row { padding:4px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:8px; }
+.topic-picker .tp-row.active { background:#1e3a5a; color:#fff; }
+.tp-counts { opacity:.55; font-size:11px; }
+
+/* Topic Editor Overlay */
+.topic-editor-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.46); display:flex; align-items:flex-start; justify-content:center; padding-top:10vh; z-index:1400; }
+.topic-editor { background:#101010; border:1px solid #262626; border-radius:8px; width:560px; max-height:70vh; display:flex; flex-direction:column; font:13px/1.45 var(--font-ui); box-shadow:0 4px 24px rgba(0,0,0,0.5); }
+.topic-editor .te-header { padding:8px 12px; font-weight:600; border-bottom:1px solid #222; letter-spacing:.5px; color:#eee; font-size:12px; background:#141414; }
+.topic-editor .te-search { background:#0c0c0c; border:1px solid #333; color:#eee; padding:6px 10px; margin:8px 10px 4px; border-radius:4px; font:13px var(--font-ui); }
+.topic-editor .te-tree { flex:1; overflow:auto; padding:6px 0 6px; }
+.topic-editor .te-row { padding:3px 12px 3px 12px; cursor:default; white-space:nowrap; font-family:var(--font-mono); font-size:12px; display:flex; align-items:center; gap:6px; }
+.topic-editor .te-row.active { background:#1e3a5a; color:#fff; }
+.topic-editor .te-row.creating { background:#142636; }
+.topic-editor .te-row input.te-edit { background:#060606; border:1px solid #444; color:#eee; padding:2px 4px; font:12px var(--font-mono); border-radius:3px; min-width:220px; }
+.topic-editor .te-row input.te-edit:focus { border-color:var(--accent); }
+.topic-editor .te-counts { margin-left:auto; opacity:.5; font-size:11px; }
+.topic-editor .te-warning { min-height:20px; padding:4px 10px 6px; font:11px var(--font-mono); color:#f88; border-top:1px solid #222; opacity:0; transition:opacity .2s; letter-spacing:.3px; }
+.topic-editor .te-warning.visible { opacity:1; }
+
+

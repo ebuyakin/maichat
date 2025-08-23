@@ -21,8 +21,9 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+v | Switch to VIEW | Blurs inputs |
 | Ctrl+i | Switch to INPUT | Focuses bottom input |
 | Ctrl+d | Switch to COMMAND | Focuses command input |
-| Ctrl+T | Open topic selector (VIEW: active pair + set currentTopic / INPUT: pending topic) | Overlay |
+| Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection Mode) |
 | Ctrl+M | Open model selector (INPUT only) | Overlay |
+| Ctrl+E | Open topic editor | Overlay (Edit Mode) |
 
 ## 3. VIEW Mode Keys
 | Key | Action | Remarks |
@@ -87,6 +88,7 @@ Extensions like Vimium may intercept j/k. Users should exclude the site to retai
 5. Fallbacks (arrows) never displace primaries visually or conceptually.
 
 ## 11. Change Log
+- v0.3: Topic Editor focus model (search focus; Shift+J -> tree; Esc tree->search / search->close); mark/paste keys changed to m / p; delete confirmation (d then y/n); global key router suppression when modal active.
 - v0.2: Implemented topic (Ctrl+T) & model (Ctrl+M) selectors; replaced gg with g; numeric star keys (1/2/3) + Space clear.
 - v0.1: Initial extraction from `ui_layout.md`; added mode cycle, direct shortcuts, current & future sets.
 

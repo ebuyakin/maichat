@@ -10,6 +10,8 @@ export class KeyRouter {
   attach(){ window.addEventListener('keydown', this.bound, true) }
   detach(){ window.removeEventListener('keydown', this.bound, true) }
   _onKey(e){
+  // If modal overlays active, skip (they handle their own key logic)
+  if(document.querySelector('.topic-editor-backdrop, .topic-picker-backdrop')) return
     // ignore if in text input unless command mode uses raw keys
     const tag = e.target && e.target.tagName
     if(tag === 'INPUT' || tag === 'TEXTAREA'){

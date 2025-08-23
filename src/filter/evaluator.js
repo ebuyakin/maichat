@@ -29,7 +29,13 @@ export function evaluate(ast, pairs){
       case 'r': return filterRecent(value)
       case 'a': return pairs.filter(p=>p.includeInContext)
       case 'x': return pairs.filter(p=>!p.includeInContext)
-      case 't': return value ? pairs.filter(p=> p.topicId && p.topicId.toLowerCase().includes(String(value).toLowerCase())) : pairs // placeholder semantics
+      case 't': {
+        if(!value) return pairs
+        // basic substring match on topic name resolved externally (pass in pre-resolved names via pair?)
+        // For now assume topicId not meaningful substring; we treat value as substring on stored topicId path placeholder.
+        return pairs.filter(p=> p.topicId && p.topicId.toLowerCase().includes(String(value).toLowerCase()))
+      }
+      case 'd': throw new Error('Date filtering (d) not yet implemented')
       case 'm': return value ? pairs.filter(p=> p.model.toLowerCase() === String(value).toLowerCase()) : pairs
       case 'c': return value ? pairs.filter(p=> (p.userText+"\n"+p.assistantText).toLowerCase().includes(String(value).toLowerCase())) : pairs
       default: return pairs

@@ -1,8 +1,8 @@
 # ADR-000: Architecture Overview
 
 Date: 2025-08-22
-Status: Draft
-Decision: Pending confirmation
+Status: Accepted
+Decision: Adopt layered vanilla JS architecture with overlay-based topic system (no persistent side panels)
 
 ## Context
 MaiChat is a client-only (browser) application for managing multi-model AI chat histories with hierarchical topics and a powerful filtering CLI. Goals: keyboard-first UX, fast filtering, local-first storage, modular provider integration.
@@ -53,6 +53,7 @@ Pending (will mark Accepted after initial scaffolding stabilized).
 - Slight upfront cost building parser but long-term extensibility gains.
 
 ## Follow-ups
-- ADR-001 Filtering Engine Decisions
-- ADR-002 Storage Choice Details
-- ADR-003 Context Assembly Strategy
+- ADR-001 Filtering Engine Decisions (Enhanced Filtering phase)
+- ADR-002 Storage Choice Details (IndexedDB vs future sync backends)
+- ADR-003 Context Assembly Strategy (Phase 6)
+- ADR-004 Topic System Implementation Details (overlay modes, move semantics)

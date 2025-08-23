@@ -1,287 +1,211 @@
-# MaiChat Implementation Plan
+# MaiChat Implementation Plan (Single Source of Truth)
 
-_Last updated: 2025-08-23_
+Last updated: 2025-08-23
 
-## High-Level Architecture Snapshot
-- **Runtime**: Pure vanilla JS (ES modules), no framework.
-- **Layers**:
-  1. Core Domain (data models, storage, indexing)
-  2. Filtering & Context Engine (parser + evaluator + context assembler)
-  3. Provider Adapters (LLM API abstraction)
-  4. UI Shell (layout panes, rendering utilities, keyboard dispatcher, mode state machine)
-  5. Persistence (IndexedDB adapter + export/import JSON)
-  6. Utilities (token estimation, ID generation, formatting)
-  7. Testing & Diagnostics (unit + integration + perf sanity)
-  8. Documentation (vision, ADRs, usage, developer guide)
+Purpose: One hierarchical, authoritative view of what exists, what is in progress, and what is next. No duplicated sections. Use this file only when planning or reviewing scope.
 
-## Phased Roadmap (Milestones & Acceptance Criteria)
-### Phase 0 – Foundation & Docs
-- Define data model (MessagePair, Topic, AppState)
-- Decide file/module layout
-- Add ADR 000: Architecture overview
-- Add implementation plan doc (this)
-**Acceptance**: Docs present; skeleton modules compile.
+Legend:
+- [x] Done (merged & working)
+- [~] Partial / behind acceptance criteria
+- [ ] Not started
+- (deferred) Explicitly postponed
 
-### Phase 1 – Core Data & Storage (UPDATED)
-- In‑memory store + event pub/sub
-- IndexedDB content persistence (pairs + topics) with autosave on mutations (debounced)
-- Initial schema version (v1) recorded in `meta` store
-- Topic tree CRUD (add, rename, delete-if-empty) in data layer (UI minimal placeholder)
-- Basic indexes (by topic, by model, by star, allow/exclude)
-**Acceptance**: Reloading page restores pairs & topics; can add/rename/delete topics (if empty); indexes reflect new data.
+## 1. Architectural Overview (Current State)
+The system is a layered vanilla ES modules app:
+1. Core Domain & Store – in‑memory collections, topic tree, indexes (topic/model/star/allow-exclude), move & count maintenance.
+2. Persistence – IndexedDB adapter with debounced autosave + beforeunload flush (pairs, topics). (Export/import pending.)
+3. Filtering Engine – Lexer, Parser, Evaluator (subset: topics, model, star, allow/exclude; date filters not yet implemented – guarded).
+4. Topic Management UI – Quick Picker (Ctrl+T) & Editor (Ctrl+E): CRUD, search, counts, mark/paste re-parent (child only), focus trap.
+5. Mode & Keyboard Shell – Modes (INPUT / VIEW / COMMAND), KeyRouter, global shortcuts, focus management utility.
+6. UI Rendering – Lightweight DOM updates (no virtualization yet).
+7. Tests – Unit tests for lexer/parser/evaluator/indexes/persistence; gaps remain for topic move/count and UI behaviors.
+8. Docs – Vision, ADR‑000 (arch), keyboard reference, topic system spec, focus management spec.
 
-### Phase 2 – UI Skeleton & Modes
-- Static HTML structure (panes: topic tree, history, context preview, input/command bar)
-- CSS theme (dark minimal)
-- Mode state machine (input/view/command) + keybindings (i / v / : or /)
-- Basic rendering functions (diff or full redraw strategy)
-**Acceptance**: Switch modes with keys; dummy data renders; no filtering yet.
+## 2. Milestones & Status
 
-### Phase 3 – Message Lifecycle & Provider (Single Model)
-- API key management panel (persist multiple provider keys locally, unencrypted)
-- Provider adapter (OpenAI or chosen)
-- Send request: user text → pending → response → store pair (auto-persist)
-- Error handling (retry, inline status)
-**Acceptance**: Round trip works; keys retained across reload; new pair appears; loading state visible.
+### M0 Foundation
+- [x] Repository scaffold & ES module structure
+- [x] Data model definitions (MessagePair, Topic)
+- [x] ADR‑000 Architecture
+- [x] Basic test harness (Vitest) + initial tests
+  - Acceptance: Project builds; tests run → Achieved
 
-### Phase 4 – Filtering Language (MVP Subset)
-- Lexer + parser (subset per decisions)
-- Evaluator over current pairs
-- Command mode input executes filter; empty line = show all
-- Error feedback (first error only; preserves previous result)
-**Acceptance**: Example subset queries produce expected filtered list.
+### M1 Core Storage & Indexing
+- [x] In‑memory store (topics, pairs, indexes)
+- [x] IndexedDB adapter (create/open, CRUD)
+- [x] Debounced autosave on mutations + beforeunload flush
+- [x] Topic CRUD (add, rename, delete-if-empty) in data layer
+- [x] Child index + moveTopic with cycle prevention
+- [x] Incremental topic counts (direct & total)
+- [x] Basic indexes (topic, model, starred, allow/exclude)
+- [~] Schema version meta record (written? partial — confirm & add test)
+  - Acceptance: Reload restores topics/pairs; operations persisted → Achieved except schema meta test
 
-### Phase 5 – Context Assembly & Send Preview
-- Build context set from current filtered visible pairs (all “allowed” unless excluded)
-- Token estimate heuristic
-- Preview panel toggle
-- “Send using current context” pipeline
-**Acceptance**: Preview matches visible list; request uses that subset.
+### M2 Filtering Engine (Subset MVP)
+- [x] Lexer & tokens for implemented subset
+- [x] Parser building AST (subset)
+- [x] Evaluator executing AST over store
+- [x] Error handling (first error reporting, guard for unimplemented date filter)
+- [~] Command mode integration (command input UX minimal; refine later)
+  - Acceptance: Representative subset queries filter list correctly → Achieved
 
-### Phase 6 – Metadata Editing & Keyboard Ops
-- Toggle allow/exclude (a / x in view mode)
-- Star ratings (1/2/3, space clears to 0)
-- Navigate history (j/k, gg/G)
-- Assign/change topic (single topic selector)
-**Acceptance**: Metadata updates persist and reflect in filters.
+### M3 Mode & Keyboard Shell
+- [x] Mode state machine (INPUT / VIEW / COMMAND)
+- [x] Global key routing & suppression when modal active
+- [x] Navigation primitives (baseline j/k etc. in overlays; history nav pending under metadata UX)
+- [x] Focus management utility (focus trap) & integration
+  - Acceptance: Mode switching reliable; overlays isolate focus → Achieved
 
-### Phase 7 – Enhanced Filtering (Remaining Spec)
-- Wildcards (* in t, m, c)
-- Descendant `...`
-- Date filtering (absolute + relative)
-- Quoted string escapes (full set)
-- Performance optimizations (short‑circuit, basic query planning)
-**Acceptance**: Full spec examples evaluate correctly; perf acceptable (<30ms typical on 5k pairs).
+### M4 Topic Management MVP (IN STABILIZATION)
+- [~] Overall milestone status (all features implemented but buggy; none accepted yet)
+  - [~] Quick Topic Picker (search + selection) – issues: focus edge cases after closing? selection race?
+  - [~] Topic Editor overlay (CRUD, rename inline, delete confirm, search) – issues: rename cancel, delete focus restore
+  - [~] Mark (m) / Paste (p) re-parent child-only – issues: incorrect count propagation in some sequences?
+  - [~] Counts display (direct/total) – needs verification after multiple nested moves & deletes
+  - [~] Cycle prevention on move – needs negative tests & UI feedback clarity
+  - [~] Visual & keyboard focus model (Shift+J, Esc layering) – intermittent focus leakage reported
+  - [~] Highlight marked topic – verify persists after re-render / search filter changes
+  - [ ] Virtualization for large trees (deferred threshold ≥500 topics)
+  - Acceptance: All above items moved to [x] with passing tests + manual checklist; no known repro bugs outstanding.
 
-### Phase 8 – Persistence UX
-- Export JSON (full workspace snapshot)
-- Import (merge or replace)
-- Manual clear-all data command
-**Acceptance**: Export then clear & import restores identical state.
+#### M4 Stabilization Checklist
+- [ ] Reproduce & log all current topic UI bugs (create issues list)
+- [ ] Add unit test: moveTopic count adjustments (multi-level)
+- [ ] Add unit test: cycle prevention (attempt self / ancestor move)
+- [ ] Add unit test: delete-if-empty enforcement & counts after delete
+- [ ] Add unit test: picker search filtering correctness (case sensitivity rules)
+- [ ] Add unit test: mark/paste updates parent/ancestor totals correctly
+- [ ] Add harness test: focus trap prevents global shortcuts while editor/picker open
+- [ ] Manual checklist: rename cancel restores focus; delete confirm path returns to correct row; after move selected row remains in view
+- [ ] Bug fixes applied (update individual item statuses to [x])
+- [ ] Decide virtualization strategy trigger & outline (spec doc) – implementation can remain deferred
 
-### Phase 9 – Testing & Quality Layer
-- Unit tests: lexer, parser, evaluator, indexes, topic ops
-- Integration tests: end‑to‑end filtering scenarios
-- Lightweight perf benchmark script
-- Lint (ESLint) + basic formatting rules
-**Acceptance**: Tests pass; no console errors in smoke run.
+### M5 Metadata Editing, History Navigation & Message Partitioning (NEXT ACTIVE)
+- [ ] Message partitioning model (split long messages into navigable parts; stable IDs referencing parent pair)
+- [ ] Partition rendering in history list (each part is navigation unit)
+- [ ] Anchoring & viewport logic (j/k over parts, g/G to top/bottom, maintain selection state)
+- [ ] Update filtering to respect partition boundaries for context inclusion (pair-level semantics preserved)
+- [ ] Allow/exclude toggle (a / x)
+- [ ] Star rating shortcuts (1/2/3, space clear)
+- [ ] Topic assignment from message or part (integrate picker)
+- [ ] History navigation shortcuts (j/k, gg/G) in VIEW mode (outside overlays) using parts
+- [ ] Persist & reflect metadata immediately
+  - Acceptance: User can precisely navigate long conversations via parts; metadata edits instantly affect filtering; topic assignment works at pair level while navigation occurs at part granularity
 
-### Phase 10 – UX Polish & Help
-- Inline help overlay / cheat sheet (press ?)
-- Keyboard hint bar (contextual mode help)
-- Accessibility pass (ARIA roles, focus management)
-- Theming variables (CSS custom properties)
-**Acceptance**: Help overlay works; styling stable.
+### M6 Context Assembly & Preview
+- [ ] Aggregate allowed message pairs based on current filter
+- [ ] Token estimation heuristic
+- [ ] Preview panel (toggle)
+- [ ] Pipeline to send request using preview set (stub until provider implemented)
+  - Acceptance: User can inspect & confirm context set (ordered) with estimated tokens before sending
 
-### Phase 11 – Extensibility Hooks
-- ProviderAdapter interface ready for multi‑model
-- Saved filter stubs (reserved syntax)
-- Tokenization strategy pluggable
-**Acceptance**: Adding second provider file requires no core changes.
+### M7 Enhanced Filtering (Full Spec)
+- [ ] Wildcards (*, pattern decisions)
+- [ ] Descendant operator (...)
+- [ ] Date filters (absolute/relative) + parser & evaluator support
+- [ ] Escapes & quoted string edge cases
+- [ ] Simple query planning / short‑circuit perf
+  - Acceptance: All documented spec queries pass new test suite
 
-### Phase 12 – Release Prep
-- README usage + developer guide
-- ADR updates (filter engine, storage decisions)
-- Manual regression checklist
-**Acceptance**: Repo usable by external user with README only.
+### M8 Persistence UX
+- [ ] Export full workspace JSON
+- [ ] Import (merge vs replace)
+- [ ] Clear-all command + confirmation
+- [ ] Version/migration handling for future schema bumps
+  - Acceptance: Export → clear → import roundtrip identical
 
-## Cross-Cutting Concerns (Ongoing)
-- Error reporting consistency
-- Logging (dev flag vs production minimal)
-- Performance budgets (render <16ms frame budget)
-## Persistence Strategy (UPDATED)
-Two categories:
-1. Content Data (pairs, topics) – authoritative. Stored in IndexedDB from Phase 1 with autosave.
-2. Preferences (UI layout, last topic, command history) – will begin later (Phase 4–6) using either localStorage or a `prefs` store. API keys are stored (unencrypted) in IndexedDB `keys` store starting Phase 3.
+### M9 Quality & Coverage Expansion
+- [x] Existing unit tests (lexer, parser, evaluator, indexes, persistence)
+- [ ] Topic move & count tests
+- [ ] Topic CRUD tests
+- [ ] Context assembly tests
+- [ ] Integration filter scenarios suite
+- [ ] Performance micro-benchmark (<30ms typical 5k pairs target)
+- [ ] ESLint + formatting baseline
+  - Acceptance: All critical logic covered; CI green; perf budget documented
 
-## Detailed Checklist
-Legend: [x] done, [ ] not started, [~] partial, (→ Phase N) deferred
+### M10 UX Polish & Help
+- [ ] Help / cheat sheet overlay (?)
+- [ ] Contextual mode hint line
+- [ ] Theming tokens (CSS custom properties)
+- [ ] Accessibility (ARIA roles, focus outlines alternative, keyboard traps audited)
+  - Acceptance: Discoverability improved; a11y basic checks pass
 
-Foundation & Architecture
-[x] ADR-000 Architecture
-[x] Implementation Plan doc
-[x] Data models (MessagePair, Topic)
+### M11 Extensibility & Provider Abstraction
+- [ ] ProviderAdapter interface & base contract docs
+- [ ] OpenAI provider implementation
+- [ ] API key management UI + persistence (unencrypted notice)
+- [ ] Tokenization strategy pluggable hook
+- [ ] Saved filter definitions (reserved syntax or UI stub)
+  - Acceptance: Adding second provider requires only new adapter file + registration
 
-Storage & Core Data (Phase 1)
-[x] In-memory store
-[x] IndexedDB adapter (basic CRUD)
-[ ] Autosave integration (persist on mutation) **(in progress target)**
-[ ] Topic CRUD (rename/delete-if-empty exposed via API)
-[x] Index builder
-[ ] Schema version record (meta store) – write on init
+### M12 Release Prep
+- [ ] README (user + quick start)
+- [ ] Developer guide (arch, flows, adding features)
+- [ ] ADRs: Filtering engine (ADR‑001), Storage approach (ADR‑002), Context assembly (ADR‑003)
+- [ ] Manual regression checklist
+- [ ] Versioning/tag process doc
+  - Acceptance: External user can clone & run with only README
 
-UI & Modes (Phase 2)
-[x] Base HTML skeleton (placeholder panes)
-[~] CSS theme (basic layout only)
-[x] Mode state machine
-[x] KeyRouter
-[~] Rendering modularization (some functions split; further extraction pending)
+## 3. Cross-Cutting Concerns (Tracked)
+- [x] Focus management (central trap utility)
+- [ ] Rendering performance (monitor; tree & history virtualization paths designed)
+- [ ] Error reporting consistency (standardize format & surface area)
+- [ ] Logging strategy (dev vs minimal prod) – draft guidelines
+- [ ] Migration strategy (meta schema version test) – implement
+- [ ] Security notice for API keys (banner when provider added)
 
-Messaging (Phase 3)
-[ ] API key management panel
-[ ] Key persistence (IndexedDB keys store)
-[ ] Provider adapter (OpenAI)
-[ ] Send pipeline
-[ ] Abort support
+## 4. Backlog (Deferred / Nice-to-Have)
+- (deferred) Root-level re-parent shortcut (pending need)
+- (deferred) Nested modal stacking for focus trap
+- (deferred) Optional encryption for API keys
+- (deferred) Plugin system for custom filters
 
-Filtering (Subset Phase 4)
-[x] Lexer (subset)
-[x] Parser (subset)
-[x] Evaluator (basic semantics)
-[~] Command input integration (no distinct command mode yet)
-[~] Error display (inline string, no highlighting)
+## 5. Immediate Next Focus (Proposed Order)
+1. M4 Stabilization: enumerate & fix topic UI bugs (convert each [~] to [x])
+2. Add unit tests: moveTopic counts, cycle prevention, delete-if-empty, mark/paste propagation
+3. Focus trap robustness test & fixes
+4. Schema version meta record & migration test (finish leftover M1 item)
+5. Message partitioning core (model + rendering + navigation over parts)
+6. Metadata editing basics (allow/exclude + star) with partitioned navigation
+7. Topic assignment from history (picker integration)
+8. Remaining partitioning polish (anchoring, gg/G, selection persistence)
+9. Defer context assembly (M6) until stabilization + partitioning + metadata solid
 
-Filtering (Full Spec Phase 7)
-[ ] Wildcards
-[ ] Descendants (...)
-[ ] Date absolute
-[ ] Date relative
-[ ] Escapes full
-[ ] Optimization pass
+## 6. Acceptance Criteria Summaries (For Active / Upcoming)
+- Message Partitioning: Long messages split deterministically into parts (stable IDs); navigating j/k moves through parts; g/G anchors top/bottom; performance acceptable (no noticeable lag with 200 parts).
+- Metadata Editing: Star / allow toggles persist and are immediately reflected in active filter result set; undo via same key.
+- Context Assembly (later M6): Given current filter, assembling context yields ordered list of candidate message pairs; removing a pair via allow/exclude toggle immediately updates preview.
+- Token Estimation: Estimator returns approx token count (within ~15%) for preview set using heuristic length → token formula.
 
-Context Assembly (Phase 5)
-[ ] Context selection logic
-[ ] Token estimation heuristic
-[ ] Preview panel
-[ ] Send using context
+## 7. Test Coverage Gaps (High Priority)
+- Topic move & cascading counts integrity
+- Prevent cycles (negative test)
+- Persistence roundtrip with multiple topics & nested structure
+- Evaluator error path (unimplemented date filter triggers)
+- Focus trap: ensure global keys suppressed when modal active (unit or harness simulation)
+- Message partitioning: deterministic splits, navigation order, part ID stability after reload
+- Metadata edits: allow/star toggles reflected in filters instantly
 
-Metadata UX (Phase 6)
-[ ] Allow/exclude toggle
-[ ] Star rating shortcuts
-[ ] Topic reassignment
-[ ] Navigation keys (j/k/gg/G)
-[ ] Recent focusing
+## 8. Risks & Mitigations (Current)
+| Risk | Impact | Current Mitigation | Planned Action |
+|------|--------|--------------------|----------------|
+| Spec creep in filtering | Delay | Phased milestones | Enforce M7 boundary before new ops |
+| Large topic trees performance | Jank | Small dataset now | Implement virtualization before >500 topics |
+| Missing schema version leads to migration pain | Data loss on future change | Placeholder only | Implement meta version + migration registry (short JSON) |
+| UI focus regressions | Keyboard UX breaks | Central trap | Add focused tests & a11y audit in M10 |
+| Token estimation inaccuracy | Poor context decisions | Heuristic TBD | Add calibration vs model token counts later |
+| Unencrypted API keys | User surprise | Planned banner | Possibly optional passphrase after MVP |
 
-Persistence UX (Phase 8)
-[ ] Export JSON
-[ ] Import JSON
-[ ] Clear all data command
-[ ] Merge strategy (replace/merge)
+## 9. Metrics / Budgets (Targets)
+- Render update (topic editor interaction): <16ms average frame
+- Filtering evaluation (subset 5k pairs): <30ms
+- Context assembly (5k pairs, naive): <40ms (optimize if exceeded)
 
-Preferences (Phase 6+)
-[ ] Preference store scaffold
-[ ] Persist last topic
-[ ] Persist command history
-[ ] Persist layout/theme
+## 10. Change Log (Plan Evolution)
+- 2025-08-23 (later 2): Reclassified all M4 feature items from [x] to [~]; added explicit M4 Stabilization Checklist; reordered immediate focus to finish stabilization before partitioning.
+- 2025-08-23 (later): Marked M4 partial (bugs); swapped order of Context Assembly and Metadata Navigation (now M6 & M5 respectively); added message partitioning tasks as precursor to navigation & metadata; updated immediate focus sequence.
+- 2025-08-23: Consolidated duplicate sections; inserted Topic Management milestone (M4) reflecting implemented overlay system & focus trap; reordered upcoming work to prioritize Context Assembly (superseded by later change above).
 
-Testing & Quality (Phases 1–9 incremental)
-[x] Unit: parser precedence basic
-[x] Unit: evaluator logic
-[x] Unit: lexer basic via parser tests
-[ ] Unit: indexes edge cases
-[ ] Unit: topic CRUD
-[ ] Unit: persistence (load/save roundtrip)
-[ ] Unit: date parsing (→ Phase 7)
-[ ] Integration: sample queries set
-[ ] Performance micro-bench
-[ ] Lint config
-[x] Test script in package.json
-
-Help & Polish (Phase 10)
-[ ] Cheat sheet overlay
-[ ] Status/Mode line hints
-[ ] Theming variables
-[ ] Accessibility pass
-
-Extensibility (Phase 11)
-[ ] Provider interface doc
-[ ] Saved filter reserved syntax
-[ ] Plug-in tokenizers stub
-
-Docs (Ongoing / Release)
-[ ] README user guide
-[ ] Developer guide
-[ ] ADR-001 Filtering engine
-[ ] ADR-002 Storage choice
-[ ] ADR-003 Context assembly strategy
-
-Release (Phase 12)
-[ ] Manual regression checklist
-[ ] Version bump & tag instructions
-
-## Security / Privacy Notes (MVP)
-- API keys stored locally unencrypted (explicit warning banner planned). Future: optional passphrase encryption.
-- Export excludes preferences & keys.
-
-## Risks & Mitigations
-| Risk | Mitigation |
-|------|------------|
-| Parser complexity creep | Phased features + unit coverage |
-| IndexedDB reliability | Graceful fallback to memory + warning banner |
-| Rendering performance | Batch DOM updates; consider virtualization if >5k pairs |
-| Token overflow | Heuristic pruning strategy later |
-| Data migrations | Version stamp & migration registry from v1 |
-| Unencrypted API keys | User warning; future encryption option |
-
-## Immediate Next Actions (Phase 1 Remainder)
-1. Implement autosave wiring (store event → debounce → persist changed record).
-2. Add schema version write/read logic.
-3. Topic CRUD functions (rename/delete-if-empty) + minimal invocation hooks.
-4. Add persistence smoke test (roundtrip save/load) later in tests.
-
-(End of plan)
-[x] Unit: evaluator logic (initial)
-[ ] Unit: topic filters (deferred until topic semantics refined)
-[ ] Unit: date parsing (→ Phase 7)
-[ ] Integration: sample queries
-[ ] Performance micro-bench
-[ ] Lint config
-[x] Test script in package.json
-
-Help & Polish
-[ ] Cheat sheet overlay
-[ ] Status/Mode line hints
-[ ] Theming variables
-[ ] Accessibility pass
-
-Extensibility
-[ ] Provider interface doc
-[ ] Saved filter reserved syntax
-[ ] Plug-in tokenizers stub
-
-Docs
-[ ] README user guide
-[ ] Developer guide
-[ ] ADR-001 Filtering engine
-[ ] ADR-002 Storage choice
-[ ] ADR-003 Context assembly strategy
-
-Release
-[ ] Manual regression checklist
-[ ] Version bump & tag instructions
-
-## Risks & Mitigations
-| Risk | Mitigation |
-|------|------------|
-| Parser complexity creep | Phased delivery + high coverage tests |
-| IndexedDB reliability | Graceful fallback to memory store |
-| Rendering performance | Batch DOM updates, possible virtualization later |
-| Token overflow | Heuristic + later configurable trimming |
-| Data model evolution | Version tag & migration function stubs |
-
-## Next Immediate Actions
-1. Create ADR-000 skeleton.
-2. Scaffold `src/` directories & placeholder module exports.
-3. Set up basic test harness (optional early if desired).
-
-(End of plan)
+---
+This document supersedes prior fragmented plan sections. All future scope changes should modify this file only.
