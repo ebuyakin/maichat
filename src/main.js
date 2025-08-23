@@ -30,17 +30,36 @@ appEl.innerHTML = `
   <div id="inputBar" class="zone">
     <div class="inputBar-inner">
       <div class="row first">
-        <input id="inputField" placeholder="Type message" autocomplete="off" />
-        <button id="sendBtn" disabled>Send</button>
+        <input id="inputField" placeholder="Type message... (Enter to send)" autocomplete="off" />
       </div>
       <div class="row second">
-        <div id="modeIndicator" class="mode-label"></div>
-        <span id="pendingModel" title="Model"></span>
-        <span id="pendingTopic" title="Topic"></span>
+        <div class="input-meta-left">
+          <div id="modeIndicator" class="mode-label"></div>
+          <span id="pendingModel" title="Model"></span>
+          <span id="pendingTopic" title="Topic"></span>
+        </div>
+        <button id="sendBtn" disabled>Send</button>
       </div>
     </div>
   </div>
 `
+
+// Initial layout pass
+requestAnimationFrame(layoutHistoryPane)
+
+// Dynamic layout sizing to avoid hidden first/last messages when bar heights change
+function layoutHistoryPane(){
+  const topBar = document.getElementById('topBar')
+  const inputBar = document.getElementById('inputBar')
+  const histPane = document.getElementById('historyPane')
+  if(!topBar || !inputBar || !histPane) return
+  const topH = topBar.getBoundingClientRect().height
+  const botH = inputBar.getBoundingClientRect().height
+  // Apply via inline style so CSS remains simple
+  histPane.style.top = topH + 'px'
+  histPane.style.bottom = botH + 'px'
+}
+window.addEventListener('resize', layoutHistoryPane)
 
 // Debug HUD container
 const hudEl = document.createElement('div')
@@ -118,6 +137,7 @@ async function bootstrap(){
   renderStatus()
   applyActivePart()
   if(!pendingMessageMeta.topicId) pendingMessageMeta.topicId = store.rootTopicId
+  layoutHistoryPane()
 }
 bootstrap()
 

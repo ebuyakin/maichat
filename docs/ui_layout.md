@@ -15,9 +15,9 @@ Status: Draft (iterative; authoritative for current UI decisions)
 |------|----|---------|---------------------|
 | Top Bar | `#topBar` | Command entry (COMMAND mode), status / mode label, lightweight inline error text. | Mode label, command input field, error span. |
 | History Workspace | `#historyPane` | Scrollable chronological list of message pairs (decomposed into parts). Only this middle zone scrolls; top and bottom bars remain fixed. | Message parts only. No side gutters. |
-| Input Bar | `#inputBar` | User prompt entry (INPUT mode). Also carries the mode/status label (bottom-left variant if we move label). | User input field (re-used), mode/status label. |
+| Input Bar | `#inputBar` | User prompt entry (INPUT mode). Two-row structure: row 1 full-width prompt input; row 2 left cluster (mode label, model, topic) + right-aligned Send button. | Prompt input, mode label, model, topic, send button. |
 
-Decision: The command input lives in the Top Bar; the bottom Input Bar is exclusively for composing user messages. Mode label lives ONLY in the Input Bar (bottom-left below the input field) and never appears in the Top Bar.
+Decision: The command input lives in the Top Bar; the bottom Input Bar is exclusively for composing user messages. Mode label lives ONLY in the Input Bar (second row, left cluster) and never appears in the Top Bar.
 
 ## 3. Modes & Behavioral Matrix
 Modes: VIEW, INPUT, COMMAND.
@@ -66,35 +66,52 @@ No folding/collapsing: The history behaves like an immutable paper roll—parts 
 </div>
 ```
 
-## 6. Visual Design & Tokens
-Tokens (can map to CSS variables):
+## 6. Visual Design & Tokens (Implemented)
+Authoritative token set (`:root` in `style.css`):
 ```
---bg-app: #000;            /* base canvas if needed */
---bg-zone: #000;           /* history background (very dark) */
---bg-zone-alt: #111;       /* top & bottom bars */
---bg-user: #0d2233;        /* subtle dark blue for user parts */
---bg-assistant: transparent; /* assistant & metadata share zone background */
---bg-meta: transparent;    /* meta line blends with history */
---text-normal: #ddd;
---text-dim: #666;
---accent: #5fa8ff;         /* also used for active part border */
+--bg: #0c0c0c;          /* primary middle zone */
+--bg-alt: #242424;      /* top/bottom bars & overlays */
+--border: #232323;
+--border-active: #454545;
+--accent: #5fa8ff;      /* accent (reserved) */
+--focus-ring: #2b4f80;  /* active part border */
+--text: #e6e6e6;
+--text-dim: #7a7a7a;
 --danger: #f66;
---focus-border: var(--accent);
+--size-base: 13px;      /* base font size */
+--gutter: 16px;         /* unified left alignment */
 ```
+
+Typography:
+* Global UI font stack (VS Code / Copilot Chat style): `-apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif`.
+* Monospace stack retained separately for future code blocks; current messages use the UI stack.
+* Uniform base size across command input, prompt input, message parts, overlay text (no bold except where semantically required—currently none).
+
+Layout & Spacing:
+* Unified gutter ensures left edges of command placeholder, message text, mode label, etc. align vertically.
+* History pane vertical bounds computed dynamically (JS `layoutHistoryPane`) from actual bar heights to avoid clipping first/last messages.
+* Send button moved to second row right; first row remains pure input field.
+* No horizontal separators between message pairs; visual separation via spacing only.
+
+Active Part Styling:
+* Single `.part.active` at a time.
+* 1px border using `--focus-ring`, subtle tinted background `rgba(40,80,120,0.12)`.
+* Internal horizontal padding (8px) with negative margins keeps text column aligned to global gutter while giving breathing space inside focus frame.
 
 Rules (normative):
-1. Zones do NOT have visible borders in steady state; separation is by background color only (`--bg-zone` vs `--bg-zone-alt`).
-2. No border / glow change on mode switches (visual continuity).
-3. Exactly one message part may be "active" (navigated) — it alone gets a 1px accent border.
-4. Non-active parts: no border; rely on padding & spacing.
-5. Metadata line background matches assistant (transparent over history) and never adopts user blue.
-6. Scrolling never animates; always immediate (paper roll metaphor).
-7. Mode label uses dim text color; never changes background; only its string changes.
- 8. Only the History Workspace scrolls; Top Bar and Input Bar are anchored (no body/page scroll or rubber-band dragging above/below the middle zone).
+1. Zones have no decorative borders; only subtle color shift (`--bg` vs `--bg-alt`).
+2. Mode switches do not recolor zones.
+3. Exactly one active part visualized via focus ring (no thick outlines). 
+4. Metadata line background stays transparent; never inherits user part blue.
+5. Scrolling is instantaneous (no smooth animation) for positional predictability.
+6. Only middle zone scrolls; document overflow hidden.
+7. Overlays share `--bg-alt` background and regular-weight text.
+8. Inputs: prompt input is borderless (background `--bg-alt`); command input uses minimal 1px neutral border.
 
 Open Styling TBD:
-* Final dark blue tone for `--bg-user` to ensure WCAG contrast with text and accent border.
-* Timestamp format & dimness threshold.
+* Refine user part background blue for contrast.
+* Adjust active part tint opacity pending accessibility review.
+* Timestamp format & dimness finalization.
 
 ## 7. Navigation (Implemented / Planned)
 Implemented subset:
@@ -156,7 +173,7 @@ These are NOT optional; they are central to evaluating usability.
 ## 13. Open Questions (Current)
 1. Navigation half-page jumps (`Ctrl+u/d`) — MVP or post-MVP?
 2. Metadata badges: clickable with mouse or strictly command/shortcut only in MVP?
-3. Exact accent color & border style for active part (contrast tuning pending dark blue finalization).
+3. Active part border style settled (1px `--focus-ring` + subtle tint); only revisit if contrast issues found.
 4. Topic assignment UX: further enhancements (bulk retag, palette) beyond current selector overlays.
 
 ## 14. Implementation Notes (Dev Guidance)
@@ -166,7 +183,7 @@ These are NOT optional; they are central to evaluating usability.
 * Testing: navigation logic unit-tested with synthetic arrays (no DOM) before integrating into DOM renderer.
 
 ## 15. Rationale
-This curated spec consolidates decisions and removes earlier contradictions (e.g. zone border highlighting). It formalizes a paper‑like, distraction‑free history while preserving extensibility through overlays and parts-based navigation.
+This curated spec now reflects current implemented tokens (colors, fonts, gutter), active focus styling, and two-row input bar layout, formalizing a paper‑like, distraction‑free history while preserving extensibility via overlays and part-based navigation.
 
 ---
 Edits welcome; unresolved items are explicitly listed under Open Questions to prevent silent drift.
