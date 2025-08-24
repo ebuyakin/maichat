@@ -1,6 +1,6 @@
 # Keyboard Reference
 
-Status: v0.4 (living document)
+Status: v0.6 (living document)
 
 Canonical source for all key bindings, per-mode behavior, overlays, and reserved combinations. Updated alongside implementation.
 
@@ -24,6 +24,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection) |
 | Ctrl+M | Open model selector (INPUT only) | Overlay |
 | Ctrl+E | Open topic editor | Overlay (Edit) |
+| Ctrl+, | Open settings overlay | Adjust rare preferences (part size, anchor, padding, gaps, zone heights) |
 
 ## 3. VIEW Mode Keys
 | Key | Action | Remarks |
@@ -34,6 +35,8 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | ArrowUp | Previous part | Secondary fallback |
 | g | Jump to first part | Single press |
 | G | Jump to last part | Shift+g |
+| Shift+R | Cycle reading position (Bottom → Center → Top → Bottom) | Optional convenience |
+| n | Jump to FIRST part of last message | Clears new-message badge; re-anchors even if already there |
 | * | Cycle star (0→1→2→3→0) | Affects active pair |
 | 1 / 2 / 3 | Set star to 1 / 2 / 3 | Direct rating |
 | Space | Set star to 0 | Clear rating |
@@ -44,7 +47,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 ## 4. INPUT Mode Keys
 | Key | Action | Notes |
 |-----|--------|-------|
-| Enter | Send message & remain in INPUT | Active part moves to new last part |
+| Enter | Send message & remain in INPUT | Ignored if previous send pending ("AI is thinking") |
 | Escape | Return to VIEW | Restores active selection |
 | Ctrl+v / Ctrl+d / Ctrl+i | Direct mode switch | Overrides cycle |
 
@@ -96,8 +99,11 @@ Notes:
 
 ## 8. Navigation Semantics
 - Active Part: exactly one part is active; movement changes only index.
-- Auto-Scroll: Active part scrolled into view after movement.
+- Auto-Scroll & Anchoring: Active part aligned to user-selected reading position (Bottom default) using spacer logic; meta row is never focusable.
 - Pair Association: Star / include act on the entire pair.
+- Meta Row: Visible but skipped in navigation; edits apply based on active part's pair.
+- 'n' vs 'G': 'n' = first part of last message; 'G' = last part of last message.
+- New reply auto-focus only if user remained at end (no navigation since send); otherwise badge appears.
 
 ## 9. Metadata Editing
 Current shortcuts (*, a) are VIEW-only to prevent accidental edits while typing. Potential future: enable when input empty.
@@ -122,6 +128,8 @@ Vim-style navigation (j/k) may be intercepted by browser extensions (e.g. Vimium
 5. Fallbacks (arrows) never overshadow primary Vim-style keys.
 
 ## 13. Change Log
+- v0.6: New message behavior (single pending send), 'n' key (first part of last message), Enter blocked during pending, badge logic.
+- v0.5: Settings overlay (Ctrl+,); meta row declared non-focusable; anchoring model (Bottom/Center/Top) + Shift+R cycle; clarified navigation semantics.
 - v0.4: Hidden root topic; hierarchical quick picker; Topic Editor adds top-level creation (N) and updated help; path-based search & display.
 - v0.3: Topic Editor focus model (Shift+J tree focus; Esc layering); mark/paste m/p; delete confirm; global key router modal suppression.
 - v0.2: Topic (Ctrl+T) & model (Ctrl+M) selectors; replaced gg with g; numeric star keys (1/2/3) + Space clear.

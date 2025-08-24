@@ -1,6 +1,6 @@
 # Main Window Layout Specification
 
-Status: Draft (iterative; authoritative for current UI decisions)
+Status: Updated for M5 (anchoring & partitioning incorporated)
 
 ## 1. Core Principles (Normative)
 1. Visual Continuity: The three vertical zones (Top Bar, History Workspace, Input Bar) are always present; modes never reflow or hide them.
@@ -14,7 +14,7 @@ Status: Draft (iterative; authoritative for current UI decisions)
 | Zone | ID | Purpose | Persistent Elements |
 |------|----|---------|---------------------|
 | Top Bar | `#topBar` | Command entry (COMMAND mode), status / mode label, lightweight inline error text. | Mode label, command input field, error span. |
-| History Workspace | `#historyPane` | Scrollable chronological list of message pairs (decomposed into parts). Only this middle zone scrolls; top and bottom bars remain fixed. | Message parts only. No side gutters. |
+| History Workspace | `#historyPane` | Scrollable chronological list of message pairs (decomposed into parts). Only this middle zone scrolls; top and bottom bars remain fixed. | Message parts (navigable) + non-focusable meta rows. |
 | Input Bar | `#inputBar` | User prompt entry (INPUT mode). Two-row structure: row 1 full-width prompt input; row 2 left cluster (mode label, model, topic) + right-aligned Send button. | Prompt input, mode label, model, topic, send button. |
 
 Decision: The command input lives in the Top Bar; the bottom Input Bar is exclusively for composing user messages. Mode label lives ONLY in the Input Bar (second row, left cluster) and never appears in the Top Bar.
@@ -96,7 +96,9 @@ Layout & Spacing:
 Active Part Styling:
 * Single `.part.active` at a time.
 * 1px border using `--focus-ring`, subtle tinted background `rgba(40,80,120,0.12)`.
-* Internal horizontal padding (8px) with negative margins keeps text column aligned to global gutter while giving breathing space inside focus frame.
+* Internal horizontal padding (default 8px) adjustable (Settings overlay; apply to commit, no live preview).
+* Gap between parts (default 6px) adjustable.
+* Meta row visible but NEVER focusable (excluded from navigation sequence).
 
 Rules (normative):
 1. Zones have no decorative borders; only subtle color shift (`--bg` vs `--bg-alt`).
@@ -114,9 +116,10 @@ Open Styling TBD:
 * Timestamp format & dimness finalization.
 
 ## 7. Navigation (Implemented / Planned)
-Implemented subset:
+Implemented / Planned (M5 focus):
 * `j` / `k` (primary) and `ArrowDown` / `ArrowUp` (secondary) move active part.
-* `g` / `G`: First / last part.
+* `g` / `G`: First / last part (anchored to user-selected reading position via spacer logic).
+* `n`: First part of last message (clears new-message badge; re-anchors even if already there).
 * `Enter` / `Esc`: Mode cycle as defined above.
 * `Ctrl+i` / `Ctrl+d` / `Ctrl+v`: Direct mode activation.
 * `*`: Cycle star rating (0→1→2→3→0) for active pair.
@@ -132,7 +135,17 @@ Planned (not yet implemented):
 Extension Interference:
 Browser extensions (e.g. Vimium) may capture plain `j`/`k`. Users should exclude the app origin; we deliberately avoid consuming `Ctrl+j` / `Ctrl+k` so they remain available for future bindings. Arrow keys are a fallback, not a first-class replacement.
 
-Scrolling: Active part is scrolled into a comfortable viewport margin (target middle third or top with small offset — final rule TBD).
+Anchoring & Scrolling: Active part positioned at user-selected reading position (Bottom default; also Center / Top). Spacer elements above/below maintain alignment at edges; no smooth scroll animation.
+New Message Badge: Top bar right corner; appears when reply arrives and user navigated away or reply filtered out; cleared by `n`, `G`, or badge activation.
+Edge Anchoring Mode:
+* Adaptive (default): If anchor would create large blank region (content shorter than viewport or out-of-bounds anchor), clamp scroll and suppress spacer so content starts at top (or ends naturally) for better space use.
+* Strict: Always enforce anchor via spacer even if large void results.
+
+Decision Clarifications (M5):
+* Active restore A1: After partition changes (resize or fraction change) we attempt to keep user near same textual spot approximately (same pair, nearest line) rather than precise hash mapping.
+* Filtered reply B2: Using `n` when new reply hidden permanently adjusts filter (simple clear) so reply remains visible; no temporary flash.
+* Anchor restoration C1: Restoration order: same part ID → same pair closest region → apply anchor position.
+* Pending send D: No extra spinner; cues are cleared input, placeholder assistant entry, and Send button label change; Enter does nothing until reply.
 
 ## 8. Commands vs Prompts
 * Command field (Top Bar) only interprets command/filter language.
@@ -143,47 +156,62 @@ Scrolling: Active part is scrolled into a comfortable viewport margin (target mi
 * Prompt send errors (future): transient inline badge in metadata line of the pending / failed pair, plus optional short status text in Top Bar.
 * No modal dialogs for routine errors.
 
-## 10. Overlays (Deferred)
-Invoked by shortcut keys; they do not shift base layout.
-| Overlay | Purpose | Trigger (proposed) | Dismiss |
-|---------|---------|--------------------|---------|
-| Topic Palette | Create / select / rename topics | `t` (VIEW) | Esc / Enter |
-| Context Preview | Show assembled context before send | `p` (VIEW/INPUT) | Esc |
-| Help Cheatsheet | Key + command language summary | `?` | Esc |
+## 10. Overlays
+Invoked by shortcuts; they never reflow base layout.
 
-Overlays always center or slight top-center; they dim (but do not blur) the background with a low-opacity scrim.
+Implemented:
+| Overlay | Purpose | Trigger | Dismiss |
+|---------|---------|---------|---------|
+| Topic Quick Picker | Reassign active pair (VIEW) / set pending topic (INPUT) | Ctrl+T | Esc / Enter |
+| Topic Editor | Full topic CRUD, mark/paste, search | Ctrl+E | Esc |
+| Model Selector | Choose model for pending message | Ctrl+M (INPUT) | Esc / Enter |
+| Settings / Preferences | Adjust part size fraction, reading position, padding, gap, top/bottom zone heights (Apply/Cancel) | Ctrl+, | Esc / Apply |
 
-## 11. Core Interaction Features (Required for MVP)
-These are NOT optional; they are central to evaluating usability.
-1. Message Splitting: Long user or assistant texts are split into navigable parts (initial algorithm may be size-based; can evolve semantically). Original raw text preserved.
-2. Keyboard Metadata Control: Star rating, include/exclude toggle, and (later) topic reassignment invokable via keyboard shortcuts while a part (or its pair) is active.
-3. Active Part Navigation: j/k, g/G, (optionally) half-page moves, always maintaining single active part focus.
-4. Metadata Line Position & Invariance: Always between last user part and first assistant part.
-5. Immediate Visual Feedback: Star/include changes update metadata badges instantly without layout shift.
+Deferred / Planned:
+| Overlay | Purpose | Planned Trigger | Notes |
+|---------|---------|-----------------|-------|
+| Context Preview | Inspect assembled context before send | p (TBD) | After partition + metadata stabilization |
+| Help / Cheat Sheet | Key & command summary | ? | UX polish milestone |
+
+Placement & Styling:
+* Center or slight top-center; low-opacity scrim (no blur).
+* Focus trap isolation; Esc unwinds current overlay.
+
+## 11. Core Interaction Features (M5 Focus)
+1. Deterministic partitioning (viewport fraction → whole-line parts) with persistent active part across re-renders.
+2. Anchored navigation (Bottom default; Top/Center optional) with spacer-based stabilization and calm edges.
+3. Meta row non-focusable; all metadata actions target pair from any part.
+4. Keyboard metadata control (star cycle, numeric stars, include toggle) immediate visual feedback.
+5. Topic reassignment via picker from any active part.
+6. New message lifecycle: single pending send, auto-focus first assistant part if stationary, badge + n/G when user navigated away or reply filtered.
 
 ## 12. Deferred / Future Enhancements
-1. Advanced splitting heuristics (semantic boundaries, token estimator integration).
-2. Virtualization for very large histories (>5k pairs or >15k parts).
-3. Streaming assistant responses (anchoring rules: follow bottom unless user navigated earlier part).
-4. Context preview overlay.
-5. Help cheatsheet overlay.
-6. Advanced topic/model management UI (beyond basic selectors).
-5. Help cheatsheet overlay.
+1. Semantic splitting heuristics (headings, code blocks, sentence boundaries, token estimator integration).
+2. Virtualization for large histories (>5k pairs / >15k parts) preserving anchor semantics.
+3. Streaming assistant responses (progressive part growth, end-follow rules).
+4. Context preview overlay (assembled context inspection before send).
+5. Help / cheat sheet overlay.
+6. Advanced topic/model bulk management UI.
+7. Half-page navigation (`Ctrl+u` / `Ctrl+d`) & additional scrolling primitives.
 
-## 13. Open Questions (Current)
-1. Navigation half-page jumps (`Ctrl+u/d`) — MVP or post-MVP?
-2. Metadata badges: clickable with mouse or strictly command/shortcut only in MVP?
-3. Active part border style settled (1px `--focus-ring` + subtle tint); only revisit if contrast issues found.
-4. Topic assignment UX: further enhancements (bulk retag, palette) beyond current selector overlays.
+## 13. Open Questions (Revised)
+1. Half-page jumps (`Ctrl+u/d`) timing (post-M5?).
+2. Mouse affordances for badges (defer?).
+3. Semantic splitting (headings/code) scheduling.
+4. Indicator styling variants (badge vs bar) future refinement.
 
 ## 14. Implementation Notes (Dev Guidance)
-* Keep rendering primitive: rebuild region on change (optimize later only if perf issues observed).
-* Active part state lives outside DOM (store or UI state module) to allow deterministic re-render.
-* Splitting: store original full text; derived parts array computed on demand (stateless) to avoid migration complexity.
-* Testing: navigation logic unit-tested with synthetic arrays (no DOM) before integrating into DOM renderer.
+* Full region rebuild until perf dictates virtualization.
+* Active part state external to DOM for deterministic re-render.
+* Partition engine: off-screen measurement + caching; stable IDs when text/settings unchanged; major resize (≥10% height) triggers recompute & active remap.
+* Meta rows excluded from parts array.
+* Anchoring: compute desired alignment + spacer heights; calm edges (no jitter on boundary navigation).
+* Settings overlay (Ctrl+,) manages rare adjustments (fraction, reading position, padding, gap, zone heights) applied only on Apply (no live preview).
+* Edge anchoring mode persisted (adaptive|strict); re-anchoring logic re-runs on change without forcing repartition.
+* Tests: partition determinism, resize threshold behavior, new message indicator accumulation, active mapping after repartition.
 
 ## 15. Rationale
-This curated spec now reflects current implemented tokens (colors, fonts, gutter), active focus styling, and two-row input bar layout, formalizing a paper‑like, distraction‑free history while preserving extensibility via overlays and part-based navigation.
+Spec now embeds anchoring & partitioning model for M5, balancing stable reading alignment with future extensibility (semantic splits, virtualization) without structural upheaval.
 
 ---
 Edits welcome; unresolved items are explicitly listed under Open Questions to prevent silent drift.

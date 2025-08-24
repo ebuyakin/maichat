@@ -5,3 +5,5 @@
 3. dark blue background behind the user request shall have the same padding as active message border (so it should expand around the user request, not touch its edges).
 4. the active user request shall preserve its background (dark blue) color. now it gets black background when focused
 5. Insert some padding between the user request and metadata pane.
+6. timestamp format (yy-mm-dd-hh-mm-ss) and sorting of the messages - fixed.
+7. decreas the height of the command (top) area - should be 3 lines or like bottom area, but without the second row.

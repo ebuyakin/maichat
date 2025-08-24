@@ -93,6 +93,8 @@ let pendingMessageMeta = { topicId: null, model: 'gpt' }
 function renderTopics(){ /* hidden for now */ }
 
 function renderHistory(pairs){
+  // Always render in chronological order (ascending createdAt) for consistent navigation & filtering tests
+  pairs = [...pairs].sort((a,b)=> a.createdAt - b.createdAt)
   const hist = document.getElementById('history')
   const parts = buildParts(pairs)
   activeParts.setParts(parts)
@@ -108,8 +110,8 @@ function renderPart(pt){
   if(pt.role === 'meta'){
     const pair = store.pairs.get(pt.pairId)
     const topic = store.topics.get(pair.topicId)
-	const ts = new Date(pair.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})
-	const topicPath = topic ? formatTopicPath(topic.id) : ''
+  const ts = formatTimestamp(pair.createdAt)
+  const topicPath = topic ? formatTopicPath(topic.id) : ''
     return `<div class="part meta" data-part-id="${pt.id}">
       <div class="meta-left">
         <span class="badge include" data-include="${pair.includeInContext}">${pair.includeInContext? 'in':'out'}</span>
@@ -387,8 +389,18 @@ function refreshOverlaySelection(){
   })
 }
 
-// HUD updater
-function fmtTime(ts){ const d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}) }
+// HUD updater & shared timestamp formatting
+function formatTimestamp(ts){
+  const d = new Date(ts)
+  const yy = String(d.getFullYear()).slice(-2)
+  const dd = String(d.getDate()).padStart(2,'0')
+  const mm = String(d.getMonth()+1).padStart(2,'0')
+  const hh = String(d.getHours()).padStart(2,'0')
+  const mi = String(d.getMinutes()).padStart(2,'0')
+  const ss = String(d.getSeconds()).padStart(2,'0')
+  // Order per request: yy-dd-mm hh:mm:ss (note day precedes month)
+  return `${yy}-${dd}-${mm} ${hh}:${mi}:${ss}`
+}
 function updateHud(){
   const act = activeParts.active()
   let pairInfo='(none)'
@@ -396,7 +408,7 @@ function updateHud(){
     const pair = store.pairs.get(act.pairId)
     if(pair){
       const topic = store.topics.get(pair.topicId)
-      pairInfo = `${pair.id.slice(0,8)} t:${topic?topic.name:''}\n★:${pair.star} include:${pair.includeInContext?'Y':'N'} model:${pair.model}\n@${fmtTime(pair.createdAt)}`
+  pairInfo = `${pair.id.slice(0,8)} t:${topic?topic.name:''}\n★:${pair.star} include:${pair.includeInContext?'Y':'N'} model:${pair.model}\n@${formatTimestamp(pair.createdAt)}`
     }
   }
   const idx = act? `${activeParts.parts.indexOf(act)+1}/${activeParts.parts.length}` : '0/0'

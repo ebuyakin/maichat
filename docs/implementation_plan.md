@@ -1,6 +1,6 @@
 # MaiChat Implementation Plan (Single Source of Truth)
 
-Last updated: 2025-08-23
+Last updated: 2025-08-24
 
 Purpose: One hierarchical, authoritative view of what exists, what is in progress, and what is next. No duplicated sections. Use this file only when planning or reviewing scope.
 
@@ -68,16 +68,62 @@ The system is a layered vanilla ES modules app:
   - Acceptance: Topic management workflows reliable; no known repro bugs; persistence stable across reloads.
 
 ### M5 Metadata Editing, History Navigation & Message Partitioning (NEXT ACTIVE)
-- [ ] Message partitioning model (split long messages into navigable parts; stable IDs referencing parent pair)
-- [ ] Partition rendering in history list (each part is navigation unit)
-- [ ] Anchoring & viewport logic (j/k over parts, g/G to top/bottom, maintain selection state)
-- [ ] Update filtering to respect partition boundaries for context inclusion (pair-level semantics preserved)
-- [ ] Allow/exclude toggle (a / x)
-- [ ] Star rating shortcuts (1/2/3, space clear)
-- [ ] Topic assignment from message or part (integrate picker)
-- [ ] History navigation shortcuts (j/k, gg/G) in VIEW mode (outside overlays) using parts
-- [ ] Persist & reflect metadata immediately
-  - Acceptance: User can precisely navigate long conversations via parts; metadata edits instantly affect filtering; topic assignment works at pair level while navigation occurs at part granularity
+Partition & Measurement
+  - [ ] Partition engine v1 (viewport fraction → whole-line parts; deterministic stable part IDs; meta row excluded/non-focusable)
+  - [ ] Off-screen measurement + caching (lineHeight + block line counts)
+  - [ ] Greedy packing + oversized block splitting (binary search) implementation
+  - [ ] Active part restoration after repartition (settings change or major resize)
+Anchoring & Scrolling
+  - [ ] Anchoring system (Bottom/Center/Top) + spacer insertion at edges
+  - [ ] Edge anchoring mode (adaptive|strict) implementation
+  - [ ] Adaptive mode: clamp + suppress spacer to avoid large blank regions (top/ bottom) when content shorter or near edge
+  - [ ] Strict mode: always honor anchor via spacer even if large whitespace
+  - [ ] Edge calm behavior (no jitter on first/last navigation; stable scroll position)
+New Message Lifecycle
+  - [ ] Single pending send enforcement (Enter ignored during pending)
+  - [ ] Detect arrival of assistant reply (end-state) & decide: auto-focus vs badge
+  - [ ] New message badge (top bar) appears only if user not at end (or reply filtered out)
+  - [ ] Auto-focus first assistant part when user anchored at logical end (per spec)
+  - [ ] 'n' key: jump to first part of newest assistant reply (clears badge)
+  - [ ] 'G' key: jump to last part of newest reply (also clears badge)
+  - [ ] Filtered-out reply: badge dim variant; 'n' permanently adjusts filter (Decision B2) so the reply remains visible (mechanism: either clear filter or append explicit inclusion — choose simplest clear filter first, note in tests)
+Settings & Persistence
+  - [ ] Settings overlay (Ctrl+,) with Apply/Cancel (fraction, anchor, padding, gap, top/bottom zone line counts, edgeAnchoringMode)
+  - [ ] Persist settings (localStorage) & bootstrap load before first render
+  - [ ] Resize threshold handling (≥10% viewport height triggers repartition)
+Integration & Metadata
+  - [ ] Filtering integration (post-filter focus last part + anchor rules respected)
+  - [ ] Metadata shortcuts (star cycle, numeric stars, include toggle) validated with partition navigation
+  - [ ] Topic assignment from any part (picker integration regression test)
+Tests (M5 scope)
+  - [ ] Partition determinism & stable IDs across rerender
+  - [ ] Oversized block splitting correctness (binary search path)
+  - [ ] Resize mapping (part boundaries shift only as expected; active restoration uses A1 approximate strategy)
+  - [ ] Anchor correctness (Top/Center/Bottom) including restoration
+  - [ ] Edge anchoring mode differences (adaptive clamp vs strict spacer)
+  - [ ] No jitter navigating first/last parts (scroll stability)
+  - [ ] Pending send blocks Enter (unit + manual harness)
+  - [ ] New message badge visibility matrix (end-state + user position + filter state)
+  - [ ] 'n' and 'G' jump semantics (first vs last part) clearing badge
+  - [ ] Filtered reply badge dim + 'n' behavior (permanent filter adjustment B2)
+  - [ ] Meta row non-focusable
+  - [ ] Filter re-anchor after command (focus last part)
+  - [ ] Star/allow toggles reflect immediately while preserving part focus
+  - Acceptance: Smooth part-level navigation with stable anchoring; adaptive vs strict behaviors match spec; settings-driven part sizing honored; meta edits instantaneous; no unexpected scroll jumps; badge appears only when reply unseen; all listed tests green.
+
+Decision Notes (M5):
+* A1 Active restore: Part IDs stable only when text + settings unchanged; on resize/fraction change we re-map to same pair & closest line region (approximate) then enforce anchor.
+* B2 Filtered reply handling: 'n' permanently adjusts (simplest: clears) current filter so new reply stays; badge cleared.
+* C1 Anchor restoration precedence: Try same part ID; else same pair & approximate line; then apply anchor mode.
+* D Pending send indicator: No extra spinner; rely on cleared input + placeholder assistant meta + Send button label change (AI is thinking). Enter ignored until reply arrives.
+
+Architectural Prep (Pre-partition extraction tasks):
+1. Introduce settings module (load/save, subscribers).
+2. Extract history view rendering module (DOM isolation) without functional change.
+3. Add enhanced ActivePartController remap method implementing A1 logic.
+4. Stub anchorManager (currently delegates to center scroll) behind abstraction.
+5. Replace direct calls to scrollIntoView with anchorManager.apply().
+6. Commit baseline before implementing real partition & anchoring.
 
 ### M6 Context Assembly & Preview
 - [ ] Aggregate allowed message pairs based on current filter
@@ -187,6 +233,7 @@ The system is a layered vanilla ES modules app:
 - Context assembly (5k pairs, naive): <40ms (optimize if exceeded)
 
 ## 10. Change Log (Plan Evolution)
+- 2025-08-24: Expanded M5 with edgeAnchoringMode (adaptive|strict), new message badge & 'n' key semantics, refined test matrix; added clarification placeholder for filtered reply behavior.
 - 2025-08-23 (later 3): M4 completed (all functional items [x]; virtualization deferred). Removed stabilization checklist; advanced Immediate Next Focus to M5 partitioning & metadata.
 - 2025-08-23 (later 2): Reclassified all M4 feature items from [x] to [~]; added explicit M4 Stabilization Checklist; reordered immediate focus to finish stabilization before partitioning.
 - 2025-08-23 (later): Marked M4 partial (bugs); swapped order of Context Assembly and Metadata Navigation (now M6 & M5 respectively); added message partitioning tasks as precursor to navigation & metadata; updated immediate focus sequence.
