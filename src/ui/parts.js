@@ -43,11 +43,23 @@ export class ActivePartController {
       if(idx !== -1) this.activeIndex = idx
     }
     if(this.activeIndex >= this.parts.length) this.activeIndex = this.parts.length? this.parts.length-1:0
+    // Ensure not landing on meta
+    if(this.parts[this.activeIndex]?.role==='meta') this.next()
   }
   setActiveById(id){ const idx = this.parts.findIndex(p=>p.id===id); if(idx!==-1){ this.activeIndex=idx } }
   active(){ return this.parts[this.activeIndex] }
-  first(){ if(this.parts.length){ this.activeIndex=0 } }
-  last(){ if(this.parts.length){ this.activeIndex=this.parts.length-1 } }
-  next(){ if(this.activeIndex < this.parts.length-1) this.activeIndex++ }
-  prev(){ if(this.activeIndex > 0) this.activeIndex-- }
+  first(){ if(this.parts.length){ this.activeIndex=0; if(this.parts[this.activeIndex]?.role==='meta') this.next() } }
+  last(){ if(this.parts.length){ this.activeIndex=this.parts.length-1; if(this.parts[this.activeIndex]?.role==='meta') this.prev() } }
+  next(){
+    while(this.activeIndex < this.parts.length-1){
+      this.activeIndex++
+      if(this.parts[this.activeIndex].role !== 'meta') break
+    }
+  }
+  prev(){
+    while(this.activeIndex > 0){
+      this.activeIndex--
+      if(this.parts[this.activeIndex].role !== 'meta') break
+    }
+  }
 }

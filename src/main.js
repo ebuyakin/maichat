@@ -17,6 +17,7 @@ import { openTopicEditor } from './ui/topicEditor.js'
 import { modalIsActive } from './ui/focusTrap.js'
 import { escapeHtml } from './ui/util.js'
 import { createNewMessageLifecycle } from './ui/newMessageLifecycle.js'
+import { openSettingsOverlay } from './ui/settingsOverlay.js'
 
 // Mode management
 const modeManager = createModeManager()
@@ -176,6 +177,7 @@ const sendBtn = document.getElementById('sendBtn')
 
 // Mode key handlers
 const viewHandler = (e)=>{
+  if(modalIsActive && modalIsActive()) return false
   window.__lastKey = e.key
   if(e.key === 'Enter'){ modeManager.set(MODES.INPUT); return true }
   if(e.key === 'Escape'){ modeManager.set(MODES.COMMAND); return true }
@@ -183,7 +185,15 @@ const viewHandler = (e)=>{
   if(e.key === 'j' || e.key === 'ArrowDown'){ activeParts.next(); applyActivePart(); return true }
   if(e.key === 'k' || e.key === 'ArrowUp'){ activeParts.prev(); applyActivePart(); return true }
   if(e.key === 'g'){ activeParts.first(); applyActivePart(); return true }
-  if(e.key === 'G'){ activeParts.last(); applyActivePart(); return true }
+  if(e.key === 'G'){
+    // If there's a new reply badge (any state), treat Shift+G as jump to LAST part of newest reply; else normal last part navigation
+    const badgeState = lifecycle.getBadgeState()
+    if(badgeState.visible){
+      const jumped = lifecycle.jumpToNewReply('last')
+      if(jumped) return true
+    }
+    activeParts.last(); applyActivePart(); return true
+  }
   if(e.key === 'R'){ cycleAnchorMode(); return true } // Shift+R cycles reading position
   if(e.key === 'n'){ lifecycle.jumpToNewReply('first'); return true }
   if(e.key === '*'){ cycleStar(); return true }
@@ -194,6 +204,7 @@ const viewHandler = (e)=>{
   if(e.key === ' '){ setStarRating(0); return true }
 }
 const commandHandler = (e)=>{
+  if(modalIsActive && modalIsActive()) return false
   if(e.key === 'Enter'){
     const q = commandInput.value.trim()
   lifecycle.setFilterQuery(q)
@@ -214,6 +225,7 @@ const commandHandler = (e)=>{
   }
 }
 const inputHandler = (e)=>{
+  if(modalIsActive && modalIsActive()) return false
   if(e.key === 'Enter'){
     const text = inputField.value.trim()
     if(text){
@@ -297,6 +309,7 @@ window.addEventListener('keydown', e=>{
   else if(k==='t'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openQuickTopicPicker() } }
   else if(k==='e'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openTopicEditorOverlay() } }
   else if(k==='m'){ if(modeManager.mode===MODES.INPUT){ e.preventDefault(); openSelector('model') } }
+  else if(k===','){ e.preventDefault(); openSettingsOverlay({ onClose:()=>{} }) }
   // Developer shortcut: Ctrl+Shift+S to reseed long test messages
   if(e.shiftKey && k==='s'){ e.preventDefault(); window.seedTestMessages && window.seedTestMessages() }
 })
@@ -508,18 +521,7 @@ if(sendBtn){
 // ---------------- Demo Seeding Utilities (testing partitioning) ----------------
 function seedDemoPairs(){
   const topicId = store.rootTopicId
-  const data = [
-    { model:'gpt', user:`Short question?`, assistant:`Concise answer.` },
-    { model:'claude', user:`This is a moderately long user message intended to span a couple of visual lines depending on the width. It includes some additional explanatory text to ensure wrapping occurs naturally without manual line breaks.`, assistant:`A short reply.` },
-    { model:'gpt', user:`Short`, assistant:`${'Long assistant paragraph '.repeat(40)}` },
-    { model:'gpt', user:`${'Very long user paragraph '.repeat(45)}\n\nSecond paragraph with more words to test paragraph boundary aware wrapping though current implementation is purely greedy.`, assistant:`${'Balanced assistant content '.repeat(25)}` },
-    { model:'claude', user:`Code sample request: please show me how to implement a debounce function in JavaScript.`, assistant:`Here is one implementation:\n\n\`\`\`js\nfunction debounce(fn, wait){\n  let t;\n  return function(...args){\n    clearTimeout(t);\n    t = setTimeout(()=>fn.apply(this,args), wait);\n  };\n}\n\nconst log = debounce(()=>console.log('fire'), 300);\n\`\`\`\n\nAnd some trailing explanation to extend length slightly.` },
-    { model:'gpt', user:`${'SingleVeryLongUnbrokenWord_'.repeat(60)}`, assistant:`Response to extremely long token-like sequence to test wrap of long continuous segments.` },
-    { model:'claude', user:`List:\n- Item 1 detail detail detail detail\n- Item 2 detail detail detail detail\n- Item 3 detail detail detail detail\n- Item 4 detail detail detail detail`, assistant:`Acknowledged. ${'Follow-up clarification sentence. '.repeat(15)}` },
-    { model:'gpt', user:`Mixed length with intermittent line breaks.\n\n${'Filler sentence. '.repeat(30)}\nEnd.`, assistant:`${'Assistant elaboration '.repeat(35)}` },
-    { model:'claude', user:`Edge near part boundary test ${'A '.repeat(400)}`, assistant:`${'B '.repeat(500)}` },
-    { model:'gpt', user:`Final pair to verify navigation end behavior and new reply badge when adding more later. ${'Tail '.repeat(60)}`, assistant:`Initial short answer; you can edit code later.` }
-  ]
+  const data = buildWordCountDataset()
   const starCycle = [0,1,2,3]
   data.forEach((d,i)=>{
     const id = store.addMessagePair({ topicId, model:d.model, userText:d.user, assistantText:d.assistant })
@@ -546,4 +548,41 @@ function cycleAnchorMode(){
   // Re-apply current active part to reflect new positioning
   applyActivePart()
   console.log('Anchor mode ->', next)
+}
+
+// ---------- Word-count dataset generator ----------
+function buildWordCountDataset(){
+  const sizes = []
+  for(let w=100; w<=1000; w+=50){ sizes.push(w) }
+  const loremWords = baseLoremWords()
+  function makeText(wordCount){
+    const words = []
+    while(words.length < wordCount){
+      words.push(loremWords[words.length % loremWords.length])
+    }
+    const textBody = words.join(' ')
+    const chars = textBody.length
+    return `[${wordCount} words | ${chars} chars]\n` + textBody
+  }
+  const dataset = []
+  sizes.forEach(sz=>{
+    for(let i=0;i<2;i++){
+      dataset.push({ model: (sz%2?'gpt':'claude'), user: makeText(sz), assistant: makeText(sz) })
+    }
+  })
+  return dataset
+}
+function baseLoremWords(){
+  return `lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum professional workflow architecture partition anchor context management hierarchical topics adaptive strict token estimation performance optimization deterministic stable id navigation focus management experimental feature toggle granular measurement responsive viewport fraction test dataset generation`.split(/\s+/)
+}
+window.generateWordCountDataset = function(){
+  console.time('generateWordCountDataset')
+  const topicId = store.rootTopicId
+  store.pairs.clear()
+  const data = buildWordCountDataset()
+  data.forEach(d=> store.addMessagePair({ topicId, model:d.model, userText:d.user, assistantText:d.assistant }))
+  renderHistory(store.getAllPairs())
+  activeParts.first(); applyActivePart()
+  console.timeEnd('generateWordCountDataset')
+  console.log('Generated', data.length, 'pairs for sizes 100..1000 (x2 each).')
 }

@@ -21,6 +21,28 @@ export function computeScrollFor(elementOffset, elementHeight, container, mode, 
 
 export function createAnchorManager({ container }){
   if(!container) throw new Error('anchor container missing')
+  let anim = null
+  function cancelAnim(){ if(anim){ cancelAnimationFrame(anim.raf); anim=null } }
+
+  function animateScroll(target){
+    cancelAnim()
+    const start = container.scrollTop
+    const delta = target - start
+    if(Math.abs(delta) < 4){ container.scrollTop = target; return }
+    const duration = 140 // ms
+    const t0 = performance.now()
+    anim = { raf: null }
+    function easeOutQuad(t){ return 1 - (1-t)*(1-t) }
+    function step(now){
+      const elapsed = now - t0
+      const p = Math.min(1, elapsed / duration)
+      const eased = easeOutQuad(p)
+      container.scrollTop = start + delta * eased
+      if(p < 1) anim.raf = requestAnimationFrame(step)
+      else anim = null
+    }
+    anim.raf = requestAnimationFrame(step)
+  }
 
   function applyAnchor(activeId){
     const el = container.querySelector(`[data-part-id="${activeId}"]`)
@@ -33,7 +55,7 @@ export function createAnchorManager({ container }){
     const currentScroll = container.scrollTop
     const elementOffset = elRect.top - paneRect.top + currentScroll
     const targetScroll = computeScrollFor(elementOffset, elRect.height, container, mode, edgeMode)
-    container.scrollTop = targetScroll
+  animateScroll(targetScroll)
   }
 
   return { applyAnchor }

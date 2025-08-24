@@ -28,5 +28,5 @@ export function createFocusTrap(container, getPreferredEl){
 
 // Helper to detect any active modal overlay to suppress global shortcuts.
 export function modalIsActive(){
-  return !!document.querySelector('.topic-editor-backdrop, .topic-picker-backdrop')
+  return !!document.querySelector('.topic-editor-backdrop, .topic-picker-backdrop, #settingsOverlayRoot')
 }

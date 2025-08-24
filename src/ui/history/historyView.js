@@ -22,7 +22,7 @@ export function createHistoryView({ store, onActivePartRendered }){
       const topic = store.topics.get(pair.topicId)
       const ts = formatTimestamp(pair.createdAt)
       const topicPath = topic ? formatTopicPath(store, topic.id) : ''
-      return `<div class="part meta" data-part-id="${pt.id}">
+  return `<div class="part meta" data-part-id="${pt.id}" data-meta="1" tabindex="-1" aria-hidden="true">
         <div class="meta-left">
           <span class="badge include" data-include="${pair.includeInContext}">${pair.includeInContext? 'in':'out'}</span>
           <span class="badge stars">${'★'.repeat(pair.star)}${'☆'.repeat(Math.max(0,3-pair.star))}</span>

@@ -108,6 +108,24 @@ Notes:
 ## 9. Metadata Editing
 Current shortcuts (*, a) are VIEW-only to prevent accidental edits while typing. Potential future: enable when input empty.
 
+## 9a. Settings Overlay (Ctrl+,)
+Consistent, scalable key model for all settings controls.
+| Key | Context | Action | Notes |
+|-----|---------|--------|-------|
+| j | Any focused field | Move focus to next control | Wraps at end |
+| k | Any focused field | Move focus to previous control | Wraps at start |
+| + / = | Focused numeric field | Increment by 0.05 | Uses field step; '=' is unshifted key producing same event on some layouts |
+| Shift+ + | Focused numeric field | Increment by 0.10 | Large step |
+| - / _ | Focused numeric field | Decrement by 0.05 | Clamped (no wrap) |
+| Shift+ - | Focused numeric field | Decrement by 0.10 | Large step |
+| Space | Focused select (categorical) | Cycle forward to next option | Wraps |
+| Shift+Space | (Reserved) | (No action) | Could cycle backward later |
+| Enter | Anywhere in form | Apply (save) without closing | Apply button text changes to 'Saved' and remains until a field changes or overlay closes |
+| Esc | Anywhere in form | Cancel & close (discard unsaved edits) | Reverts to previously saved values |
+| Tab / Shift+Tab | Native | Standard focus traversal | Unmodified |
+
+Apply writes settings immediately; Cancel discards any unsaved adjustments since last Apply.
+
 ## 10. Reserved / Future Keys
 | Keys | Planned Purpose | Status |
 |------|------------------|--------|
@@ -128,6 +146,7 @@ Vim-style navigation (j/k) may be intercepted by browser extensions (e.g. Vimium
 5. Fallbacks (arrows) never overshadow primary Vim-style keys.
 
 ## 13. Change Log
+- v0.8: Settings overlay unified keyboard model (j/k navigation, +/- numeric adjust with large Shift step, Space cycles selects, Enter apply w/out close, Esc cancel, persistent 'Saved' label until dirty).
 - v0.7: Implemented Shift+R anchor cycle; dev reseed helper (Ctrl+Shift+S) for partition testing; forced smaller part size for testing.
 - v0.6: New message behavior (single pending send), 'n' key (first part of last message), Enter blocked during pending, badge logic.
 - v0.5: Settings overlay (Ctrl+,); meta row declared non-focusable; anchoring model (Bottom/Center/Top) + Shift+R cycle; clarified navigation semantics.

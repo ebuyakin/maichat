@@ -88,7 +88,7 @@ New Message Lifecycle
   - [ ] 'G' key: jump to last part of newest reply (NOT implemented yet)
   - [x] Filtered-out reply: badge dim variant + clearing filter on jump (Decision B2) (DOM-based dim test pending due to jsdom limitation)
 Settings & Persistence
-  - [ ] Settings overlay (Ctrl+,) UI
+  - [x] Settings overlay (Ctrl+,) UI (basic: partFraction, anchorMode, edgeAnchoringMode; padding/gaps deferred)
   - [x] Persist settings (module + localStorage) & bootstrap load
   - [x] Resize threshold handling (≥10% viewport height triggers repartition cache invalidation)
 Integration & Metadata

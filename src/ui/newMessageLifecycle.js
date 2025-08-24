@@ -68,7 +68,7 @@ export function createNewMessageLifecycle({ store, activeParts, commandInput, re
   }
 
   function jumpToNewReply(which){
-    if(!lastReplyPairId) return
+    if(!lastReplyPairId) return false
     if(newReplyBadgeState.dim){
       if(activeFilterQuery){
         activeFilterQuery = ''
@@ -77,9 +77,10 @@ export function createNewMessageLifecycle({ store, activeParts, commandInput, re
       }
     }
     const candidates = activeParts.parts.filter(p=> p.pairId===lastReplyPairId && p.role==='assistant')
-    if(!candidates.length) return
+    if(!candidates.length) return false
     const target = which==='last' ? candidates[candidates.length-1] : candidates[0]
     activeParts.setActiveById(target.id); applyActivePart(); setNewReplyBadge({ visible:false, dim:false, targetPairId:null })
+    return true
   }
 
   function updateNewReplyBadgeVisibility(){

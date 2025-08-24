@@ -59,6 +59,14 @@ body { min-height:100vh; overflow:hidden; }
 .overlay-panel li dim { color:#777; }
 .overlay-panel footer { border-top:1px solid #222; padding:4px 8px; display:flex; gap:4px; }
 .overlay-panel input[type=text] { flex:1; background:#0a0a0a; border:1px solid #333; color:#eee; padding:4px 6px; font:var(--size-base)/1.4 var(--font-ui); }
+.settings-panel .settings-body { padding:10px 14px 14px; display:flex; flex-direction:column; gap:14px; }
+.settings-panel form { display:flex; flex-direction:column; gap:14px; }
+.settings-panel label { display:flex; flex-direction:column; gap:4px; font-size:12px; letter-spacing:.3px; color:var(--text-dim); }
+.settings-panel input[type=number], .settings-panel select { background:#0a0a0a; border:1px solid #333; color:var(--text); padding:6px 8px; font:var(--size-base)/1.4 var(--font-ui); border-radius:4px; }
+.settings-panel input[type=number]:focus, .settings-panel select:focus { border-color:var(--accent); }
+.settings-panel .buttons { display:flex; justify-content:flex-end; gap:10px; }
+.settings-panel button { background:#1a1a1a; border:1px solid #333; color:var(--text); padding:6px 14px; border-radius:4px; cursor:pointer; font:var(--size-base); }
+.settings-panel button:hover { border-color:#444; }
 .pending-meta { font:11px monospace; color:#6fa8ff; margin-left:8px; align-self:center; }
 
 #topBar { position:fixed; top:0; left:0; right:0; z-index:10; background:var(--bg-alt); padding:8px var(--gutter); display:flex; gap:8px; align-items:center; min-height:var(--topbar-h); border-bottom:1px solid var(--border); }
