@@ -5,12 +5,18 @@ import { parse } from './filter/parser.js'
 import { evaluate } from './filter/evaluator.js'
 import { createModeManager, MODES } from './ui/modes.js'
 import { createKeyRouter } from './ui/keyRouter.js'
-import { buildParts, ActivePartController, scrollActiveIntoView } from './ui/parts.js'
+import { buildParts, ActivePartController } from './ui/parts.js'
+import { createHistoryView } from './ui/history/historyView.js'
+import { createAnchorManager } from './ui/anchorManager.js'
+import { getSettings, subscribeSettings, saveSettings } from './settings/index.js'
+import { invalidatePartitionCacheOnResize } from './partition/partitioner.js'
 import { createIndexedDbAdapter } from './store/indexedDbAdapter.js'
 import { attachContentPersistence } from './persistence/contentPersistence.js'
 import { createTopicPicker } from './ui/topicPicker.js'
 import { openTopicEditor } from './ui/topicEditor.js'
 import { modalIsActive } from './ui/focusTrap.js'
+import { escapeHtml } from './ui/util.js'
+import { createNewMessageLifecycle } from './ui/newMessageLifecycle.js'
 
 // Mode management
 const modeManager = createModeManager()
@@ -75,6 +81,18 @@ function layoutHistoryPane(){
   histPane.style.bottom = botH + 'px'
 }
 window.addEventListener('resize', layoutHistoryPane)
+// Partition resize threshold handling (≥10% viewport height change)
+let __lastViewportH = window.innerHeight
+window.addEventListener('resize', ()=>{
+  const h = window.innerHeight
+  if(!h || !__lastViewportH) { __lastViewportH = h; return }
+  const delta = Math.abs(h - __lastViewportH) / __lastViewportH
+  if(delta >= 0.10){
+    __lastViewportH = h
+    invalidatePartitionCacheOnResize()
+    renderHistory(store.getAllPairs())
+  }
+})
 
 // Debug HUD container
 const hudEl = document.createElement('div')
@@ -87,68 +105,51 @@ attachIndexes(store)
 const persistence = attachContentPersistence(store, createIndexedDbAdapter())
 let currentTopicId = store.rootTopicId
 const activeParts = new ActivePartController()
+const historyPaneEl = document.getElementById('historyPane')
+const anchorManager = createAnchorManager({ container: historyPaneEl })
+const historyView = createHistoryView({ store, onActivePartRendered: ()=> applyActivePart() })
+// Preload settings (future partition logic will use them)
+getSettings()
+subscribeSettings(()=>{ renderHistory(store.getAllPairs()) })
 let overlay = null // { type: 'topic'|'model', list:[], activeIndex:0 }
 let pendingMessageMeta = { topicId: null, model: 'gpt' }
+// New message lifecycle module
+const lifecycle = createNewMessageLifecycle({
+  store,
+  activeParts,
+  commandInput: null, // assigned after element retrieval
+  renderHistory: (pairs)=> renderHistory(pairs),
+  applyActivePart: ()=> applyActivePart()
+})
 
 function renderTopics(){ /* hidden for now */ }
 
 function renderHistory(pairs){
-  // Always render in chronological order (ascending createdAt) for consistent navigation & filtering tests
   pairs = [...pairs].sort((a,b)=> a.createdAt - b.createdAt)
-  const hist = document.getElementById('history')
   const parts = buildParts(pairs)
   activeParts.setParts(parts)
-  const byPair = {}
-  for(const part of parts){ (byPair[part.pairId] ||= []).push(part) }
-  hist.innerHTML = Object.entries(byPair).map(([pairId, parts])=>{
-    return `<div class="pair" data-pair-id="${pairId}">${parts.map(pt=> renderPart(pt)).join('')}</div>`
-  }).join('')
-  applyActivePart()
-}
-
-function renderPart(pt){
-  if(pt.role === 'meta'){
-    const pair = store.pairs.get(pt.pairId)
-    const topic = store.topics.get(pair.topicId)
-  const ts = formatTimestamp(pair.createdAt)
-  const topicPath = topic ? formatTopicPath(topic.id) : ''
-    return `<div class="part meta" data-part-id="${pt.id}">
-      <div class="meta-left">
-        <span class="badge include" data-include="${pair.includeInContext}">${pair.includeInContext? 'in':'out'}</span>
-        <span class="badge stars">${'★'.repeat(pair.star)}${'☆'.repeat(Math.max(0,3-pair.star))}</span>
-	<span class="badge topic" title="${topic?escapeHtml(topicPath):''}">${topic?escapeHtml(middleTruncate(topicPath, 72)):''}</span>
-      </div>
-      <div class="meta-right">
-        <span class="badge model">${pair.model}</span>
-        <span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
-      </div>
-    </div>`
-  }
-  return `<div class="part ${pt.role}" data-part-id="${pt.id}">${escapeHtml(pt.text)}</div>`
+  historyView.render(parts)
+  lifecycle.updateNewReplyBadgeVisibility()
 }
 
 function applyActivePart(){
   document.querySelectorAll('.part.active').forEach(el=>el.classList.remove('active'))
   const act = activeParts.active(); if(!act) return
   const el = document.querySelector(`[data-part-id="${act.id}"]`)
-  if(el){ el.classList.add('active'); scrollActiveIntoView(document.getElementById('historyPane'), act.id) }
+  if(el){ el.classList.add('active'); anchorManager.applyAnchor(act.id) }
 }
 
-function escapeHtml(s){ return s.replace(/[&<>]/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) }
+// escapeHtml centralized in ui/util.js
 
 function renderStatus(){ const modeEl = document.getElementById('modeIndicator'); if(modeEl) modeEl.textContent = `[${modeManager.mode.toUpperCase()}]` }
 
+
 async function bootstrap(){
   await persistence.init()
+  // Always reduce part size for current partition testing session (idempotent)
+  saveSettings({ partFraction: 0.30 })
   if(store.getAllPairs().length === 0){
-    const topicId = store.rootTopicId
-    const seedStars = [0,1,2,3,0]
-    for(let i=0;i<5;i++){
-      const id = store.addMessagePair({ topicId, model: i%2? 'gpt':'claude', userText:`User ${i}`, assistantText:`Assistant reply ${i}` })
-      const pair = store.pairs.get(id)
-      pair.star = seedStars[i]
-      if(i===4) pair.includeInContext = false
-    }
+    seedDemoPairs()
   }
   renderHistory(store.getAllPairs())
   renderTopics()
@@ -183,6 +184,8 @@ const viewHandler = (e)=>{
   if(e.key === 'k' || e.key === 'ArrowUp'){ activeParts.prev(); applyActivePart(); return true }
   if(e.key === 'g'){ activeParts.first(); applyActivePart(); return true }
   if(e.key === 'G'){ activeParts.last(); applyActivePart(); return true }
+  if(e.key === 'R'){ cycleAnchorMode(); return true } // Shift+R cycles reading position
+  if(e.key === 'n'){ lifecycle.jumpToNewReply('first'); return true }
   if(e.key === '*'){ cycleStar(); return true }
   if(e.key === 'a'){ toggleInclude(); return true }
   if(e.key === '1'){ setStarRating(1); return true }
@@ -193,6 +196,7 @@ const viewHandler = (e)=>{
 const commandHandler = (e)=>{
   if(e.key === 'Enter'){
     const q = commandInput.value.trim()
+  lifecycle.setFilterQuery(q)
     if(!q){ commandErrEl.textContent=''; renderHistory(store.getAllPairs()); activeParts.last(); applyActivePart(); modeManager.set(MODES.VIEW); return true }
     try {
       const ast = parse(q)
@@ -215,7 +219,20 @@ const inputHandler = (e)=>{
     if(text){
   const topicId = pendingMessageMeta.topicId || currentTopicId
   const model = pendingMessageMeta.model || 'gpt'
-  store.addMessagePair({ topicId, model, userText: text, assistantText: '(placeholder response)' })
+  if(lifecycle.isPending()) return true
+  lifecycle.beginSend()
+  const id = store.addMessagePair({ topicId, model, userText: text, assistantText: '(placeholder response)' })
+  // Simulate async assistant reply after short delay (placeholder)
+  setTimeout(()=>{
+    const pair = store.pairs.get(id)
+    if(pair){
+      pair.assistantText = 'Assistant reply to: '+text
+      store.updatePair(id, { assistantText: pair.assistantText })
+  lifecycle.completeSend()
+      renderHistory(store.getAllPairs())
+  lifecycle.handleNewAssistantReply(id)
+    }
+  }, 400) // simulated latency
       inputField.value=''
       renderHistory(store.getAllPairs())
       activeParts.last(); applyActivePart()
@@ -280,6 +297,8 @@ window.addEventListener('keydown', e=>{
   else if(k==='t'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openQuickTopicPicker() } }
   else if(k==='e'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openTopicEditorOverlay() } }
   else if(k==='m'){ if(modeManager.mode===MODES.INPUT){ e.preventDefault(); openSelector('model') } }
+  // Developer shortcut: Ctrl+Shift+S to reseed long test messages
+  if(e.shiftKey && k==='s'){ e.preventDefault(); window.seedTestMessages && window.seedTestMessages() }
 })
 
 // Overlay selectors
@@ -450,7 +469,13 @@ function middleTruncate(str, max){
 }
 function updateSendDisabled(){
   if(!sendBtn) return
-  sendBtn.disabled = inputField.value.trim().length === 0
+  const empty = inputField.value.trim().length === 0
+  sendBtn.disabled = empty || lifecycle.isPending()
+  if(lifecycle.isPending()){
+    sendBtn.textContent = 'AI is thinking'
+  } else {
+    sendBtn.textContent = 'Send'
+  }
 }
 if(sendBtn){
   sendBtn.addEventListener('click', ()=>{
@@ -458,11 +483,67 @@ if(sendBtn){
     const text = inputField.value.trim(); if(!text) return
     const topicId = pendingMessageMeta.topicId || currentTopicId
     const model = pendingMessageMeta.model || 'gpt'
-    store.addMessagePair({ topicId, model, userText: text, assistantText: '(placeholder response)' })
-    inputField.value=''; renderHistory(store.getAllPairs()); activeParts.last(); applyActivePart(); updateSendDisabled()
+  if(lifecycle.isPending()) return
+  lifecycle.beginSend()
+    const id = store.addMessagePair({ topicId, model, userText: text, assistantText: '(placeholder response)' })
+    setTimeout(()=>{
+      const pair = store.pairs.get(id)
+      if(pair){
+        pair.assistantText = 'Assistant reply to: '+text
+        store.updatePair(id, { assistantText: pair.assistantText })
+  lifecycle.completeSend()
+        renderHistory(store.getAllPairs())
+  lifecycle.handleNewAssistantReply(id)
+      }
+      updateSendDisabled()
+    }, 400)
+  inputField.value=''; renderHistory(store.getAllPairs()); activeParts.last(); applyActivePart(); updateSendDisabled()
   })
   inputField.addEventListener('input', updateSendDisabled)
   renderPendingMeta(); updateSendDisabled()
 }
 
 // End main.js
+
+// ---------------- Demo Seeding Utilities (testing partitioning) ----------------
+function seedDemoPairs(){
+  const topicId = store.rootTopicId
+  const data = [
+    { model:'gpt', user:`Short question?`, assistant:`Concise answer.` },
+    { model:'claude', user:`This is a moderately long user message intended to span a couple of visual lines depending on the width. It includes some additional explanatory text to ensure wrapping occurs naturally without manual line breaks.`, assistant:`A short reply.` },
+    { model:'gpt', user:`Short`, assistant:`${'Long assistant paragraph '.repeat(40)}` },
+    { model:'gpt', user:`${'Very long user paragraph '.repeat(45)}\n\nSecond paragraph with more words to test paragraph boundary aware wrapping though current implementation is purely greedy.`, assistant:`${'Balanced assistant content '.repeat(25)}` },
+    { model:'claude', user:`Code sample request: please show me how to implement a debounce function in JavaScript.`, assistant:`Here is one implementation:\n\n\`\`\`js\nfunction debounce(fn, wait){\n  let t;\n  return function(...args){\n    clearTimeout(t);\n    t = setTimeout(()=>fn.apply(this,args), wait);\n  };\n}\n\nconst log = debounce(()=>console.log('fire'), 300);\n\`\`\`\n\nAnd some trailing explanation to extend length slightly.` },
+    { model:'gpt', user:`${'SingleVeryLongUnbrokenWord_'.repeat(60)}`, assistant:`Response to extremely long token-like sequence to test wrap of long continuous segments.` },
+    { model:'claude', user:`List:\n- Item 1 detail detail detail detail\n- Item 2 detail detail detail detail\n- Item 3 detail detail detail detail\n- Item 4 detail detail detail detail`, assistant:`Acknowledged. ${'Follow-up clarification sentence. '.repeat(15)}` },
+    { model:'gpt', user:`Mixed length with intermittent line breaks.\n\n${'Filler sentence. '.repeat(30)}\nEnd.`, assistant:`${'Assistant elaboration '.repeat(35)}` },
+    { model:'claude', user:`Edge near part boundary test ${'A '.repeat(400)}`, assistant:`${'B '.repeat(500)}` },
+    { model:'gpt', user:`Final pair to verify navigation end behavior and new reply badge when adding more later. ${'Tail '.repeat(60)}`, assistant:`Initial short answer; you can edit code later.` }
+  ]
+  const starCycle = [0,1,2,3]
+  data.forEach((d,i)=>{
+    const id = store.addMessagePair({ topicId, model:d.model, userText:d.user, assistantText:d.assistant })
+    const pair = store.pairs.get(id)
+    pair.star = starCycle[i % starCycle.length]
+    if(i===2) pair.includeInContext = false // one excluded example
+  })
+}
+window.seedTestMessages = function(){
+  // Clear existing pairs then reseed
+  store.pairs.clear()
+  seedDemoPairs()
+  renderHistory(store.getAllPairs())
+  activeParts.first(); applyActivePart()
+  console.log('Test messages reseeded.')
+}
+
+function cycleAnchorMode(){
+  const settings = getSettings()
+  const order = ['bottom','center','top']
+  const idx = order.indexOf(settings.anchorMode || 'bottom')
+  const next = order[(idx+1)%order.length]
+  saveSettings({ anchorMode: next })
+  // Re-apply current active part to reflect new positioning
+  applyActivePart()
+  console.log('Anchor mode ->', next)
+}

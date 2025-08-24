@@ -90,17 +90,14 @@ body { min-height:100vh; overflow:hidden; }
 .part.meta .meta-left { display:flex; gap:10px; align-items:center; }
 .part.meta .meta-right { display:flex; gap:10px; align-items:center; margin-left:auto; }
 .part.active {
-  outline:none;
-  border:1px solid var(--focus-ring);
-  /* Add internal horizontal padding without shifting text alignment: use negative margins */
-  padding-left:8px; /* space between border and text */
-  padding-right:8px;
-  margin-left:-8px;
-  margin-right:-8px;
+  /* Use box-shadow ring so width/line wrapping never changes on focus */
+  box-shadow:0 0 0 1px var(--focus-ring);
   border-radius:3px;
-  background:rgba(40,80,120,0.12); /* subtle contrast, can adjust */
+  background:rgba(40,80,120,0.12);
 }
 .badge { font-size:11px; color:var(--text); font-weight:400; }
+.badge.new-reply { background:#1e3a5a; padding:2px 8px; border:1px solid #2c4d73; border-radius:14px; cursor:pointer; }
+.badge.new-reply.dim { opacity:.5; }
 .badge.topic { max-width:560px; overflow:hidden; text-overflow:ellipsis; }
 .badge.timestamp { color:#aaa; font-weight:400; }
 

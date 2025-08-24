@@ -24,7 +24,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection) |
 | Ctrl+M | Open model selector (INPUT only) | Overlay |
 | Ctrl+E | Open topic editor | Overlay (Edit) |
-| Ctrl+, | Open settings overlay | Adjust rare preferences (part size, anchor, padding, gaps, zone heights) |
+| Ctrl+, | Open settings overlay | Adjust rare preferences (part size, anchor, padding, gaps, zone heights) (UI TODO) |
 
 ## 3. VIEW Mode Keys
 | Key | Action | Remarks |
@@ -35,7 +35,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | ArrowUp | Previous part | Secondary fallback |
 | g | Jump to first part | Single press |
 | G | Jump to last part | Shift+g |
-| Shift+R | Cycle reading position (Bottom → Center → Top → Bottom) | Optional convenience |
+| Shift+R | Cycle reading position (Bottom → Center → Top → Bottom) | Implemented anchorMode cycle |
 | n | Jump to FIRST part of last message | Clears new-message badge; re-anchors even if already there |
 | * | Cycle star (0→1→2→3→0) | Affects active pair |
 | 1 / 2 / 3 | Set star to 1 / 2 / 3 | Direct rating |
@@ -128,6 +128,7 @@ Vim-style navigation (j/k) may be intercepted by browser extensions (e.g. Vimium
 5. Fallbacks (arrows) never overshadow primary Vim-style keys.
 
 ## 13. Change Log
+- v0.7: Implemented Shift+R anchor cycle; dev reseed helper (Ctrl+Shift+S) for partition testing; forced smaller part size for testing.
 - v0.6: New message behavior (single pending send), 'n' key (first part of last message), Enter blocked during pending, badge logic.
 - v0.5: Settings overlay (Ctrl+,); meta row declared non-focusable; anchoring model (Bottom/Center/Top) + Shift+R cycle; clarified navigation semantics.
 - v0.4: Hidden root topic; hierarchical quick picker; Topic Editor adds top-level creation (N) and updated help; path-based search & display.
