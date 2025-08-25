@@ -2,18 +2,45 @@
 // Currently performs full re-render; future optimization may diff or virtualize.
 
 import { escapeHtml } from '../util.js'
+import { getSettings } from '../../settings/index.js'
 
 export function createHistoryView({ store, onActivePartRendered }){
   const container = document.getElementById('history')
   if(!container) throw new Error('history container missing')
 
   function render(parts){
-    const byPair = {}
-    for(const part of parts){ (byPair[part.pairId] ||= []).push(part) }
-    container.innerHTML = Object.entries(byPair).map(([pairId, parts])=>{
-      return `<div class="pair" data-pair-id="${pairId}">${parts.map(pt=> partHtml(pt)).join('')}</div>`
-    }).join('')
+    // Build flat token list with explicit gap nodes between parts replacing margin model.
+    const tokens = []
+    for(let i=0;i<parts.length;i++){
+      const cur = parts[i]
+      if(i>0){
+        const prev = parts[i-1]
+        const gapType = classifyGap(prev, cur)
+        if(gapType){
+          const h = gapHeightFor(gapType)
+          tokens.push(`<div class="gap gap-${gapType}" data-gap-type="${gapType}" style="height:${h}px"></div>`)
+        }
+      }
+      tokens.push(partHtml(cur))
+    }
+    container.innerHTML = tokens.join('')
     if(onActivePartRendered) onActivePartRendered()
+  }
+
+  function gapHeightFor(type){
+    const s = getSettings()
+    if(type==='between') return s.gapBetweenPx||0
+    if(type==='meta') return s.gapMetaPx||0
+    if(type==='intra') return s.gapIntraPx||0
+    return 0
+  }
+
+  function classifyGap(prev, cur){
+    if(prev.pairId !== cur.pairId) return 'between'
+    if(prev.role==='user' && cur.role==='meta') return 'meta'
+    if(prev.role==='meta' && cur.role==='assistant') return 'meta'
+    if(prev.role===cur.role && (cur.role==='user'||cur.role==='assistant')) return 'intra'
+    return null
   }
 
   function partHtml(pt){
@@ -22,7 +49,7 @@ export function createHistoryView({ store, onActivePartRendered }){
       const topic = store.topics.get(pair.topicId)
       const ts = formatTimestamp(pair.createdAt)
       const topicPath = topic ? formatTopicPath(store, topic.id) : ''
-  return `<div class="part meta" data-part-id="${pt.id}" data-meta="1" tabindex="-1" aria-hidden="true">
+  return `<div class="part meta" data-part-id="${pt.id}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
         <div class="meta-left">
           <span class="badge include" data-include="${pair.includeInContext}">${pair.includeInContext? 'in':'out'}</span>
           <span class="badge stars">${'★'.repeat(pair.star)}${'☆'.repeat(Math.max(0,3-pair.star))}</span>
@@ -32,9 +59,9 @@ export function createHistoryView({ store, onActivePartRendered }){
           <span class="badge model">${pair.model}</span>
           <span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
         </div>
-      </div>`
+      </div></div>`
     }
-    return `<div class="part ${pt.role}" data-part-id="${pt.id}">${escapeHtml(pt.text)}</div>`
+    return `<div class="part ${pt.role}" data-part-id="${pt.id}"><div class="part-inner">${escapeHtml(pt.text)}</div></div>`
   }
 
   return { render }

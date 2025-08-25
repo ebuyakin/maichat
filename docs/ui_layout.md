@@ -98,6 +98,14 @@ Active Part Styling:
 * 1px border using `--focus-ring`, subtle tinted background `rgba(40,80,120,0.12)`.
 * Internal horizontal padding (default 8px) adjustable (Settings overlay; apply to commit, no live preview).
 * Gap between parts (default 6px) adjustable.
+* Uniform part padding (all sides) adjustable (Settings overlay; implemented via inner wrapper `.part-inner` so left text gutter remains fixed).
+* Granular vertical gaps adjustable (Settings overlay):
+  - Outer Gap (top/bottom of scroll content) – `gapOuterPx`
+  - Meta Gap (user→meta & meta→assistant) – `gapMetaPx`
+  - Intra-role Gap (user→user, assistant→assistant) – `gapIntraPx`
+  - Between Messages Gap (pair→pair) – `gapBetweenPx`
+* Settings overlay (Ctrl+,) manages rare adjustments (fraction, reading position, padding, gap, zone heights) applied only after selecting "Apply" (no live preview).
+* Settings overlay (Ctrl+,) manages rare adjustments (fraction, reading position, uniform part padding, four gap families, zone heights) applied only after selecting "Apply" (no live preview). Spacing updates inject a runtime `<style>` block; anchor for active part is re-applied post-update to maintain reading position.
 * Meta row visible but NEVER focusable (excluded from navigation sequence).
 
 Rules (normative):

@@ -9,9 +9,18 @@ export function partitionMessage({ text, role, pairId }){
   if(!text) return []
   const settings = getSettings()
   const win = (typeof window !== 'undefined') ? window : { innerHeight:800, document:{ documentElement:{}, getElementById:()=>null } }
-  const viewportH = win.innerHeight || 800
+  // Prefer actual historyPane height (excludes outer gaps which are structural) so parts always fit.
+  let paneH = 0
+  try {
+    if(typeof document !== 'undefined'){
+      const pane = document.getElementById('historyPane')
+      if(pane) paneH = pane.clientHeight
+    }
+  } catch {}
+  const viewportH = paneH || win.innerHeight || 800
   const lineHeightPx = getLineHeight()
-  const maxLines = Math.max(1, Math.floor((viewportH * settings.partFraction) / lineHeightPx))
+  const usableH = Math.max(1, viewportH) // outer gaps already excluded by pane sizing
+  const maxLines = Math.max(1, Math.floor((usableH * settings.partFraction) / lineHeightPx))
 
   const containerWidth = getHistoryContentWidth()
   const key = pairId+':'+role

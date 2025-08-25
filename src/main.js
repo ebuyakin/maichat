@@ -8,6 +8,7 @@ import { createKeyRouter } from './ui/keyRouter.js'
 import { buildParts, ActivePartController } from './ui/parts.js'
 import { createHistoryView } from './ui/history/historyView.js'
 import { createAnchorManager } from './ui/anchorManager.js'
+import { createScrollController } from './ui/scrollControllerV3.js'
 import { getSettings, subscribeSettings, saveSettings } from './settings/index.js'
 import { invalidatePartitionCacheOnResize } from './partition/partitioner.js'
 import { createIndexedDbAdapter } from './store/indexedDbAdapter.js'
@@ -75,9 +76,9 @@ function layoutHistoryPane(){
   const inputBar = document.getElementById('inputBar')
   const histPane = document.getElementById('historyPane')
   if(!topBar || !inputBar || !histPane) return
+  // Outer gap now implemented as internal padding; pane spans bars directly
   const topH = topBar.getBoundingClientRect().height
   const botH = inputBar.getBoundingClientRect().height
-  // Apply via inline style so CSS remains simple
   histPane.style.top = topH + 'px'
   histPane.style.bottom = botH + 'px'
 }
@@ -107,11 +108,12 @@ const persistence = attachContentPersistence(store, createIndexedDbAdapter())
 let currentTopicId = store.rootTopicId
 const activeParts = new ActivePartController()
 const historyPaneEl = document.getElementById('historyPane')
-const anchorManager = createAnchorManager({ container: historyPaneEl })
+const anchorManager = null // legacy removed
+const scrollController = createScrollController({ container: historyPaneEl })
 const historyView = createHistoryView({ store, onActivePartRendered: ()=> applyActivePart() })
 // Preload settings (future partition logic will use them)
 getSettings()
-subscribeSettings(()=>{ renderHistory(store.getAllPairs()) })
+subscribeSettings((s)=>{ applySpacingStyles(s); layoutHistoryPane(); renderHistory(store.getAllPairs()) })
 let overlay = null // { type: 'topic'|'model', list:[], activeIndex:0 }
 let pendingMessageMeta = { topicId: null, model: 'gpt' }
 // New message lifecycle module
@@ -130,6 +132,8 @@ function renderHistory(pairs){
   const parts = buildParts(pairs)
   activeParts.setParts(parts)
   historyView.render(parts)
+  // After DOM update we need to re-measure for scroll controller
+  requestAnimationFrame(()=>{ scrollController.remeasure(); applyActivePart() })
   lifecycle.updateNewReplyBadgeVisibility()
 }
 
@@ -137,7 +141,41 @@ function applyActivePart(){
   document.querySelectorAll('.part.active').forEach(el=>el.classList.remove('active'))
   const act = activeParts.active(); if(!act) return
   const el = document.querySelector(`[data-part-id="${act.id}"]`)
-  if(el){ el.classList.add('active'); anchorManager.applyAnchor(act.id) }
+  if(el){ el.classList.add('active'); scrollController.apply(activeParts.activeIndex, true) }
+}
+
+// ---------- Spacing Runtime Styles ----------
+function applySpacingStyles(settings){
+  if(!settings) return
+  const { partPadding=4, gapOuterPx=6, gapMetaPx=6, gapIntraPx=6, gapBetweenPx=10 } = settings
+  let styleEl = document.getElementById('runtimeSpacing')
+  if(!styleEl){ styleEl = document.createElement('style'); styleEl.id='runtimeSpacing'; document.head.appendChild(styleEl) }
+  styleEl.textContent = `#historyPane{padding-top:${gapOuterPx}px; padding-bottom:${gapOuterPx}px;}
+  .history{gap:0;}
+  /* Gaps now explicit elements */
+  .gap{width:100%; flex:none;}
+  .gap-between{height:${gapBetweenPx}px;}
+  .gap-meta{height:${gapMetaPx}px;}
+  .gap-intra{height:${gapIntraPx}px;}
+  /* Base part reset */
+  .part{margin:0;box-shadow:none;background:transparent;}
+  /* Uniform padding only for user/assistant; meta intentionally minimal */
+  .part.user .part-inner, .part.assistant .part-inner{padding:${partPadding}px;}
+  .part.meta .part-inner{padding:0; display:flex; flex-direction:row; align-items:center; gap:0; min-height:1.6em;}
+  .part.meta{white-space:nowrap;}
+  .part.meta .meta-left{display:flex; gap:10px; align-items:center; white-space:nowrap;}
+  .part.meta .meta-right{display:flex; gap:10px; align-items:center; margin-left:auto; white-space:nowrap;}
+  /* Prevent wrapping inside badges */
+  .part.meta .badge{white-space:nowrap;}
+  /* Backgrounds */
+  .part.user .part-inner{background:#0d2233; border-radius:3px; position:relative;}
+  .part.assistant .part-inner{background:transparent;}
+  .part.meta .part-inner{background:transparent; position:relative;}
+  .part.assistant .part-inner, .part.meta .part-inner{position:relative;}
+  /* Active state: inset highlight border (1px) to avoid occasional top-line clipping due to scroll alignment / container inset shadow */
+  .part.active .part-inner::after{content:''; position:absolute; top:1px; left:1px; right:1px; bottom:1px; border:1px solid var(--focus-ring); border-radius:3px; pointer-events:none;}
+  .part.active.assistant .part-inner{background:rgba(40,80,120,0.10);} 
+  .part.active{box-shadow:none; background:transparent;}`
 }
 
 // escapeHtml centralized in ui/util.js
@@ -149,6 +187,7 @@ async function bootstrap(){
   await persistence.init()
   // Always reduce part size for current partition testing session (idempotent)
   saveSettings({ partFraction: 0.30 })
+  applySpacingStyles(getSettings())
   if(store.getAllPairs().length === 0){
     seedDemoPairs()
   }
@@ -192,7 +231,7 @@ const viewHandler = (e)=>{
       const jumped = lifecycle.jumpToNewReply('last')
       if(jumped) return true
     }
-    activeParts.last(); applyActivePart(); return true
+  activeParts.last(); applyActivePart(); return true
   }
   if(e.key === 'R'){ cycleAnchorMode(); return true } // Shift+R cycles reading position
   if(e.key === 'n'){ lifecycle.jumpToNewReply('first'); return true }
@@ -290,6 +329,7 @@ keyRouter.attach()
 window.__modeManager = modeManager
 window.__keyRouter = keyRouter
 window.__store = store
+window.__setActiveIndex = function(i){ activeParts.activeIndex = i; applyActivePart() }
 
 // Click activation
 document.addEventListener('click', e=>{
@@ -446,7 +486,32 @@ function updateHud(){
   const idx = act? `${activeParts.parts.indexOf(act)+1}/${activeParts.parts.length}` : '0/0'
   const focusEl = document.activeElement
   const focusDesc = focusEl ? `${focusEl.tagName.toLowerCase()}${focusEl.id?('#'+focusEl.id):''}` : 'none'
-  hudEl.textContent = `mode: ${modeManager.mode}  lastKey:${window.__lastKey||'-'}\nactive: ${idx}\nfocus: ${focusDesc}\n${pairInfo}`
+  const dbg = scrollController.debugInfo && scrollController.debugInfo()
+  const lines = []
+  lines.push(`mode: ${modeManager.mode}`)
+  lines.push(`lastKey: ${window.__lastKey||'-'}`)
+  if(dbg){
+    lines.push(`rp: ${dbg.mode}`)
+    lines.push(`first: ${dbg.currentFirst}`)
+    lines.push(`activeIndex: ${dbg.activeIndex}`)
+    lines.push(`visCount(expected): ${dbg.shouldVisibleCount}`)
+    lines.push(`firstTopPx: ${dbg.firstTopPx}`)
+    if(dbg.visualGap != null) lines.push(`visualGap: ${dbg.visualGap}`)
+    if(dbg.mode === 'top'){
+      // compute target vs actual if possible
+      if(dbg.activeIndex === dbg.currentFirst){
+        // expected scrollTop = first element offsetTop - paddingTop; we approximate via firstTopPx - paddingTop already visualGap
+        lines.push(`scrollTop: ${Math.round(dbg.scrollTop)}`)
+      }
+    }
+    lines.push(`visibleIndices: [${dbg.visibleIndices}]`)
+    lines.push(`tops: [${dbg.tops}]`)
+    lines.push(`heights: [${dbg.heights}]`)
+  }
+  lines.push(`active: ${idx}`)
+  lines.push(`focus: ${focusDesc}`)
+  lines.push(pairInfo)
+  hudEl.textContent = lines.join('\n')
   requestAnimationFrame(updateHud)
 }
 requestAnimationFrame(updateHud)

@@ -54,7 +54,7 @@ export function createAnchorManager({ container }){
     const elRect = el.getBoundingClientRect()
     const currentScroll = container.scrollTop
     const elementOffset = elRect.top - paneRect.top + currentScroll
-    const targetScroll = computeScrollFor(elementOffset, elRect.height, container, mode, edgeMode)
+  const targetScroll = computeScrollFor(elementOffset, elRect.height, container, mode, edgeMode)
   animateScroll(targetScroll)
   }
 

@@ -15,19 +15,43 @@ export function openSettingsOverlay({ onClose }){
       <header>Settings</header>
       <div class="settings-body">
         <form id="settingsForm" autocomplete="off">
-          <label>Part Fraction
-            <input name="partFraction" type="number" step="0.05" min="0.10" max="0.95" value="${existing.partFraction}" />
-          </label>
-          <label>Anchor Mode
-            <select name="anchorMode">
-              ${['bottom','center','top'].map(m=>`<option value="${m}" ${m===existing.anchorMode?'selected':''}>${m}</option>`).join('')}
-            </select>
-          </label>
-          <label>Edge Anchoring Mode
-            <select name="edgeAnchoringMode">
-              ${['adaptive','strict'].map(m=>`<option value="${m}" ${m===existing.edgeAnchoringMode?'selected':''}>${m}</option>`).join('')}
-            </select>
-          </label>
+          <div class="settings-columns">
+            <div class="col col-main">
+              <label>Part Fraction
+                <input name="partFraction" type="number" step="0.05" min="0.10" max="0.95" value="${existing.partFraction}" />
+              </label>
+              <label>Anchor Mode
+                <select name="anchorMode">
+                  ${['bottom','center','top'].map(m=>`<option value="${m}" ${m===existing.anchorMode?'selected':''}>${m}</option>`).join('')}
+                </select>
+              </label>
+              <label>Edge Anchoring Mode
+                <select name="edgeAnchoringMode">
+                  ${['adaptive','strict'].map(m=>`<option value="${m}" ${m===existing.edgeAnchoringMode?'selected':''}>${m}</option>`).join('')}
+                </select>
+              </label>
+            </div>
+            <div class="col col-spacing">
+              <fieldset class="spacing-fieldset">
+                <legend>Spacing</legend>
+                <label>Part Padding (px)
+                  <input name="partPadding" type="number" step="1" min="0" max="48" value="${existing.partPadding}" />
+                </label>
+                <label>Edge Gap (px)
+                  <input name="gapOuterPx" type="number" step="1" min="0" max="48" value="${existing.gapOuterPx}" />
+                </label>
+                <label>Meta Gap (px)
+                  <input name="gapMetaPx" type="number" step="1" min="0" max="48" value="${existing.gapMetaPx}" />
+                </label>
+                <label>Intra-role Gap (px)
+                  <input name="gapIntraPx" type="number" step="1" min="0" max="48" value="${existing.gapIntraPx}" />
+                </label>
+                <label>Between Messages Gap (px)
+                  <input name="gapBetweenPx" type="number" step="1" min="0" max="48" value="${existing.gapBetweenPx}" />
+                </label>
+              </fieldset>
+            </div>
+          </div>
           <div class="buttons">
             <button type="button" data-action="cancel">Cancel</button>
             <button type="button" data-action="apply">Apply</button>
@@ -52,12 +76,18 @@ export function openSettingsOverlay({ onClose }){
   function applyChanges(){
     const fd = new FormData(form)
     const partFraction = clampPF(parseFloat(fd.get('partFraction')))
+    const partPadding = clampRange(parseInt(fd.get('partPadding')),0,48)
+    const gapOuterPx = clampRange(parseInt(fd.get('gapOuterPx')),0,48)
+    const gapMetaPx = clampRange(parseInt(fd.get('gapMetaPx')),0,48)
+    const gapIntraPx = clampRange(parseInt(fd.get('gapIntraPx')),0,48)
+    const gapBetweenPx = clampRange(parseInt(fd.get('gapBetweenPx')),0,48)
     const anchorMode = fd.get('anchorMode')
     const edgeAnchoringMode = fd.get('edgeAnchoringMode')
-    saveSettings({ partFraction, anchorMode, edgeAnchoringMode })
+    saveSettings({ partFraction, anchorMode, edgeAnchoringMode, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx })
     markSaved()
   }
   function clampPF(v){ if(isNaN(v)) v = existing.partFraction || 0.6; return Math.min(0.95, Math.max(0.10, v)) }
+  function clampRange(v,min,max){ if(isNaN(v)) return min; return Math.min(max, Math.max(min,v)) }
   function markSaved(){ applyBtn.textContent = 'Saved'; applyBtn.classList.add('saved') }
   function markDirty(){ if(applyBtn.textContent==='Saved'){ applyBtn.textContent='Apply'; applyBtn.classList.remove('saved') } }
 
@@ -73,14 +103,27 @@ export function openSettingsOverlay({ onClose }){
   }
   function adjustNumber(el, delta){
     if(!el) return
-    const stepBase = 0.05
-    const stepLarge = 0.10
-    const step = delta>0? (delta===2?stepLarge:stepBase) : (delta===-2?stepLarge:stepBase)
-    let v = parseFloat(el.value)
-    if(isNaN(v)) v = existing.partFraction || 0.6
-    v += (delta>0?1:-1) * step
-    v = clampPF(v)
-    el.value = v.toFixed(2)
+    const name = el.name
+    if(name === 'partFraction'){
+      const stepBase = 0.05
+      const stepLarge = 0.10
+      const step = (Math.abs(delta)===2?stepLarge:stepBase) * (delta>0?1:-1)
+      let v = parseFloat(el.value)
+      if(isNaN(v)) v = existing.partFraction || 0.6
+      v += step
+      v = clampPF(v)
+      el.value = v.toFixed(2)
+    } else { // spacing integers
+      const stepBase = 1
+      const stepLarge = 1 // keep same per spec (no larger jump needed now)
+      const step = (Math.abs(delta)===2?stepLarge:stepBase) * (delta>0?1:-1)
+      let v = parseInt(el.value,10)
+      if(isNaN(v)) v = 0
+      v += step
+      v = clampRange(v,0,48)
+      el.value = String(v)
+    }
+    markDirty()
   }
   function cycleSelect(sel, dir){
     if(!sel) return
