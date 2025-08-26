@@ -33,7 +33,9 @@ appEl.innerHTML = `
     <div id="statusRight"><span id="commandError"></span></div>
   </div>
   <div id="historyPane" class="zone">
-    <div id="history" class="history"></div>
+  <div id="historyTopMask" aria-hidden="true"></div>
+  <div id="history" class="history"></div>
+  <div id="historyBottomMask" aria-hidden="true"></div>
   </div>
   <div id="inputBar" class="zone">
     <div class="inputBar-inner">
@@ -141,7 +143,11 @@ function applyActivePart(){
   document.querySelectorAll('.part.active').forEach(el=>el.classList.remove('active'))
   const act = activeParts.active(); if(!act) return
   const el = document.querySelector(`[data-part-id="${act.id}"]`)
-  if(el){ el.classList.add('active'); scrollController.apply(activeParts.activeIndex, true) }
+  if(el){
+    el.classList.add('active')
+    scrollController.apply(activeParts.activeIndex, true)
+  updateMasksVisibility()
+  }
 }
 
 // ---------- Spacing Runtime Styles ----------
@@ -151,6 +157,14 @@ function applySpacingStyles(settings){
   let styleEl = document.getElementById('runtimeSpacing')
   if(!styleEl){ styleEl = document.createElement('style'); styleEl.id='runtimeSpacing'; document.head.appendChild(styleEl) }
   styleEl.textContent = `#historyPane{padding-top:${gapOuterPx}px; padding-bottom:${gapOuterPx}px;}
+  /* DEBUG: show both masks in translucent red */
+  #historyTopMask{position:sticky; top:0; left:0; right:0; height:${gapOuterPx}px; pointer-events:none; z-index:10; display:block; 
+    transform:translateY(-${gapOuterPx}px);
+    background:rgba(255,0,0,0.25); border-bottom:1px solid rgba(255,0,0,0.6);
+  }
+  #historyBottomMask{position:absolute; left:0; right:0; pointer-events:none; z-index:10; display:none; 
+    background:rgba(255,0,0,0.25); border-top:1px solid rgba(255,0,0,0.6); box-sizing:border-box; /* width governed by left/right like top mask */
+  }
   .history{gap:0;}
   /* Gaps now explicit elements */
   .gap{width:100%; flex:none;}
@@ -177,6 +191,114 @@ function applySpacingStyles(settings){
   .part.active.assistant .part-inner{background:rgba(40,80,120,0.10);} 
   .part.active{box-shadow:none; background:transparent;}`
 }
+
+// Show/hide top mask based on anchor mode (only in 'top'). Keeps layout gap structural via padding while visually hiding any preceding slice.
+function updateMasksVisibility(){
+  const topMask = document.getElementById('historyTopMask')
+  const bottomMask = document.getElementById('historyBottomMask')
+  if(!topMask || !bottomMask) return
+  const s = getSettings()
+  const mode = s.anchorMode || 'bottom'
+  const G = s.gapOuterPx || 0
+  const pane = historyPaneEl
+  const S = pane.scrollTop
+  const H = pane.clientHeight
+  const viewportBottom = S + H
+  const parts = Array.from(pane.querySelectorAll('#history > .part')) // includes meta
+  const padLeft = parseFloat(getComputedStyle(pane).paddingLeft)||0
+  const padRight = parseFloat(getComputedStyle(pane).paddingRight)||0
+  const innerWidth = pane.clientWidth - padLeft - padRight
+
+  // Helpers ----------------------------------------------------
+  function findBottomClipped(){
+    for(const p of parts){
+      const partTop = p.offsetTop
+      const partBottom = partTop + p.offsetHeight
+      if(partTop < viewportBottom && partBottom > viewportBottom) return { part:p, partTop, partBottom }
+    }
+    return null
+  }
+  function findTopClipped(){
+    for(const p of parts){
+      const partTop = p.offsetTop
+      const partBottom = partTop + p.offsetHeight
+      if(partTop < S && partBottom > S) return { part:p, partTop, partBottom }
+    }
+    return null
+  }
+  function applyFixedTopOuterGapMask(){
+    // Top reading position: mask exactly the structural outer gap always.
+    topMask.style.display = 'block'
+    topMask.style.position = 'sticky'
+    topMask.style.top = '0px'
+    topMask.style.left = '0'
+    topMask.style.right = '0'
+    topMask.style.height = G + 'px'
+    topMask.style.transform = `translateY(-${G}px)`
+  }
+  function applyFixedBottomOuterGapMask(){
+    // Bottom reading position: mask the bottom outer gap (content-space coordinates).
+    bottomMask.style.display = 'block'
+    bottomMask.style.position = 'absolute'
+  bottomMask.style.left = padLeft + 'px'
+  bottomMask.style.right = 'auto'
+  bottomMask.style.width = innerWidth + 'px'
+    // Bottom gap occupies [viewportBottom-G, viewportBottom) in content coordinates.
+    bottomMask.style.top = (S + H - G) + 'px'
+    bottomMask.style.height = G + 'px'
+  }
+  function hideTopMask(){
+    topMask.style.display = 'none'
+    topMask.style.height = '0px'
+    topMask.style.transform = ''
+  }
+  function hideBottomMask(){
+    bottomMask.style.display = 'none'
+    bottomMask.style.height = '0px'
+  }
+  function applyDynamicBottomClipped(){
+    const hit = findBottomClipped()
+    if(hit){
+      bottomMask.style.display = 'block'
+      bottomMask.style.position = 'absolute'
+  bottomMask.style.left = padLeft + 'px'
+  bottomMask.style.right = 'auto'
+  bottomMask.style.width = innerWidth + 'px'
+      bottomMask.style.top = hit.partTop + 'px'
+      bottomMask.style.height = (viewportBottom - hit.partTop) + 'px'
+    } else hideBottomMask()
+  }
+  function applyDynamicTopClipped(){
+    const hit = findTopClipped()
+    if(hit){
+      const coverHeight = S - hit.partTop // portion hidden above viewport top
+      topMask.style.display = 'block'
+      topMask.style.position = 'absolute'
+  topMask.style.left = padLeft + 'px'
+  topMask.style.right = 'auto'
+  topMask.style.width = innerWidth + 'px'
+      topMask.style.top = hit.partTop + 'px'
+      topMask.style.height = coverHeight + 'px'
+      topMask.style.transform = '' // ensure no leftover from top-mode
+    } else hideTopMask()
+  }
+
+  // Mode-specific application ----------------------------------
+  if(mode === 'top'){
+    applyFixedTopOuterGapMask()
+    applyDynamicBottomClipped()
+  } else if(mode === 'bottom'){
+    // Invert roles: fixed bottom outer-gap mask, dynamic top clipped-part mask.
+    applyFixedBottomOuterGapMask()
+    applyDynamicTopClipped()
+  } else { // center: both edges potentially clipped; both dynamic.
+    applyDynamicTopClipped()
+    applyDynamicBottomClipped()
+  }
+}
+
+// Update masks on scroll (user free scroll) to maintain correct clipped coverage
+historyPaneEl.addEventListener('scroll', ()=>{ updateMasksVisibility() })
 
 // escapeHtml centralized in ui/util.js
 
@@ -497,6 +619,18 @@ function updateHud(){
     lines.push(`visCount(expected): ${dbg.shouldVisibleCount}`)
     lines.push(`firstTopPx: ${dbg.firstTopPx}`)
     if(dbg.visualGap != null) lines.push(`visualGap: ${dbg.visualGap}`)
+    // Mask metrics (top mode)
+    const paneR = historyPaneEl.getBoundingClientRect()
+    const tMask = document.getElementById('historyTopMask')
+    if(tMask){
+      const rT = tMask.getBoundingClientRect()
+      lines.push(`topMaskY:${Math.round(rT.top - paneR.top)} topMaskH:${rT.height}`)
+    }
+    const bMask = document.getElementById('historyBottomMask')
+    if(bMask){
+      const rB = bMask.getBoundingClientRect()
+      lines.push(`botMaskY:${Math.round(rB.top - paneR.top)} botMaskH:${rB.height}`)
+    }
     if(dbg.mode === 'top'){
       // compute target vs actual if possible
       if(dbg.activeIndex === dbg.currentFirst){

@@ -1,6 +1,6 @@
 # MaiChat Implementation Plan (Single Source of Truth)
 
-Last updated: 2025-08-24
+Last updated: 2025-08-26
 
 Purpose: One hierarchical, authoritative view of what exists, what is in progress, and what is next. No duplicated sections. Use this file only when planning or reviewing scope.
 
@@ -68,62 +68,66 @@ The system is a layered vanilla ES modules app:
   - Acceptance: Topic management workflows reliable; no known repro bugs; persistence stable across reloads.
 
 ### M5 Metadata Editing, History Navigation & Message Partitioning (ACTIVE)
-Partition & Measurement
-  - [x] Partition engine v1 (viewport fraction → whole-line parts; deterministic ID scheme). NOTE: Meta row exclusion / non-focusable still to assert in tests.
-  - [x] Off-screen measurement + caching (canvas measurement with width + height threshold invalidation)
-  - [~] Greedy packing + oversized block splitting (implemented greedy wrap; NO binary-search refinement yet – may downgrade requirement unless needed for perf)
-  - [x] Active part restoration after repartition (A1 approximate remap implemented in `ActivePartController`)
-Anchoring & Scrolling
-  - [x] Anchoring system (Bottom/Center/Top)
-  - [x] Edge anchoring mode (adaptive|strict)
-  - [~] Adaptive mode blank-space suppression (basic clamp works; spacer suppression logic minimal – jitter tests pending)
-  - [x] Strict mode baseline (clamps; spacer simulation via natural scroll – explicit spacer element not required currently)
-  - [ ] Edge calm behavior (no jitter first/last) – needs test instrumentation
-New Message Lifecycle
-  - [x] Single pending send enforcement (Enter ignored while pending flag true)
-  - [x] Detect arrival of assistant reply & auto-focus vs badge decision
-  - [x] New message badge (appears only when user not at logical end or reply filtered)
-  - [x] Auto-focus first assistant part when user at logical end
-  - [x] 'n' key: jump to first part of newest assistant reply (clears badge & filter per B2 when dim)
-  - [ ] 'G' key: jump to last part of newest reply (NOT implemented yet)
-  - [x] Filtered-out reply: badge dim variant + clearing filter on jump (Decision B2) (DOM-based dim test pending due to jsdom limitation)
-Settings & Persistence
-  - [x] Settings overlay (Ctrl+,) UI (basic: partFraction, anchorMode, edgeAnchoringMode; padding/gaps deferred)
-  - [x] Persist settings (module + localStorage) & bootstrap load
-  - [x] Resize threshold handling (≥10% viewport height triggers repartition cache invalidation)
-Integration & Metadata
-  - [~] Filtering integration (basic; auto re-render + anchor restore, need dedicated tests for focus last part)
-  - [ ] Metadata shortcuts with partition navigation (star, include) – wiring exists but acceptance tests missing
-  - [ ] Topic assignment from any part (needs regression test path)
-Tests (M5 scope)
-  - [~] Partition determinism & stable IDs across rerender (basic split test present; stability under setting change not yet)
-  - [ ] Oversized block splitting correctness (binary search path) (may be dropped if we accept current greedy strategy)
-  - [ ] Resize mapping (verify approximate remap works for different viewport heights)
-  - [x] Anchor correctness (unit tests for computeScrollFor modes)
-  - [ ] Edge anchoring mode differences (adaptive vs strict behavior tests)
-  - [ ] No jitter navigating first/last parts (scroll stability harness)
-  - [x] Pending send blocks Enter (covered indirectly; add explicit key simulation test later)
-  - [~] New message badge visibility matrix (only basic cases covered)
-  - [ ] 'n' and 'G' jump semantics (only 'n' implemented & tested; 'G' pending)
-  - [~] Filtered reply badge dim + 'n' behavior (logic present; dim state not assertable without DOM – consider injecting visibility strategy for test)
-  - [ ] Meta row non-focusable (test missing)
-  - [ ] Filter re-anchor after command (test missing)
-  - [ ] Star/allow toggles reflect immediately while preserving part focus
-  - Acceptance (partial): Core partition + anchoring + lifecycle behaviors working; remaining: settings UI, 'G' key, jitter & edge mode tests, metadata shortcut regression tests.
+M5.0 Architectural Prep
+1. [X] Settings module load/save + subscribers
+2. [X] History view rendering extraction
+3. [X] ActivePartController remap (A1)
+4. [X] Anchor abstraction inserted
+5. [X] Replaced scrollIntoView calls
+6. [X] Baseline pre‑partition commit
 
-Decision Notes (M5):
-* A1 Active restore: Part IDs stable only when text + settings unchanged; on resize/fraction change we re-map to same pair & closest line region (approximate) then enforce anchor.
-* B2 Filtered reply handling: 'n' permanently adjusts (simplest: clears) current filter so new reply stays; badge cleared.
-* C1 Anchor restoration precedence: Try same part ID; else same pair & approximate line; then apply anchor mode.
-* D Pending send indicator: No extra spinner; rely on cleared input + placeholder assistant meta + Send button label change (AI is thinking). Enter ignored until reply arrives.
+M5.1 Partition & Measurement
+1. [X] Partition engine v1 (whole-line, stable IDs)
+2. [X] Measurement + caching with threshold invalidation
+3. [X] Active part restoration after repartition
+4. [~] Greedy packing (binary refine deferred)
+5. [-] partFraction control reliability fix
 
-Architectural Prep (Pre-partition extraction tasks):
-1. Introduce settings module (load/save, subscribers).
-2. Extract history view rendering module (DOM isolation) without functional change.
-3. Add enhanced ActivePartController remap method implementing A1 logic.
-4. Stub anchorManager (currently delegates to center scroll) behind abstraction.
-5. Replace direct calls to scrollIntoView with anchorManager.apply().
-6. Commit baseline before implementing real partition & anchoring.
+M5.2 New Message Lifecycle
+1. [X] Pending send lock
+2. [X] Assistant reply arrival handling
+3. [X] New reply badge + filtered dim variant
+4. [X] 'n' newest reply jump
+5. [ ] 'G' newest reply last-part jump
+6. [X] Auto-focus newest assistant reply at logical end
+
+M5.3 Settings & Persistence
+1. [X] Settings overlay (partFraction, anchorMode, edgeAnchoringMode)
+2. [X] Persist + bootstrap load
+3. [X] Resize ≥10% triggers repartition invalidation
+4. [ ] Extend settings to gaps/padding (deferred)
+
+M5.4 Reading Position Regimes & Masking (ACTIVE SUB‑TASK)
+1. [X] Anchor modes framework (bottom / center / top)
+2. [X] Edge anchoring mode (adaptive | strict)
+3. [~] Adaptive blank-space suppression
+4. [X] Top mode: outer gap padding + fixed top mask + dynamic bottom mask
+5. [-] Bottom mode validation (clipped coverage, no partial active, jitter)
+6. [-] Center mode implementation (dual dynamic masks, centering heuristic)
+7. [ ] Scroll snapping (optional)
+8. [ ] Mask visual style (gradient fade) & conditional render
+9. [ ] Edge calm behavior (eliminate micro-adjust jitter)
+10. [ ] Mask test harness (DOM simulation)
+
+M5.5 Metadata & Filtering Integration
+1. [~] Filtering integration with partition (focus-last tests missing)
+2. [ ] Metadata shortcuts (star/include) behavior tests
+3. [ ] Topic assignment from any part regression test
+4. [ ] Meta row non-focusable test
+
+M5.6 Tests & Quality
+1. [~] Partition determinism across setting changes
+2. [ ] Oversized block splitting correctness (maybe drop)
+3. [ ] Resize remap accuracy tests
+4. [X] Anchor correctness unit tests
+5. [ ] Edge anchoring mode difference tests
+6. [ ] Scroll jitter harness
+7. [X] Pending send Enter lock
+8. [~] New message badge visibility matrix
+9. [ ] 'G' newest reply jump test
+10. [~] Filtered reply dim + 'n' behavior (visual dim unasserted)
+11. [ ] Filter re-anchor after command test
+12. [ ] Star/allow toggle focus preservation test
 
 ### M6 Context Assembly & Preview
 - [ ] Aggregate allowed message pairs based on current filter
@@ -178,61 +182,9 @@ Architectural Prep (Pre-partition extraction tasks):
 - [ ] ADRs: Filtering engine (ADR‑001), Storage approach (ADR‑002), Context assembly (ADR‑003)
 - [ ] Manual regression checklist
 - [ ] Versioning/tag process doc
-  - Acceptance: External user can clone & run with only README
 
-## 3. Cross-Cutting Concerns (Tracked)
-- [x] Focus management (central trap utility)
-- [ ] Rendering performance (monitor; tree & history virtualization paths designed)
-- [ ] Error reporting consistency (standardize format & surface area)
-- [ ] Logging strategy (dev vs minimal prod) – draft guidelines
-- [ ] Migration strategy (meta schema version test) – implement
-- [ ] Security notice for API keys (banner when provider added)
 
-## 4. Backlog (Deferred / Nice-to-Have)
-- (deferred) Root-level re-parent shortcut (pending need)
-- (deferred) Nested modal stacking for focus trap
-- (deferred) Optional encryption for API keys
-- (deferred) Plugin system for custom filters
-
-## 5. Immediate Next Focus (Proposed Order)
-1. Message partitioning core (model + rendering + navigation over parts)
-2. Metadata editing basics (allow/exclude + star) with partitioned navigation
-3. Topic assignment from history (picker integration)
-4. Remaining partitioning polish (anchoring, gg/G, selection persistence)
-5. Schema version meta record & migration test (leftover M1 item)
-6. Prepare groundwork for context assembly (define data needed) while deferring full M6 implementation
-
-## 6. Acceptance Criteria Summaries (For Active / Upcoming)
-- Message Partitioning: Long messages split deterministically into parts (stable IDs); navigating j/k moves through parts; g/G anchors top/bottom; performance acceptable (no noticeable lag with 200 parts).
-- Metadata Editing: Star / allow toggles persist and are immediately reflected in active filter result set; undo via same key.
-- Context Assembly (later M6): Given current filter, assembling context yields ordered list of candidate message pairs; removing a pair via allow/exclude toggle immediately updates preview.
-- Token Estimation: Estimator returns approx token count (within ~15%) for preview set using heuristic length → token formula.
-
-## 7. Test Coverage Gaps (High Priority)
-- Topic move & cascading counts integrity
-- Prevent cycles (negative test)
-- Persistence roundtrip with multiple topics & nested structure
-- Evaluator error path (unimplemented date filter triggers)
-- Focus trap: ensure global keys suppressed when modal active (unit or harness simulation)
-- Message partitioning: deterministic splits, navigation order, part ID stability after reload
-- Metadata edits: allow/star toggles reflected in filters instantly
-
-## 8. Risks & Mitigations (Current)
-| Risk | Impact | Current Mitigation | Planned Action |
-|------|--------|--------------------|----------------|
-| Spec creep in filtering | Delay | Phased milestones | Enforce M7 boundary before new ops |
-| Large topic trees performance | Jank | Small dataset now | Implement virtualization before >500 topics |
-| Missing schema version leads to migration pain | Data loss on future change | Placeholder only | Implement meta version + migration registry (short JSON) |
-| UI focus regressions | Keyboard UX breaks | Central trap | Add focused tests & a11y audit in M10 |
-| Token estimation inaccuracy | Poor context decisions | Heuristic TBD | Add calibration vs model token counts later |
-| Unencrypted API keys | User surprise | Planned banner | Possibly optional passphrase after MVP |
-
-## 9. Metrics / Budgets (Targets)
-- Render update (topic editor interaction): <16ms average frame
-- Filtering evaluation (subset 5k pairs): <30ms
-- Context assembly (5k pairs, naive): <40ms (optimize if exceeded)
-
-## 10. Change Log (Plan Evolution)
+## Change Log (Plan Evolution)
 - 2025-08-24 (later): Implemented partition engine v1, anchoring modes, resize invalidation, new message lifecycle (pending send, badge, 'n' jump, filter clear B2). Added anchor & lifecycle unit tests; updated M5 status & adjusted oversized splitting requirement scope.
 - 2025-08-24: Expanded M5 with edgeAnchoringMode (adaptive|strict), new message badge & 'n' key semantics, refined test matrix; added clarification placeholder for filtered reply behavior.
 - 2025-08-23 (later 3): M4 completed (all functional items [x]; virtualization deferred). Removed stabilization checklist; advanced Immediate Next Focus to M5 partitioning & metadata.
