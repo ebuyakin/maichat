@@ -210,4 +210,27 @@ viewportBottom = S + D
 top = start_part_k 
 bottom = end_part_k
 Scan parts for one with top < viewportBottom && bottom > viewportBottom (actual clipped bottom).
+
 If found: bottomMask.height = viewportBottom - top (covers from part’s top to bottom edge).
+
+## G. Terminology for Message Partitioning
+
+Numbered definitions to standardize discussion (variables are case‑sensitive):
+
+1. H_total – history pane total inner height = `#historyPane.clientHeight` (content box + top/bottom padding, excludes borders & scrollbar).
+2. G – outer gap (`gapOuterPx`) applied as both top and bottom padding on `#historyPane` (same value each side).
+3. H_usable – vertical space available for parts: `H_total - 2*G`.
+4. pf – part fraction (user setting) ∈ [0.10, 1.00], step 0.10; desired proportion of `H_usable` each part should roughly occupy before splitting.
+5. lineH – actual computed line height of part text (from a probe styled like `.part` / `.part-inner`), NOT the root line-height if they differ.
+6. partPadding – inner padding applied to user/assistant part content (same value on all four sides unless stated). Vertical contribution per part = `2 * partPadding`.
+7. targetPartHeightPx – nominal pixel budget for a part before splitting: `pf * H_usable` (excludes vertical part padding adjustments).
+8. maxLines (formula target) – preliminary line count budget: `floor((targetPartHeightPx - 2*partPadding) / lineH)`, clamped to ≥ 1.
+9. maxLines_used – the exact `maxLines` value stored alongside a part during the partitioning pass (authoritative for that part).
+10. logicalLines (of a part) – count of wrapped lines produced by the internal word-wrapping algorithm (canvas measurement + whitespace tokenization); equals the `lineCount` field.
+11. physLines (of a part) – number of visually rendered lines in the browser: approximated by `round( (partContentHeight - 2*partPadding) / lineH )`; should match `logicalLines` after width & line-height corrections.
+12. wrapWidthUsed – horizontal width limit provided to the wrapper: `(paneClientWidth - panePaddingLeft - panePaddingRight) - 2*partPadding` (per role adjustments if they diverge later).
+13. Partition cache invalidation triggers – events requiring recomputation: (a) partFraction change, (b) partPadding change, (c) significant viewport height change (≥10%), (d) font load completion altering metrics, (e) horizontal width / gutter change affecting wrap width.
+14. Part vs Message – A message (pair side) may span multiple parts; a part is the atomic scroll & focus unit; only whole parts are ever shown (clipped parts visually masked).
+15. Core invariants – After corrections: `logicalLines ≤ maxLines_used` and `physLines ≈ logicalLines` (acceptable difference 0 or ±1 only on edge cases like trailing blank line). Any sustained `physLines >> logicalLines` indicates a width or line height mismatch in partitioning.
+
+These terms provide the shared vocabulary for debugging and refining the partition sizing logic and HUD instrumentation.

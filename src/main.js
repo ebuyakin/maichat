@@ -115,7 +115,20 @@ const scrollController = createScrollController({ container: historyPaneEl })
 const historyView = createHistoryView({ store, onActivePartRendered: ()=> applyActivePart() })
 // Preload settings (future partition logic will use them)
 getSettings()
-subscribeSettings((s)=>{ applySpacingStyles(s); layoutHistoryPane(); renderHistory(store.getAllPairs()) })
+let __lastPF = getSettings().partFraction
+let __lastPadding = getSettings().partPadding
+subscribeSettings((s)=>{ 
+  // Detect partFraction change to invalidate partition cache even if computed maxLines coincidentally unchanged
+  if(s.partFraction !== __lastPF){
+    __lastPF = s.partFraction
+    invalidatePartitionCacheOnResize()
+  }
+  if(s.partPadding !== __lastPadding){
+    __lastPadding = s.partPadding
+    invalidatePartitionCacheOnResize()
+  }
+  applySpacingStyles(s); layoutHistoryPane(); renderHistory(store.getAllPairs()) 
+})
 let overlay = null // { type: 'topic'|'model', list:[], activeIndex:0 }
 let pendingMessageMeta = { topicId: null, model: 'gpt' }
 // New message lifecycle module
@@ -307,8 +320,7 @@ function renderStatus(){ const modeEl = document.getElementById('modeIndicator')
 
 async function bootstrap(){
   await persistence.init()
-  // Always reduce part size for current partition testing session (idempotent)
-  saveSettings({ partFraction: 0.30 })
+  // (Removed temporary dev override of partFraction)
   applySpacingStyles(getSettings())
   if(store.getAllPairs().length === 0){
     seedDemoPairs()
@@ -613,9 +625,10 @@ function updateHud(){
   lines.push(`mode: ${modeManager.mode}`)
   lines.push(`lastKey: ${window.__lastKey||'-'}`)
   if(dbg){
-    lines.push(`rp: ${dbg.mode}`)
-    lines.push(`first: ${dbg.currentFirst}`)
-    lines.push(`activeIndex: ${dbg.activeIndex}`)
+  lines.push(`rp: ${dbg.mode}`)
+  lines.push(`first: ${dbg.currentFirst}`)
+  lines.push(`activeIndex: ${dbg.activeIndex}`)
+  lines.push('---') // separator 1
     lines.push(`visCount(expected): ${dbg.shouldVisibleCount}`)
     lines.push(`firstTopPx: ${dbg.firstTopPx}`)
     if(dbg.visualGap != null) lines.push(`visualGap: ${dbg.visualGap}`)
@@ -638,11 +651,66 @@ function updateHud(){
         lines.push(`scrollTop: ${Math.round(dbg.scrollTop)}`)
       }
     }
-    lines.push(`visibleIndices: [${dbg.visibleIndices}]`)
-    lines.push(`tops: [${dbg.tops}]`)
-    lines.push(`heights: [${dbg.heights}]`)
+  lines.push(`visibleIndices: [${dbg.visibleIndices}]`)
+  lines.push(`tops: [${dbg.tops}]`)
+  lines.push('---') // separator 2
+  lines.push(`heights: [${dbg.heights}]`)
+    // partFraction + accurate line metrics for ACTIVE part
+    try {
+      const settings = getSettings && getSettings()
+      if(historyPaneEl && settings){
+        const pane = historyPaneEl
+        const csPane = window.getComputedStyle(pane)
+        const padTop = parseFloat(csPane.paddingTop)||0
+        const padBottom = parseFloat(csPane.paddingBottom)||0
+        const padLeft = parseFloat(csPane.paddingLeft)||0
+        const padRight = parseFloat(csPane.paddingRight)||0
+        const H_total = pane.clientHeight
+        const G = padTop // symmetric padding assumption
+        const H_usable = H_total - padTop - padBottom
+        const root = document.documentElement
+        const csRoot = window.getComputedStyle(root)
+        // Prefer active part actual line-height if available for accuracy
+        let lineH = parseFloat(csRoot.lineHeight) || parseFloat(csRoot.fontSize) || 18
+        const actPartEl = document.querySelector('.part.active .part-inner')
+        if(actPartEl){
+          const lhCandidate = parseFloat(getComputedStyle(actPartEl).lineHeight)
+          if(lhCandidate && !isNaN(lhCandidate)) lineH = lhCandidate
+        }
+        const pf = settings.partFraction
+        const partPadding = settings.partPadding || 0
+        const targetPartHeightPx = pf * H_usable
+        const maxLines_target = Math.max(1, Math.floor((targetPartHeightPx - 2*partPadding)/lineH))
+        const wrapWidthUsed = (pane.clientWidth - padLeft - padRight) - 2*partPadding
+        const actPart = activeParts.active()
+        let maxLines_used = '?', logicalLines='?', physLines='?'
+        if(actPart){
+          maxLines_used = actPart.maxLinesUsed != null ? actPart.maxLinesUsed : '?'
+          logicalLines = actPart.lineCount != null ? actPart.lineCount : '?'
+          const domEl = document.querySelector(`[data-part-id="${actPart.id}"] .part-inner`) || document.querySelector(`[data-part-id="${actPart.id}"]`)
+          if(domEl && lineH>0){
+            const h = domEl.getBoundingClientRect().height - 2*partPadding
+            physLines = Math.max(1, Math.round(h / lineH))
+          }
+        }
+        lines.push('--- partitioning ---')
+        lines.push(`1 H_total:${H_total}`)
+        lines.push(`2 G:${G}`)
+        lines.push(`3 H_usable:${H_usable}`)
+        lines.push(`4 pf:${pf.toFixed(2)}`)
+        lines.push(`5 lineH:${Math.round(lineH*10)/10}`)
+        lines.push(`6 partPadding:${partPadding}`)
+        lines.push(`7 targetPx:${Math.round(targetPartHeightPx)}`)
+        lines.push(`8 maxLines(target):${maxLines_target}`)
+        lines.push(`9 maxLines_used:${maxLines_used}`)
+        lines.push(`10 logicalLines:${logicalLines}`)
+        lines.push(`11 physLines:${physLines}`)
+        lines.push(`12 wrapWidthUsed:${Math.round(wrapWidthUsed)}`)
+      }
+    } catch{}
   }
   lines.push(`active: ${idx}`)
+  lines.push('---') // separator 3
   lines.push(`focus: ${focusDesc}`)
   lines.push(pairInfo)
   hudEl.textContent = lines.join('\n')

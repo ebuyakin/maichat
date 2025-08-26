@@ -17,8 +17,8 @@ export function openSettingsOverlay({ onClose }){
         <form id="settingsForm" autocomplete="off">
           <div class="settings-columns">
             <div class="col col-main">
-              <label>Part Fraction
-                <input name="partFraction" type="number" step="0.05" min="0.10" max="0.95" value="${existing.partFraction}" />
+              <label>Part Fraction <span class="pf-hint" style="opacity:.6;font-size:.85em"></span>
+                <input name="partFraction" type="number" step="0.10" min="0.10" max="1.00" value="${existing.partFraction}" />
               </label>
               <label>Anchor Mode
                 <select name="anchorMode">
@@ -86,7 +86,7 @@ export function openSettingsOverlay({ onClose }){
     saveSettings({ partFraction, anchorMode, edgeAnchoringMode, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx })
     markSaved()
   }
-  function clampPF(v){ if(isNaN(v)) v = existing.partFraction || 0.6; return Math.min(0.95, Math.max(0.10, v)) }
+  function clampPF(v){ if(isNaN(v)) v = existing.partFraction || 0.6; return Math.min(1.00, Math.max(0.10, v)) }
   function clampRange(v,min,max){ if(isNaN(v)) return min; return Math.min(max, Math.max(min,v)) }
   function markSaved(){ applyBtn.textContent = 'Saved'; applyBtn.classList.add('saved') }
   function markDirty(){ if(applyBtn.textContent==='Saved'){ applyBtn.textContent='Apply'; applyBtn.classList.remove('saved') } }
@@ -105,14 +105,15 @@ export function openSettingsOverlay({ onClose }){
     if(!el) return
     const name = el.name
     if(name === 'partFraction'){
-      const stepBase = 0.05
-      const stepLarge = 0.10
+      // Uniform step 0.10; Shift accelerates by +2 steps (0.20)
+      const stepBase = 0.10
+      const stepLarge = 0.20
       const step = (Math.abs(delta)===2?stepLarge:stepBase) * (delta>0?1:-1)
       let v = parseFloat(el.value)
       if(isNaN(v)) v = existing.partFraction || 0.6
       v += step
       v = clampPF(v)
-      el.value = v.toFixed(2)
+  el.value = v.toFixed(2)
     } else { // spacing integers
       const stepBase = 1
       const stepLarge = 1 // keep same per spec (no larger jump needed now)
@@ -166,4 +167,66 @@ export function openSettingsOverlay({ onClose }){
   })
 
   window.addEventListener('keydown', function esc(e){ if(e.key==='Escape'){ e.preventDefault(); close(); window.removeEventListener('keydown', esc) } })
+
+  // Caret-at-end behavior for ALL numeric inputs (future-proof): delegated focus handler
+  function placeCaretAtEnd(el){
+    let attempts = 0
+    const desired = el.value.length
+    function attempt(){
+      attempts++
+      try {
+        // Keep focus (avoid scroll) then temporarily switch type for reliable selection
+        el.focus({ preventScroll:true })
+        const origType = el.type
+        if(origType === 'number') el.type = 'text'
+        el.setSelectionRange(desired, desired)
+        if(origType === 'text' || origType === 'number') el.type = origType
+        if(el.selectionStart === desired) return // success
+      } catch(_){}
+      if(attempts < 5) setTimeout(attempt, 30)
+    }
+    // begin after paint
+    requestAnimationFrame(attempt)
+  }
+  panel.addEventListener('focusin', (e)=>{
+    const t = e.target
+    if(t && t.matches && t.matches('input[type="number"]')){
+      placeCaretAtEnd(t)
+    }
+  })
+  // Kick initial first numeric caret after trap initial focus (setTimeout 0 inside trap)
+  const firstNumeric = form.querySelector('input[type="number"][name="partFraction"]')
+  if(firstNumeric){ setTimeout(()=> placeCaretAtEnd(firstNumeric), 10) }
+
+  // Dynamic partFraction hint: display approximate max lines result
+  const pfInput = form.querySelector('input[name="partFraction"]')
+  const pfHintEl = form.querySelector('.pf-hint')
+  function updatePfHint(){
+    if(!pfInput || !pfHintEl) return
+    const v = clampPF(parseFloat(pfInput.value))
+    // Estimate lines using current pane height (minus vertical padding) and root line height
+    try {
+      const pane = document.getElementById('historyPane')
+      const root = document.documentElement
+      let lineH = 18
+      if(root){
+        const csR = window.getComputedStyle(root)
+        const fs = parseFloat(csR.fontSize)||13
+        lineH = parseFloat(csR.lineHeight) || fs*1.45
+      }
+      if(pane){
+        const cs = window.getComputedStyle(pane)
+        const padTop = parseFloat(cs.paddingTop)||0
+        const padBottom = parseFloat(cs.paddingBottom)||0
+        const usableH = pane.clientHeight - padTop - padBottom
+        if(usableH>0){
+          const maxLines = Math.max(1, Math.floor((usableH * v)/lineH))
+          pfHintEl.textContent = `(≈ ${maxLines} lines)`
+          return
+        }
+      }
+    } catch {}
+    pfHintEl.textContent = ''
+  }
+  if(pfInput){ pfInput.addEventListener('input', updatePfHint); updatePfHint() }
 }

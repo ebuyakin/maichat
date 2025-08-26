@@ -18,21 +18,39 @@ export function partitionMessage({ text, role, pairId }){
     }
   } catch {}
   const viewportH = paneH || win.innerHeight || 800
-  const lineHeightPx = getLineHeight()
-  const usableH = Math.max(1, viewportH) // outer gaps already excluded by pane sizing
-  const maxLines = Math.max(1, Math.floor((usableH * settings.partFraction) / lineHeightPx))
+  const lineHeightPx = getPartLineHeight()
+  // Derive usable vertical space subtracting pane vertical padding (outer gaps). This ensures
+  // a part sized at partFraction will fully fit without visual clipping behind masks.
+  let padTop = 0, padBottom = 0
+  try {
+    if(typeof document !== 'undefined'){
+      const pane = document.getElementById('historyPane')
+      if(pane){
+        const cs = window.getComputedStyle(pane)
+        padTop = parseFloat(cs.paddingTop)||0
+        padBottom = parseFloat(cs.paddingBottom)||0
+      }
+    }
+  } catch {}
+  const usableH = Math.max(1, viewportH - padTop - padBottom)
+  const partPadding = settings.partPadding || 0
+  const targetPartHeightPx = usableH * settings.partFraction
+  const verticalBudget = targetPartHeightPx - 2*partPadding
+  const maxLines = Math.max(1, Math.floor(verticalBudget / lineHeightPx))
 
-  const containerWidth = getHistoryContentWidth()
+  const baseWidth = getHistoryContentWidth()
+  let wrapWidth = baseWidth - 2*partPadding
+  if(wrapWidth < 40) wrapWidth = Math.max(20, baseWidth * 0.5) // minimal safeguard
   const key = pairId+':'+role
   const textVersion = text.length // simple proxy; could use hash if needed
   const cached = cache.get(key)
-  if(cached && cached.width === containerWidth && cached.textVersion === textVersion && cached.maxLines === maxLines){
+  if(cached && cached.width === wrapWidth && cached.textVersion === textVersion && cached.maxLines === maxLines && cached.partPadding === partPadding){
     return cached.partsMeta.map(p=> ({...p}))
   }
 
   const font = getUiFont()
   const ctx = getMeasureCtx(font)
-  const rawLines = wrapTextToLines(text, ctx, containerWidth)
+  const rawLines = wrapTextToLines(text, ctx, wrapWidth)
 
   const parts = []
   for(let lineIndex=0; lineIndex < rawLines.length;){
@@ -46,24 +64,37 @@ export function partitionMessage({ text, role, pairId }){
       text: slice.join('\n'),
       lineStart: lineIndex,
       lineEnd: lineIndex + slice.length - 1,
-      lineCount: slice.length
+      lineCount: slice.length,
+      maxLinesUsed: maxLines
     })
     lineIndex += slice.length
   }
 
-  cache.set(key, { width: containerWidth, partsMeta: parts.map(p=> ({...p})), textVersion, maxLines })
+  cache.set(key, { width: wrapWidth, partsMeta: parts.map(p=> ({...p})), textVersion, maxLines, partPadding })
   return parts
 }
 
 // Helpers
 let _lineHeightCache = null
-function getLineHeight(){
+function getPartLineHeight(){
   if(_lineHeightCache) return _lineHeightCache
   try {
-    const root = document.documentElement
-    const cs = window.getComputedStyle(root)
-    const fs = parseFloat(cs.fontSize)||13
-    const lh = parseFloat(cs.lineHeight) || fs*1.45
+    if(typeof document === 'undefined') return 18
+    // Create hidden probe matching .part-inner font metrics.
+    let probe = document.getElementById('mc-lineheight-probe')
+    if(!probe){
+      probe = document.createElement('div')
+      probe.id = 'mc-lineheight-probe'
+      probe.style.position = 'absolute'
+      probe.style.visibility = 'hidden'
+      probe.style.pointerEvents = 'none'
+      probe.style.zIndex = '-1'
+      probe.style.whiteSpace = 'pre'
+      probe.className = 'part-inner'
+      probe.textContent = 'A' // single line reference
+      document.body.appendChild(probe)
+    }
+    const lh = probe.getBoundingClientRect().height || 18
     _lineHeightCache = lh
     return lh
   } catch { return 18 }
