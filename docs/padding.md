@@ -65,10 +65,12 @@ Principles:
 4. A top overlay mask (`#historyTopMask`) hides any fragment of a previous part that may intrude into the outer gap region. The mask is purely visual: no DOM height adjustments.
 5. Active part highlight uses an inset pseudo-element border so it remains fully visible within the padded area.
 
-Planned additions:
-* Bottom outer-gap mask (mirror for bottom reading position).
-* Variable "clipped-part" masks (top/bottom) in center or free-scroll cases to hide partial tails without forcing immediate snapping.
-* Optional snap pass after free scroll to reduce reliance on variable masks.
+Status update (implemented):
+* Top mode: fixed top outer-gap mask always present (covers outer gap whether or not a predecessor fragment exists) + dynamic bottom clipped-part mask when last visible part is truncated.
+* Bottom mode: fixed bottom outer-gap mask + dynamic top clipped-part mask when first visible part is truncated.
+* Center mode: both masks operate in dynamic clipped-part mode (no fixed outer-gap anchoring) to hide partial parts at both edges.
+* Width: top mask spans full padded width; bottom mask currently sized to inner content width (acceptable; may unify later).
+* Optional snap-after-free-scroll pass not implemented yet (future refinement, not required for current invariant set).
 
 Why masks (instead of dynamic gap growth):
 * Deterministic layout (prefix sums stable).
@@ -76,14 +78,14 @@ Why masks (instead of dynamic gap growth):
 * Clear separation: semantic spacing vs edge visibility policy.
 
 Mask roles summary:
-| Mask | Mode | Purpose | Height |
-|------|------|---------|--------|
-| Top outer-gap-mask | Top mode | Hide predecessor fragment inside outer gap | = `gapOuterPx` |
-| Bottom outer-gap-mask (planned) | Bottom mode | Hide successor fragment inside outer gap | = `gapOuterPx` |
-| Top clipped-part-mask (planned) | Bottom/Center | Cover partial part at top edge | overlap (capped or uncapped) |
-| Bottom clipped-part-mask (planned) | Top/Center | Cover partial part at bottom edge | overlap (capped or uncapped) |
+| Mask | Modes using it | Purpose | Height rule |
+|------|----------------|---------|-------------|
+| Top outer-gap mask (fixed) | Top | Cover entire structural outer gap (and any predecessor fragment) | = `gapOuterPx` |
+| Bottom outer-gap mask (fixed) | Bottom | Cover entire structural outer gap (and any successor fragment) | = `gapOuterPx` |
+| Top clipped-part mask (dynamic) | Bottom, Center | Cover visible top fragment of first partially visible part | overlap (S − partTop) |
+| Bottom clipped-part mask (dynamic) | Top, Center | Cover visible bottom fragment of last partially visible part | overlap (partBottom − (S+H)) |
 
-Overlap calculation (planned):
+Overlap calculation (implemented for dynamic masks):
 Let `S = scrollTop`, `H = viewport height`, `G = gapOuterPx`, usable band = `[S+G, S+H-G]`.
 Top fragment height = `(S+G) - top_i` if `top_i < S+G < bottom_i` else 0.
 Bottom fragment height = `bottom_i - (S+H-G)` if `top_i < S+H-G < bottom_i` else 0.
@@ -234,3 +236,34 @@ Numbered definitions to standardize discussion (variables are case‑sensitive):
 15. Core invariants – After corrections: `logicalLines ≤ maxLines_used` and `physLines ≈ logicalLines` (acceptable difference 0 or ±1 only on edge cases like trailing blank line). Any sustained `physLines >> logicalLines` indicates a width or line height mismatch in partitioning.
 
 These terms provide the shared vocabulary for debugging and refining the partition sizing logic and HUD instrumentation.
+
+
+HUD
+A. General
+1. Mode :
+2. Reading position:
+3. Active part / total parts :
+4. Active part position / Total history length: (start_part_k / T, k is the index of the active part)
+5. First visible part index / total visible parts :
+6. First visible position / Total history length: (coordinate of the first visible position on the total history scroll, start_part_k2, k2 is the index of the first visible part)
+B. Partition
+7. H_total:
+8. outerGap (G):
+9. H_usable:
+10. Part fraction (pf):
+11. Line height (lineH):
+12. Inner padding (partPadding):
+13. targetPartHeight:
+14. maxLines (formula target):
+15. maxLines_used:
+16. locigalLines:
+17. physicalLines:
+18. wrapWidthUsed:
+C. Masks
+19. Top mask position:
+20. Top mask height:
+21. Bottom mask position:
+22. Bottom mask height:
+D. Meta
+....
+

@@ -607,6 +607,17 @@ function formatTimestamp(ts){
   // Order per request: yy-dd-mm hh:mm:ss (note day precedes month)
   return `${yy}-${dd}-${mm} ${hh}:${mi}:${ss}`
 }
+// HUD section collapse state
+const __hudState = { layout:true, masks:true, partition:true, meta:true }
+if(!hudEl.__hudClickBound){
+  hudEl.addEventListener('click', (e)=>{
+    const target = e.target.closest('[data-hud-section-header]')
+    if(!target) return
+    const key = target.getAttribute('data-section')
+    if(key && __hudState.hasOwnProperty(key)){ __hudState[key] = !__hudState[key] }
+  })
+  hudEl.__hudClickBound = true
+}
 function updateHud(){
   const act = activeParts.active()
   let pairInfo='(none)'
@@ -614,106 +625,172 @@ function updateHud(){
     const pair = store.pairs.get(act.pairId)
     if(pair){
       const topic = store.topics.get(pair.topicId)
-  pairInfo = `${pair.id.slice(0,8)} t:${topic?topic.name:''}\n★:${pair.star} include:${pair.includeInContext?'Y':'N'} model:${pair.model}\n@${formatTimestamp(pair.createdAt)}`
+      pairInfo = `${pair.id.slice(0,8)} t:${topic?topic.name:''}<br/>★:${pair.star} include:${pair.includeInContext?'Y':'N'} model:${pair.model}<br/>@${formatTimestamp(pair.createdAt)}`
     }
   }
-  const idx = act? `${activeParts.parts.indexOf(act)+1}/${activeParts.parts.length}` : '0/0'
   const focusEl = document.activeElement
   const focusDesc = focusEl ? `${focusEl.tagName.toLowerCase()}${focusEl.id?('#'+focusEl.id):''}` : 'none'
   const dbg = scrollController.debugInfo && scrollController.debugInfo()
-  const lines = []
-  lines.push(`mode: ${modeManager.mode}`)
-  lines.push(`lastKey: ${window.__lastKey||'-'}`)
+  // Collect numbered parameters following spec order
+  let n=1
+  const layoutParams = []
+  // A. General
+  // 1 Mode
+  layoutParams.push(`${n++}. Mode: ${modeManager.mode}`)
+  // 2 Reading position mode
+  layoutParams.push(`${n++}. Reading position mode: ${dbg?dbg.mode:'?'}`)
+  // Compute active/total parts
+  const totalParts = activeParts.parts.length
+  const activeIdx1 = dbg && dbg.activeIndex!=null ? (dbg.activeIndex+1) : (act? activeParts.parts.indexOf(act)+1 : 0)
+  // 3 Active part / total parts
+  layoutParams.push(`${n++}. Active part / total parts: ${activeIdx1}/${totalParts}`)
+  // start_part_k (active)
+  let start_part_k = '?'
+  if(act){
+    const el = document.querySelector(`[data-part-id="${act.id}"]`)
+    if(el) start_part_k = el.offsetTop
+  }
+  // Total history length T
+  const T = historyPaneEl ? historyPaneEl.scrollHeight : '?'
+  // 4 Active part position / Total history length
+  layoutParams.push(`${n++}. Active part position / Total history length: ${start_part_k}/${T}`)
+  // Active part visual top inside pane: start_part_k - scrollTop
+  if(start_part_k !== '?' && dbg){
+    const S = dbg.scrollTop||0
+    const vTop = (typeof start_part_k === 'number'? start_part_k : parseFloat(start_part_k)) - S
+    layoutParams.push(`${n++}. Active part visual top (start_part_k - S): ${vTop}`)
+  }
+  // First visible part index and count of visible fully
+  const firstVisibleIndex = dbg? dbg.currentFirst : '?'
+  const visibleCount = dbg? dbg.shouldVisibleCount : '?'
+  layoutParams.push(`${n++}. First visible part index / total visible parts: ${firstVisibleIndex}/${visibleCount}`)
+  // start_part_k2 for first visible
+  let start_part_k2 = '?'
+  if(firstVisibleIndex != null && firstVisibleIndex !== '?' && firstVisibleIndex >=0){
+    const el2 = document.querySelector(`[data-part-index="${firstVisibleIndex}"]`) || historyPaneEl.querySelectorAll('[data-part-id]')[firstVisibleIndex]
+    if(el2) start_part_k2 = el2.offsetTop
+  }
+  layoutParams.push(`${n++}. First visible position / Total history length: ${start_part_k2}/${T}`)
+  // scrollTop S
+  const scrollVal = dbg? Math.round(dbg.scrollTop):0
+  layoutParams.push(`${n++}. scrollTop: ${scrollVal}`)
+  // H_total
+  const H_total = historyPaneEl? historyPaneEl.clientHeight : '?'
+  layoutParams.push(`${n++}. historyPane (H_total): ${H_total}`)
+  // G outer gap (assume symmetric paddingTop)
+  let Gval='?'; let H_usable='?'
+  if(historyPaneEl){
+    const csPane = getComputedStyle(historyPaneEl)
+    const padTop = parseFloat(csPane.paddingTop)||0
+    const padBottom = parseFloat(csPane.paddingBottom)||0
+    Gval = padTop // spec single G value
+    H_usable = H_total != null ? (H_total - padTop - padBottom) : '?'
+  }
+  layoutParams.push(`${n++}. outerGap (G): ${Gval}`)
+  layoutParams.push(`${n++}. Part space (H_usable): ${H_usable}`)
   if(dbg){
-  lines.push(`rp: ${dbg.mode}`)
-  lines.push(`first: ${dbg.currentFirst}`)
-  lines.push(`activeIndex: ${dbg.activeIndex}`)
-  lines.push('---') // separator 1
-    lines.push(`visCount(expected): ${dbg.shouldVisibleCount}`)
-    lines.push(`firstTopPx: ${dbg.firstTopPx}`)
-    if(dbg.visualGap != null) lines.push(`visualGap: ${dbg.visualGap}`)
-    // Mask metrics (top mode)
+    layoutParams.push(`${n++}. rawAnchor (pre-clamp S): ${dbg.rawAnchor!=null?Math.round(dbg.rawAnchor):'-'}`)
+    layoutParams.push(`${n++}. maxScroll (T-D): ${dbg.maxScroll!=null?dbg.maxScroll:'-'}`)
+  if(dbg.gapBelow!=null) layoutParams.push(`${n++}. gapBelow (diagnostic): ${dbg.gapBelow}`)
+  }
+  const maskParams = []
+  if(dbg){
     const paneR = historyPaneEl.getBoundingClientRect()
     const tMask = document.getElementById('historyTopMask')
+    const bMask = document.getElementById('historyBottomMask')
     if(tMask){
       const rT = tMask.getBoundingClientRect()
-      lines.push(`topMaskY:${Math.round(rT.top - paneR.top)} topMaskH:${rT.height}`)
+      maskParams.push(`${n++}. Top mask position: ${Math.round(rT.top - paneR.top)}`)
+      maskParams.push(`${n++}. Top mask height: ${rT.height}`)
+    } else {
+      maskParams.push(`${n++}. Top mask position: -`)
+      maskParams.push(`${n++}. Top mask height: -`)
     }
-    const bMask = document.getElementById('historyBottomMask')
     if(bMask){
       const rB = bMask.getBoundingClientRect()
-      lines.push(`botMaskY:${Math.round(rB.top - paneR.top)} botMaskH:${rB.height}`)
+      maskParams.push(`${n++}. Bottom mask position: ${Math.round(rB.top - paneR.top)}`)
+      maskParams.push(`${n++}. Bottom mask height: ${rB.height}`)
+    } else {
+      maskParams.push(`${n++}. Bottom mask position: -`)
+      maskParams.push(`${n++}. Bottom mask height: -`)
     }
-    if(dbg.mode === 'top'){
-      // compute target vs actual if possible
-      if(dbg.activeIndex === dbg.currentFirst){
-        // expected scrollTop = first element offsetTop - paddingTop; we approximate via firstTopPx - paddingTop already visualGap
-        lines.push(`scrollTop: ${Math.round(dbg.scrollTop)}`)
-      }
-    }
-  lines.push(`visibleIndices: [${dbg.visibleIndices}]`)
-  lines.push(`tops: [${dbg.tops}]`)
-  lines.push('---') // separator 2
-  lines.push(`heights: [${dbg.heights}]`)
-    // partFraction + accurate line metrics for ACTIVE part
-    try {
-      const settings = getSettings && getSettings()
-      if(historyPaneEl && settings){
-        const pane = historyPaneEl
-        const csPane = window.getComputedStyle(pane)
-        const padTop = parseFloat(csPane.paddingTop)||0
-        const padBottom = parseFloat(csPane.paddingBottom)||0
-        const padLeft = parseFloat(csPane.paddingLeft)||0
-        const padRight = parseFloat(csPane.paddingRight)||0
-        const H_total = pane.clientHeight
-        const G = padTop // symmetric padding assumption
-        const H_usable = H_total - padTop - padBottom
-        const root = document.documentElement
-        const csRoot = window.getComputedStyle(root)
-        // Prefer active part actual line-height if available for accuracy
-        let lineH = parseFloat(csRoot.lineHeight) || parseFloat(csRoot.fontSize) || 18
-        const actPartEl = document.querySelector('.part.active .part-inner')
-        if(actPartEl){
-          const lhCandidate = parseFloat(getComputedStyle(actPartEl).lineHeight)
-          if(lhCandidate && !isNaN(lhCandidate)) lineH = lhCandidate
-        }
-        const pf = settings.partFraction
-        const partPadding = settings.partPadding || 0
-        const targetPartHeightPx = pf * H_usable
-        const maxLines_target = Math.max(1, Math.floor((targetPartHeightPx - 2*partPadding)/lineH))
-        const wrapWidthUsed = (pane.clientWidth - padLeft - padRight) - 2*partPadding
-        const actPart = activeParts.active()
-        let maxLines_used = '?', logicalLines='?', physLines='?'
-        if(actPart){
-          maxLines_used = actPart.maxLinesUsed != null ? actPart.maxLinesUsed : '?'
-          logicalLines = actPart.lineCount != null ? actPart.lineCount : '?'
-          const domEl = document.querySelector(`[data-part-id="${actPart.id}"] .part-inner`) || document.querySelector(`[data-part-id="${actPart.id}"]`)
-          if(domEl && lineH>0){
-            const h = domEl.getBoundingClientRect().height - 2*partPadding
-            physLines = Math.max(1, Math.round(h / lineH))
-          }
-        }
-        lines.push('--- partitioning ---')
-        lines.push(`1 H_total:${H_total}`)
-        lines.push(`2 G:${G}`)
-        lines.push(`3 H_usable:${H_usable}`)
-        lines.push(`4 pf:${pf.toFixed(2)}`)
-        lines.push(`5 lineH:${Math.round(lineH*10)/10}`)
-        lines.push(`6 partPadding:${partPadding}`)
-        lines.push(`7 targetPx:${Math.round(targetPartHeightPx)}`)
-        lines.push(`8 maxLines(target):${maxLines_target}`)
-        lines.push(`9 maxLines_used:${maxLines_used}`)
-        lines.push(`10 logicalLines:${logicalLines}`)
-        lines.push(`11 physLines:${physLines}`)
-        lines.push(`12 wrapWidthUsed:${Math.round(wrapWidthUsed)}`)
-      }
-    } catch{}
   }
-  lines.push(`active: ${idx}`)
-  lines.push('---') // separator 3
-  lines.push(`focus: ${focusDesc}`)
-  lines.push(pairInfo)
-  hudEl.textContent = lines.join('\n')
+  const partitionParams = []
+  try {
+    const settings = getSettings && getSettings()
+    if(historyPaneEl && settings){
+      const pane = historyPaneEl
+      const csPane = window.getComputedStyle(pane)
+      const padTop = parseFloat(csPane.paddingTop)||0
+      const padBottom = parseFloat(csPane.paddingBottom)||0
+      const padLeft = parseFloat(csPane.paddingLeft)||0
+      const padRight = parseFloat(csPane.paddingRight)||0
+      const H_total = pane.clientHeight
+      const G = padTop
+      const H_usable = H_total - padTop - padBottom
+      const root = document.documentElement
+      let lineH = parseFloat(getComputedStyle(root).lineHeight) || parseFloat(getComputedStyle(root).fontSize) || 18
+      const actPartEl = document.querySelector('.part.active .part-inner')
+      if(actPartEl){
+        const lhCandidate = parseFloat(getComputedStyle(actPartEl).lineHeight)
+        if(lhCandidate && !isNaN(lhCandidate)) lineH = lhCandidate
+      }
+      const pf = settings.partFraction
+      const partPadding = settings.partPadding || 0
+      const targetPartHeightPx = pf * H_usable
+      const maxLines_target = Math.max(1, Math.floor((targetPartHeightPx - 2*partPadding)/lineH))
+      const wrapWidthUsed = (pane.clientWidth - padLeft - padRight) - 2*partPadding
+      const actPart = activeParts.active()
+      let maxLines_used='?', logicalLines='?', physLines='?'
+      let actTop='?', actHeight='?', actBottom='?'
+      if(actPart){
+        maxLines_used = actPart.maxLinesUsed != null ? actPart.maxLinesUsed : '?'
+        logicalLines = actPart.lineCount != null ? actPart.lineCount : '?'
+        const domEl = document.querySelector(`[data-part-id="${actPart.id}"] .part-inner`) || document.querySelector(`[data-part-id="${actPart.id}"]`)
+        if(domEl && lineH>0){
+          const h = domEl.getBoundingClientRect().height - 2*partPadding
+          physLines = Math.max(1, Math.round(h / lineH))
+        }
+        const outerEl = document.querySelector(`[data-part-id="${actPart.id}"]`)
+        if(outerEl){
+          const paneRect = pane.getBoundingClientRect()
+          const partRect = outerEl.getBoundingClientRect()
+          actTop = Math.round(partRect.top - paneRect.top)
+          actHeight = Math.round(partRect.height)
+          actBottom = actTop + actHeight
+        }
+      }
+    // B. Partitioning (continuing numbering)
+    partitionParams.push(`${n++}. Part fraction (pf): ${pf.toFixed(2)}`)
+    partitionParams.push(`${n++}. Line height (lineH): ${Math.round(lineH*10)/10}`)
+    partitionParams.push(`${n++}. Inner padding (partPadding): ${partPadding}`)
+    partitionParams.push(`${n++}. targetPartHeight: ${Math.round(targetPartHeightPx)}`)
+  partitionParams.push(`${n++}. Actual part hight (p_k): ${actHeight}`)
+    partitionParams.push(`${n++}. maxLines (formula target): ${maxLines_target}`)
+    partitionParams.push(`${n++}. maxLines_used: ${maxLines_used}`)
+    partitionParams.push(`${n++}. logicalLines: ${logicalLines}`)
+    partitionParams.push(`${n++}. physicalLines: ${physLines}`)
+    partitionParams.push(`${n++}. wrapWidthUsed: ${Math.round(wrapWidthUsed)}`)
+    }
+  } catch{}
+  const metaParams = []
+  // D. Meta
+  metaParams.push(`${n++}. focus: ${focusDesc}`)
+  // Build HTML with sections
+  function sectionHTML(key, title, arr){
+    const open = __hudState[key]
+    const indicator = open ? '-' : '+'
+    const header = `<div data-hud-section-header data-section="${key}" style="cursor:pointer; font-weight:bold;">[${indicator}] ${title}</div>`
+    if(!open) return header
+    return header + `<pre style="margin:0; white-space:pre;">${arr.join('\n')}</pre>`
+  }
+  hudEl.innerHTML = [
+    sectionHTML('layout','Layout', layoutParams),
+    sectionHTML('masks','Masks', maskParams),
+    sectionHTML('partition','Partition', partitionParams),
+    sectionHTML('meta','Meta', metaParams),
+    `<div class='pairInfo'>${pairInfo}</div>`
+  ].join('\n')
   requestAnimationFrame(updateHud)
 }
 requestAnimationFrame(updateHud)

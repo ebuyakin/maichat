@@ -41,9 +41,11 @@ body { min-height:100vh; overflow:hidden; }
   padding:6px 8px;
   border:1px solid #333;
   border-radius:4px;
-  max-width:320px;
+  width:520px; /* widened for full parameter visibility */
+  max-width:60vw; /* responsive cap */
   pointer-events:none;
-  white-space:pre;
+  white-space:pre; /* keep alignment */
+  overflow:auto; /* allow scroll if content wider */
   z-index:1000;
 }
  #hud .warn { color:#f6d365; }
