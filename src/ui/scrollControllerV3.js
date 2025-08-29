@@ -70,8 +70,10 @@ export function createScrollController({ container, getParts }){
   // If top & bottom gaps equal (padTop==padBottom==G) this reduces to S = part.start + part.h - (paneH - G) + G
   S = (part.start + part.h) - (paneH - padBottom) + padTop
     } else { // center
-      // Desired: part midpoint at pane midpoint (including padding). midpointVis = S + paneH/2
-      S = (part.start + part.h/2) - (paneH/2)
+  // Desired: visual midpoint of part aligns with pane midpoint.
+  // Visual top of part = (part.start - S) + padTop. MidpointVis = visualTop + part.h/2.
+  // Set: (part.start - S + padTop) + part.h/2 = paneH/2 => S = part.start + padTop + part.h/2 - paneH/2
+  S = part.start + padTop + part.h/2 - (paneH/2)
     }
   const raw = Number.isFinite(S)? S : 0
   let S2 = Math.round(raw)
@@ -124,6 +126,23 @@ export function createScrollController({ container, getParts }){
     const target = anchorScrollTop(prevActive)
     if(Math.abs(container.scrollTop - target) > 0.5){ container.scrollTop = target }
     appliedScrollTop = target
+    // Fine-tune center mode: ensure midpoint alignment (after DOM settled sizes)
+    if(getSettings().anchorMode === 'center'){
+      const part = metrics.parts[prevActive]
+      if(part){
+        const paneMid = metrics.paneH / 2
+  const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
+  const currentOffset = part.start - container.scrollTop // internal coord (excludes padding)
+  const visualTop = currentOffset + padTop
+  const partMidVis = visualTop + part.h/2
+        const delta = partMidVis - paneMid
+        if(Math.abs(delta) > 0.5){
+          const corrected = Math.max(0, Math.round(container.scrollTop + delta))
+          if(Math.abs(corrected - container.scrollTop) > 0.5) container.scrollTop = corrected
+          appliedScrollTop = container.scrollTop
+        }
+      }
+    }
     visibleWindow = computeVisibleWindow()
   }
 
@@ -136,9 +155,27 @@ export function createScrollController({ container, getParts }){
     const start = container.scrollTop
     const dist = target - start
     if(Math.abs(dist) < 2){ container.scrollTop = target; return }
-    const dur = 140
+    const s = getSettings()
+    let base = Math.max(0, s.scrollAnimMs || 0)
+    if(s.scrollAnimDynamic){
+      const paneH = metrics? metrics.paneH : container.clientHeight
+      const rel = paneH>0 ? Math.min(2, Math.abs(dist)/paneH) : 1 // cap at 2x viewport
+      // Scale: short hops ~0.4x..1x, long hops up to 1.6x
+      const scale = 0.4 + 0.6*Math.min(1, rel) + 0.6*Math.max(0, rel-1)
+      base = base * scale
+    }
+    const dur = Math.min(Math.max(s.scrollAnimMinMs||50, base), s.scrollAnimMaxMs||800)
     const t0 = performance.now()
-    function ease(t){ return 1 - (1-t)*(1-t) }
+    function ease(t){
+      const mode = s.scrollAnimEasing || 'easeOutQuad'
+      if(mode==='linear') return t
+      if(mode==='easeOutQuad') return 1 - (1-t)*(1-t)
+      if(mode==='easeInOutCubic'){
+        return t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2
+      }
+      if(mode==='easeOutExpo') return t===1 ? 1 : 1 - Math.pow(2,-10*t)
+      return 1 - (1-t)*(1-t)
+    }
     function step(now){
       const p = Math.min(1, (now - t0)/dur)
       container.scrollTop = start + dist * ease(p)

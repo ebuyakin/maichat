@@ -19,6 +19,7 @@ import { modalIsActive } from './ui/focusTrap.js'
 import { escapeHtml } from './ui/util.js'
 import { createNewMessageLifecycle } from './ui/newMessageLifecycle.js'
 import { openSettingsOverlay } from './ui/settingsOverlay.js'
+// Mask system removed; using fade-based visibility.
 
 // Mode management
 const modeManager = createModeManager()
@@ -33,9 +34,7 @@ appEl.innerHTML = `
     <div id="statusRight"><span id="commandError"></span></div>
   </div>
   <div id="historyPane" class="zone">
-  <div id="historyTopMask" aria-hidden="true"></div>
   <div id="history" class="history"></div>
-  <div id="historyBottomMask" aria-hidden="true"></div>
   </div>
   <div id="inputBar" class="zone">
     <div class="inputBar-inner">
@@ -159,25 +158,19 @@ function applyActivePart(){
   if(el){
     el.classList.add('active')
     scrollController.apply(activeParts.activeIndex, true)
-  updateMasksVisibility()
+    updateFadeVisibility()
   }
 }
 
-// ---------- Spacing Runtime Styles ----------
+// ---------- Spacing Runtime Styles & Debug Toggles ----------
+let __hudEnabled = true
+let __maskDebug = true // reserved for future debug gradients
 function applySpacingStyles(settings){
   if(!settings) return
-  const { partPadding=4, gapOuterPx=6, gapMetaPx=6, gapIntraPx=6, gapBetweenPx=10 } = settings
+  const { partPadding=4, gapOuterPx=6, gapMetaPx=6, gapIntraPx=6, gapBetweenPx=10, fadeTransitionMs=120 } = settings
   let styleEl = document.getElementById('runtimeSpacing')
   if(!styleEl){ styleEl = document.createElement('style'); styleEl.id='runtimeSpacing'; document.head.appendChild(styleEl) }
   styleEl.textContent = `#historyPane{padding-top:${gapOuterPx}px; padding-bottom:${gapOuterPx}px;}
-  /* DEBUG: show both masks in translucent red */
-  #historyTopMask{position:sticky; top:0; left:0; right:0; height:${gapOuterPx}px; pointer-events:none; z-index:10; display:block; 
-    transform:translateY(-${gapOuterPx}px);
-    background:rgba(255,0,0,0.25); border-bottom:1px solid rgba(255,0,0,0.6);
-  }
-  #historyBottomMask{position:absolute; left:0; right:0; pointer-events:none; z-index:10; display:none; 
-    background:rgba(255,0,0,0.25); border-top:1px solid rgba(255,0,0,0.6); box-sizing:border-box; /* width governed by left/right like top mask */
-  }
   .history{gap:0;}
   /* Gaps now explicit elements */
   .gap{width:100%; flex:none;}
@@ -185,7 +178,7 @@ function applySpacingStyles(settings){
   .gap-meta{height:${gapMetaPx}px;}
   .gap-intra{height:${gapIntraPx}px;}
   /* Base part reset */
-  .part{margin:0;box-shadow:none;background:transparent;}
+  .part{margin:0;box-shadow:none;background:transparent;opacity:1;transition:opacity ${fadeTransitionMs}ms linear;}
   /* Uniform padding only for user/assistant; meta intentionally minimal */
   .part.user .part-inner, .part.assistant .part-inner{padding:${partPadding}px;}
   .part.meta .part-inner{padding:0; display:flex; flex-direction:row; align-items:center; gap:0; min-height:1.6em;}
@@ -206,112 +199,47 @@ function applySpacingStyles(settings){
 }
 
 // Show/hide top mask based on anchor mode (only in 'top'). Keeps layout gap structural via padding while visually hiding any preceding slice.
-function updateMasksVisibility(){
-  const topMask = document.getElementById('historyTopMask')
-  const bottomMask = document.getElementById('historyBottomMask')
-  if(!topMask || !bottomMask) return
-  const s = getSettings()
-  const mode = s.anchorMode || 'bottom'
-  const G = s.gapOuterPx || 0
+function updateFadeVisibility(){
+  const settings = getSettings()
+  const G = settings.gapOuterPx || 0
+  const fadeMode = settings.fadeMode || 'binary'
+  const hiddenOp = typeof settings.fadeHiddenOpacity === 'number' ? settings.fadeHiddenOpacity : 0
   const pane = historyPaneEl
+  if(!pane) return
   const S = pane.scrollTop
   const H = pane.clientHeight
-  const viewportBottom = S + H
-  const parts = Array.from(pane.querySelectorAll('#history > .part')) // includes meta
-  const padLeft = parseFloat(getComputedStyle(pane).paddingLeft)||0
-  const padRight = parseFloat(getComputedStyle(pane).paddingRight)||0
-  const innerWidth = pane.clientWidth - padLeft - padRight
-
-  // Helpers ----------------------------------------------------
-  function findBottomClipped(){
-    for(const p of parts){
-      const partTop = p.offsetTop
-      const partBottom = partTop + p.offsetHeight
-      if(partTop < viewportBottom && partBottom > viewportBottom) return { part:p, partTop, partBottom }
+  const fadeZone = G
+  const parts = pane.querySelectorAll('#history > .part')
+  parts.forEach(p=>{
+    const top = p.offsetTop
+    const h = p.offsetHeight
+    const bottom = top + h
+    const isActive = p.classList.contains('active')
+    const relTop = top - S
+    const relBottom = bottom - S
+    let op = 1
+    if(fadeMode === 'gradient'){
+      let topFade = 1
+      if(relTop < fadeZone){ topFade = Math.max(0, relTop / fadeZone) }
+      let bottomFade = 1
+      const distFromBottom = H - relBottom
+      if(distFromBottom < fadeZone){ bottomFade = Math.max(0, distFromBottom / fadeZone) }
+      op = Math.min(topFade, bottomFade)
+      if(op < 0) op = 0
+      if(op > 1) op = 1
+    } else { // binary
+  // Part intrudes if ANY portion overlaps top gap (relTop < fadeZone) or bottom gap (H - relBottom < fadeZone)
+  const topIntrudes = relTop < fadeZone
+  const bottomIntrudes = (H - relBottom) < fadeZone
+  if(topIntrudes || bottomIntrudes) op = hiddenOp
     }
-    return null
-  }
-  function findTopClipped(){
-    for(const p of parts){
-      const partTop = p.offsetTop
-      const partBottom = partTop + p.offsetHeight
-      if(partTop < S && partBottom > S) return { part:p, partTop, partBottom }
-    }
-    return null
-  }
-  function applyFixedTopOuterGapMask(){
-    // Top reading position: mask exactly the structural outer gap always.
-    topMask.style.display = 'block'
-    topMask.style.position = 'sticky'
-    topMask.style.top = '0px'
-    topMask.style.left = '0'
-    topMask.style.right = '0'
-    topMask.style.height = G + 'px'
-    topMask.style.transform = `translateY(-${G}px)`
-  }
-  function applyFixedBottomOuterGapMask(){
-    // Bottom reading position: mask the bottom outer gap (content-space coordinates).
-    bottomMask.style.display = 'block'
-    bottomMask.style.position = 'absolute'
-  bottomMask.style.left = padLeft + 'px'
-  bottomMask.style.right = 'auto'
-  bottomMask.style.width = innerWidth + 'px'
-    // Bottom gap occupies [viewportBottom-G, viewportBottom) in content coordinates.
-    bottomMask.style.top = (S + H - G) + 'px'
-    bottomMask.style.height = G + 'px'
-  }
-  function hideTopMask(){
-    topMask.style.display = 'none'
-    topMask.style.height = '0px'
-    topMask.style.transform = ''
-  }
-  function hideBottomMask(){
-    bottomMask.style.display = 'none'
-    bottomMask.style.height = '0px'
-  }
-  function applyDynamicBottomClipped(){
-    const hit = findBottomClipped()
-    if(hit){
-      bottomMask.style.display = 'block'
-      bottomMask.style.position = 'absolute'
-  bottomMask.style.left = padLeft + 'px'
-  bottomMask.style.right = 'auto'
-  bottomMask.style.width = innerWidth + 'px'
-      bottomMask.style.top = hit.partTop + 'px'
-      bottomMask.style.height = (viewportBottom - hit.partTop) + 'px'
-    } else hideBottomMask()
-  }
-  function applyDynamicTopClipped(){
-    const hit = findTopClipped()
-    if(hit){
-      const coverHeight = S - hit.partTop // portion hidden above viewport top
-      topMask.style.display = 'block'
-      topMask.style.position = 'absolute'
-  topMask.style.left = padLeft + 'px'
-  topMask.style.right = 'auto'
-  topMask.style.width = innerWidth + 'px'
-      topMask.style.top = hit.partTop + 'px'
-      topMask.style.height = coverHeight + 'px'
-      topMask.style.transform = '' // ensure no leftover from top-mode
-    } else hideTopMask()
-  }
-
-  // Mode-specific application ----------------------------------
-  if(mode === 'top'){
-    applyFixedTopOuterGapMask()
-    applyDynamicBottomClipped()
-  } else if(mode === 'bottom'){
-    // Invert roles: fixed bottom outer-gap mask, dynamic top clipped-part mask.
-    applyFixedBottomOuterGapMask()
-    applyDynamicTopClipped()
-  } else { // center: both edges potentially clipped; both dynamic.
-    applyDynamicTopClipped()
-    applyDynamicBottomClipped()
-  }
+    if(isActive) op = 1 // active always fully visible
+    p.style.opacity = String(op)
+    p.style.pointerEvents = op === 0 ? 'none' : ''
+  })
 }
 
-// Update masks on scroll (user free scroll) to maintain correct clipped coverage
-historyPaneEl.addEventListener('scroll', ()=>{ updateMasksVisibility() })
+historyPaneEl.addEventListener('scroll', ()=>{ updateFadeVisibility() })
 
 // escapeHtml centralized in ui/util.js
 
@@ -380,6 +308,12 @@ const commandHandler = (e)=>{
   if(modalIsActive && modalIsActive()) return false
   if(e.key === 'Enter'){
     const q = commandInput.value.trim()
+  // Debug toggles
+  if(q === ':hud' || q === ':hud on'){ __hudEnabled = true; commandInput.value=''; commandErrEl.textContent=''; return true }
+  if(q === ':hud off'){ __hudEnabled = false; commandInput.value=''; commandErrEl.textContent=''; return true }
+  if(q === ':maskdebug' || q === ':maskdebug on'){ __maskDebug = true; commandInput.value=''; commandErrEl.textContent=''; applySpacingStyles(getSettings()); updateFadeVisibility(); return true }
+  if(q === ':maskdebug off'){ __maskDebug = false; commandInput.value=''; commandErrEl.textContent=''; applySpacingStyles(getSettings()); updateFadeVisibility(); return true }
+  updateFadeVisibility()
   lifecycle.setFilterQuery(q)
     if(!q){ commandErrEl.textContent=''; renderHistory(store.getAllPairs()); activeParts.last(); applyActivePart(); modeManager.set(MODES.VIEW); return true }
     try {
@@ -608,7 +542,7 @@ function formatTimestamp(ts){
   return `${yy}-${dd}-${mm} ${hh}:${mi}:${ss}`
 }
 // HUD section collapse state
-const __hudState = { layout:true, masks:true, partition:true, meta:true }
+const __hudState = { layout:true, visibility:true, partition:true, meta:true }
 if(!hudEl.__hudClickBound){
   hudEl.addEventListener('click', (e)=>{
     const target = e.target.closest('[data-hud-section-header]')
@@ -619,6 +553,7 @@ if(!hudEl.__hudClickBound){
   hudEl.__hudClickBound = true
 }
 function updateHud(){
+  hudEl.style.display = __hudEnabled ? 'block' : 'none'
   const act = activeParts.active()
   let pairInfo='(none)'
   if(act){
@@ -695,25 +630,24 @@ function updateHud(){
   }
   const maskParams = []
   if(dbg){
-    const paneR = historyPaneEl.getBoundingClientRect()
-    const tMask = document.getElementById('historyTopMask')
-    const bMask = document.getElementById('historyBottomMask')
-    if(tMask){
-      const rT = tMask.getBoundingClientRect()
-      maskParams.push(`${n++}. Top mask position: ${Math.round(rT.top - paneR.top)}`)
-      maskParams.push(`${n++}. Top mask height: ${rT.height}`)
-    } else {
-      maskParams.push(`${n++}. Top mask position: -`)
-      maskParams.push(`${n++}. Top mask height: -`)
-    }
-    if(bMask){
-      const rB = bMask.getBoundingClientRect()
-      maskParams.push(`${n++}. Bottom mask position: ${Math.round(rB.top - paneR.top)}`)
-      maskParams.push(`${n++}. Bottom mask height: ${rB.height}`)
-    } else {
-      maskParams.push(`${n++}. Bottom mask position: -`)
-      maskParams.push(`${n++}. Bottom mask height: -`)
-    }
+    const partsList = historyPaneEl.querySelectorAll('#history > .part')
+    let hidden=0, partialTop=0, partialBottom=0
+    const S2 = historyPaneEl.scrollTop
+    const H2 = historyPaneEl.clientHeight
+    const G2 = parseFloat(getComputedStyle(historyPaneEl).paddingTop)||0
+    partsList.forEach(p=>{
+      const topRel = p.offsetTop - S2
+      const bottomRel = topRel + p.offsetHeight
+      const opVal = parseFloat(p.style.opacity||'1')
+      if(opVal === 0) hidden++
+      else {
+        if(topRel < G2) partialTop++
+        if((H2 - bottomRel) < G2) partialBottom++
+      }
+    })
+    maskParams.push(`${n++}. hidden parts: ${hidden}`)
+    maskParams.push(`${n++}. partialTop (within G): ${partialTop}`)
+    maskParams.push(`${n++}. partialBottom (within G): ${partialBottom}`)
   }
   const partitionParams = []
   try {
@@ -786,7 +720,7 @@ function updateHud(){
   }
   hudEl.innerHTML = [
     sectionHTML('layout','Layout', layoutParams),
-    sectionHTML('masks','Masks', maskParams),
+  sectionHTML('visibility','Visibility', maskParams),
     sectionHTML('partition','Partition', partitionParams),
     sectionHTML('meta','Meta', metaParams),
     `<div class='pairInfo'>${pairInfo}</div>`

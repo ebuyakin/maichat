@@ -12,7 +12,16 @@ const DEFAULTS = {
   gapIntraPx: 6,                // user→user and assistant→assistant
   gapBetweenPx: 10,             // between messages (pairs)
   topZoneLines: 0,              // reserved future
-  bottomZoneLines: 0
+  bottomZoneLines: 0,
+  // Visibility / fade system
+  fadeMode: 'binary',           // 'binary' | 'gradient'
+  fadeHiddenOpacity: 0,         // opacity applied to parts outside viewing window when binary
+  fadeTransitionMs: 120,        // transition duration for opacity changes
+  scrollAnimMs: 240,            // base duration (ms) for medium-distance animated scroll
+  scrollAnimEasing: 'easeOutQuad', // 'linear' | 'easeOutQuad' | 'easeInOutCubic' | 'easeOutExpo'
+  scrollAnimDynamic: true,      // scale duration by distance relative to viewport height
+  scrollAnimMinMs: 80,          // min duration clamp when dynamic
+  scrollAnimMaxMs: 600          // max duration clamp when dynamic
 }
 
 const LS_KEY = 'maichat.settings.v1'

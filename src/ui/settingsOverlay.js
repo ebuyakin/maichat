@@ -9,15 +9,19 @@ export function openSettingsOverlay({ onClose }){
   const existing = getSettings()
   const root = document.createElement('div')
   root.id = 'settingsOverlayRoot'
-  root.className = 'overlay-backdrop'
+  root.className = 'overlay-backdrop centered'
   root.innerHTML = `
-    <div class="overlay-panel settings-panel">
+    <div class="overlay-panel settings-panel compact">
       <header>Settings</header>
+      <div class="settings-tabs" role="tablist">
+        ${['layout','spacing','visibility','scroll'].map((t,i)=>`<button type="button" class="tab-btn${i===0?' active':''}" data-tab="${t}" role="tab" aria-selected="${i===0}" aria-controls="tab-${t}">${t}</button>`).join('')}
+      </div>
       <div class="settings-body">
         <form id="settingsForm" autocomplete="off">
-          <div class="settings-columns">
-            <div class="col col-main">
-              <label>Part Fraction <span class="pf-hint" style="opacity:.6;font-size:.85em"></span>
+          <div class="tab-section" data-tab-section="layout" id="tab-layout">
+            <fieldset class="spacing-fieldset layout-fieldset">
+              <legend>Layout</legend>
+              <label><span>Part Fraction <span class="pf-hint" style="opacity:.7;font-size:12px;color:var(--text-dim);"></span></span>
                 <input name="partFraction" type="number" step="0.10" min="0.10" max="1.00" value="${existing.partFraction}" />
               </label>
               <label>Anchor Mode
@@ -30,27 +34,68 @@ export function openSettingsOverlay({ onClose }){
                   ${['adaptive','strict'].map(m=>`<option value="${m}" ${m===existing.edgeAnchoringMode?'selected':''}>${m}</option>`).join('')}
                 </select>
               </label>
-            </div>
-            <div class="col col-spacing">
-              <fieldset class="spacing-fieldset">
-                <legend>Spacing</legend>
-                <label>Part Padding (px)
-                  <input name="partPadding" type="number" step="1" min="0" max="48" value="${existing.partPadding}" />
-                </label>
-                <label>Edge Gap (px)
-                  <input name="gapOuterPx" type="number" step="1" min="0" max="48" value="${existing.gapOuterPx}" />
-                </label>
-                <label>Meta Gap (px)
-                  <input name="gapMetaPx" type="number" step="1" min="0" max="48" value="${existing.gapMetaPx}" />
-                </label>
-                <label>Intra-role Gap (px)
-                  <input name="gapIntraPx" type="number" step="1" min="0" max="48" value="${existing.gapIntraPx}" />
-                </label>
-                <label>Between Messages Gap (px)
-                  <input name="gapBetweenPx" type="number" step="1" min="0" max="48" value="${existing.gapBetweenPx}" />
-                </label>
-              </fieldset>
-            </div>
+            </fieldset>
+            <div class="tab-hint" data-tab-hint="layout">Shift+1..4 switch tabs • h/l or [ ] cycle • j/k move • +/- adjust • Enter save • Esc close</div>
+          </div>
+          <div class="tab-section" data-tab-section="spacing" id="tab-spacing" hidden>
+            <fieldset class="spacing-fieldset">
+              <legend>Spacing</legend>
+              <label>Part Padding (px)
+                <input name="partPadding" type="number" step="1" min="0" max="48" value="${existing.partPadding}" />
+              </label>
+              <label>Edge Gap (px)
+                <input name="gapOuterPx" type="number" step="1" min="0" max="48" value="${existing.gapOuterPx}" />
+              </label>
+              <label>Meta Gap (px)
+                <input name="gapMetaPx" type="number" step="1" min="0" max="48" value="${existing.gapMetaPx}" />
+              </label>
+              <label>Intra-role Gap (px)
+                <input name="gapIntraPx" type="number" step="1" min="0" max="48" value="${existing.gapIntraPx}" />
+              </label>
+              <label>Between Messages Gap (px)
+                <input name="gapBetweenPx" type="number" step="1" min="0" max="48" value="${existing.gapBetweenPx}" />
+              </label>
+            </fieldset>
+          </div>
+          <div class="tab-section" data-tab-section="visibility" id="tab-visibility" hidden>
+            <fieldset class="spacing-fieldset visibility-fieldset">
+              <legend>Visibility</legend>
+              <label>Fade Mode
+                <select name="fadeMode">
+                  ${['binary','gradient'].map(m=>`<option value="${m}" ${m===existing.fadeMode?'selected':''}>${m}</option>`).join('')}
+                </select>
+              </label>
+              <label>Hidden Opacity (binary)
+                <input name="fadeHiddenOpacity" type="number" min="0" max="1" step="0.05" value="${existing.fadeHiddenOpacity}" />
+              </label>
+              <label>Transition (ms)
+                <input name="fadeTransitionMs" type="number" min="0" max="1000" step="10" value="${existing.fadeTransitionMs}" />
+              </label>
+            </fieldset>
+          </div>
+          <div class="tab-section" data-tab-section="scroll" id="tab-scroll" hidden>
+            <fieldset class="spacing-fieldset scroll-fieldset">
+              <legend>Scrolling</legend>
+              <label>Base Duration (ms)
+                <input name="scrollAnimMs" type="number" min="0" max="1200" step="20" value="${existing.scrollAnimMs}" />
+              </label>
+              <label>Dynamic Scaling
+                <select name="scrollAnimDynamic">
+                  ${[true,false].map(v=>`<option value="${v}" ${(String(v)===String(existing.scrollAnimDynamic))?'selected':''}>${v?'on':'off'}</option>`).join('')}
+                </select>
+              </label>
+              <label>Min Duration (ms)
+                <input name="scrollAnimMinMs" type="number" min="0" max="1000" step="10" value="${existing.scrollAnimMinMs}" />
+              </label>
+              <label>Max Duration (ms)
+                <input name="scrollAnimMaxMs" type="number" min="0" max="2000" step="20" value="${existing.scrollAnimMaxMs}" />
+              </label>
+              <label>Easing
+                <select name="scrollAnimEasing">
+                  ${['linear','easeOutQuad','easeInOutCubic','easeOutExpo'].map(m=>`<option value="${m}" ${m===existing.scrollAnimEasing?'selected':''}>${m}</option>`).join('')}
+                </select>
+              </label>
+            </fieldset>
           </div>
           <div class="buttons">
             <button type="button" data-action="cancel">Cancel</button>
@@ -83,11 +128,20 @@ export function openSettingsOverlay({ onClose }){
     const gapBetweenPx = clampRange(parseInt(fd.get('gapBetweenPx')),0,48)
     const anchorMode = fd.get('anchorMode')
     const edgeAnchoringMode = fd.get('edgeAnchoringMode')
-    saveSettings({ partFraction, anchorMode, edgeAnchoringMode, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx })
+    const fadeMode = fd.get('fadeMode') || 'binary'
+    const fadeHiddenOpacity = clampFloat(parseFloat(fd.get('fadeHiddenOpacity')),0,1)
+    const fadeTransitionMs = clampRange(parseInt(fd.get('fadeTransitionMs')),0,1000)
+  const scrollAnimMs = clampRange(parseInt(fd.get('scrollAnimMs')),0,2000)
+  const scrollAnimDynamic = fd.get('scrollAnimDynamic') === 'true'
+  const scrollAnimMinMs = clampRange(parseInt(fd.get('scrollAnimMinMs')),0,1000)
+  const scrollAnimMaxMs = clampRange(parseInt(fd.get('scrollAnimMaxMs')),0,5000)
+  const scrollAnimEasing = fd.get('scrollAnimEasing') || 'easeOutQuad'
+  saveSettings({ partFraction, anchorMode, edgeAnchoringMode, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeTransitionMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing })
     markSaved()
   }
   function clampPF(v){ if(isNaN(v)) v = existing.partFraction || 0.6; return Math.min(1.00, Math.max(0.10, v)) }
   function clampRange(v,min,max){ if(isNaN(v)) return min; return Math.min(max, Math.max(min,v)) }
+  function clampFloat(v,min,max){ if(isNaN(v)) return min; return Math.min(max, Math.max(min,v)) }
   function markSaved(){ applyBtn.textContent = 'Saved'; applyBtn.classList.add('saved') }
   function markDirty(){ if(applyBtn.textContent==='Saved'){ applyBtn.textContent='Apply'; applyBtn.classList.remove('saved') } }
 
@@ -229,4 +283,44 @@ export function openSettingsOverlay({ onClose }){
     pfHintEl.textContent = ''
   }
   if(pfInput){ pfInput.addEventListener('input', updatePfHint); updatePfHint() }
+
+  // -------- Tabs logic --------
+  const tabs = Array.from(panel.querySelectorAll('.settings-tabs .tab-btn'))
+  function activateTab(name){
+    tabs.forEach(btn=>{
+      const on = btn.getAttribute('data-tab')===name
+      btn.classList.toggle('active', on)
+      btn.setAttribute('aria-selected', on)
+    })
+    panel.querySelectorAll('[data-tab-section]').forEach(sec=>{
+      const on = sec.getAttribute('data-tab-section')===name
+      sec.hidden = !on
+    })
+  panel.querySelectorAll('.tab-hint').forEach(h=>{ h.style.display = (h.getAttribute('data-tab-hint')===name)?'block':'none' })
+    // Focus first field in tab
+    const first = panel.querySelector(`[data-tab-section='${name}'] input, [data-tab-section='${name}'] select`)
+    if(first) first.focus()
+  }
+  tabs.forEach(btn=> btn.addEventListener('click', ()=> activateTab(btn.getAttribute('data-tab'))))
+  function cycleTab(dir){
+    const order = tabs.map(b=> b.getAttribute('data-tab'))
+    const current = order.findIndex(t=> panel.querySelector(`[data-tab-section='${t}']`).hidden===false)
+    const next = (current + dir + order.length) % order.length
+    activateTab(order[next])
+  }
+  // Removed dynamic height logic: panel uses fixed CSS height to avoid flicker.
+
+  // Number keys 1-4 select tab
+  panel.addEventListener('keydown', e=>{
+    if(e.target && e.target.matches('input,select,button')){
+      // Shift+1..4 -> tabs (leave bare 1/2/3/4 for numeric entry)
+      if(e.shiftKey && ['1','2','3','4'].includes(e.key)){
+        const idx = Number(e.key)-1
+        if(tabs[idx]){ e.preventDefault(); activateTab(tabs[idx].getAttribute('data-tab')) }
+      }
+      // Legacy [ / ] and new h / l for tab cycling
+      if(e.key==='[' || (e.key==='h' && !e.metaKey && !e.altKey && !e.ctrlKey)) { e.preventDefault(); cycleTab(-1) }
+      if(e.key===']' || (e.key==='l' && !e.metaKey && !e.altKey && !e.ctrlKey)) { e.preventDefault(); cycleTab(1) }
+    }
+  })
 }
