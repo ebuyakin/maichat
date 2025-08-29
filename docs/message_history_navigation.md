@@ -9,14 +9,14 @@ This document defines the user‑observable behavior of conversation navigation 
 * Message: A user request or assistant reply (the stored pair contains two texts; UI presents them as ordered parts with a metadata line in between).
 * Message Part ("part"): A contiguous, readable fragment of a message’s text sized according to user preferences (viewport fraction mapped to whole rendered lines). Short messages ⇒ one part; long messages ⇒ multiple parts.
 * Active (Focused) Part: Exactly one part at a time receives focus styling (thin blue border + padding). Navigation always refers to parts.
-* Reading Position (Anchor): The vertical alignment target for the active part: Top | Center | Bottom (user preference; default Bottom). The system inserts dynamic spacer height above/below content to maintain alignment even at start/end.
-* Extra Space: Artificial blank space (top/bottom spacer elements) used to keep the active part aligned when at the extremes.
+* Reading Position (Anchor): The vertical alignment target for the active part: Top | Center | Bottom (user preference; default Bottom). Alignment is achieved via scroll position + constant outer padding (no injected spacer elements).
+* Edge Fading: Opacity reduction (binary or gradient) applied to parts that intrude into the outer gap zones at the top or bottom (replaces any earlier spacer / overlay concepts).
 * Meta Row: A non-focusable row between user parts and assistant parts of a pair showing badges (model, stars, topic, include flag, timestamp). It is never part of navigation.
 
 ### 2. Core Principles
 1. Single Page: No inner scroll containers; the history is one continuous scrollable surface.
 2. Single Focus: Always exactly one active part; no wrap-around illusions; attempts to move beyond edges do nothing (calm edges).
-3. Stable Anchoring: After any navigation action the active part is positioned at the chosen reading position (unless near edges where spacers emulate it).
+3. Stable Anchoring: After any navigation action the active part is positioned at the chosen reading position (within edge constraints; no artificial spacers).
 4. Deterministic Partitioning: Given the same text, settings, and viewport category (width/lineHeight) the part boundaries & IDs are stable.
 5. Non-Intrusive Updates: New messages never yank the reader away from earlier content; the user opts-in to jump.
 
@@ -28,13 +28,13 @@ Stepping (j / k or ArrowDown / ArrowUp):
 * Moves to next/previous part. If next would exceed list end, no movement (no scroll jitter). Anchoring reapplies for the new part.
 
 Jumping:
-* g jumps to first part; G jumps to last part; anchor enforced (spacers may appear).
+* g jumps to first part; G jumps to last part; anchor enforced (no artificial spacers).
 
 Filtering:
 * Applying a filter rebuilds the list with only matching pairs → the last visible part becomes active at the anchor. Clearing filter restores full list and preserves bottom alignment of last part.
 
 Resizing:
-* Minor resize (<10% viewport height change): keep existing partition boundaries; maintain active part + anchor via new spacer math.
+* Minor resize (<10% viewport height change): keep existing partition boundaries; maintain active part + anchor (dead-band suppresses ≤2px micro corrections).
 * Major resize (≥10% change): recompute partitions (line limit may change), map prior active to the part covering the same text range (or nearest within its pair) and re-anchor.
 
 New Messages (User Behavior Perspective):
@@ -76,20 +76,20 @@ Persisted Preferences:
 * edgeAnchoringMode (adaptive|strict) (default adaptive)
 
 Edge Anchoring Mode:
-* Adaptive (default): If enforcing the anchor would require large artificial blank space (content smaller than viewport or anchor scroll would exceed natural bounds), clamp scroll, omit spacers, and place content naturally (top when short list). Ensures efficient use of screen at conversation start/end.
-* Strict: Always attempt to visually place the active part at the chosen anchor using spacers even if this yields large empty regions.
+* Adaptive (default): If enforcing the anchor would require large blank space (content smaller than viewport or anchor scroll would exceed natural bounds), clamp scroll and place content naturally (top when short list). Ensures efficient use of screen at conversation start/end.
+* Strict: Always attempt to visually place the active part at the chosen anchor even if this yields large empty regions.
 
 ### 6. Anchoring Mechanics
 Given activePartRect (top,height) & viewportHeight:
 * Bottom: desiredTop = viewportHeight - activePartHeight
 * Center: desiredTop = (viewportHeight - activePartHeight)/2
-* Top: desiredTop = 0
-Compute delta = currentOffsetTopRelativeToViewport - desiredTop; adjust scrollTop OR introduce top/bottom spacer heights so the part visually lands at desiredTop without negative scroll attempts. Spacers shrink/grow smoothly when navigating.
+* Top: desiredTop = 0 (plus configured top padding gap)
+We set scrollTop so the active part lands at desiredTop in one pass. A single deferred validation runs after any smooth animation; micro re-alignments ≤2px (dead-band) are suppressed to eliminate flicker.
 
 ### 7. Edge Behavior
 * First part upward step → no-op.
 * Last part downward step → no-op.
-* Active part always remains in stable alignment; spacers adapt.
+* Active part remains in stable alignment; layout uses only padding + scroll (no spacer elements); fading gently dims intruding neighbors.
 
 ### 8. Indicator & Jump Behavior (Detailed)
 State is "at end" if (activePartIndex == lastIndex) AND |visualAlignedOffsetDelta| ≤ 4px AND no navigation key pressed since last user send while pending.
@@ -107,14 +107,14 @@ State is "at end" if (activePartIndex == lastIndex) AND |visualAlignedOffsetDelt
 
 ### 10. Acceptance Criteria (M5 Navigation)
 1. Deterministic partitioning given same inputs (hash + settings) → identical part IDs.
-2. Navigation j/k/g/G respects edges (no jitter) and maintains anchor.
+2. Navigation j/k/g/G respects edges (no jitter) and maintains anchor (tolerance: sub‑2px drift suppressed – dead‑band).
 3. Meta row never becomes active; star/include toggles still affect its pair from any part.
 4. Changing part size fraction triggers repartition; active part maps to same text range (or nearest within pair).
 5. Resize <10% height keeps partitions; ≥10% triggers repartition & active mapping.
 6. New message indicator appears only when user not at end; never auto-scrolls user away.
 7. Filter application re-focuses last visible part with correct anchor.
 8. All persisted settings restore on reload before first render.
-9. Adaptive edge anchoring: With few parts (content height ≤ viewport height) or anchor beyond natural bounds, first/last part displayed without excessive spacer (no giant void). Strict mode still produces anchored position via spacer.
+9. Adaptive edge anchoring: With few parts (content height ≤ viewport height) or anchor beyond natural bounds, first/last part displayed naturally (no artificial blank spacer). Strict mode still enforces positional alignment within available space.
 10. Switching edgeAnchoringMode re-anchors current active part without repartition.
 
 ### 11. Future Extensions

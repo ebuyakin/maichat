@@ -111,6 +111,8 @@ const activeParts = new ActivePartController()
 const historyPaneEl = document.getElementById('historyPane')
 const anchorManager = null // legacy removed
 const scrollController = createScrollController({ container: historyPaneEl })
+// Expose for diagnostics
+window.__scrollController = scrollController
 const historyView = createHistoryView({ store, onActivePartRendered: ()=> applyActivePart() })
 // Preload settings (future partition logic will use them)
 getSettings()
@@ -331,6 +333,10 @@ const commandHandler = (e)=>{
   if(q === ':hud off'){ __hudEnabled = false; commandInput.value=''; commandErrEl.textContent=''; return true }
   if(q === ':maskdebug' || q === ':maskdebug on'){ __maskDebug = true; commandInput.value=''; commandErrEl.textContent=''; applySpacingStyles(getSettings()); updateFadeVisibility(); return true }
   if(q === ':maskdebug off'){ __maskDebug = false; commandInput.value=''; commandErrEl.textContent=''; applySpacingStyles(getSettings()); updateFadeVisibility(); return true }
+  if(q === ':anim off' || q === ':noanim' || q === ':noanim on') { scrollController.setAnimationEnabled(false); console.log('Scroll animation disabled'); commandInput.value=''; commandErrEl.textContent=''; return true }
+  if(q === ':anim on' || q === ':noanim off') { scrollController.setAnimationEnabled(true); console.log('Scroll animation enabled'); commandInput.value=''; commandErrEl.textContent=''; return true }
+  if(q === ':scrolllog on'){ window.__scrollLog = true; console.log('Scroll log ON'); commandInput.value=''; commandErrEl.textContent=''; return true }
+  if(q === ':scrolllog off'){ window.__scrollLog = false; console.log('Scroll log OFF'); commandInput.value=''; commandErrEl.textContent=''; return true }
   updateFadeVisibility()
   lifecycle.setFilterQuery(q)
     if(!q){ commandErrEl.textContent=''; renderHistory(store.getAllPairs()); activeParts.last(); applyActivePart(); modeManager.set(MODES.VIEW); return true }

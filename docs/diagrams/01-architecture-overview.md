@@ -13,7 +13,7 @@ flowchart LR
   subgraph CTRL[Controllers]
     MODES[Mode Manager]
     SCROLL[Scroll Controller]
-    MASKS[Mask Controller]
+  FADING[Visibility Fading]
     PARTS[Active Part Controller]
     FILTER[Filter Parser and Evaluator]
     LIFECYCLE[New Message Lifecycle]
@@ -35,12 +35,12 @@ flowchart LR
   STORE --> INDEXES
   INDEXES --> FILTER
   VIEW --> SCROLL
-  SCROLL --> MASKS
-  MASKS --> HUD
+  SCROLL --> FADING
+  FADING --> HUD
   SCROLL --> PARTS
   PARTS --> VIEW
   SETTINGS --> SCROLL
-  SETTINGS --> MASKS
+  SETTINGS --> FADING
   SETTINGS --> VIEW
   SETTINGS --> PARTS
   PERSIST --- STORE
@@ -52,4 +52,4 @@ flowchart LR
 Key Notes:
 - UI components are thin; controllers encapsulate logic.
 - Store is the source of truth; persistence syncs opportunistically.
-- Scroll Controller owns measurement + anchor math; Mask Controller derives overlay geometry.
+- Scroll Controller owns measurement + anchor math; Fading logic applies edge opacity.

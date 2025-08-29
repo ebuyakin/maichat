@@ -97,17 +97,17 @@ M5.3 Settings & Persistence
 3. [X] Resize ≥10% triggers repartition invalidation
 4. [ ] Extend settings to gaps/padding (deferred)
 
-M5.4 Reading Position Regimes & Masking (ACTIVE SUB‑TASK)
+M5.4 Reading Position Regimes & Visibility Fading (ACTIVE SUB‑TASK)
 1. [X] Anchor modes framework (bottom / center / top)
 2. [X] Edge anchoring mode (adaptive | strict)
 3. [~] Adaptive blank-space suppression
-4. [X] Top mode: outer gap padding + fixed top mask + dynamic bottom mask
+4. [X] Top mode: outer gap padding + fade-based partial suppression (no overlay masks)
 5. [-] Bottom mode validation (clipped coverage, no partial active, jitter)
-6. [-] Center mode implementation (dual dynamic masks, centering heuristic)
+6. [X] Center mode implementation (edge fading, centering heuristic)
 7. [ ] Scroll snapping (optional)
-8. [ ] Mask visual style (gradient fade) & conditional render
-9. [ ] Edge calm behavior (eliminate micro-adjust jitter)
-10. [ ] Mask test harness (DOM simulation)
+8. [X] Gradient fade visual style & conditional render (masks removed)
+9. [X] Edge calm behavior (micro-adjust jitter eliminated via 2px dead-band)
+10. [-] (Dropped) mask test harness (fade opacity logic supplanted it)
 
 M5.5 Metadata & Filtering Integration
 1. [~] Filtering integration with partition (focus-last tests missing)

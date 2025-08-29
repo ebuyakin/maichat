@@ -8,6 +8,9 @@ export function createScrollController({ container, getParts }){
   // parts: [{id,h,g,start}] where start = prefix sum of previous parts+gaps relative to content start (excluding container padding)
   let metrics = null // { parts:[], paneH, edgeGap, totalContentH }
   let anim = null
+  let animationEnabled = true // debug toggle to disable smooth animation (for flicker diagnostics)
+  let pendingValidate = false
+  const ADJUST_THRESHOLD = 2 // px; ignore corrections below this to prevent flicker (raised from 1 after stabilization)
   let currentActiveIndex = 0
   let appliedScrollTop = 0 // last scrollTop we explicitly set (post animation)
   let visibleWindow = { first:0, last:0 }
@@ -113,37 +116,67 @@ export function createScrollController({ container, getParts }){
     const k = Math.max(0, Math.min(activeIndex, metrics.parts.length-1))
     currentActiveIndex = k
     const target = anchorScrollTop(k)
-    if(Math.abs(container.scrollTop - target) > 1){ scrollTo(target, animate) }
-    else appliedScrollTop = target
-    // Post-frame validate to correct drift after layout settles
-    requestAnimationFrame(()=> requestAnimationFrame(validate))
+    if(Math.abs(container.scrollTop - target) > 1){
+      scrollTo(target, animate && animationEnabled)
+    } else {
+      appliedScrollTop = target
+    }
+    scheduleValidate()
   }
 
   function validate(){
+    pendingValidate = false
     if(!metrics) return
     const prevActive = currentActiveIndex
+    const before = container.scrollTop
     measure()
     const target = anchorScrollTop(prevActive)
-    if(Math.abs(container.scrollTop - target) > 0.5){ container.scrollTop = target }
-    appliedScrollTop = target
-    // Fine-tune center mode: ensure midpoint alignment (after DOM settled sizes)
+    const diff = target - container.scrollTop
+    if(Math.abs(diff) > ADJUST_THRESHOLD){
+      container.scrollTop = target
+      if(window.__scrollLog){ console.log('[validate correction]', { before, target, diff }) }
+    } else if(window.__scrollLog && Math.abs(diff) > 0.2){
+      console.log('[validate skipped small]', { before, target, diff })
+    }
+    appliedScrollTop = container.scrollTop
+    // Center mode fine-tune integrated into same threshold (no second snap below threshold)
     if(getSettings().anchorMode === 'center'){
       const part = metrics.parts[prevActive]
       if(part){
         const paneMid = metrics.paneH / 2
-  const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
-  const currentOffset = part.start - container.scrollTop // internal coord (excludes padding)
-  const visualTop = currentOffset + padTop
-  const partMidVis = visualTop + part.h/2
+        const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
+        const currentOffset = part.start - container.scrollTop
+        const visualTop = currentOffset + padTop
+        const partMidVis = visualTop + part.h/2
         const delta = partMidVis - paneMid
-        if(Math.abs(delta) > 0.5){
+        if(Math.abs(delta) > ADJUST_THRESHOLD){
           const corrected = Math.max(0, Math.round(container.scrollTop + delta))
-          if(Math.abs(corrected - container.scrollTop) > 0.5) container.scrollTop = corrected
-          appliedScrollTop = container.scrollTop
+          if(Math.abs(corrected - container.scrollTop) > ADJUST_THRESHOLD){
+            if(window.__scrollLog){ console.log('[center correction]', { from:container.scrollTop, to:corrected, delta }) }
+            container.scrollTop = corrected
+            appliedScrollTop = container.scrollTop
+          }
         }
       }
     }
     visibleWindow = computeVisibleWindow()
+  }
+
+  function scheduleValidate(){
+    if(pendingValidate) return
+    pendingValidate = true
+    // Run only once after current frame / animation completes (animation sets anim=null at end then we validate)
+    if(anim){
+      // Hook into animation completion by wrapping step termination (handled in scrollTo)
+      // scrollTo already ends with anim=null; we'll queue validate when anim stops via a micro timeout
+      const poll = ()=>{
+        if(anim){ requestAnimationFrame(poll); return }
+        requestAnimationFrame(()=> validate())
+      }
+      requestAnimationFrame(poll)
+    } else {
+      requestAnimationFrame(()=> validate())
+    }
   }
 
   // enforceTopModeGap removed (container padding now authoritative)
@@ -179,8 +212,8 @@ export function createScrollController({ container, getParts }){
     function step(now){
       const p = Math.min(1, (now - t0)/dur)
       container.scrollTop = start + dist * ease(p)
-      if(p < 1) anim = requestAnimationFrame(step)
-      else anim = null
+      if(p < 1){ anim = requestAnimationFrame(step) }
+      else { anim = null }
     }
     anim = requestAnimationFrame(step)
   }
@@ -224,8 +257,8 @@ export function createScrollController({ container, getParts }){
         gapBelow = Math.round(gapBelow)
       }
     }
-    return { mode:(getSettings().anchorMode||'bottom'), paneH, currentFirst:vis.first, activeIndex:currentActiveIndex, shouldVisibleCount:(vis.last-vis.first+1), firstTopPx, visualGap, visibleIndices, tops, heights, scrollTop: container.scrollTop, rawAnchor: anchorMeta.raw, maxScroll: anchorMeta.maxScroll, gapBelow }
+    return { mode:(getSettings().anchorMode||'bottom'), paneH, currentFirst:vis.first, activeIndex:currentActiveIndex, shouldVisibleCount:(vis.last-vis.first+1), firstTopPx, visualGap, visibleIndices, tops, heights, scrollTop: container.scrollTop, rawAnchor: anchorMeta.raw, maxScroll: anchorMeta.maxScroll, gapBelow, animationEnabled }
   }
-
-  return { remeasure: measure, apply, debugInfo }
+  function setAnimationEnabled(v){ animationEnabled = !!v }
+  return { remeasure: measure, apply, debugInfo, setAnimationEnabled }
 }

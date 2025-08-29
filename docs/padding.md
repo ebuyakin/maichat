@@ -56,36 +56,34 @@ Issues found:
 
 This approach is retired; retained here only for historical rationale.
 
-## 4. Current Implementation (Explicit Gap Elements + Overlay Mask)
+## 4. Current Implementation (Explicit Gap Elements + Opacity Fading)
 
 Principles:
 1. Explicit gap elements precede parts (e.g. `.gap-between`, `.gap-meta`, `.gap-intra`). Their heights are taken verbatim from user settings.
 2. Outer gap (`gapOuterPx`) is structural padding on `#historyPane` (top & bottom). Scroll math never mutates these spacings.
 3. A single scroll controller computes alignment. Top mode target = `activeElement.offsetTop - paddingTop` (no subtraction of preceding gap) guaranteeing constant visual outer gap.
-4. A top overlay mask (`#historyTopMask`) hides any fragment of a previous part that may intrude into the outer gap region. The mask is purely visual: no DOM height adjustments.
+4. A fade system adjusts opacity of any fragment that intrudes into the outer gap region; no overlay elements required.
 5. Active part highlight uses an inset pseudo-element border so it remains fully visible within the padded area.
 
 Status update (implemented):
-* Top mode: fixed top outer-gap mask always present (covers outer gap whether or not a predecessor fragment exists) + dynamic bottom clipped-part mask when last visible part is truncated.
-* Bottom mode: fixed bottom outer-gap mask + dynamic top clipped-part mask when first visible part is truncated.
-* Center mode: both masks operate in dynamic clipped-part mode (no fixed outer-gap anchoring) to hide partial parts at both edges.
+* Top mode: fading reduces visibility of intruding fragments above/below the active window.
+* Bottom mode: fading covers intruding fragments similarly.
+* Center mode: symmetric fading at both edges.
 * Width: top mask spans full padded width; bottom mask currently sized to inner content width (acceptable; may unify later).
 * Optional snap-after-free-scroll pass not implemented yet (future refinement, not required for current invariant set).
 
-Why masks (instead of dynamic gap growth):
+Why fading (instead of overlay masks):
 * Deterministic layout (prefix sums stable).
 * No layout thrash or re-measure loops.
 * Clear separation: semantic spacing vs edge visibility policy.
 
-Mask roles summary:
-| Mask | Modes using it | Purpose | Height rule |
-|------|----------------|---------|-------------|
-| Top outer-gap mask (fixed) | Top | Cover entire structural outer gap (and any predecessor fragment) | = `gapOuterPx` |
-| Bottom outer-gap mask (fixed) | Bottom | Cover entire structural outer gap (and any successor fragment) | = `gapOuterPx` |
-| Top clipped-part mask (dynamic) | Bottom, Center | Cover visible top fragment of first partially visible part | overlap (S − partTop) |
-| Bottom clipped-part mask (dynamic) | Top, Center | Cover visible bottom fragment of last partially visible part | overlap (partBottom − (S+H)) |
+Fading roles summary:
+| Edge fade | Modes | Purpose | Rule |
+|-----------|-------|---------|------|
+| Top edge fade | All | Reduce visibility of intruding part at top edge | gradient/binary opacity |
+| Bottom edge fade | All | Reduce visibility of intruding part at bottom edge | gradient/binary opacity |
 
-Overlap calculation (implemented for dynamic masks):
+Opacity calculation (gradient mode):
 Let `S = scrollTop`, `H = viewport height`, `G = gapOuterPx`, usable band = `[S+G, S+H-G]`.
 Top fragment height = `(S+G) - top_i` if `top_i < S+G < bottom_i` else 0.
 Bottom fragment height = `bottom_i - (S+H-G)` if `top_i < S+H-G < bottom_i` else 0.
@@ -134,7 +132,7 @@ Accordingly, certain elements shall be vertically aligned (have the same horizon
 Comment: to make sure this is clear. Say I focus on the last part of the last message in the history. and I am in the Top reading position. Following the standard rule, I would see that last part anchored to the top and the remaining part of the screen empty. This should not happen. As soon as there are no more messages to hide, the focus/cursor shall move to the next active part without scrolling.
 
 
-## 7. Top and bottom mask in message history navigation (this turned out to be only working solution)
+## 7. (Historical) Mask-based approach (replaced by fading)
 
 1. In top reading position mode: 
 - if the outerGap is large enough there may be part of the message preceding the active (focused) part, that is visible in the historyPane (it sits in the space of outerGap), so the top mask shall hide it. It shall have the height equal to the outerGap and be position on the very top of the screen (so it covers exactly the gap between the edge of the historyPane and the active part). Let's call this 'outer-gap-mask'
@@ -147,7 +145,7 @@ Comment: to make sure this is clear. Say I focus on the last part of the last me
 3. In center reading position mode: 
 - There can be clipped parts both at the top and at the bottom, so the top and bottom masks shall cover them both. This is a combination of second scenarios for top/bottom reading position. Essentially both top and bottom mask in this case are 'clipped-part-mask'.
 
-In summary, only the parts that fully fit the screen shall be displayed, and all clipped, cut-off, partially visible parts shall be covered by top and bottom masks.
+In summary (current): only fully fitting parts are fully opaque; intruding/clipped edges fade toward the outer gaps.
 
 
 # 8. (Appendix) Simplified Mathematical Core Model
@@ -241,29 +239,31 @@ These terms provide the shared vocabulary for debugging and refining the partiti
 HUD
 A. General
 1. Mode :
-2. Reading position:
+2. Reading position mode:
 3. Active part / total parts :
 4. Active part position / Total history length: (start_part_k / T, k is the index of the active part)
 5. First visible part index / total visible parts :
 6. First visible position / Total history length: (coordinate of the first visible position on the total history scroll, start_part_k2, k2 is the index of the first visible part)
-B. Partition
-7. H_total:
-8. outerGap (G):
-9. H_usable:
-10. Part fraction (pf):
-11. Line height (lineH):
-12. Inner padding (partPadding):
-13. targetPartHeight:
-14. maxLines (formula target):
-15. maxLines_used:
-16. locigalLines:
-17. physicalLines:
-18. wrapWidthUsed:
+7. scrollTop:
+8. historyPane (H_total):
+9. outerGap (G):
+10. Part space (H_usable):
+B. Partitioning
+11. Part fraction (pf):
+12. Line height (lineH):
+13. Inner padding (partPadding):
+14. targetPartHeight:
+15. maxLines (formula target):
+16. maxLines_used:
+17. locigalLines:
+18. physicalLines:
+19. wrapWidthUsed:
 C. Masks
-19. Top mask position:
-20. Top mask height:
-21. Bottom mask position:
-22. Bottom mask height:
+20. Top mask position:
+21. Top mask height:
+22. Bottom mask position:
+2. Bottom mask height:
 D. Meta
 ....
 
+scrollTop = part.start + part.h - (paneH - padBottom)

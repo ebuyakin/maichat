@@ -9,7 +9,7 @@ Term | Meaning
 part | A rendered user / assistant (or meta) content block
 meta part | Non-content informational part (timestamp/topic etc.) – can be excluded from navigation if desired
 preceding gap (g_i) | Explicit gap element immediately before part i (height may vary by type)
-outer gap (G) | User setting `gapOuterPx`; desired constant visual space between pane top and the active part when in top mode
+outer gap (G) | User setting `gapOuterPx`; constant visual space (also fade zone boundary) between pane top and the active part when in top mode
 H_i | Height of part i (its DOM box height)
 S_k | Cumulative height of all displayed items (gaps + parts) before part k
 scrollTop | Standard scroll position of `#historyPane` content
@@ -64,8 +64,8 @@ Input: active index k.
 
 1. Ensure `#historyPane` has `padding-top = padding-bottom = G`.
 2. Maintain (or compute on the fly) prefix sums `S_k` for all k (can be O(1) with an array rebuilt on remeasure).
-3. Set `scrollTop = S_k` directly (no easing necessary unless we want animation; if animating, the target remains exact S_k).
-4. (Optional) Verify post-frame: recompute S_k; if `|scrollTop - S_k| > 0.5`, set again.
+3. Set `scrollTop = S_k` directly (optional smooth animation toward S_k). Suppress post-adjustments ≤2px (dead-band) to avoid flicker.
+4. Deferred validate: recompute S_k; if `|scrollTop - S_k| > 2`, correct once.
 5. HUD logical gap: compute `(partRect.top - containerRect.top - paddingTop)` to display and assert it equals G.
 
 ## 6. Where Prior Attempts Went Wrong
@@ -137,9 +137,9 @@ Because every top-mode application bases the target solely on the prefix sum of 
 4. Change gapBetweenPx drastically (e.g., 4 → 40) and repeat. Still stable.
 5. Resize window height by >20%. Re-run steps 2–3.
 
-## 14. Next Actions
+## 14. Status Summary
 
-If we proceed: implement a fresh `topModeController` using this spec, then integrate back into unified controller (and later define bottom / center analogs cleanly).
+Top-mode logic integrated into unified `scrollControllerV3`; bottom & center use analogous absolute prefix computations. Single deferred validate with 2px dead-band implemented; no separate topModeController required.
 
 ---
 Feedback invited: mark anything unclear or suggest additions; we’ll refine before coding the clean rewrite.
