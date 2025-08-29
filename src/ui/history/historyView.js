@@ -48,15 +48,16 @@ export function createHistoryView({ store, onActivePartRendered }){
       const pair = store.pairs.get(pt.pairId)
       const topic = store.topics.get(pair.topicId)
       const ts = formatTimestamp(pair.createdAt)
-      const topicPath = topic ? formatTopicPath(store, topic.id) : ''
+  const topicPath = topic ? formatTopicPath(store, topic.id) : '(no topic)'
+  const modelName = pair.model || '(model)'
   return `<div class="part meta" data-part-id="${pt.id}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
         <div class="meta-left">
           <span class="badge include" data-include="${pair.includeInContext}">${pair.includeInContext? 'in':'out'}</span>
           <span class="badge stars">${'★'.repeat(pair.star)}${'☆'.repeat(Math.max(0,3-pair.star))}</span>
-          <span class="badge topic" title="${topic?escapeHtml(topicPath):''}">${topic?escapeHtml(middleTruncate(topicPath, 72)):''}</span>
+          <span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span>
         </div>
         <div class="meta-right">
-          <span class="badge model">${pair.model}</span>
+          <span class="badge model">${escapeHtml(modelName)}</span>
           <span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
         </div>
       </div></div>`

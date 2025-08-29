@@ -93,7 +93,7 @@ body { min-height:100vh; overflow:hidden; }
   background:rgba(255,255,255,0.01); 
 }
 .settings-panel fieldset.spacing-fieldset legend { font-size:11px; padding:0 4px; color:var(--text-dim); letter-spacing:.5px; }
-.settings-panel { width:640px; max-width:80vw; max-height:70vh; }
+.settings-panel { width:640px; max-width:80vw; max-height:70vh; min-height:520px; }
 /* Compact variant (settings overlay refinement) */
 .settings-panel.compact { width:440px; }
 @media (max-width:520px){
@@ -102,7 +102,8 @@ body { min-height:100vh; overflow:hidden; }
 /* Vertically center only this compact panel without affecting other overlays */
 .overlay-backdrop .settings-panel.compact { align-self:center; }
 /* Tab hint styling */
-.settings-panel .tab-hint { display:none; font-size:11px; color:var(--text-dim); letter-spacing:.4px; margin:6px 2px 0; line-height:1.35; }
+.settings-panel .tab-hint { display:none; font-size:11px; color:var(--text-dim); letter-spacing:.4px; margin:6px 2px 0; line-height:1.35; width:var(--settings-fieldset-w); text-align:center; }
+.settings-panel .tab-hint[data-tab-hint="layout"] { display:block; }
 /* Slightly dim inline part-fraction hint */
 .settings-panel .pf-hint { font-weight:400; }
 /* Center each tab's content & constrain fieldset width */
@@ -111,7 +112,7 @@ body { min-height:100vh; overflow:hidden; }
 .settings-panel .tab-section fieldset { margin:0 auto; }
 /* Ensure labels don't stretch panel width; center block */
 .settings-panel .tab-section fieldset label { align-items:flex-start; }
-.settings-panel .buttons { position:sticky; bottom:0; background:linear-gradient(to top, var(--bg-alt) 65%, rgba(36,36,36,0)); padding-top:10px; }
+.settings-panel .buttons { position:sticky; bottom:0; background:linear-gradient(to top, var(--bg-alt) 65%, rgba(36,36,36,0)); padding-top:40px; }
 .settings-panel input[type=number]:focus, .settings-panel select:focus { border-color:var(--accent); }
 .settings-panel .buttons { display:flex; justify-content:flex-end; gap:10px; }
 .settings-panel button { background:#1a1a1a; border:1px solid #333; color:var(--text); padding:6px 14px; border-radius:4px; cursor:pointer; font:var(--size-base); }

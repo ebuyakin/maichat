@@ -16,7 +16,10 @@ const DEFAULTS = {
   // Visibility / fade system
   fadeMode: 'binary',           // 'binary' | 'gradient'
   fadeHiddenOpacity: 0,         // opacity applied to parts outside viewing window when binary
-  fadeTransitionMs: 120,        // transition duration for opacity changes
+  // Directional fade durations (fadeTransitionMs legacy kept for migration)
+  fadeInMs: 120,                // fade-in duration (ms)
+  fadeOutMs: 120,               // fade-out duration (ms)
+  fadeTransitionMs: 120,        // legacy single duration (if present, migrates to both)
   scrollAnimMs: 240,            // base duration (ms) for medium-distance animated scroll
   scrollAnimEasing: 'easeOutQuad', // 'linear' | 'easeOutQuad' | 'easeInOutCubic' | 'easeOutExpo'
   scrollAnimDynamic: true,      // scale duration by distance relative to viewport height
@@ -45,6 +48,11 @@ export function loadSettings(){
           if(parsed.gapBetweenPx === undefined) parsed.gapBetweenPx = parsed.gapPx
         }
         delete parsed.paddingPx; delete parsed.gapPx
+      }
+      // Migration: if old single fadeTransitionMs exists but new directional values missing, copy it.
+      if(parsed && parsed.fadeTransitionMs != null){
+        if(parsed.fadeInMs == null) parsed.fadeInMs = parsed.fadeTransitionMs
+        if(parsed.fadeOutMs == null) parsed.fadeOutMs = parsed.fadeTransitionMs
       }
       current = { ...DEFAULTS, ...parsed }
     } else current = { ...DEFAULTS }

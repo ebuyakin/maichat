@@ -68,8 +68,11 @@ export function openSettingsOverlay({ onClose }){
               <label>Hidden Opacity (binary)
                 <input name="fadeHiddenOpacity" type="number" min="0" max="1" step="0.05" value="${existing.fadeHiddenOpacity}" />
               </label>
-              <label>Transition (ms)
-                <input name="fadeTransitionMs" type="number" min="0" max="1000" step="10" value="${existing.fadeTransitionMs}" />
+              <label>Fade In (ms)
+                <input name="fadeInMs" type="number" min="0" max="2000" step="10" value="${existing.fadeInMs != null ? existing.fadeInMs : (existing.fadeTransitionMs != null ? existing.fadeTransitionMs : 120)}" />
+              </label>
+              <label>Fade Out (ms)
+                <input name="fadeOutMs" type="number" min="0" max="2000" step="10" value="${existing.fadeOutMs != null ? existing.fadeOutMs : (existing.fadeTransitionMs != null ? existing.fadeTransitionMs : 120)}" />
               </label>
             </fieldset>
           </div>
@@ -129,14 +132,15 @@ export function openSettingsOverlay({ onClose }){
     const anchorMode = fd.get('anchorMode')
     const edgeAnchoringMode = fd.get('edgeAnchoringMode')
     const fadeMode = fd.get('fadeMode') || 'binary'
-    const fadeHiddenOpacity = clampFloat(parseFloat(fd.get('fadeHiddenOpacity')),0,1)
-    const fadeTransitionMs = clampRange(parseInt(fd.get('fadeTransitionMs')),0,1000)
+  const fadeHiddenOpacity = clampFloat(parseFloat(fd.get('fadeHiddenOpacity')),0,1)
+  const fadeInMs = clampRange(parseInt(fd.get('fadeInMs')),0,5000)
+  const fadeOutMs = clampRange(parseInt(fd.get('fadeOutMs')),0,5000)
   const scrollAnimMs = clampRange(parseInt(fd.get('scrollAnimMs')),0,2000)
   const scrollAnimDynamic = fd.get('scrollAnimDynamic') === 'true'
   const scrollAnimMinMs = clampRange(parseInt(fd.get('scrollAnimMinMs')),0,1000)
   const scrollAnimMaxMs = clampRange(parseInt(fd.get('scrollAnimMaxMs')),0,5000)
   const scrollAnimEasing = fd.get('scrollAnimEasing') || 'easeOutQuad'
-  saveSettings({ partFraction, anchorMode, edgeAnchoringMode, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeTransitionMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing })
+  saveSettings({ partFraction, anchorMode, edgeAnchoringMode, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing })
     markSaved()
   }
   function clampPF(v){ if(isNaN(v)) v = existing.partFraction || 0.6; return Math.min(1.00, Math.max(0.10, v)) }
@@ -168,14 +172,25 @@ export function openSettingsOverlay({ onClose }){
       v += step
       v = clampPF(v)
   el.value = v.toFixed(2)
-    } else { // spacing integers
-      const stepBase = 1
-      const stepLarge = 1 // keep same per spec (no larger jump needed now)
-      const step = (Math.abs(delta)===2?stepLarge:stepBase) * (delta>0?1:-1)
-      let v = parseInt(el.value,10)
-      if(isNaN(v)) v = 0
+    } else if(name === 'fadeHiddenOpacity') {
+      const min = parseFloat(el.min); const max = parseFloat(el.max)
+      const base = parseFloat(el.step)||0.05
+      const step = base * (Math.abs(delta)===2?2:1) * (delta>0?1:-1)
+      let v = parseFloat(el.value); if(isNaN(v)) v = (isNaN(min)?0:min)
       v += step
-      v = clampRange(v,0,48)
+      if(!isNaN(min) && v < min) v = min
+      if(!isNaN(max) && v > max) v = max
+      el.value = v.toFixed(2)
+    } else { // generic integer/duration spacing etc.
+      const minAttr = parseInt(el.min,10); const maxAttr = parseInt(el.max,10)
+      const min = isNaN(minAttr)?0:minAttr
+      const max = isNaN(maxAttr)?Number.MAX_SAFE_INTEGER:maxAttr
+      const base = parseInt(el.step,10) || 1
+      const step = base * (Math.abs(delta)===2?2:1) * (delta>0?1:-1)
+      let v = parseInt(el.value,10); if(isNaN(v)) v = min
+      v += step
+      if(v < min) v = min
+      if(v > max) v = max
       el.value = String(v)
     }
     markDirty()

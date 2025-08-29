@@ -163,11 +163,13 @@ function applyActivePart(){
 }
 
 // ---------- Spacing Runtime Styles & Debug Toggles ----------
-let __hudEnabled = true
+let __hudEnabled = false
 let __maskDebug = true // reserved for future debug gradients
 function applySpacingStyles(settings){
   if(!settings) return
-  const { partPadding=4, gapOuterPx=6, gapMetaPx=6, gapIntraPx=6, gapBetweenPx=10, fadeTransitionMs=120 } = settings
+  const { partPadding=4, gapOuterPx=6, gapMetaPx=6, gapIntraPx=6, gapBetweenPx=10, fadeInMs=120, fadeOutMs=120, fadeTransitionMs=120 } = settings
+  // Use max of in/out for baseline CSS transition; per-change override applied inline based on direction.
+  const baseFadeMs = Math.max(fadeInMs||0, fadeOutMs||0, fadeTransitionMs||0)
   let styleEl = document.getElementById('runtimeSpacing')
   if(!styleEl){ styleEl = document.createElement('style'); styleEl.id='runtimeSpacing'; document.head.appendChild(styleEl) }
   styleEl.textContent = `#historyPane{padding-top:${gapOuterPx}px; padding-bottom:${gapOuterPx}px;}
@@ -178,10 +180,12 @@ function applySpacingStyles(settings){
   .gap-meta{height:${gapMetaPx}px;}
   .gap-intra{height:${gapIntraPx}px;}
   /* Base part reset */
-  .part{margin:0;box-shadow:none;background:transparent;opacity:1;transition:opacity ${fadeTransitionMs}ms linear;}
+  .part{margin:0;box-shadow:none;background:transparent;opacity:1;transition:opacity ${baseFadeMs}ms linear;}
   /* Uniform padding only for user/assistant; meta intentionally minimal */
   .part.user .part-inner, .part.assistant .part-inner{padding:${partPadding}px;}
-  .part.meta .part-inner{padding:0; display:flex; flex-direction:row; align-items:center; gap:0; min-height:1.6em;}
+  /* Meta part horizontally aligns its content with text padding of user/assistant parts */
+  .part.meta .part-inner{padding:0 ${partPadding}px; display:flex; flex-direction:row; align-items:center; gap:12px; min-height:1.6em; width:100%; box-sizing:border-box;}
+  .part.meta .badge.model{color:#aaa;}
   .part.meta{white-space:nowrap;}
   .part.meta .meta-left{display:flex; gap:10px; align-items:center; white-space:nowrap;}
   .part.meta .meta-right{display:flex; gap:10px; align-items:center; margin-left:auto; white-space:nowrap;}
@@ -204,6 +208,8 @@ function updateFadeVisibility(){
   const G = settings.gapOuterPx || 0
   const fadeMode = settings.fadeMode || 'binary'
   const hiddenOp = typeof settings.fadeHiddenOpacity === 'number' ? settings.fadeHiddenOpacity : 0
+  const fadeInMs = settings.fadeInMs != null ? settings.fadeInMs : (settings.fadeTransitionMs || 120)
+  const fadeOutMs = settings.fadeOutMs != null ? settings.fadeOutMs : (settings.fadeTransitionMs || 120)
   const pane = historyPaneEl
   if(!pane) return
   const S = pane.scrollTop
@@ -234,7 +240,19 @@ function updateFadeVisibility(){
   if(topIntrudes || bottomIntrudes) op = hiddenOp
     }
     if(isActive) op = 1 // active always fully visible
-    p.style.opacity = String(op)
+    const prev = p.__lastOpacity != null ? p.__lastOpacity : parseFloat(p.style.opacity||'1')
+    if(prev !== op){
+      // Directional transition control
+      const dirIn = op > prev
+      const dur = dirIn ? fadeInMs : fadeOutMs
+      // Only set if different to avoid layout thrash
+      if(p.__lastFadeDur !== dur){
+        p.style.transitionDuration = dur + 'ms'
+        p.__lastFadeDur = dur
+      }
+      p.style.opacity = String(op)
+      p.__lastOpacity = op
+    }
     p.style.pointerEvents = op === 0 ? 'none' : ''
   })
 }
