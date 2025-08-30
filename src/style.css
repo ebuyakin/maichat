@@ -9,6 +9,11 @@
   --text-dim: #7a7a7a;
   --danger: #f66;
   --focus-ring: #2b4f80; /* darker, thinner focus ring similar to VS Code chat */
+  /* Unified control surfaces */
+  --input-bg: #0a0a0a;
+  --btn-bg: #1a1a1a;
+  --btn-border: #333;
+  --btn-bg-hover: #222;
   --marked-bg: #103b2c;  /* dark green for marked topic */
   /* VS Code / Copilot Chat style stacks: UI uses system sans; code uses monospace */
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
@@ -76,7 +81,7 @@ body { min-height:100vh; overflow:hidden; }
 .settings-panel label:has(.pf-hint) { flex-direction:column; }
 .settings-panel label:has(.pf-hint) > span:first-child { display:flex; align-items:baseline; gap:6px; }
 .settings-panel { --settings-fieldset-w:300px; }
-.settings-panel input[type=number], .settings-panel select { background:#0a0a0a; border:1px solid #333; color:var(--text); padding:4px 6px; font:var(--size-base)/1.4 var(--font-ui); border-radius:4px; width:100% !important; min-width:0; max-width:100%; box-sizing:border-box; }
+.settings-panel input[type=number], .settings-panel select { background:var(--input-bg); border:1px solid #333; color:var(--text); padding:4px 6px; font:var(--size-base)/1.4 var(--font-ui); border-radius:4px; width:100% !important; min-width:0; max-width:100%; box-sizing:border-box; }
 .settings-panel [data-tab-section] label { max-width:100%; width:100%; }
 .settings-panel fieldset.spacing-fieldset, 
 .settings-panel fieldset.layout-fieldset,
@@ -115,12 +120,39 @@ body { min-height:100vh; overflow:hidden; }
 .settings-panel .buttons { position:sticky; bottom:0; background:linear-gradient(to top, var(--bg-alt) 65%, rgba(36,36,36,0)); padding-top:40px; }
 .settings-panel input[type=number]:focus, .settings-panel select:focus { border-color:var(--accent); }
 .settings-panel .buttons { display:flex; justify-content:flex-end; gap:10px; }
-.settings-panel button { background:#1a1a1a; border:1px solid #333; color:var(--text); padding:6px 14px; border-radius:4px; cursor:pointer; font:var(--size-base); }
-.settings-panel button:hover { border-color:#444; }
+.settings-panel button { background:var(--btn-bg); border:1px solid var(--btn-border); color:var(--text); padding:6px 14px; border-radius:4px; cursor:pointer; font:var(--size-base); transition:background .15s, border-color .15s; }
+.settings-panel button:hover, .settings-panel button:focus { background:var(--btn-bg-hover); border-color:#444; }
+/* Global reusable button / input classes */
+.btn { background:var(--btn-bg); border:1px solid var(--btn-border); color:var(--text); padding:6px 14px; border-radius:4px; cursor:pointer; font:var(--size-base); font-family:var(--font-ui); letter-spacing:.2px; transition:background .15s, border-color .15s; }
+.btn:hover, .btn:focus { background:var(--btn-bg-hover); border-color:#444; }
+.std-input { background:var(--input-bg); border:1px solid #333; color:var(--text); padding:6px 8px; font:var(--size-base)/1.4 var(--font-ui); border-radius:4px; width:100%; box-sizing:border-box; }
+.std-input:focus { border-color:var(--accent); }
+.api-keys-panel { width:420px; max-width:90vw; }
+.api-keys-panel .keys-body label span { font-weight:500; letter-spacing:.3px; }
+.api-keys-panel input[type=password] { background:var(--input-bg); border:1px solid #333; color:var(--text); padding:6px 8px; font:var(--size-base)/1.4 var(--font-ui); border-radius:4px; }
+.api-keys-panel input[type=password]:focus { border-color:var(--accent); }
+.api-keys-panel .keys-body button { background:var(--btn-bg); border:1px solid var(--btn-border); }
+.api-keys-panel .keys-body button:hover, .api-keys-panel .keys-body button:focus { background:var(--btn-bg-hover); border-color:#444; }
+.api-keys-panel .keys-body { padding:14px 18px 8px; display:flex; flex-direction:column; gap:14px; }
+.api-keys-panel .keys-note { margin:0; font-size:12px; line-height:1.5; color:#bbb; }
+.api-keys-panel .key-field { display:flex; flex-direction:column; gap:4px; font-size:12px; color:#999; }
+.api-keys-panel .keys-buttons { display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+.api-keys-panel .keys-footnote { font-size:11px; opacity:.55; }
 .pending-meta { font:11px monospace; color:#6fa8ff; margin-left:8px; align-self:center; }
 
 #topBar { position:fixed; top:0; left:0; right:0; z-index:10; background:var(--bg-alt); padding:8px var(--gutter); display:flex; gap:8px; align-items:center; min-height:var(--topbar-h); border-bottom:1px solid var(--border); }
 #topBar input { width:100%; background:var(--bg-alt); border:1px solid var(--border); color:var(--text); padding:6px 0 6px 0; font:var(--size-base)/1.5 var(--font-ui); }
+#statusRight { margin-left:auto; display:flex; align-items:center; gap:10px; position:relative; }
+/* Command zone element normalization */
+#statusRight > * { box-sizing:border-box; }
+#messageCount.mc { font:11px var(--font-mono); background:transparent; padding:6px 10px; border:1px solid #2a2a2a; border-radius:4px; color:#9ab; letter-spacing:.5px; display:flex; align-items:center; height:34px; }
+.menu-btn { background:transparent; border:1px solid #2a2a2a; color:#ddd; padding:6px 10px; cursor:pointer; border-radius:4px; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; height:34px; }
+.menu-btn:focus, .menu-btn:hover { border-color:#3a3a3a; color:#fff; }
+.app-menu { position:absolute; top:100%; right:0; background:var(--bg-alt); border:1px solid #222; box-shadow:0 4px 18px rgba(0,0,0,0.5); padding:4px 0; border-radius:6px; min-width:200px; z-index:900; }
+.app-menu ul { list-style:none; margin:0; padding:0; }
+.app-menu li { display:flex; justify-content:space-between; gap:12px; padding:6px 14px; cursor:pointer; font:12px/1.4 var(--font-ui); color:var(--text); }
+.app-menu li:hover, .app-menu li.active { background:#1e3a5a; }
+.app-menu li .hint { color:#788; font-size:11px; letter-spacing:.5px; }
 #inputBar { position:fixed; left:0; right:0; bottom:0; z-index:10; background:var(--bg-alt); padding:10px var(--gutter) 14px; border-top:1px solid var(--border); display:flex; }
 #inputBar .inputBar-inner { position:relative; width:100%; display:flex; flex-direction:column; gap:6px; }
 #historyPane { position:absolute; top:0; bottom:0; left:0; right:0; background:var(--bg); overflow-y:auto; overscroll-behavior:contain; padding:0 var(--gutter) 0; box-shadow:inset 0 1px 0 #121212, inset 0 -1px 0 #121212; }
@@ -128,12 +160,14 @@ body { min-height:100vh; overflow:hidden; }
 #inputBar .row { display:flex; align-items:center; gap:12px; }
 #inputBar .row.second { justify-content:space-between; margin-top:2px; }
 #inputBar input { flex:1; background:var(--bg-alt); border:none; color:var(--text); padding:10px 0 10px 0; font:var(--size-base)/1.5 var(--font-ui); border-radius:4px; }
-#sendBtn { background:var(--bg-alt); color:var(--text); border:1px solid var(--border); padding:6px 20px; cursor:pointer; font-size:var(--size-base); border-radius:4px; font-weight:400; }
+#sendBtn { background:var(--bg-alt); color:var(--text); border:1px solid #2a2a2a; padding:6px 20px; cursor:pointer; font-size:var(--size-base); border-radius:4px; font-weight:400; }
 #sendBtn:disabled { opacity:.5; cursor:default; }
-.mode-label { font-size:11px; color:var(--text-dim); font-weight:400; letter-spacing:.5px; }
+.mode-label { font-size:11px; color:var(--text-dim); font-weight:400; letter-spacing:.5px; width:70px; display:inline-flex; justify-content:flex-start; align-items:center; background:transparent; height:34px; }
 /* group for left side of second row */
 .input-meta-left { display:flex; gap:10px; align-items:center; }
-#pendingModel, #pendingTopic { font-size:12px; color:var(--text); padding:2px 6px; border:1px solid var(--border); border-radius:4px; background:#1c1c1c; }
+#pendingModel, #pendingTopic { font-size:12px; color:var(--text); padding:4px 8px; border:1px solid #2a2a2a; border-radius:4px; background:transparent; display:inline-flex; align-items:center; height:34px; box-sizing:border-box; }
+#pendingModel { width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; justify-content:flex-start; }
+#pendingTopic { max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 /* active-zone removed per spec (mode indicated by label only) */
 

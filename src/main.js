@@ -19,6 +19,8 @@ import { modalIsActive } from './ui/focusTrap.js'
 import { escapeHtml } from './ui/util.js'
 import { createNewMessageLifecycle } from './ui/newMessageLifecycle.js'
 import { openSettingsOverlay } from './ui/settingsOverlay.js'
+import { openApiKeysOverlay } from './ui/apiKeysOverlay.js'
+import { openHelpOverlay } from './ui/helpOverlay.js'
 // Mask system removed; using fade-based visibility.
 
 // Mode management
@@ -31,7 +33,19 @@ appEl.innerHTML = `
     <div id="commandWrapper">
       <input id="commandInput" placeholder=": command / filter" autocomplete="off" />
     </div>
-    <div id="statusRight"><span id="commandError"></span></div>
+    <div id="statusRight">
+      <span id="messageCount" title="Visible message pairs" class="mc">0</span>
+      <button id="appMenuBtn" aria-haspopup="true" aria-expanded="false" title="Menu (Ctrl+.)" class="menu-btn" tabindex="0">⋮</button>
+      <div id="appMenu" class="app-menu" hidden>
+        <ul>
+          <li data-action="topic-editor"><span class="label">Topic Editor</span><span class="hint">Ctrl+E</span></li>
+          <li data-action="settings"><span class="label">Settings</span><span class="hint">Ctrl+,</span></li>
+          <li data-action="api-keys"><span class="label">API Keys</span></li>
+          <li data-action="help"><span class="label">Help</span><span class="hint">F1</span></li>
+        </ul>
+      </div>
+      <span id="commandError"></span>
+    </div>
   </div>
   <div id="historyPane" class="zone">
   <div id="history" class="history"></div>
@@ -148,6 +162,7 @@ function renderHistory(pairs){
   const parts = buildParts(pairs)
   activeParts.setParts(parts)
   historyView.render(parts)
+  updateMessageCount(pairs.length)
   // After DOM update we need to re-measure for scroll controller
   requestAnimationFrame(()=>{ scrollController.remeasure(); applyActivePart() })
   lifecycle.updateNewReplyBadgeVisibility()
@@ -270,6 +285,13 @@ async function bootstrap(){
   await persistence.init()
   // (Removed temporary dev override of partFraction)
   applySpacingStyles(getSettings())
+  // Restore persisted pending topic if available
+  try {
+    const savedPending = localStorage.getItem('maichat_pending_topic')
+    if(savedPending && store.topics.has(savedPending)){
+      pendingMessageMeta.topicId = savedPending
+    }
+  } catch{}
   if(store.getAllPairs().length === 0){
     seedDemoPairs()
   }
@@ -278,6 +300,10 @@ async function bootstrap(){
   renderStatus()
   applyActivePart()
   if(!pendingMessageMeta.topicId) pendingMessageMeta.topicId = store.rootTopicId
+  // Persist initial topic selection
+  try { localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) } catch{}
+  // Ensure topic badge text reflects final topic id after store init
+  renderPendingMeta()
   layoutHistoryPane()
   // Remove loading guard
   loadingEl.remove()
@@ -442,9 +468,12 @@ window.addEventListener('keydown', e=>{
   else if(k==='e'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openTopicEditorOverlay() } }
   else if(k==='m'){ if(modeManager.mode===MODES.INPUT){ e.preventDefault(); openSelector('model') } }
   else if(k===','){ e.preventDefault(); openSettingsOverlay({ onClose:()=>{} }) }
+  else if(k==='.' ){ e.preventDefault(); toggleMenu(); }
   // Developer shortcut: Ctrl+Shift+S to reseed long test messages
   if(e.shiftKey && k==='s'){ e.preventDefault(); window.seedTestMessages && window.seedTestMessages() }
 })
+
+window.addEventListener('keydown', e=>{ if(e.key==='F1'){ e.preventDefault(); openHelpOverlay({ onClose:()=>{} }) } })
 
 // Overlay selectors
 function openSelector(type){
@@ -462,6 +491,7 @@ function openQuickTopicPicker(){
       if(modeManager.mode === MODES.INPUT){
         pendingMessageMeta.topicId = topicId
         renderPendingMeta()
+  try { localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) } catch{}
       } else if(modeManager.mode === MODES.VIEW){
         const act = activeParts.active(); if(act){
           const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id, { topicId }); renderHistory(store.getAllPairs()); activeParts.setActiveById(act.id); applyActivePart() }
@@ -480,6 +510,7 @@ function openTopicEditorOverlay(){
       if(modeManager.mode === MODES.INPUT){
         pendingMessageMeta.topicId = topicId
         renderPendingMeta()
+  try { localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) } catch{}
       } else if(modeManager.mode === MODES.VIEW){
         const act = activeParts.active(); if(act){
           const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id, { topicId }); renderHistory(store.getAllPairs()); activeParts.setActiveById(act.id); applyActivePart() }
@@ -753,20 +784,88 @@ function updateHud(){
 }
 requestAnimationFrame(updateHud)
 
+// ---------- Message Counter ----------
+function updateMessageCount(visible){
+  const el = document.getElementById('messageCount')
+  if(!el) return
+  el.textContent = String(visible)
+}
+
+// ---------- App Menu (Hamburger) ----------
+const menuBtn = () => document.getElementById('appMenuBtn')
+const menuEl = () => document.getElementById('appMenu')
+function toggleMenu(force){
+  const btn = menuBtn(); const m = menuEl(); if(!btn || !m) return
+  let show = force
+  if(show == null) show = m.hasAttribute('hidden')
+  if(show){
+    m.removeAttribute('hidden')
+    btn.setAttribute('aria-expanded','true')
+    // focus first item
+    const first = m.querySelector('li'); if(first) first.classList.add('active')
+  } else {
+    m.setAttribute('hidden','')
+    btn.setAttribute('aria-expanded','false')
+  }
+}
+function closeMenu(){ toggleMenu(false) }
+function activateMenuItem(li){ if(!li) return; const act = li.getAttribute('data-action'); closeMenu(); runMenuAction(act) }
+function runMenuAction(action){
+  if(action === 'topic-editor'){ openTopicEditorOverlay() }
+  else if(action === 'settings'){ openSettingsOverlay({ onClose:()=>{} }) }
+  else if(action === 'api-keys'){ openApiKeysOverlay({ onClose:()=>{} }) }
+  else if(action === 'help'){ openHelpOverlay({ onClose:()=>{} }) }
+}
+document.addEventListener('click', e=>{
+  const btn = menuBtn(); const m = menuEl(); if(!btn || !m) return
+  if(e.target === btn){ e.stopPropagation(); toggleMenu(); return }
+  if(m.contains(e.target)){
+    const li = e.target.closest('li[data-action]'); if(li){ activateMenuItem(li) }
+    return
+  }
+  // click outside
+  if(!btn.contains(e.target)) closeMenu()
+})
+window.addEventListener('keydown', e=>{
+  const m = menuEl(); if(!m) return
+  if(e.ctrlKey && e.key === '.') { e.preventDefault(); toggleMenu(); return }
+  if(m.hasAttribute('hidden')) return
+  if(e.key === 'Escape'){ closeMenu(); return }
+  const items = Array.from(m.querySelectorAll('li'))
+  let idx = items.findIndex(li=> li.classList.contains('active'))
+  if(e.key === 'j' || e.key === 'ArrowDown'){ e.preventDefault(); idx = (idx+1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active'); return }
+  if(e.key === 'k' || e.key === 'ArrowUp'){ e.preventDefault(); idx = (idx-1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active'); return }
+  if(e.key === 'Enter'){ e.preventDefault(); activateMenuItem(items[idx] || items[0]); return }
+})
+
 function renderPendingMeta(){
   const pm = document.getElementById('pendingModel')
   const pt = document.getElementById('pendingTopic')
-  if(pm) pm.textContent = pendingMessageMeta.model || 'gpt'
+  if(pm){
+    pm.textContent = pendingMessageMeta.model || 'gpt'
+    if(!pm.textContent) pm.textContent = 'gpt'
+  }
   if(pt){
     const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId)
     if(topic){
       const path = formatTopicPath(topic.id)
       pt.textContent = middleTruncate(path, 90)
-      pt.title = path
+      pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)`
     } else {
-      pt.textContent = ''
-      pt.title = ''
+      // Fallback to root topic name (mandatory display)
+      const rootTopic = store.topics.get(store.rootTopicId)
+      if(rootTopic){
+        const path = formatTopicPath(rootTopic.id)
+        pt.textContent = middleTruncate(path, 90)
+        pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)`
+      } else {
+        pt.textContent = 'Select Topic'
+        pt.title = 'No topic found (Ctrl+T)'
+      }
     }
+  }
+  if(pm){
+    pm.title = `Model: ${pendingMessageMeta.model || 'gpt'} (Ctrl+M change)`
   }
 }
 
@@ -801,6 +900,9 @@ if(sendBtn){
   if(lifecycle.isPending()) return
   lifecycle.beginSend()
     const id = store.addMessagePair({ topicId, model, userText: text, assistantText: '(placeholder response)' })
+    // Keep topic selection for next send (no reset) and persist
+    try { localStorage.setItem('maichat_pending_topic', topicId) } catch{}
+  try { localStorage.setItem('maichat_pending_topic', topicId) } catch{}
     setTimeout(()=>{
       const pair = store.pairs.get(id)
       if(pair){

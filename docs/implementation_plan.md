@@ -121,11 +121,11 @@ M5.6 Tests & Quality
 3. [ ] Resize remap accuracy tests
 4. [X] Anchor correctness unit tests
 5. [ ] Edge anchoring mode difference tests
-6. [ ] Scroll jitter harness
+6. [X] Scroll jitter harness (dead-band suppression + >2px correction)
 7. [X] Pending send Enter lock
 8. [~] New message badge visibility matrix
-9. [ ] 'G' newest reply jump test
-10. [~] Filtered reply dim + 'n' behavior (visual dim unasserted)
+9. [X] 'G' newest reply jump test (covered via jumpToNewReply('last'))
+10. [X] Filtered reply dim + 'n' behavior (clears filter & dim state)
 11. [ ] Filter re-anchor after command test
 12. [ ] Star/allow toggle focus preservation test
 
