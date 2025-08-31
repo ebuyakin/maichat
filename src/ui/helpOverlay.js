@@ -1,4 +1,5 @@
-export function openHelpOverlay({ onClose }){
+import { openModal } from './openModal.js'
+export function openHelpOverlay({ onClose, modeManager }){
   const backdrop = document.createElement('div')
   backdrop.className = 'overlay-backdrop centered'
   const panel = document.createElement('div')
@@ -18,9 +19,7 @@ export function openHelpOverlay({ onClose }){
     </div>`
   backdrop.appendChild(panel)
   document.body.appendChild(backdrop)
+  const { close } = openModal({ modeManager, root: backdrop, closeKeys:['Escape','F1'], restoreMode:true, beforeClose:()=>{ onClose && onClose() }, preferredFocus:()=> panel.querySelector('button[data-action="close"]') })
   backdrop.addEventListener('click', e=>{ if(e.target===backdrop) close() })
   panel.addEventListener('click', e=>{ const btn = e.target.closest('button[data-action="close"]'); if(btn) close() })
-  window.addEventListener('keydown', escClose)
-  function escClose(e){ if(e.key==='Escape'){ e.preventDefault(); close() } if(e.key==='F1'){ e.preventDefault(); close() } }
-  function close(){ window.removeEventListener('keydown', escClose); backdrop.remove(); onClose && onClose() }
 }

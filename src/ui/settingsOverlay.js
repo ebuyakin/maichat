@@ -121,6 +121,18 @@ export function openSettingsOverlay({ onClose }){
   cancelBtn.addEventListener('click', ()=> close())
   applyBtn.addEventListener('click', ()=> applyChanges())
 
+  // Swallow Esc (cancel) and Enter (apply) to prevent mode leakage
+  root.addEventListener('keydown', e=>{
+    if(e.key === 'Escape'){
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      close();
+    } else if(e.key === 'Enter' && e.target && e.target.tagName !== 'TEXTAREA'){
+      // Apply without closing (existing behavior) but swallow so Enter doesn't reach keyRouter
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      applyChanges();
+    }
+  }, true)
+
   function applyChanges(){
     const fd = new FormData(form)
     const partFraction = clampPF(parseFloat(fd.get('partFraction')))

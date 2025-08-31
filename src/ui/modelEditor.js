@@ -56,8 +56,9 @@ export function openModelEditor({ onClose }){
     // Intercept navigation keys so they never reach underlying app
   const handledKeys = ['Escape',' ','Enter','j','k','ArrowDown','ArrowUp']
     if(handledKeys.includes(e.key)){
-      e.preventDefault()
-      e.stopPropagation()
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
     }
   if(e.key==='Escape'){ close(); return }
   if(e.key==='Enter'){ close(); return }

@@ -44,10 +44,14 @@ export function openModelSelector({ onClose }){
   window.addEventListener('keydown', keyHandler, true)
   const trap = createFocusTrap(backdrop, ()=> filterInput)
   function keyHandler(e){
-    if(e.key==='Escape'){ e.preventDefault(); close(); return }
-    if(e.key==='Enter'){ const cur = items[activeIndex]; if(cur){ setActiveModel(cur.id); close() } }
-    if(e.key==='j' || e.key==='ArrowDown'){ if(activeIndex < items.length-1){ activeIndex++; render() } e.preventDefault() }
-    if(e.key==='k' || e.key==='ArrowUp'){ if(activeIndex>0){ activeIndex--; render() } e.preventDefault() }
+    const handled = ['Escape','Enter','j','k','ArrowDown','ArrowUp']
+    if(handled.includes(e.key)){
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    }
+    if(e.key==='Escape'){ close(); return }
+    if(e.key==='Enter'){ const cur = items[activeIndex]; if(cur){ setActiveModel(cur.id); close() } return }
+    if(e.key==='j' || e.key==='ArrowDown'){ if(activeIndex < items.length-1){ activeIndex++; render() } return }
+    if(e.key==='k' || e.key==='ArrowUp'){ if(activeIndex>0){ activeIndex--; render() } return }
   }
   filterInput.focus()
   function close(){ window.removeEventListener('keydown', keyHandler, true); trap.release(); backdrop.remove(); onClose && onClose() }

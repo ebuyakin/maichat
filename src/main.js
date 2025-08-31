@@ -542,45 +542,49 @@ window.addEventListener('keydown', e=>{
   if(k==='i'){ e.preventDefault(); modeManager.set(MODES.INPUT) }
   else if(k==='d'){ e.preventDefault(); modeManager.set(MODES.COMMAND) }
   else if(k==='v'){ e.preventDefault(); modeManager.set(MODES.VIEW) }
-  else if(k==='t'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openQuickTopicPicker() } }
-  else if(k==='e'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openTopicEditor({ store, onClose:()=>{} }) } }
+  else if(k==='t'){ if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openQuickTopicPicker({ prevMode }) } }
+  else if(k==='e'){ if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prevMode) } }) } }
   else if(k==='m'){
     // Selector only in INPUT; editor (shift) allowed always
     if(e.shiftKey){
       e.preventDefault();
-      openModelEditor({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta() } })
+      const prevMode = modeManager.mode
+      openModelEditor({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); modeManager.set(prevMode) } })
     } else {
       if(modeManager.mode !== MODES.INPUT) return
       e.preventDefault();
-      openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta() } })
+      const prevMode = modeManager.mode
+      openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); modeManager.set(prevMode) } })
     }
   }
-  else if(k===','){ e.preventDefault(); openSettingsOverlay({ onClose:()=>{} }) }
+  else if(k===','){ e.preventDefault(); const prevMode = modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
   else if(e.key === '.' || e.code === 'Period'){ e.preventDefault(); toggleMenu(); }
   // Developer shortcut: Ctrl+Shift+S to reseed long test messages
   if(e.shiftKey && k==='s'){ e.preventDefault(); window.seedTestMessages && window.seedTestMessages() }
 })
 
-window.addEventListener('keydown', e=>{ if(e.key==='F1'){ e.preventDefault(); openHelpOverlay({ onClose:()=>{} }) } })
+window.addEventListener('keydown', e=>{ if(e.key==='F1'){ e.preventDefault(); openHelpOverlay({ modeManager, onClose:()=>{} }) } })
 
 // Overlay selectors
 
-function openQuickTopicPicker(){
-  // selection context differs by mode
+function openQuickTopicPicker({ prevMode }){
+  const openMode = prevMode || modeManager.mode
   createTopicPicker({
     store,
     onSelect: (topicId)=>{
-      if(modeManager.mode === MODES.INPUT){
+      // Use the mode at time of opening for semantics, not any interim change
+      if(openMode === MODES.INPUT){
         pendingMessageMeta.topicId = topicId
         renderPendingMeta()
-  try { localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) } catch{}
-      } else if(modeManager.mode === MODES.VIEW){
+        try { localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) } catch{}
+      } else if(openMode === MODES.VIEW){
         const act = activeParts.active(); if(act){
           const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id, { topicId }); renderHistory(store.getAllPairs()); activeParts.setActiveById(act.id); applyActivePart() }
         }
       }
+      if(prevMode) modeManager.set(prevMode)
     },
-    onCancel: ()=>{}
+    onCancel: ()=>{ if(prevMode) modeManager.set(prevMode) }
   })
 }
 
@@ -888,10 +892,10 @@ function menuGlobalKeyHandler(e){
 function closeMenu(){ toggleMenu(false) }
 function activateMenuItem(li){ if(!li) return; const act = li.getAttribute('data-action'); closeMenu(); runMenuAction(act) }
 function runMenuAction(action){
-  if(action === 'topic-editor'){ openTopicEditor({ store, onClose:()=>{} }) }
-  else if(action === 'settings'){ openSettingsOverlay({ onClose:()=>{} }) }
-  else if(action === 'api-keys'){ openApiKeysOverlay({ onClose:()=>{} }) }
-  else if(action === 'help'){ openHelpOverlay({ onClose:()=>{} }) }
+  if(action === 'topic-editor'){ const prevMode = modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prevMode) } }) }
+  else if(action === 'settings'){ const prevMode = modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
+  else if(action === 'api-keys'){ const prevMode = modeManager.mode; openApiKeysOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
+  else if(action === 'help'){ openHelpOverlay({ modeManager, onClose:()=>{} }) }
 }
 document.addEventListener('click', e=>{
   const btn = menuBtn(); const m = menuEl(); if(!btn || !m) return

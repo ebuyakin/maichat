@@ -4,6 +4,38 @@ Status: v0.6 (living document)
 
 Canonical source for all key bindings, per-mode behavior, overlays, and reserved combinations. Updated alongside implementation.
 
+## 0. Modal Windows & Mode Restoration (Unified Spec)
+All modal overlays MUST restore the exact mode active at the moment they were opened. Target set (v0.10 spec):
+1. Topic Editor (Ctrl+E)
+2. Model Editor (Ctrl+Shift+M)
+3. API Keys Overlay (auto, menu, or future shortcut)
+4. Help Overlay (F1)
+5. Settings Overlay (Ctrl+,)
+6. Menu (Ctrl+.)
+7. Topic Quick Picker (Ctrl+T)
+
+Current State Snapshot (implementation audit):
+- Topic Editor: captures & restores mode (caller wraps with prevMode).
+- Model Editor: captures & restores mode (caller wraps with prevMode).
+- Model Selector (Ctrl+M, INPUT-only): restores mode (caller wraps with prevMode); only openable in INPUT mode by design.
+- API Keys: menu & manual open paths restore mode; auto-open on missing/invalid key DOES NOT yet restore previous mode (opened during send sequence while in INPUT; after close user currently remains in INPUT implicitly — acceptable but still should explicitly restore).
+- Help (F1): restores mode (caller wraps with prevMode).
+- Settings (Ctrl+,): restores mode (caller wraps with prevMode).
+- Menu (Ctrl+.): restores mode (prevMode captured inside toggleMenu/runMenuAction implementation) – verify after any refactor.
+- Topic Quick Picker (Ctrl+T): now attempts restoration; regression under investigation (observed fallback to COMMAND). Root cause hypothesis: an Enter/Escape key event propagates to keyRouter after overlay teardown, triggering default mode transitions (Enter→INPUT / Escape→COMMAND) before restoration executes OR restoration executes first then a late key event re-triggers transition. Mitigation plan: consume (stopImmediatePropagation) triggering key inside overlay before teardown, OR set a transient suppression flag for next keydown cycle.
+
+Specification Reinforcement:
+- Overlay close handlers must: (a) remove event listeners, (b) restore focus to previously focused element iff that element still in DOM, (c) synchronously call modeManager.set(prevMode) BEFORE allowing event to bubble.
+- All overlay keyboard handlers must prevent default + stop propagation for their close/confirm keys (Enter / Escape) so global keyRouter never sees them.
+
+Action Items:
+- [ ] Add propagation suppression to Topic Picker Enter/Escape.
+- [ ] Add explicit prevMode restoration to auto-open API Keys path (missing key / auth failure) for consistency.
+- [ ] Introduce shared helper openWithModeRestore(fn) to wrap overlays (DRY) – reduces drift risk.
+- [ ] Add unit test matrix: modes × overlay open/close -> same mode.
+
+---
+
 ## 1. Modes Overview
 Modes: VIEW, INPUT, COMMAND.
 
@@ -21,11 +53,13 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+v | Switch to VIEW | Blurs inputs |
 | Ctrl+i | Switch to INPUT | Focuses bottom input |
 | Ctrl+d | Switch to COMMAND | Focuses command input |
-| Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection) |
-| Ctrl+M | Open model selector (INPUT mode only; chooses pending message model) | Overlay (Selection) |
-| Ctrl+Shift+M | Open model editor (all modes) | Enable/disable models (j/k move · Space toggle · Enter/Esc close) |
-| Ctrl+E | Open topic editor | Overlay (Edit) |
-| Ctrl+, | Open settings overlay | Adjust rare preferences (part size, anchor, padding, gaps, zone heights) (UI TODO) |
+| Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection) (spec: restore prev mode) |
+| Ctrl+M | Open model selector (INPUT mode only; chooses pending message model) | Overlay (Selection) (spec: restore prev mode) |
+| Ctrl+Shift+M | Open model editor (all modes) | Enable/disable models (j/k move · Space toggle · Enter/Esc close) (spec: restore prev mode) |
+| Ctrl+E | Open topic editor | Overlay (Edit) (spec: restore prev mode) |
+| Ctrl+, | Open settings overlay | Adjust preferences (spec: restore prev mode) |
+| Ctrl+. | Open menu | Menu navigation isolated; spec: restore prev mode |
+| F1 | Help overlay | Esc / F1 close; spec: restore prev mode |
 
 ## 3. VIEW Mode Keys
 | Key | Action | Remarks |

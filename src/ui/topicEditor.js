@@ -278,15 +278,15 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     }
     if(deleteConfirmId){
       if(e.key==='y' || e.key==='Y'){ e.preventDefault(); executeDelete(deleteConfirmId); return }
-      if(e.key==='n' || e.key==='N' || e.key==='Escape'){ e.preventDefault(); deleteConfirmId=null; showWarning('Cancelled'); return }
+  if(e.key==='n' || e.key==='N' || e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); deleteConfirmId=null; showWarning('Cancelled'); return }
     }
     if(!inTreeFocus){
-      if(e.key==='Escape'){ e.preventDefault(); teardown(); return }
+  if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); teardown(); return }
       if(e.key==='J' && e.shiftKey){ e.preventDefault(); inTreeFocus=true; treeEl.focus(); return }
       return
     }
     switch(e.key){
-      case 'Escape': e.preventDefault(); inTreeFocus=false; searchInput.focus(); return
+  case 'Escape': e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); inTreeFocus=false; searchInput.focus(); return
       case 'Enter': e.preventDefault(); selectCurrent(); return
       case 'j': case 'ArrowDown': e.preventDefault(); activeIndex = Math.min(flat.length-1, activeIndex+1); render(); return
       case 'k': case 'ArrowUp': e.preventDefault(); activeIndex = Math.max(0, activeIndex-1); render(); return

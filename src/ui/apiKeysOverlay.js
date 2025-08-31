@@ -53,7 +53,7 @@ export function openApiKeysOverlay({ onClose }){
     }
   })
   window.addEventListener('keydown', escClose)
-  function escClose(e){ if(e.key==='Escape'){ e.preventDefault(); close() } }
+  function escClose(e){ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); close() } }
   function close(){ window.removeEventListener('keydown', escClose); backdrop.remove(); onClose && onClose() }
 }
 

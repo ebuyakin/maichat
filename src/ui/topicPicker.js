@@ -109,19 +109,20 @@ export function createTopicPicker({ store, onSelect, onCancel }){
     if(pIdx>=0){ activeIndex = pIdx; render() }
   }
 
+  function swallow(e){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation() }
   function onKey(e){
     if(!inTreeFocus){
-      if(e.key==='Escape'){ e.preventDefault(); teardown(); onCancel && onCancel(); return }
-      if(e.key==='J' && e.shiftKey){ e.preventDefault(); inTreeFocus=true; treeEl.focus(); return }
+      if(e.key==='Escape'){ swallow(e); teardown(); onCancel && onCancel(); return }
+      if(e.key==='J' && e.shiftKey){ swallow(e); inTreeFocus=true; treeEl.focus(); return }
       return
     }
     switch(e.key){
-      case 'Escape': e.preventDefault(); inTreeFocus=false; searchInput.focus(); return
-      case 'Enter': e.preventDefault(); const row = flat[activeIndex]; if(row){ teardown(); onSelect && onSelect(row.topic.id) } return
-      case 'j': case 'ArrowDown': e.preventDefault(); activeIndex=Math.min(flat.length-1, activeIndex+1); render(); return
-      case 'k': case 'ArrowUp': e.preventDefault(); activeIndex=Math.max(0, activeIndex-1); render(); return
-      case 'l': case 'ArrowRight': e.preventDefault(); toggleExpandOrDescend(); return
-      case 'h': case 'ArrowLeft': e.preventDefault(); collapseOrParent(); return
+      case 'Escape': swallow(e); inTreeFocus=false; searchInput.focus(); return
+      case 'Enter': swallow(e); const row = flat[activeIndex]; if(row){ teardown(); onSelect && onSelect(row.topic.id) } return
+      case 'j': case 'ArrowDown': swallow(e); activeIndex=Math.min(flat.length-1, activeIndex+1); render(); return
+      case 'k': case 'ArrowUp': swallow(e); activeIndex=Math.max(0, activeIndex-1); render(); return
+      case 'l': case 'ArrowRight': swallow(e); toggleExpandOrDescend(); return
+      case 'h': case 'ArrowLeft': swallow(e); collapseOrParent(); return
     }
   }
 
