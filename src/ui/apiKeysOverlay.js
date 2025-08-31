@@ -53,7 +53,31 @@ export function openApiKeysOverlay({ onClose, modeManager }){
       close()
     }
   })
+  // Keyboard navigation similar to other overlays: j/k cycles focus among inputs and first Close button.
+  backdrop.addEventListener('keydown', e=>{
+    if(e.metaKey || e.altKey || e.ctrlKey) return
+    const focusables = Array.from(panel.querySelectorAll('input[data-key], .keys-buttons button'))
+    if(!focusables.length) return
+    let idx = focusables.indexOf(document.activeElement)
+    if(e.key==='j' || e.key==='ArrowDown'){
+      e.preventDefault();
+      idx = (idx+1+focusables.length)%focusables.length
+      focusables[idx].focus()
+    } else if(e.key==='k' || e.key==='ArrowUp'){
+      e.preventDefault();
+      idx = (idx-1+focusables.length)%focusables.length
+      focusables[idx].focus()
+    } else if(e.key==='Enter'){
+      // If on a button, click it; otherwise ignore (lets user press Enter inside password maybe – but we suppress default to avoid submitting)
+      if(document.activeElement && document.activeElement.tagName==='BUTTON'){
+        e.preventDefault(); document.activeElement.click()
+      }
+    }
+  })
   const modal = openModal({ modeManager: modeManager || window.__modeManager, root: backdrop, closeKeys:['Escape'], restoreMode:true, beforeClose:()=>{ onClose && onClose() } })
+  // Initial focus: first password field
+  const firstInput = panel.querySelector('input[data-key]')
+  if(firstInput) firstInput.focus()
   function close(){ modal.close('manual') }
 }
 

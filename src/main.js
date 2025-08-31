@@ -48,7 +48,7 @@ appEl.innerHTML = `
         <ul>
           <li data-action="topic-editor"><span class="label">Topic Editor</span><span class="hint">Ctrl+E</span></li>
           <li data-action="settings"><span class="label">Settings</span><span class="hint">Ctrl+,</span></li>
-          <li data-action="api-keys"><span class="label">API Keys</span></li>
+          <li data-action="api-keys"><span class="label">API Keys</span><span class="hint">Ctrl+K</span></li>
           <li data-action="help"><span class="label">Help</span><span class="hint">F1</span></li>
         </ul>
       </div>
@@ -359,6 +359,35 @@ const commandErrEl = document.getElementById('commandError')
 const inputField = document.getElementById('inputField')
 const sendBtn = document.getElementById('sendBtn')
 
+// ----- Command mode state (filter, history, selection memory) -----
+let __lastAppliedFilter = '' // last successfully applied filter string
+let __commandModeEntryActivePartId = null // active part id when entering command mode (for restoration if filter unchanged)
+let __commandHistory = [] // array of past entered commands (non-empty)
+let __commandHistoryPos = -1 // -1 means at fresh (after last)
+try {
+  const savedHist = localStorage.getItem('maichat_command_history')
+  if(savedHist){ const arr = JSON.parse(savedHist); if(Array.isArray(arr)) __commandHistory = arr.slice(-100) }
+} catch{}
+function pushCommandHistory(q){
+  if(!q) return
+  if(__commandHistory[__commandHistory.length-1] === q) return
+  __commandHistory.push(q)
+  if(__commandHistory.length > 100) __commandHistory = __commandHistory.slice(-100)
+  try { localStorage.setItem('maichat_command_history', JSON.stringify(__commandHistory)) } catch{}
+}
+function historyPrev(){
+  if(!__commandHistory.length) return
+  if(__commandHistoryPos === -1) __commandHistoryPos = __commandHistory.length
+  if(__commandHistoryPos > 0){ __commandHistoryPos--; commandInput.value = __commandHistory[__commandHistoryPos] }
+}
+function historyNext(){
+  if(!__commandHistory.length) return
+  if(__commandHistoryPos === -1) return
+  if(__commandHistoryPos < __commandHistory.length) __commandHistoryPos++
+  if(__commandHistoryPos === __commandHistory.length){ commandInput.value=''; __commandHistoryPos = -1 }
+  else { commandInput.value = __commandHistory[__commandHistoryPos] }
+}
+
 // Command input Enter handled inside commandHandler; Escape clears filter there.
 // Input field Enter handled inside inputHandler (remain in input mode) .
 
@@ -393,6 +422,9 @@ const viewHandler = (e)=>{
 }
 const commandHandler = (e)=>{
   if(modalIsActive && modalIsActive()) return false
+  // History navigation (Ctrl+P / Ctrl+N) akin to shell
+  if(e.ctrlKey && (e.key === 'p' || e.key === 'P')){ historyPrev(); return true }
+  if(e.ctrlKey && (e.key === 'n' || e.key === 'N')){ historyNext(); return true }
   if(e.key === 'Enter'){
     const q = commandInput.value.trim()
   // Debug toggles
@@ -404,15 +436,45 @@ const commandHandler = (e)=>{
   if(q === ':anim on' || q === ':noanim off') { scrollController.setAnimationEnabled(true); console.log('Scroll animation enabled'); commandInput.value=''; commandErrEl.textContent=''; return true }
   if(q === ':scrolllog on'){ window.__scrollLog = true; console.log('Scroll log ON'); commandInput.value=''; commandErrEl.textContent=''; return true }
   if(q === ':scrolllog off'){ window.__scrollLog = false; console.log('Scroll log OFF'); commandInput.value=''; commandErrEl.textContent=''; return true }
-  updateFadeVisibility()
-  lifecycle.setFilterQuery(q)
-    if(!q){ commandErrEl.textContent=''; renderHistory(store.getAllPairs()); activeParts.last(); applyActivePart(); modeManager.set(MODES.VIEW); return true }
+    updateFadeVisibility()
+    const prevFilter = __lastAppliedFilter
+    const prevActiveId = __commandModeEntryActivePartId || (activeParts.active() && activeParts.active().id)
+    lifecycle.setFilterQuery(q)
+    if(!q){
+      if(prevFilter === '' ){ // clearing (or unchanged empty)
+        if(prevFilter === '' && prevActiveId){
+          // Filter unchanged (empty) -> keep selection
+          if(__lastAppliedFilter === '' && __lastAppliedFilter === q){
+            commandErrEl.textContent=''
+            modeManager.set(MODES.VIEW)
+            // Restore active part (no re-render needed)
+            activeParts.setActiveById(prevActiveId); applyActivePart()
+            return true
+          }
+        }
+      }
+      // Filter changed from something to empty OR no previous active stored
+      commandErrEl.textContent=''
+      renderHistory(store.getAllPairs())
+      activeParts.last(); applyActivePart()
+      __lastAppliedFilter = ''
+      pushCommandHistory(q)
+      __commandHistoryPos = -1
+      modeManager.set(MODES.VIEW)
+      return true
+    }
     try {
       const ast = parse(q)
       const res = evaluate(ast, store.getAllPairs())
+      const changed = q !== prevFilter
       renderHistory(res)
       commandErrEl.textContent=''
       modeManager.set(MODES.VIEW)
+      if(!changed && prevActiveId){
+        // restore previous selection after re-render
+        activeParts.setActiveById(prevActiveId); applyActivePart()
+      }
+      if(changed){ __lastAppliedFilter = q; pushCommandHistory(q); __commandHistoryPos = -1 }
     } catch(ex){ commandErrEl.textContent = ex.message }
     return true
   }
@@ -492,7 +554,11 @@ modeManager.onChange((m)=>{
   renderStatus()
   if(m === MODES.VIEW){ commandInput.blur(); inputField.blur() }
   else if(m === MODES.INPUT){ inputField.focus() }
-  else if(m === MODES.COMMAND){ commandInput.focus() }
+  else if(m === MODES.COMMAND){
+    // entering command mode
+    __commandModeEntryActivePartId = activeParts.active() ? activeParts.active().id : null
+    commandInput.focus()
+  }
 })
 
 // Removed gg sequence; single 'g' now handled in viewHandler.
@@ -556,6 +622,12 @@ window.addEventListener('keydown', e=>{
       const prevMode = modeManager.mode
   openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); modeManager.set(prevMode) } })
     }
+  }
+  else if(k==='k'){
+    // Ctrl+K opens API Keys overlay (any mode)
+    e.preventDefault();
+    const prevMode = modeManager.mode
+    openApiKeysOverlay({ modeManager, onClose: ()=>{ modeManager.set(prevMode) } })
   }
   else if(k===','){ e.preventDefault(); const prevMode = modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
   else if(e.key === '.' || e.code === 'Period'){ e.preventDefault(); toggleMenu(); }

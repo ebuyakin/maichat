@@ -1,6 +1,6 @@
 # Keyboard Reference
 
-Status: v0.10 (living document)
+Status: v0.11 (living document)
 
 Canonical source for all key bindings, per-mode behavior, overlays, and reserved combinations. Updated alongside implementation.
 
@@ -11,7 +11,7 @@ Covered overlays:
 1. Topic Editor (Ctrl+E)
 2. Model Editor (Ctrl+Shift+M)
 3. Model Selector (Ctrl+M – INPUT only by design)
-4. API Keys Overlay (menu or auto-open on missing/invalid key)
+4. API Keys Overlay (Ctrl+K or menu, or auto-open on missing/invalid key)
 5. Help Overlay (F1)
 6. Settings Overlay (Ctrl+,)
 7. Topic Quick Picker (Ctrl+T: VIEW/INPUT only per spec)
@@ -20,6 +20,7 @@ Notes:
 - Menu (Ctrl+.) still uses its own handler but already preserves mode; may migrate to helper later.
 - Close keys (Esc, Enter where applicable) are fully swallowed (preventDefault + stopPropagation + stopImmediatePropagation) preventing accidental mode transitions.
 - Ctrl+T remains disabled in COMMAND mode (intentional design choice). Ctrl+M remains disabled outside INPUT mode.
+- API Keys overlay now fully keyboard navigable (j/k between fields & buttons, Enter activates focused button, Esc closes) and restores prior mode.
 - Future overlays must use `openModal` to inherit these guarantees.
 - Automated tests for mode restoration are planned (harness pending); manual QA validated behavior.
 
@@ -43,6 +44,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+i | Switch to INPUT | Focuses bottom input |
 | Ctrl+d | Switch to COMMAND | Focuses command input |
 | Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection) (restores prev mode) |
+| Ctrl+K | Open API Keys overlay | Overlay (Edit) (restores prev mode) |
 | Ctrl+M | Open model selector (INPUT mode only; chooses pending message model) | Overlay (Selection) (restores prev mode) |
 | Ctrl+Shift+M | Open model editor (all modes) | Enable/disable models (j/k move · Space toggle · Enter/Esc close) (restores prev mode) |
 | Ctrl+E | Open topic editor | Overlay (Edit) (restores prev mode) |
@@ -80,8 +82,10 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 ## 5. COMMAND Mode Keys
 | Key | Action | Notes |
 |-----|--------|-------|
-| Enter | Parse + apply filter, then go to VIEW | Shows filtered subset |
+| Enter | Apply filter then go to VIEW | If filter unchanged, prior active part restored (no jump); if changed or cleared, jump to last part |
 | Escape | Clear filter (if any), stay COMMAND | Restores full history |
+| Ctrl+P | Previous command in history | Persistent (survives reload, max 100) |
+| Ctrl+N | Next command in history | Clears to empty at end |
 | Ctrl+v / Ctrl+i / Ctrl+d | Direct mode switch | |
 
 ## 6. Topic Quick Picker (Ctrl+T)
@@ -170,6 +174,7 @@ Vim-style navigation (j/k) may be intercepted by browser extensions (e.g. Vimium
 5. Fallbacks (arrows) never overshadow primary Vim-style keys.
 
 ## 13. Change Log
+- v0.11: Added Ctrl+K (API Keys overlay), unified API Keys overlay keyboard navigation, persistent command history navigation (Ctrl+P/Ctrl+N), refined Enter behavior in COMMAND (restore selection if filter unchanged), documentation updates.
 - v0.10: Unified modal mode restoration via `openModal` helper (Topic Picker, Topic Editor, Model Selector, Model Editor, Settings, API Keys, Help); full key swallowing on close to prevent mode drift.
 - v0.9: Model selector limited to INPUT mode; model editor (Ctrl+Shift+M) available in all modes (j/k move, Space toggle, Enter/Esc close); Enter removed as toggle.
 - v0.8: Settings overlay unified keyboard model (j/k navigation, +/- numeric adjust with large Shift step, Space cycles selects, Enter apply w/out close, Esc cancel, persistent 'Saved' label until dirty).

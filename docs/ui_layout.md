@@ -141,7 +141,7 @@ Planned (not yet implemented):
 * Restore last active part when re-entering VIEW from other modes.
 
 Extension Interference:
-Browser extensions (e.g. Vimium) may capture plain `j`/`k`. Users should exclude the app origin; we deliberately avoid consuming `Ctrl+j` / `Ctrl+k` so they remain available for future bindings. Arrow keys are a fallback, not a first-class replacement.
+Browser extensions (e.g. Vimium) may capture plain `j`/`k`. Users should exclude the app origin. Arrow keys are a fallback, not a first-class replacement. (Note: `Ctrl+K` is now bound to the API Keys overlay.)
 
 Anchoring & Scrolling: Active part positioned at user-selected reading position (Bottom default; also Center / Top). Spacer elements above/below maintain alignment at edges; no smooth scroll animation.
 New Message Badge: Top bar right corner; appears when reply arrives and user navigated away or reply filtered out; cleared by `n`, `G`, or badge activation.
@@ -174,6 +174,7 @@ Implemented:
 | Topic Editor | Full topic CRUD, mark/paste, search | Ctrl+E | Esc |
 | Model Selector | Choose model for pending message | Ctrl+M (INPUT) | Esc / Enter |
 | Settings / Preferences | Adjust part size fraction, reading position, padding, gap, top/bottom zone heights (Apply/Cancel) | Ctrl+, | Esc / Apply |
+| API Keys Overlay | View / edit stored API keys (local only) | Ctrl+K / auto-open on missing key | Esc / buttons |
 
 Deferred / Planned:
 | Overlay | Purpose | Planned Trigger | Notes |

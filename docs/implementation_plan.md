@@ -243,6 +243,7 @@ User with a valid OpenAI key can: (a) view visible history with overflow dimmed 
 
 
 ## Change Log (Plan Evolution)
+- 2025-08-31 (later): Added unified API Keys overlay keyboard navigation + Ctrl+K shortcut; command mode Enter behavior refined (restore selection on unchanged filter); persistent command history (Ctrl+P / Ctrl+N); docs (keyboard_reference, ui_layout) updated.
 - 2025-08-24 (later): Implemented partition engine v1, anchoring modes, resize invalidation, new message lifecycle (pending send, badge, 'n' jump, filter clear B2). Added anchor & lifecycle unit tests; updated M5 status & adjusted oversized splitting requirement scope.
 - 2025-08-24: Expanded M5 with edgeAnchoringMode (adaptive|strict), new message badge & 'n' key semantics, refined test matrix; added clarification placeholder for filtered reply behavior.
 - 2025-08-23 (later 3): M4 completed (all functional items [x]; virtualization deferred). Removed stabilization checklist; advanced Immediate Next Focus to M5 partitioning & metadata.
