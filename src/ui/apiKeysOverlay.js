@@ -9,7 +9,8 @@ export function saveApiKeys(obj){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(obj||{}))
 }
 
-export function openApiKeysOverlay({ onClose }){
+import { openModal } from './openModal.js'
+export function openApiKeysOverlay({ onClose, modeManager }){
   const existing = loadApiKeys()
   const backdrop = document.createElement('div')
   backdrop.className = 'overlay-backdrop centered'
@@ -52,9 +53,8 @@ export function openApiKeysOverlay({ onClose }){
       close()
     }
   })
-  window.addEventListener('keydown', escClose)
-  function escClose(e){ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); close() } }
-  function close(){ window.removeEventListener('keydown', escClose); backdrop.remove(); onClose && onClose() }
+  const modal = openModal({ modeManager: modeManager || window.__modeManager, root: backdrop, closeKeys:['Escape'], restoreMode:true, beforeClose:()=>{ onClose && onClose() } })
+  function close(){ modal.close('manual') }
 }
 
 function escapeHtml(str){ return String(str).replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[s])) }

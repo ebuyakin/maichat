@@ -1,6 +1,6 @@
 // Lightweight model selector overlay (Ctrl+M)
 import { listModels, getActiveModel, setActiveModel } from '../models/modelCatalog.js'
-import { createFocusTrap } from './focusTrap.js'
+import { openModal } from './openModal.js'
 
 export function openModelSelector({ onClose }){
   const models = listModels().filter(m=> m.enabled)
@@ -42,7 +42,7 @@ export function openModelSelector({ onClose }){
     close()
   })
   window.addEventListener('keydown', keyHandler, true)
-  const trap = createFocusTrap(backdrop, ()=> filterInput)
+  const modal = openModal({ modeManager: window.__modeManager, root: backdrop, closeKeys:[], restoreMode:true, preferredFocus:()=>filterInput })
   function keyHandler(e){
     const handled = ['Escape','Enter','j','k','ArrowDown','ArrowUp']
     if(handled.includes(e.key)){
@@ -54,5 +54,5 @@ export function openModelSelector({ onClose }){
     if(e.key==='k' || e.key==='ArrowUp'){ if(activeIndex>0){ activeIndex--; render() } return }
   }
   filterInput.focus()
-  function close(){ window.removeEventListener('keydown', keyHandler, true); trap.release(); backdrop.remove(); onClose && onClose() }
+  function close(){ window.removeEventListener('keydown', keyHandler, true); modal.close('manual'); onClose && onClose() }
 }

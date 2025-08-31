@@ -1,6 +1,6 @@
 // Simple Model Editor (Ctrl+Shift+M) for enable/disable only
 import { listModels, toggleModelEnabled, getActiveModel, setActiveModel } from '../models/modelCatalog.js'
-import { createFocusTrap } from './focusTrap.js'
+import { openModal } from './openModal.js'
 
 export function openModelEditor({ onClose }){
   const backdrop = document.createElement('div')
@@ -51,7 +51,7 @@ export function openModelEditor({ onClose }){
 
   ul.addEventListener('click', e=>{ const li = e.target.closest('li'); if(!li) return; activeIndex = Array.from(ul.children).indexOf(li); toggle(li.dataset.id) })
   window.addEventListener('keydown', keyHandler, true)
-  const trap = createFocusTrap(backdrop, ()=> ul.querySelector('li.active') || ul)
+  const modal = openModal({ modeManager: window.__modeManager, root: backdrop, closeKeys:[], restoreMode:true, preferredFocus:()=> ul.querySelector('li.active') || ul })
   function keyHandler(e){
     // Intercept navigation keys so they never reach underlying app
   const handledKeys = ['Escape',' ','Enter','j','k','ArrowDown','ArrowUp']
@@ -76,5 +76,5 @@ export function openModelEditor({ onClose }){
     }
   }
   render()
-  function close(){ window.removeEventListener('keydown', keyHandler, true); trap.release(); backdrop.remove(); onClose && onClose() }
+  function close(){ window.removeEventListener('keydown', keyHandler, true); modal.close('manual'); onClose && onClose() }
 }

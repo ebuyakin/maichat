@@ -1,8 +1,8 @@
 // Quick Topic Picker (Selection Mode)
 // Responsibilities: render filtered tree subset, keyboard nav (j/k), selection callback, focus isolation.
-import { createFocusTrap } from './focusTrap.js'
+import { openModal } from './openModal.js'
 
-export function createTopicPicker({ store, onSelect, onCancel }){
+export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
   let filter = ''
   let flat = [] // visible rows { topic, depth }
   let activeIndex = 0
@@ -129,12 +129,8 @@ export function createTopicPicker({ store, onSelect, onCancel }){
   searchInput.addEventListener('input', ()=>{ filter = searchInput.value.trim(); activeIndex=0; render() })
   rootEl.addEventListener('keydown', onKey)
 
-  const focusTrap = createFocusTrap(rootEl, ()=> inTreeFocus ? treeEl : searchInput)
-  function teardown(){
-    rootEl.remove()
-    focusTrap.release()
-    if(previousActive && previousActive.focus){ try { previousActive.focus() } catch(_){} }
-  }
+  const modal = openModal({ modeManager, root: rootEl, closeKeys:[], restoreMode:true })
+  function teardown(){ modal.close('manual'); if(previousActive && previousActive.focus){ try { previousActive.focus() } catch(_){} } }
 
   document.body.appendChild(rootEl)
   searchInput.focus()

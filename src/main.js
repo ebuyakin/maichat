@@ -549,12 +549,12 @@ window.addEventListener('keydown', e=>{
     if(e.shiftKey){
       e.preventDefault();
       const prevMode = modeManager.mode
-      openModelEditor({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); modeManager.set(prevMode) } })
+  openModelEditor({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); modeManager.set(prevMode) } })
     } else {
       if(modeManager.mode !== MODES.INPUT) return
       e.preventDefault();
       const prevMode = modeManager.mode
-      openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); modeManager.set(prevMode) } })
+  openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); modeManager.set(prevMode) } })
     }
   }
   else if(k===','){ e.preventDefault(); const prevMode = modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
@@ -571,6 +571,7 @@ function openQuickTopicPicker({ prevMode }){
   const openMode = prevMode || modeManager.mode
   createTopicPicker({
     store,
+    modeManager,
     onSelect: (topicId)=>{
       // Use the mode at time of opening for semantics, not any interim change
       if(openMode === MODES.INPUT){
@@ -894,7 +895,7 @@ function activateMenuItem(li){ if(!li) return; const act = li.getAttribute('data
 function runMenuAction(action){
   if(action === 'topic-editor'){ const prevMode = modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prevMode) } }) }
   else if(action === 'settings'){ const prevMode = modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
-  else if(action === 'api-keys'){ const prevMode = modeManager.mode; openApiKeysOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
+  else if(action === 'api-keys'){ const prevMode = modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prevMode) } }) }
   else if(action === 'help'){ openHelpOverlay({ modeManager, onClose:()=>{} }) }
 }
 document.addEventListener('click', e=>{

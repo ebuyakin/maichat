@@ -2,7 +2,7 @@
 // Minimal implementation: allows editing partFraction, anchorMode, edgeAnchoringMode with Apply/Cancel.
 
 import { getSettings, saveSettings } from '../settings/index.js'
-import { createFocusTrap } from './focusTrap.js'
+import { openModal } from './openModal.js'
 
 export function openSettingsOverlay({ onClose }){
   if(document.getElementById('settingsOverlayRoot')) return
@@ -110,10 +110,8 @@ export function openSettingsOverlay({ onClose }){
   document.body.appendChild(root)
   const panel = root.querySelector('.settings-panel')
   const form = root.querySelector('#settingsForm')
-  const trap = createFocusTrap(panel, ()=> form.querySelector('input,select'))
-  function close(){
-    trap.release(); root.remove(); if(onClose) onClose()
-  }
+  const modal = openModal({ modeManager: window.__modeManager, root, closeKeys:[], restoreMode:true, preferredFocus: ()=> form.querySelector('input,select') })
+  function close(){ modal.close('manual'); if(onClose) onClose() }
   root.addEventListener('click', e=>{ if(e.target===root) close() })
   const cancelBtn = form.querySelector('[data-action="cancel"]')
   const applyBtn = form.querySelector('[data-action="apply"]')

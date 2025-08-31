@@ -1,5 +1,5 @@
 // Topic Editor Overlay - full CRUD + move
-import { createFocusTrap } from './focusTrap.js'
+import { openModal } from './openModal.js'
 // Keyboard:
 //  j/k navigate, h collapse/go parent, l expand/first child
 //  n new child, N new top-level, r rename, d delete, m mark, p paste
@@ -309,12 +309,11 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   const offMove = store.on('topic:move', onStoreEvent)
   const offCounts = store.on('topic:counts', onStoreEvent)
 
-  const focusTrap = createFocusTrap(backdrop, ()=> inTreeFocus ? treeEl : searchInput)
+  const modal = openModal({ modeManager: store.modeManager || window.__modeManager, root: backdrop, closeKeys:[], restoreMode:true })
   function teardown() {
     offAdd(); offUpd(); offDel(); offMove(); offCounts()
     backdrop.removeEventListener('keydown', onKey)
-    backdrop.remove()
-    focusTrap.release()
+    modal.close('manual')
     if (onClose) onClose()
   }
 
