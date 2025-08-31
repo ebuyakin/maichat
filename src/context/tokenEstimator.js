@@ -1,0 +1,77 @@
+// Token estimation & budgeting utilities
+// Simple heuristic: charsPerToken (~4) adjustable via settings later.
+
+/** Estimate tokens for a text using heuristic charsPerToken.
+ * @param {string} text
+ * @param {number} charsPerToken
+ */
+export function estimateTokens(text, charsPerToken=4){
+  if(!text) return 0
+  const len = text.length
+  return Math.max(1, Math.ceil(len / charsPerToken))
+}
+
+/** Estimate tokens for a message pair (user + assistant parts) */
+export function estimatePairTokens(pair, charsPerToken=4){
+  const userT = estimateTokens(pair.userText||'', charsPerToken)
+  const asstT = estimateTokens(pair.assistantText||'', charsPerToken)
+  return userT + asstT
+}
+
+/** Build a model budget descriptor (placeholder; later load per-model metadata) */
+export function getModelBudget(model){
+  // Defaults; could differentiate later.
+  return {
+    maxContext: 8192,     // hard model input limit
+    responseReserve: 800, // reserve for assistant reply
+    softBuffer: 300,      // soft guard before reserve
+    safetyMargin: 40      // extra safety tokens
+  }
+}
+
+/** Compute inclusion boundary.
+ * @param {import('../models/messagePair.js').MessagePair[]} orderedPairs chronological filtered list
+ * @param {object} opts
+ * @param {number} opts.charsPerToken
+ * @returns {{included: import('../models/messagePair.js').MessagePair[], excluded: import('../models/messagePair.js').MessagePair[], stats: object}}
+ */
+export function computeContextBoundary(orderedPairs, { charsPerToken=4 }={}){
+  if(!Array.isArray(orderedPairs)) orderedPairs = []
+  const model = orderedPairs.length? orderedPairs[orderedPairs.length-1].model : 'gpt'
+  const budget = getModelBudget(model)
+  const { maxContext, responseReserve, softBuffer, safetyMargin } = budget
+  const maxUsable = maxContext - responseReserve - safetyMargin
+  let total=0
+  const included=[]
+  for(let i=orderedPairs.length-1; i>=0; i--){
+    const p = orderedPairs[i]
+    // estimate tokens for user+assistant (assistant may be pending; count user only if assistant placeholder?)
+    const pairTokens = estimatePairTokens(p, charsPerToken)
+    if(total + pairTokens > maxUsable){
+      break
+    }
+    included.push(p)
+    total += pairTokens
+    if(total > maxUsable - softBuffer){
+      // we are within soft buffer; still ok, just note in stats
+    }
+  }
+  included.reverse()
+  const excluded = orderedPairs.filter(p=> !included.includes(p))
+  return {
+    included,
+    excluded,
+    stats: {
+      totalIncludedTokens: total,
+      includedCount: included.length,
+      excludedCount: excluded.length,
+      model,
+      maxContext,
+      responseReserve,
+      softBuffer,
+      safetyMargin,
+      maxUsable,
+      charsPerToken
+    }
+  }
+}

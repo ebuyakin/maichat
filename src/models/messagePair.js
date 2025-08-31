@@ -10,6 +10,9 @@
  * @property {boolean} includeInContext
  * @property {string} userText
  * @property {string} assistantText
+ * @property {('idle'|'sending'|'error'|'complete')} lifecycleState
+ * @property {string|undefined} errorMessage
+ * @property {number|undefined} tokenLength  // cached estimated total tokens (user+assistant)
  */
 
 /**
@@ -32,6 +35,9 @@ export function createMessagePair({ id, topicId, model, userText, assistantText,
     star: 0,
     includeInContext: true,
     userText,
-    assistantText
+    assistantText,
+    lifecycleState: 'idle',
+    errorMessage: undefined,
+    tokenLength: undefined
   }
 }

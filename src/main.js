@@ -21,6 +21,7 @@ import { createNewMessageLifecycle } from './ui/newMessageLifecycle.js'
 import { openSettingsOverlay } from './ui/settingsOverlay.js'
 import { openApiKeysOverlay } from './ui/apiKeysOverlay.js'
 import { openHelpOverlay } from './ui/helpOverlay.js'
+import { gatherContext } from './context/gatherContext.js'
 // Mask system removed; using fade-based visibility.
 
 // Mode management
@@ -157,13 +158,18 @@ const lifecycle = createNewMessageLifecycle({
 
 function renderTopics(){ /* hidden for now */ }
 
+let __lastContextStats = null
+let __lastContextIncludedIds = new Set()
 function renderHistory(pairs){
   pairs = [...pairs].sort((a,b)=> a.createdAt - b.createdAt)
+  const ctx = gatherContext(pairs, { charsPerToken: 4 })
+  __lastContextStats = ctx.stats
+  __lastContextIncludedIds = new Set(ctx.included.map(p=>p.id))
   const parts = buildParts(pairs)
   activeParts.setParts(parts)
   historyView.render(parts)
-  updateMessageCount(pairs.length)
-  // After DOM update we need to re-measure for scroll controller
+  applyOutOfContextStyling()
+  updateMessageCount(ctx.included.length, pairs.length)
   requestAnimationFrame(()=>{ scrollController.remeasure(); applyActivePart() })
   lifecycle.updateNewReplyBadgeVisibility()
 }
@@ -342,6 +348,7 @@ const viewHandler = (e)=>{
   activeParts.last(); applyActivePart(); return true
   }
   if(e.key === 'R'){ cycleAnchorMode(); return true } // Shift+R cycles reading position
+  if(e.key === 'O' && e.shiftKey){ jumpToBoundary(); return true }
   if(e.key === 'n'){ lifecycle.jumpToNewReply('first'); return true }
   if(e.key === '*'){ cycleStar(); return true }
   if(e.key === 'a'){ toggleInclude(); return true }
@@ -785,10 +792,45 @@ function updateHud(){
 requestAnimationFrame(updateHud)
 
 // ---------- Message Counter ----------
-function updateMessageCount(visible){
+function updateMessageCount(included, visible){
   const el = document.getElementById('messageCount')
   if(!el) return
-  el.textContent = String(visible)
+  el.textContent = `${included}/${visible}`
+  if(__lastContextStats){
+    el.title = `Included/Visible pairs. Included tokens: ${__lastContextStats.totalIncludedTokens} / usable ${__lastContextStats.maxUsable}`
+  } else {
+    el.title = 'Included/Visible pairs'
+  }
+}
+
+function applyOutOfContextStyling(){
+  const partEls = document.querySelectorAll('#history .part')
+  partEls.forEach(el=>{
+    const partId = el.getAttribute('data-part-id')
+    if(!partId) return
+    const partObj = activeParts.parts.find(p=> p.id === partId)
+    if(!partObj) return
+    const included = __lastContextIncludedIds.has(partObj.pairId)
+    el.classList.toggle('ooc', !included)
+    if(el.classList.contains('meta')){
+      const off = el.querySelector('.badge.offctx')
+      if(off){
+        if(!included){
+          off.textContent = 'off'
+          off.setAttribute('data-offctx','1')
+        } else {
+          off.textContent = ''
+          off.setAttribute('data-offctx','0')
+        }
+      }
+    }
+  })
+}
+
+function jumpToBoundary(){
+  if(!__lastContextIncludedIds || __lastContextIncludedIds.size === 0) return
+  const idx = activeParts.parts.findIndex(pt=> __lastContextIncludedIds.has(pt.pairId))
+  if(idx >= 0){ activeParts.activeIndex = idx; applyActivePart() }
 }
 
 // ---------- App Menu (Hamburger) ----------

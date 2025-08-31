@@ -1,6 +1,6 @@
 # MaiChat Implementation Plan (Single Source of Truth)
 
-Last updated: 2025-08-26
+Last updated: 2025-08-31
 
 Purpose: One hierarchical, authoritative view of what exists, what is in progress, and what is next. No duplicated sections. Use this file only when planning or reviewing scope.
 
@@ -129,12 +129,69 @@ M5.6 Tests & Quality
 11. [ ] Filter re-anchor after command test
 12. [ ] Star/allow toggle focus preservation test
 
-### M6 Context Assembly & Preview
-- [ ] Aggregate allowed message pairs based on current filter
-- [ ] Token estimation heuristic
-- [ ] Preview panel (toggle)
-- [ ] Pipeline to send request using preview set (stub until provider implemented)
-  - Acceptance: User can inspect & confirm context set (ordered) with estimated tokens before sending
+### M6 Context Assembly, Token Budget & First Provider (ACTIVE)
+M6.0 Extended WYSIWYG Contract & Context Function
+1. [ ] Define extended WYSIWYG: visible filtered pairs are the candidate set; token budget may mark oldest visible pairs as out‑of‑context (dimmed) but never hides them.
+2. [ ] Implement `gatherContext({ store, includePendingUserText })` pure function returning only included (non-dimmed) pairs in order (oldest→newest) each yielding user then assistant message if non-empty.
+3. [ ] Boundary algorithm: walk from newest backwards until token budget (softLimit - reserve - safetyMargin) would be exceeded; earlier pairs flagged `.ooc`.
+4. [ ] Unit tests: ordering, boundary movement on size changes, zero included, all included, pending user text inclusion.
+
+M6.1 Token Estimation & Budgeting
+1. [ ] Token estimator with per-pair cache (charsPerToken=4 default) returning perPair + totals.
+2. [ ] Budget parameters table (modelMaxWindow, softBuffer, responseReserve, safetyMarginTokens) for gpt-4o-mini.
+3. [ ] Compute included vs excluded sets and supply counts for UI counter (X / Y).
+4. [ ] Unit tests: estimator ranges, boundary recalculation on model/reserve change, large single message rejection.
+
+M6.2 Out-of-Context Visualization & Navigation
+1. [ ] Apply `.ooc` class + OUT badge to excluded (older) pairs; opacity + subtle border.
+2. [ ] Message counter shows `X / Y`; tooltip with token stats.
+3. [ ] Navigation shortcut (Shift+O) jumps to first included pair (or HUD notice if all included).
+4. [ ] Disable send when X=0.
+5. [ ] Tests: UI state after edits/filter/model switch.
+
+M6.3 Provider Adapter (OpenAI Chat Completions)
+1. [ ] Lightweight `ProviderAdapter` interface (sendChat({ model, messages, apiKey, signal }) → { content, usage? }).
+2. [ ] OpenAI adapter (Chat Completions or Responses endpoint) non‑streaming first pass: POST, handle 401/429/5xx mapping to user readable errors.
+3. [ ] API key retrieval from localStorage; if missing → open API Keys overlay automatically (abort send).
+4. [ ] Error classification util (auth / rate / network / generic).
+5. [ ] Tests: adapter called with exact context array; error mapping.
+
+M6.4 Send Pipeline & Edit-In-Place Resend
+1. [ ] Send flow: create pair with userText only (state=sending), inline "thinking…" badge.
+2. [ ] Build context from INCLUDED (non-ooc) pairs + new user message.
+3. [ ] Adapter call; on success add assistantText; on failure mark error with `[error: code]` and actions.
+4. [ ] Edit-in-place resend: `e` converts userText to editable, removes prior assistantText, re-sends with fresh context.
+5. [ ] Delete pair (`x`) for any state (confirm if assistant present).
+6. [ ] Tests: success, error, resend after edit, delete, disappearing under filter.
+
+M6.5 Streaming (Optional Sub‑Phase) (deferred unless trivial)
+1. [ ] If time: incremental append via SSE/stream; placeholder updates in chunks; final usage tokens captured.
+2. [ ] Flag as [deferred] if skipped.
+
+M6.6 UX & Feedback
+1. [ ] Inline token estimate (small gray `~N`).
+2. [ ] Error display with buttons `[Edit & Resend] [Delete]` (keyboard e/x).
+3. [ ] Optional toast for send errors (defer if time). 
+
+M6.7 Robustness & Edge Cases
+1. [ ] Large single message over hard limit: block with explanatory error.
+2. [ ] Race: multiple rapid sends prevented (lock enforcement test).
+3. [ ] Timeout → `[error: network]` classification after 30s.
+
+M6.8 Telemetry & Debug (Dev Only)
+1. [ ] Optional HUD section: last send estimated tokens.
+2. [ ] Debug flag to dump request payload in console (sanitize key).
+
+M6.9 Documentation
+1. [ ] Context Assembly spec section (WYSIWYG, overrides, ordering rules, exclusion semantics) → integrate into implementation plan or separate spec.
+2. [ ] Short Provider Adapter README excerpt (how to add more providers) – seeds future M11.
+
+M6.10 Test Matrix Completion
+1. [ ] Integration tests (jsdom): filter change boundary shift, error path, edit-resend path, delete path, zero-included disable send.
+2. [ ] Performance micro-check (<10ms gatherContext on 1k pairs synthetic) — note results.
+
+Acceptance (M6):
+User with a valid OpenAI key can: (a) view visible history with any overflow pairs dimmed and counter X/Y, (b) send a prompt; only non-dimmed pairs plus new prompt are used, (c) receive assistant reply appended, (d) edit and resend in place to refine without extra history clutter, (e) delete any pair, and (f) see clear errors with ability to edit & resend. Token budget enforcement is transparent (dimmed pairs) and send is disabled only when zero pairs would be included or a single message exceeds the model hard limit.
 
 ### M7 Enhanced Filtering (Full Spec)
 - [ ] Wildcards (*, pattern decisions)
@@ -168,13 +225,12 @@ M5.6 Tests & Quality
 - [ ] Accessibility (ARIA roles, focus outlines alternative, keyboard traps audited)
   - Acceptance: Discoverability improved; a11y basic checks pass
 
-### M11 Extensibility & Provider Abstraction
-- [ ] ProviderAdapter interface & base contract docs
-- [ ] OpenAI provider implementation
-- [ ] API key management UI + persistence (unencrypted notice)
-- [ ] Tokenization strategy pluggable hook
+### M11 Multi-Provider Extensibility (Post-M6 Generalization)
+- [ ] Refine ProviderAdapter interface for streaming + usage metadata
+- [ ] Anthropic adapter (non‑streaming) using same pipeline
+- [ ] Tokenization strategy plug-in (drop-in true tokenizer; wire into estimator hook)
 - [ ] Saved filter definitions (reserved syntax or UI stub)
-  - Acceptance: Adding second provider requires only new adapter file + registration
+  - Acceptance: Adding a second provider (Anthropic) requires only its adapter file + simple registration; existing send pipeline unchanged.
 
 ### M12 Release Prep
 - [ ] README (user + quick start)

@@ -187,6 +187,11 @@ body { min-height:100vh; overflow:hidden; }
 .badge.new-reply.dim { opacity:.5; }
 .badge.topic { max-width:560px; overflow:hidden; text-overflow:ellipsis; }
 .badge.timestamp { color:#aaa; font-weight:400; }
+/* Minimal badges (terminal style) */
+.badge.include { background:transparent; border:none; text-transform:none; font-size:11px; letter-spacing:.3px; padding:0 2px; }
+.badge.include[data-include=true] { color:#89b5ff; }
+.badge.include[data-include=false] { color:#888; }
+.badge.offctx { background:transparent; border:none; color:#ff9fb2; text-transform:none; font-size:11px; letter-spacing:.3px; }
 
 /* Global focus handling: remove default outlines (we supply custom states where needed) */
 *:focus { outline:none; }
@@ -227,5 +232,10 @@ input:focus, button:focus, .overlay-panel input[type=text]:focus { border-color:
 .topic-editor .te-warning { min-height:20px; padding:4px 10px 6px; font:11px/1.4 var(--font-ui); color:#f88; border-top:1px solid #222; opacity:0; transition:opacity .2s; letter-spacing:.3px; }
 .topic-editor .te-tree:focus { outline:none; }
 .topic-editor .te-warning.visible { opacity:1; }
+
+/* Out-of-context visual marking */
+/* Out-of-budget / context-excluded visual layer */
+.part.ooc .part-inner { opacity:0.32; }
+.part.ooc.meta .part-inner { opacity:0.5; }
 
 
