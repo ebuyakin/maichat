@@ -15,11 +15,15 @@ import { createIndexedDbAdapter } from './store/indexedDbAdapter.js'
 import { attachContentPersistence } from './persistence/contentPersistence.js'
 import { createTopicPicker } from './ui/topicPicker.js'
 import { openTopicEditor } from './ui/topicEditor.js'
-import { modalIsActive } from './ui/focusTrap.js'
+import { modalIsActive, createFocusTrap } from './ui/focusTrap.js'
 import { escapeHtml } from './ui/util.js'
 import { createNewMessageLifecycle } from './ui/newMessageLifecycle.js'
 import { openSettingsOverlay } from './ui/settingsOverlay.js'
 import { openApiKeysOverlay } from './ui/apiKeysOverlay.js'
+import { getApiKey } from './api/keys.js'
+import { ensureCatalogLoaded, getActiveModel } from './models/modelCatalog.js'
+import { openModelSelector } from './ui/modelSelector.js'
+import { openModelEditor } from './ui/modelEditor.js'
 import { openHelpOverlay } from './ui/helpOverlay.js'
 import { gatherContext } from './context/gatherContext.js'
 import { registerProvider } from './provider/adapter.js'
@@ -171,8 +175,8 @@ subscribeSettings((s)=>{
   }
   applySpacingStyles(s); layoutHistoryPane(); renderHistory(store.getAllPairs()) 
 })
-let overlay = null // { type: 'topic'|'model', list:[], activeIndex:0 }
-let pendingMessageMeta = { topicId: null, model: 'gpt' }
+let overlay = null // { type: 'topic', list:[], activeIndex:0 } (model selection now separate overlay component)
+let pendingMessageMeta = { topicId: null, model: getActiveModel() || 'gpt-4o' }
 // New message lifecycle module
 const lifecycle = createNewMessageLifecycle({
   store,
@@ -318,6 +322,7 @@ async function bootstrap(){
   // Register providers
   registerProvider('openai', createOpenAIAdapter())
   await persistence.init()
+  ensureCatalogLoaded()
   // (Removed temporary dev override of partFraction)
   applySpacingStyles(getSettings())
   // Restore persisted pending topic if available
@@ -448,7 +453,18 @@ const inputHandler = (e)=>{
           lifecycle.handleNewAssistantReply(id)
         } catch(ex){
           let errMsg = (ex && ex.message) ? ex.message : 'error'
-          if(errMsg === 'missing_api_key') errMsg = 'API key missing (Ctrl+.) -> API Keys'
+          if(errMsg === 'missing_api_key' || errMsg === 'api_key_auth_failed'){
+            const hasKey = !!getApiKey('openai')
+            if(errMsg === 'missing_api_key') {
+              errMsg = 'OpenAI key missing (Ctrl+.)'
+            } else if(errMsg === 'api_key_auth_failed') {
+              errMsg = 'OpenAI key rejected (Ctrl+.)'
+            }
+            // Auto-open keys overlay (debounced to next frame so pair renders error state first)
+            requestAnimationFrame(()=>{
+              openApiKeysOverlay({ onClose: ()=>{ /* after overlay close we could retry if still editing */ } })
+            })
+          }
           store.updatePair(id, { assistantText: '', lifecycleState:'error', errorMessage: errMsg })
           lifecycle.completeSend()
           renderHistory(store.getAllPairs())
@@ -527,10 +543,20 @@ window.addEventListener('keydown', e=>{
   else if(k==='d'){ e.preventDefault(); modeManager.set(MODES.COMMAND) }
   else if(k==='v'){ e.preventDefault(); modeManager.set(MODES.VIEW) }
   else if(k==='t'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openQuickTopicPicker() } }
-  else if(k==='e'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openTopicEditorOverlay() } }
-  else if(k==='m'){ if(modeManager.mode===MODES.INPUT){ e.preventDefault(); openSelector('model') } }
+  else if(k==='e'){ if(!document.getElementById('appLoading')){ e.preventDefault(); openTopicEditor({ store, onClose:()=>{} }) } }
+  else if(k==='m'){
+    // Selector only in INPUT; editor (shift) allowed always
+    if(e.shiftKey){
+      e.preventDefault();
+      openModelEditor({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta() } })
+    } else {
+      if(modeManager.mode !== MODES.INPUT) return
+      e.preventDefault();
+      openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta() } })
+    }
+  }
   else if(k===','){ e.preventDefault(); openSettingsOverlay({ onClose:()=>{} }) }
-  else if(k==='.' ){ e.preventDefault(); toggleMenu(); }
+  else if(e.key === '.' || e.code === 'Period'){ e.preventDefault(); toggleMenu(); }
   // Developer shortcut: Ctrl+Shift+S to reseed long test messages
   if(e.shiftKey && k==='s'){ e.preventDefault(); window.seedTestMessages && window.seedTestMessages() }
 })
@@ -538,12 +564,6 @@ window.addEventListener('keydown', e=>{
 window.addEventListener('keydown', e=>{ if(e.key==='F1'){ e.preventDefault(); openHelpOverlay({ onClose:()=>{} }) } })
 
 // Overlay selectors
-function openSelector(type){
-  if(overlay){ closeSelector(); }
-  const list = type==='topic' ? store.getAllTopics() : getModelList()
-  overlay = { type, list, activeIndex: 0 }
-  renderOverlay()
-}
 
 function openQuickTopicPicker(){
   // selection context differs by mode
@@ -564,87 +584,7 @@ function openQuickTopicPicker(){
   })
 }
 
-function openTopicEditorOverlay(){
-  openTopicEditor({
-    store,
-    onSelect: (topicId)=>{
-      // Treat selecting in editor same as quick picker selection context
-      if(modeManager.mode === MODES.INPUT){
-        pendingMessageMeta.topicId = topicId
-        renderPendingMeta()
-  try { localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) } catch{}
-      } else if(modeManager.mode === MODES.VIEW){
-        const act = activeParts.active(); if(act){
-          const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id, { topicId }); renderHistory(store.getAllPairs()); activeParts.setActiveById(act.id); applyActivePart() }
-        }
-      }
-    },
-    onClose: ()=>{}
-  })
-}
-function closeSelector(){
-  if(!overlay) return
-  const el = document.getElementById('overlayRoot')
-  if(el) el.remove()
-  overlay = null
-}
-function getModelList(){
-  // Placeholder static list; later can load dynamically / config
-  return [ { id:'gpt', name:'gpt' }, { id:'claude', name:'claude' }, { id:'mixtral', name:'mixtral' } ]
-}
-function renderOverlay(){
-  if(!overlay) return
-  const root = document.createElement('div')
-  root.id = 'overlayRoot'
-  root.className = 'overlay-backdrop'
-  const listItems = overlay.list.map((item,i)=>{
-    const id = item.id || item.topicId || item.id
-    const label = item.name || item.model || item.id || item
-    const active = i===overlay.activeIndex ? ' class="active"' : ''
-    return `<li data-index="${i}"${active}>${escapeHtml(label)}</li>`
-  }).join('')
-  root.innerHTML = `<div class="overlay-panel" data-type="${overlay.type}">
-    <header>${overlay.type === 'topic' ? 'Select Topic' : 'Select Model'}</header>
-    <div class="list"><ul>${listItems}</ul></div>
-    <footer><span style="flex:1;opacity:.6">Enter=accept  Esc=cancel  j/k=move</span></footer>
-  </div>`
-  document.body.appendChild(root)
-}
-function applyOverlaySelection(){
-  if(!overlay) return
-  const item = overlay.list[overlay.activeIndex]
-  if(overlay.type==='topic'){
-    if(modeManager.mode === MODES.VIEW){ // update active pair topic
-      const act = activeParts.active(); if(act){
-        const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id, { topicId: item.id }); renderHistory(store.getAllPairs()); activeParts.setActiveById(act.id); applyActivePart() }
-      }
-      currentTopicId = item.id
-    } else if(modeManager.mode === MODES.INPUT){
-      pendingMessageMeta.topicId = item.id
-      renderPendingMeta()
-    }
-  } else if(overlay.type==='model'){
-    pendingMessageMeta.model = item.id
-    renderPendingMeta()
-  }
-  closeSelector()
-}
-
-window.addEventListener('keydown', e=>{
-  if(!overlay) return
-  if(e.key === 'Escape'){ e.preventDefault(); closeSelector(); return }
-  if(e.key === 'Enter'){ e.preventDefault(); applyOverlaySelection(); return }
-  if(e.key === 'j' || e.key === 'ArrowDown'){ e.preventDefault(); overlay.activeIndex = Math.min(overlay.list.length-1, overlay.activeIndex+1); refreshOverlaySelection(); }
-  if(e.key === 'k' || e.key === 'ArrowUp'){ e.preventDefault(); overlay.activeIndex = Math.max(0, overlay.activeIndex-1); refreshOverlaySelection(); }
-})
-function refreshOverlaySelection(){
-  if(!overlay) return
-  const root = document.getElementById('overlayRoot'); if(!root) return
-  root.querySelectorAll('li').forEach(li=>{
-    const idx = Number(li.getAttribute('data-index'))
-    li.classList.toggle('active', idx===overlay.activeIndex)
-  })
-}
+// (Legacy overlay selection handlers removed; model selection/editor now separate modules.)
 
 // HUD updater & shared timestamp formatting
 function formatTimestamp(ts){
@@ -892,6 +832,8 @@ function jumpToBoundary(){
 // ---------- App Menu (Hamburger) ----------
 const menuBtn = () => document.getElementById('appMenuBtn')
 const menuEl = () => document.getElementById('appMenu')
+let __menuTrap = null
+let __menuKeyHandlerBound = false
 function toggleMenu(force){
   const btn = menuBtn(); const m = menuEl(); if(!btn || !m) return
   let show = force
@@ -899,17 +841,54 @@ function toggleMenu(force){
   if(show){
     m.removeAttribute('hidden')
     btn.setAttribute('aria-expanded','true')
-    // focus first item
+  document.body.setAttribute('data-menu-open','1')
+  // Clear any prior active states to avoid duplicates
+    m.querySelectorAll('li.active').forEach(li=> li.classList.remove('active'))
     const first = m.querySelector('li'); if(first) first.classList.add('active')
+    // Focus management: trap inside menu
+    __menuTrap = createFocusTrap(m, ()=> first)
+    // Attach capture key handler once (global) if not already
+    if(!__menuKeyHandlerBound){
+      window.addEventListener('keydown', menuGlobalKeyHandler, true)
+      __menuKeyHandlerBound = true
+    }
   } else {
-    m.setAttribute('hidden','')
+  m.setAttribute('hidden','')
+  document.body.removeAttribute('data-menu-open')
     btn.setAttribute('aria-expanded','false')
+    if(__menuTrap){ __menuTrap.release(); __menuTrap = null }
+  }
+}
+function menuGlobalKeyHandler(e){
+  const m = menuEl(); if(!m || m.hasAttribute('hidden')) return
+  // Hard stop for any key that could affect background navigation
+  const navKeys = ['j','k','ArrowDown','ArrowUp','Enter','Escape']
+  if(navKeys.includes(e.key)){
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    const items = Array.from(m.querySelectorAll('li'))
+    let idx = items.findIndex(li=> li.classList.contains('active'))
+    if(idx < 0 && items.length){ idx = 0; items[0].classList.add('active') }
+    if(e.key === 'Escape'){ toggleMenu(false); return }
+    if(e.key === 'j' || e.key === 'ArrowDown'){
+      if(items.length){ idx = (idx+1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active') }
+      return
+    }
+    if(e.key === 'k' || e.key === 'ArrowUp'){
+      if(items.length){ idx = (idx-1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active') }
+      return
+    }
+    if(e.key === 'Enter'){
+      const act = items[idx] || items[0]
+      if(act) activateMenuItem(act)
+      return
+    }
   }
 }
 function closeMenu(){ toggleMenu(false) }
 function activateMenuItem(li){ if(!li) return; const act = li.getAttribute('data-action'); closeMenu(); runMenuAction(act) }
 function runMenuAction(action){
-  if(action === 'topic-editor'){ openTopicEditorOverlay() }
+  if(action === 'topic-editor'){ openTopicEditor({ store, onClose:()=>{} }) }
   else if(action === 'settings'){ openSettingsOverlay({ onClose:()=>{} }) }
   else if(action === 'api-keys'){ openApiKeysOverlay({ onClose:()=>{} }) }
   else if(action === 'help'){ openHelpOverlay({ onClose:()=>{} }) }
@@ -924,24 +903,14 @@ document.addEventListener('click', e=>{
   // click outside
   if(!btn.contains(e.target)) closeMenu()
 })
-window.addEventListener('keydown', e=>{
-  const m = menuEl(); if(!m) return
-  if(e.ctrlKey && e.key === '.') { e.preventDefault(); toggleMenu(); return }
-  if(m.hasAttribute('hidden')) return
-  if(e.key === 'Escape'){ closeMenu(); return }
-  const items = Array.from(m.querySelectorAll('li'))
-  let idx = items.findIndex(li=> li.classList.contains('active'))
-  if(e.key === 'j' || e.key === 'ArrowDown'){ e.preventDefault(); idx = (idx+1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active'); return }
-  if(e.key === 'k' || e.key === 'ArrowUp'){ e.preventDefault(); idx = (idx-1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active'); return }
-  if(e.key === 'Enter'){ e.preventDefault(); activateMenuItem(items[idx] || items[0]); return }
-})
+// (Previous bubbling menu key handler removed – now unified in capture-phase menuGlobalKeyHandler.)
 
 function renderPendingMeta(){
   const pm = document.getElementById('pendingModel')
   const pt = document.getElementById('pendingTopic')
   if(pm){
-    pm.textContent = pendingMessageMeta.model || 'gpt'
-    if(!pm.textContent) pm.textContent = 'gpt'
+  pm.textContent = pendingMessageMeta.model || getActiveModel() || 'gpt-4o'
+  if(!pm.textContent) pm.textContent = 'gpt-4o'
   }
   if(pt){
     const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId)
@@ -963,7 +932,7 @@ function renderPendingMeta(){
     }
   }
   if(pm){
-    pm.title = `Model: ${pendingMessageMeta.model || 'gpt'} (Ctrl+M change)`
+  pm.title = `Model: ${pendingMessageMeta.model || getActiveModel() || 'gpt-4o'} (Ctrl+M select (Input mode) · Ctrl+Shift+M manage (any mode))`
   }
 }
 

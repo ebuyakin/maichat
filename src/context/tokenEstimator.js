@@ -24,14 +24,15 @@ export function estimatePairTokens(pair, charsPerToken=4){
   return total
 }
 
-/** Build a model budget descriptor (placeholder; later load per-model metadata) */
+import { getContextWindow } from '../models/modelCatalog.js'
+/** Build a model budget descriptor using catalog metadata */
 export function getModelBudget(model){
-  // Defaults; could differentiate later.
+  const cw = getContextWindow(model)
   return {
-    maxContext: 8192,     // hard model input limit
-    responseReserve: 800, // reserve for assistant reply
-    softBuffer: 300,      // soft guard before reserve
-    safetyMargin: 40      // extra safety tokens
+    maxContext: cw,
+    responseReserve: 800,
+    softBuffer: 300,
+    safetyMargin: 40
   }
 }
 

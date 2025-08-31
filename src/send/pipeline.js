@@ -1,7 +1,8 @@
 import { gatherContext } from '../context/gatherContext.js'
-import { getProvider } from '../provider/adapter.js'
+import { getProvider, ProviderError } from '../provider/adapter.js'
 import { estimateTokens } from '../context/tokenEstimator.js'
 import { getSettings } from '../settings/index.js'
+import { getApiKey } from '../api/keys.js'
 
 /** Build chat messages array from included pairs plus new user text */
 export function buildMessages({ includedPairs, newUserText }){
@@ -31,9 +32,21 @@ export async function executeSend({ store, model, userText, signal }){
     throw new Error('message too large for model window')
   }
   const provider = getProvider('openai')
-  if(!provider) throw new Error('provider not registered')
-  const apiKey = localStorage.getItem('maichat.openai.key') || ''
+  if(!provider) throw new Error('provider_not_registered')
+  const apiKey = getApiKey('openai')
   if(!apiKey) throw new Error('missing_api_key')
-  const res = await provider.sendChat({ model, messages, apiKey, signal })
-  return res
+  try {
+    const res = await provider.sendChat({ model, messages, apiKey, signal })
+    return res
+  } catch(ex){
+    if(ex instanceof ProviderError){
+      // Normalize auth errors to a stable code the UI can act on.
+      if(ex.kind === 'auth'){
+        const err = new Error('api_key_auth_failed')
+        err.__original = ex
+        throw err
+      }
+    }
+    throw ex
+  }
 }

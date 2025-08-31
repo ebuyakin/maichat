@@ -22,7 +22,8 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+i | Switch to INPUT | Focuses bottom input |
 | Ctrl+d | Switch to COMMAND | Focuses command input |
 | Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection) |
-| Ctrl+M | Open model selector (INPUT only) | Overlay |
+| Ctrl+M | Open model selector (INPUT mode only; chooses pending message model) | Overlay (Selection) |
+| Ctrl+Shift+M | Open model editor (all modes) | Enable/disable models (j/k move · Space toggle · Enter/Esc close) |
 | Ctrl+E | Open topic editor | Overlay (Edit) |
 | Ctrl+, | Open settings overlay | Adjust rare preferences (part size, anchor, padding, gaps, zone heights) (UI TODO) |
 
@@ -146,6 +147,7 @@ Vim-style navigation (j/k) may be intercepted by browser extensions (e.g. Vimium
 5. Fallbacks (arrows) never overshadow primary Vim-style keys.
 
 ## 13. Change Log
+- v0.9: Model selector limited to INPUT mode; model editor (Ctrl+Shift+M) available in all modes (j/k move, Space toggle, Enter/Esc close); Enter removed as toggle.
 - v0.8: Settings overlay unified keyboard model (j/k navigation, +/- numeric adjust with large Shift step, Space cycles selects, Enter apply w/out close, Esc cancel, persistent 'Saved' label until dirty).
 - v0.7: Implemented Shift+R anchor cycle; dev reseed helper (Ctrl+Shift+S) for partition testing; forced smaller part size for testing.
 - v0.6: New message behavior (single pending send), 'n' key (first part of last message), Enter blocked during pending, badge logic.

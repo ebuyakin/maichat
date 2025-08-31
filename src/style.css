@@ -250,3 +250,12 @@ input:focus, button:focus, .overlay-panel input[type=text]:focus { border-color:
 .part.ooc.meta .part-inner { opacity:0.7; }
 
 
+/* Help Overlay */
+.help-panel { width:520px; max-width:90vw; }
+.help-panel .help-body { padding:14px 18px 12px; display:flex; flex-direction:column; gap:12px; font:var(--size-base)/1.45 var(--font-ui); color:var(--text); }
+.help-panel .help-body section { font-weight:400; letter-spacing:.2px; }
+.help-panel .help-body strong { font-weight:500; color:var(--text); }
+.help-panel .help-hint { font-size:11px; opacity:.6; letter-spacing:.4px; }
+.help-panel .help-buttons { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+
+

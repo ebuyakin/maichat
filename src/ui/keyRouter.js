@@ -7,11 +7,11 @@ export class KeyRouter {
     this.handlers = handlers // { mode: (event)=>boolean }
     this.bound = this._onKey.bind(this)
   }
-  attach(){ window.addEventListener('keydown', this.bound, true) }
-  detach(){ window.removeEventListener('keydown', this.bound, true) }
+  attach(){ window.addEventListener('keydown', this.bound, false) }
+  detach(){ window.removeEventListener('keydown', this.bound, false) }
   _onKey(e){
   // If modal overlays active, skip (they handle their own key logic)
-  if(document.querySelector('.topic-editor-backdrop, .topic-picker-backdrop')) return
+  if(document.querySelector('.topic-editor-backdrop, .topic-picker-backdrop, #settingsOverlayRoot, .overlay-backdrop.centered, .app-menu:not([hidden])')) return
     // ignore if in text input unless command mode uses raw keys
     const tag = e.target && e.target.tagName
     if(tag === 'INPUT' || tag === 'TEXTAREA'){
