@@ -50,13 +50,21 @@ export function createHistoryView({ store, onActivePartRendered }){
       const ts = formatTimestamp(pair.createdAt)
       const topicPath = topic ? formatTopicPath(store, topic.id) : '(no topic)'
       const modelName = pair.model || '(model)'
+      let stateBadge = ''
+      let errActions = ''
+      if(pair.lifecycleState === 'sending') stateBadge = '<span class="badge state" data-state="sending">…</span>'
+      else if(pair.lifecycleState === 'error') {
+        stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage||'error')}">err</span>`
+        errActions = `<span class="err-actions"><button class="mini-btn resend" data-action="resend" title="Edit & Resend">edit</button><button class="mini-btn del" data-action="delete" title="Delete pair">del</button></span>`
+      }
         return `<div class="part meta" data-part-id="${pt.id}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
           <div class="meta-left">
-            <span class="badge include" data-include="${pair.includeInContext}">${pair.includeInContext? 'in':'out'}</span>
+            <span class="badge flag" data-flag="${pair.colorFlag}" title="${pair.colorFlag==='b'?'Flagged (blue)':'Unflagged (grey)'}"></span>
             <span class="badge stars">${'★'.repeat(pair.star)}${'☆'.repeat(Math.max(0,3-pair.star))}</span>
             <span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span>
           </div>
           <div class="meta-right">
+          ${stateBadge}${errActions}
             <span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span>
             <span class="badge model">${escapeHtml(modelName)}</span>
             <span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
@@ -67,6 +75,23 @@ export function createHistoryView({ store, onActivePartRendered }){
   }
 
   return { render }
+}
+
+// Attach delegated handlers for error action buttons
+export function bindHistoryErrorActions(rootEl, { onResend, onDelete }) {
+  if(!rootEl.__errActionsBound) {
+    rootEl.addEventListener('click', e => {
+      const btn = e.target.closest('button.mini-btn')
+      if(!btn) return
+      const action = btn.dataset.action
+      const pairEl = btn.closest('.pair')
+      if(!pairEl) return
+      const pairId = pairEl.getAttribute('data-id')
+      if(action === 'resend' && onResend) onResend(pairId)
+      else if(action === 'delete' && onDelete) onDelete(pairId)
+    })
+    rootEl.__errActionsBound = true
+  }
 }
 
 function formatTimestamp(ts){

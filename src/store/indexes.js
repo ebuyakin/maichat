@@ -6,8 +6,8 @@
  * - byTopic: topicId -> MessagePair[]
  * - byModel: modelLower -> MessagePair[]
  * - byStar: star(0..3) -> MessagePair[]
- * - include: pairs with includeInContext=true
- * - exclude: pairs with includeInContext=false
+ * - blue: pairs with colorFlag='b'
+ * - grey: pairs with colorFlag='g'
  */
 export class Indexes {
   /** @param {import('./memoryStore.js').MemoryStore} store */
@@ -16,8 +16,8 @@ export class Indexes {
     this.byTopic = new Map()
     this.byModel = new Map()
     this.byStar = [[],[],[],[]]
-    this.include = []
-    this.exclude = []
+  this.blue = []
+  this.grey = []
     this._subscriptions = []
     this._buildAll()
     this._wire()
@@ -48,13 +48,13 @@ export class Indexes {
     this.byModel.get(mk).push(p)
     // star
     if(this.byStar[p.star]) this.byStar[p.star].push(p)
-    // include/exclude
-    if(p.includeInContext) this.include.push(p); else this.exclude.push(p)
+  // colorFlag
+  if(p.colorFlag === 'b') this.blue.push(p); else this.grey.push(p)
   }
 
   _updatePair(p){
     // For simplicity Phase 1: rebuild all (low volume). Optimize later.
-    this.byTopic.clear(); this.byModel.clear(); this.byStar = [[],[],[],[]]; this.include=[]; this.exclude=[]
+  this.byTopic.clear(); this.byModel.clear(); this.byStar = [[],[],[],[]]; this.blue=[]; this.grey=[]
     this._buildAll()
   }
 
@@ -62,8 +62,8 @@ export class Indexes {
   getByTopic(topicId){ return this.byTopic.get(topicId) || [] }
   getByModel(model){ return this.byModel.get(model.toLowerCase()) || [] }
   getByStar(star){ return this.byStar[star] || [] }
-  getIncluded(){ return this.include }
-  getExcluded(){ return this.exclude }
+  getBlue(){ return this.blue }
+  getGrey(){ return this.grey }
 }
 
 /** Convenience factory */

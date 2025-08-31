@@ -63,7 +63,18 @@ export class ContentPersistence {
         this.store.children.get(pid).add(topic.id)
       }
     }
+    // Legacy migration (2025-08): map deprecated includeInContext/includeContext -> colorFlag.
+    // Older stored records had boolean includeInContext controlling context gating.
+    // New model uses colorFlag ('b'|'g') purely as a user flag. We preserve previous
+    // intent: true -> 'b' (blue), false -> 'g' (grey). Remove legacy fields so any
+    // accidental future references surface quickly.
     for (const p of pairs) {
+      if (!('colorFlag' in p)) {
+        const legacy = (p.includeInContext !== undefined) ? p.includeInContext : p.includeContext
+        p.colorFlag = legacy ? 'b' : 'g'
+      }
+      if ('includeInContext' in p) delete p.includeInContext
+      if ('includeContext' in p) delete p.includeContext
       this.store._importPair(p)
     }
     this._wire()

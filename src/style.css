@@ -189,9 +189,20 @@ body { min-height:100vh; overflow:hidden; }
 .badge.timestamp { color:#aaa; font-weight:400; }
 /* Minimal badges (terminal style) */
 .badge.include { background:transparent; border:none; text-transform:none; font-size:11px; letter-spacing:.3px; padding:0 2px; }
-.badge.include[data-include=true] { color:#89b5ff; }
-.badge.include[data-include=false] { color:#888; }
+.badge.flag { display:inline-block; width:10px; height:10px; position:relative; top:1px; }
+.badge.flag[data-flag='b'] { background:#1f4d99; border:1px solid #1f4d99; }
+.badge.flag[data-flag='g'] { background:transparent; border:1px solid #666; border-radius:50%; }
 .badge.offctx { background:transparent; border:none; color:#ff9fb2; text-transform:none; font-size:11px; letter-spacing:.3px; }
+.badge.model { background:transparent; border:none; color:var(--text-dim); }
+.badge.state { background:transparent; border:none; color:var(--text-dim); min-width:18px; text-align:center; }
+.badge.state[data-state=sending] { animation:pulse 1.2s ease-in-out infinite; }
+.badge.state.error { color:#f88; }
+@keyframes pulse { 0%{opacity:.3;} 50%{opacity:1;} 100%{opacity:.3;} }
+.err-actions { display:inline-flex; gap:4px; }
+.err-actions .mini-btn { background:transparent; border:1px solid #333; color:#bbb; font:10px var(--font-ui); padding:2px 6px; border-radius:4px; cursor:pointer; letter-spacing:.4px; }
+.err-actions .mini-btn:hover, .err-actions .mini-btn:focus { border-color:#444; color:#fff; }
+.err-actions .mini-btn.del { color:#f99; }
+.err-actions .mini-btn.del:hover, .err-actions .mini-btn.del:focus { border-color:#600; color:#faa; }
 
 /* Global focus handling: remove default outlines (we supply custom states where needed) */
 *:focus { outline:none; }
@@ -234,8 +245,8 @@ input:focus, button:focus, .overlay-panel input[type=text]:focus { border-color:
 .topic-editor .te-warning.visible { opacity:1; }
 
 /* Out-of-context visual marking */
-/* Out-of-budget / context-excluded visual layer */
-.part.ooc .part-inner { opacity:0.32; }
-.part.ooc.meta .part-inner { opacity:0.5; }
+/* Adjusted (2025-08-31): reduced dimming strength for readability while keeping distinction */
+.part.ooc .part-inner { opacity:0.55; }
+.part.ooc.meta .part-inner { opacity:0.7; }
 
 

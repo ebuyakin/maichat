@@ -12,9 +12,9 @@ Legend:
 
 ## 1. Architectural Overview (Current State)
 The system is a layered vanilla ES modules app:
-1. Core Domain & Store – in‑memory collections, topic tree, indexes (topic/model/star/allow-exclude), move & count maintenance.
+1. Core Domain & Store – in‑memory collections, topic tree, indexes (topic/model/star/flag), move & count maintenance.
 2. Persistence – IndexedDB adapter with debounced autosave + beforeunload flush (pairs, topics). (Export/import pending.)
-3. Filtering Engine – Lexer, Parser, Evaluator (subset: topics, model, star, allow/exclude; date filters not yet implemented – guarded).
+3. Filtering Engine – Lexer, Parser, Evaluator (subset: topics, model, star, color flag; date filters not yet implemented – guarded).
 4. Topic Management UI – Quick Picker (Ctrl+T) & Editor (Ctrl+E): CRUD, search, counts, mark/paste re-parent (child only), focus trap.
 5. Mode & Keyboard Shell – Modes (INPUT / VIEW / COMMAND), KeyRouter, global shortcuts, focus management utility.
 6. UI Rendering – Lightweight DOM updates (no virtualization yet).
@@ -37,7 +37,7 @@ The system is a layered vanilla ES modules app:
 - [x] Topic CRUD (add, rename, delete-if-empty) in data layer
 - [x] Child index + moveTopic with cycle prevention
 - [x] Incremental topic counts (direct & total)
-- [x] Basic indexes (topic, model, starred, allow/exclude)
+- [x] Basic indexes (topic, model, starred, color flag)
 - [~] Schema version meta record (written? partial — confirm & add test)
   - Acceptance: Reload restores topics/pairs; operations persisted → Achieved except schema meta test
 
@@ -131,27 +131,29 @@ M5.6 Tests & Quality
 
 ### M6 Context Assembly, Token Budget & First Provider (ACTIVE)
 M6.0 Extended WYSIWYG Contract & Context Function
-1. [ ] Define extended WYSIWYG: visible filtered pairs are the candidate set; token budget may mark oldest visible pairs as out‑of‑context (dimmed) but never hides them.
-2. [ ] Implement `gatherContext({ store, includePendingUserText })` pure function returning only included (non-dimmed) pairs in order (oldest→newest) each yielding user then assistant message if non-empty.
-3. [ ] Boundary algorithm: walk from newest backwards until token budget (softLimit - reserve - safetyMargin) would be exceeded; earlier pairs flagged `.ooc`.
-4. [ ] Unit tests: ordering, boundary movement on size changes, zero included, all included, pending user text inclusion.
+1. [x] Define extended WYSIWYG: visible filtered pairs are the candidate set; token budget marks oldest visible pairs as out‑of‑context (dimmed) but never hides them (document + code path in `renderHistory`).
+2. [~] Implement `gatherContext(...)` pure function (present as `gatherContext(visiblePairs, opts)`; signature & user-pending inclusion refinement outstanding; no user/assistant message flattening yet).
+3. [x] Boundary algorithm implemented (`computeContextBoundary` + integration; marks `.ooc`).
+4. [~] Unit tests: basic inclusion test present (`contextBoundary.test.js`); missing movement, zero/all included, pending user text scenarios.
+ 5. [~] Pending user text estimation (`pendingUserText`) added to gatherContext stats; inclusion logic for actual send path still pending.
 
 M6.1 Token Estimation & Budgeting
-1. [ ] Token estimator with per-pair cache (charsPerToken=4 default) returning perPair + totals.
-2. [ ] Budget parameters table (modelMaxWindow, softBuffer, responseReserve, safetyMarginTokens) for gpt-4o-mini.
-3. [ ] Compute included vs excluded sets and supply counts for UI counter (X / Y).
-4. [ ] Unit tests: estimator ranges, boundary recalculation on model/reserve change, large single message rejection.
+1. [x] Token estimator (heuristic) implemented with per‑pair caching (`tokenLength`).
+2. [~] Budget parameters hard-coded in `getModelBudget()`; table + multi‑model differentiation pending.
+3. [x] Included vs excluded sets powering X / Y counter integrated in `renderHistory`.
+4. [ ] Unit tests (estimator ranges, boundary recalculation, large single message) not yet written.
 
 M6.2 Out-of-Context Visualization & Navigation
-1. [ ] Apply `.ooc` class + OUT badge to excluded (older) pairs; opacity + subtle border.
-2. [ ] Message counter shows `X / Y`; tooltip with token stats.
-3. [ ] Navigation shortcut (Shift+O) jumps to first included pair (or HUD notice if all included).
-4. [ ] Disable send when X=0.
-5. [ ] Tests: UI state after edits/filter/model switch.
+1. [x] Apply `.ooc` class + off badge (renamed from OUT) to excluded pairs; opacity styling applied.
+2. [x] Message counter shows `X / Y`; tooltip with token stats.
+3. [x] Navigation shortcut (Shift+O) jumps to first included pair.
+4. [x] Disable send when X=0.
+5. [~] Tests: boundary scenarios covered; UI state & navigation tests still pending.
 
 M6.3 Provider Adapter (OpenAI Chat Completions)
-1. [ ] Lightweight `ProviderAdapter` interface (sendChat({ model, messages, apiKey, signal }) → { content, usage? }).
-2. [ ] OpenAI adapter (Chat Completions or Responses endpoint) non‑streaming first pass: POST, handle 401/429/5xx mapping to user readable errors.
+1. [x] Lightweight `ProviderAdapter` interface & registry.
+2. [~] OpenAI adapter non‑streaming first pass (basic fetch, error classification minimal; needs integration & tests).
+ 3. [ ] Send pipeline integration (build messages, model guard, API key fetch) – partial code (pipeline.js) awaiting lifecycle wiring & UI states.
 3. [ ] API key retrieval from localStorage; if missing → open API Keys overlay automatically (abort send).
 4. [ ] Error classification util (auth / rate / network / generic).
 5. [ ] Tests: adapter called with exact context array; error mapping.
@@ -169,12 +171,12 @@ M6.5 Streaming (Optional Sub‑Phase) (deferred unless trivial)
 2. [ ] Flag as [deferred] if skipped.
 
 M6.6 UX & Feedback
-1. [ ] Inline token estimate (small gray `~N`).
+1. [-] (Dropped) Inline token estimate (replaced by allowance-based stable X counter – zero-cost typing principle).
 2. [ ] Error display with buttons `[Edit & Resend] [Delete]` (keyboard e/x).
 3. [ ] Optional toast for send errors (defer if time). 
 
 M6.7 Robustness & Edge Cases
-1. [ ] Large single message over hard limit: block with explanatory error.
+1. [ ] Large single message over hard limit: block with explanatory error (after allowance recompute).
 2. [ ] Race: multiple rapid sends prevented (lock enforcement test).
 3. [ ] Timeout → `[error: network]` classification after 30s.
 
@@ -191,7 +193,7 @@ M6.10 Test Matrix Completion
 2. [ ] Performance micro-check (<10ms gatherContext on 1k pairs synthetic) — note results.
 
 Acceptance (M6):
-User with a valid OpenAI key can: (a) view visible history with any overflow pairs dimmed and counter X/Y, (b) send a prompt; only non-dimmed pairs plus new prompt are used, (c) receive assistant reply appended, (d) edit and resend in place to refine without extra history clutter, (e) delete any pair, and (f) see clear errors with ability to edit & resend. Token budget enforcement is transparent (dimmed pairs) and send is disabled only when zero pairs would be included or a single message exceeds the model hard limit.
+User with a valid OpenAI key can: (a) view visible history with overflow dimmed and counter X/Y where X already reserves allowance for next prompt (no per-keystroke recompute), (b) send a prompt; only non-dimmed pairs plus new prompt are used, (c) receive assistant reply appended, (d) edit and resend in place, (e) delete any pair, (f) see clear errors with ability to edit & resend. Token budget transparency holds; send disabled only when zero pairs or single message exceeds model limit.
 
 ### M7 Enhanced Filtering (Full Spec)
 - [ ] Wildcards (*, pattern decisions)

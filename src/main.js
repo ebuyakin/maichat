@@ -6,7 +6,7 @@ import { evaluate } from './filter/evaluator.js'
 import { createModeManager, MODES } from './ui/modes.js'
 import { createKeyRouter } from './ui/keyRouter.js'
 import { buildParts, ActivePartController } from './ui/parts.js'
-import { createHistoryView } from './ui/history/historyView.js'
+import { createHistoryView, bindHistoryErrorActions } from './ui/history/historyView.js'
 import { createAnchorManager } from './ui/anchorManager.js'
 import { createScrollController } from './ui/scrollControllerV3.js'
 import { getSettings, subscribeSettings, saveSettings } from './settings/index.js'
@@ -22,6 +22,9 @@ import { openSettingsOverlay } from './ui/settingsOverlay.js'
 import { openApiKeysOverlay } from './ui/apiKeysOverlay.js'
 import { openHelpOverlay } from './ui/helpOverlay.js'
 import { gatherContext } from './context/gatherContext.js'
+import { registerProvider } from './provider/adapter.js'
+import { createOpenAIAdapter } from './provider/openaiAdapter.js'
+import { executeSend } from './send/pipeline.js'
 // Mask system removed; using fade-based visibility.
 
 // Mode management
@@ -129,6 +132,29 @@ const scrollController = createScrollController({ container: historyPaneEl })
 // Expose for diagnostics
 window.__scrollController = scrollController
 const historyView = createHistoryView({ store, onActivePartRendered: ()=> applyActivePart() })
+bindHistoryErrorActions(document.getElementById('history'), {
+  onResend: (pairId)=>{
+    const pair = store.pairs.get(pairId)
+    if(!pair) return
+    // Put text into input for editing
+    inputField.value = pair.userText
+    pendingMessageMeta.topicId = pair.topicId
+    pendingMessageMeta.model = pair.model
+    renderPendingMeta()
+    pair.lifecycleState = 'editing'
+    pair.errorMessage = undefined
+    renderHistory(store.getAllPairs())
+    modeManager.set(MODES.INPUT)
+    inputField.focus()
+    // Track editing target
+    window.__editingPairId = pair.id
+  },
+  onDelete: (pairId)=>{
+    store.removePair(pairId)
+    renderHistory(store.getAllPairs())
+    activeParts.last(); applyActivePart()
+  }
+})
 // Preload settings (future partition logic will use them)
 getSettings()
 let __lastPF = getSettings().partFraction
@@ -162,7 +188,8 @@ let __lastContextStats = null
 let __lastContextIncludedIds = new Set()
 function renderHistory(pairs){
   pairs = [...pairs].sort((a,b)=> a.createdAt - b.createdAt)
-  const ctx = gatherContext(pairs, { charsPerToken: 4 })
+  const settings = getSettings()
+  const ctx = gatherContext(pairs, { charsPerToken: 4, pendingUserText: undefined })
   __lastContextStats = ctx.stats
   __lastContextIncludedIds = new Set(ctx.included.map(p=>p.id))
   const parts = buildParts(pairs)
@@ -288,6 +315,8 @@ function renderStatus(){ const modeEl = document.getElementById('modeIndicator')
 
 
 async function bootstrap(){
+  // Register providers
+  registerProvider('openai', createOpenAIAdapter())
   await persistence.init()
   // (Removed temporary dev override of partFraction)
   applySpacingStyles(getSettings())
@@ -351,7 +380,7 @@ const viewHandler = (e)=>{
   if(e.key === 'O' && e.shiftKey){ jumpToBoundary(); return true }
   if(e.key === 'n'){ lifecycle.jumpToNewReply('first'); return true }
   if(e.key === '*'){ cycleStar(); return true }
-  if(e.key === 'a'){ toggleInclude(); return true }
+  if(e.key === 'a'){ toggleFlag(); return true }
   if(e.key === '1'){ setStarRating(1); return true }
   if(e.key === '2'){ setStarRating(2); return true }
   if(e.key === '3'){ setStarRating(3); return true }
@@ -393,22 +422,47 @@ const inputHandler = (e)=>{
   if(e.key === 'Enter'){
     const text = inputField.value.trim()
     if(text){
+  const editingId = window.__editingPairId
   const topicId = pendingMessageMeta.topicId || currentTopicId
   const model = pendingMessageMeta.model || 'gpt'
   if(lifecycle.isPending()) return true
+      // Recompute boundary with actual user text (may drop additional pairs if larger than allowance)
+      const settings = getSettings()
+      const preCtx = gatherContext(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt), { charsPerToken:4 })
+      const beforeIncludedIds = new Set(preCtx.included.map(p=>p.id))
   lifecycle.beginSend()
-  const id = store.addMessagePair({ topicId, model, userText: text, assistantText: '(placeholder response)' })
-  // Simulate async assistant reply after short delay (placeholder)
-  setTimeout(()=>{
-    const pair = store.pairs.get(id)
-    if(pair){
-      pair.assistantText = 'Assistant reply to: '+text
-      store.updatePair(id, { assistantText: pair.assistantText })
-  lifecycle.completeSend()
-      renderHistory(store.getAllPairs())
-  lifecycle.handleNewAssistantReply(id)
-    }
-  }, 400) // simulated latency
+      let id
+      if(editingId){
+        store.updatePair(editingId, { userText: text, assistantText: '', lifecycleState:'sending', model, topicId })
+        id = editingId
+        window.__editingPairId = null
+      } else {
+        id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
+      }
+      ;(async()=>{
+        try {
+          const { content } = await executeSend({ store, model, userText: text, signal: undefined })
+          store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined })
+          lifecycle.completeSend()
+          renderHistory(store.getAllPairs())
+          lifecycle.handleNewAssistantReply(id)
+        } catch(ex){
+          let errMsg = (ex && ex.message) ? ex.message : 'error'
+          if(errMsg === 'missing_api_key') errMsg = 'API key missing (Ctrl+.) -> API Keys'
+          store.updatePair(id, { assistantText: '', lifecycleState:'error', errorMessage: errMsg })
+          lifecycle.completeSend()
+          renderHistory(store.getAllPairs())
+          // no new reply badge on error
+        } finally {
+          if(getSettings().showTrimNotice){
+            const postCtx = gatherContext(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt), { charsPerToken:4 })
+            const afterIncludedIds = new Set(postCtx.included.map(p=>p.id))
+            let trimmed=0
+            beforeIncludedIds.forEach(pid=>{ if(!afterIncludedIds.has(pid)) trimmed++ })
+            if(trimmed>0){ console.log(`[context] large prompt trimmed ${trimmed} older pair(s)`) }
+          }
+        }
+      })()
       inputField.value=''
       renderHistory(store.getAllPairs())
       activeParts.last(); applyActivePart()
@@ -440,10 +494,11 @@ function setStarRating(star){
   store.updatePair(pair.id, { star })
   renderHistory(store.getAllPairs())
 }
-function toggleInclude(){
+function toggleFlag(){
   const act = activeParts.active(); if(!act) return
   const pair = store.pairs.get(act.pairId); if(!pair) return
-  store.updatePair(pair.id, { includeInContext: !pair.includeInContext })
+  const next = pair.colorFlag === 'b' ? 'g' : 'b'
+  store.updatePair(pair.id, { colorFlag: next })
   renderHistory(store.getAllPairs())
 }
 
@@ -622,7 +677,7 @@ function updateHud(){
     const pair = store.pairs.get(act.pairId)
     if(pair){
       const topic = store.topics.get(pair.topicId)
-      pairInfo = `${pair.id.slice(0,8)} t:${topic?topic.name:''}<br/>★:${pair.star} include:${pair.includeInContext?'Y':'N'} model:${pair.model}<br/>@${formatTimestamp(pair.createdAt)}`
+  pairInfo = `${pair.id.slice(0,8)} t:${topic?topic.name:''}<br/>★:${pair.star} flag:${pair.colorFlag} model:${pair.model}<br/>@${formatTimestamp(pair.createdAt)}`
     }
   }
   const focusEl = document.activeElement
@@ -797,7 +852,8 @@ function updateMessageCount(included, visible){
   if(!el) return
   el.textContent = `${included}/${visible}`
   if(__lastContextStats){
-    el.title = `Included/Visible pairs. Included tokens: ${__lastContextStats.totalIncludedTokens} / usable ${__lastContextStats.maxUsable}`
+    const allowance = getSettings().assumedUserTokens
+    el.title = `Included (with reserved allowance) / Visible. Included tokens: ${__lastContextStats.totalIncludedTokens} / usable after allowance ${__lastContextStats.maxUsable}. Allowance reserved.`
   } else {
     el.title = 'Included/Visible pairs'
   }
@@ -926,11 +982,14 @@ function middleTruncate(str, max){
 function updateSendDisabled(){
   if(!sendBtn) return
   const empty = inputField.value.trim().length === 0
-  sendBtn.disabled = empty || lifecycle.isPending()
+  const zeroIncluded = (__lastContextStats && __lastContextStats.includedCount === 0)
+  sendBtn.disabled = empty || lifecycle.isPending() || zeroIncluded
   if(lifecycle.isPending()){
     sendBtn.textContent = 'AI is thinking'
   } else {
     sendBtn.textContent = 'Send'
+    if(zeroIncluded){ sendBtn.title = 'Cannot send: no pairs included in context (token budget exhausted)'; }
+    else { sendBtn.title = 'Send' }
   }
 }
 if(sendBtn){
@@ -941,21 +1000,33 @@ if(sendBtn){
     const model = pendingMessageMeta.model || 'gpt'
   if(lifecycle.isPending()) return
   lifecycle.beginSend()
-    const id = store.addMessagePair({ topicId, model, userText: text, assistantText: '(placeholder response)' })
-    // Keep topic selection for next send (no reset) and persist
+    const editingId = window.__editingPairId
+    let id
+    if(editingId){
+      store.updatePair(editingId, { userText: text, assistantText:'', lifecycleState:'sending', model, topicId })
+      id = editingId
+      window.__editingPairId = null
+    } else {
+      id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
+    }
     try { localStorage.setItem('maichat_pending_topic', topicId) } catch{}
-  try { localStorage.setItem('maichat_pending_topic', topicId) } catch{}
-    setTimeout(()=>{
-      const pair = store.pairs.get(id)
-      if(pair){
-        pair.assistantText = 'Assistant reply to: '+text
-        store.updatePair(id, { assistantText: pair.assistantText })
-  lifecycle.completeSend()
+    ;(async()=>{
+      try {
+        const { content } = await executeSend({ store, model, userText: text, signal: undefined })
+        store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined })
+        lifecycle.completeSend()
         renderHistory(store.getAllPairs())
-  lifecycle.handleNewAssistantReply(id)
+        lifecycle.handleNewAssistantReply(id)
+      } catch(ex){
+        let errMsg = (ex && ex.message) ? ex.message : 'error'
+        if(errMsg === 'missing_api_key') errMsg = 'API key missing (Ctrl+.) -> API Keys'
+        store.updatePair(id, { assistantText: '', lifecycleState:'error', errorMessage: errMsg })
+        lifecycle.completeSend()
+        renderHistory(store.getAllPairs())
+      } finally {
+        updateSendDisabled()
       }
-      updateSendDisabled()
-    }, 400)
+    })()
   inputField.value=''; renderHistory(store.getAllPairs()); activeParts.last(); applyActivePart(); updateSendDisabled()
   })
   inputField.addEventListener('input', updateSendDisabled)
@@ -973,7 +1044,7 @@ function seedDemoPairs(){
     const id = store.addMessagePair({ topicId, model:d.model, userText:d.user, assistantText:d.assistant })
     const pair = store.pairs.get(id)
     pair.star = starCycle[i % starCycle.length]
-    if(i===2) pair.includeInContext = false // one excluded example
+  if(i===2) pair.colorFlag = 'g' // one grey example
   })
 }
 window.seedTestMessages = function(){

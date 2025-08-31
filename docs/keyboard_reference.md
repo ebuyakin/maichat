@@ -40,7 +40,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | * | Cycle star (0→1→2→3→0) | Affects active pair |
 | 1 / 2 / 3 | Set star to 1 / 2 / 3 | Direct rating |
 | Space | Set star to 0 | Clear rating |
-| a | Toggle includeInContext | Updates badge |
+| a | Toggle color flag (blue↔grey) | Updates flag badge |
 | Enter | Switch to INPUT mode | Focus bottom input |
 | Escape | Switch to COMMAND mode | Focus top command input |
 
@@ -70,7 +70,7 @@ Hidden root: the conceptual root node is not displayed; top-level rows are its c
 | Esc | Tree | Return focus to search (second Esc closes) |
 | j / k | Tree | Move down / up |
 | ArrowDown / ArrowUp | Tree | Alternate movement |
-| h / ArrowLeft | Tree | Collapse or go to parent |
+ | a | Toggle color flag (blue↔grey) | Updates flag badge |
 | l / ArrowRight | Tree | Expand or go to first child |
 | Enter | Tree | Select highlighted topic (applies & closes) |
 

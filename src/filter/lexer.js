@@ -1,6 +1,6 @@
 // Lexer (subset Phase 4 MVP) - tokens: COMMAND, NUMBER, STRING, OP, PAREN, EOF
 
-const COMMANDS = new Set(['s','r','t','m','a','x','c','d'])
+const COMMANDS = new Set(['s','r','t','m','b','g','c','d'])
 
 /** @typedef {{type:string,value?:string,start:number,end:number}} Token */
 

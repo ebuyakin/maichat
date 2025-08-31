@@ -5,7 +5,7 @@
 The MaiChat CLI Filtering Language is a concise, powerful query language designed for rapid context management in AI conversations. It enables users to construct precise filters using single-letter commands, boolean operators, and intuitive parameter syntax.
 
 Unit of operation: All filters operate on assistant–user pairs (a user request and its model response are treated as a single unit for filtering, display, rating, pinning, context, etc.). 
-Messages in the message history have the following metadata parameters: topic, allow(=include)/exclude flag, star rating (0-1-2-3), model, timestamp. Each of those parameters shall be subject to filtering via CLI filtering language.
+Messages in the message history have the following metadata parameters: topic, flag (blue / grey), star rating (0-1-2-3), model, timestamp. Each of those parameters shall be subject to filtering via CLI filtering language.
 
 ## Design Philosophy
 
@@ -28,7 +28,7 @@ Messages in the message history have the following metadata parameters: topic, a
 - **Context Refinement**: `r20 & s>=2` - Focus on recent important messages (min 2 stars)
 - **Topic Research**: `t'AI...' & !s0` - All AI-related content that's been starred
 - **Model Comparison**: `m'gpt-4' | m'claude'` - Compare outputs from specific models
-- **Content Curation**: `(a | s3) & t'*Research'` - High-value research content
+- **Content Curation**: `(b | s3) & t'*Research'` - High-value research content (flagged or high star)
 
 ## Command Reference
 
@@ -97,23 +97,24 @@ r50         # Last 50 messages
 r1          # Most recent message only
 ```
 
-### Allow/Exclude Status (`a`, `x`)
+### Flag / Color Status (`b`, `g`)
 
-**Purpose**: Filter messages by manual inclusion/exclusion status (context include flag)
+**Purpose**: Filter messages by a simple user flag (blue = flagged, grey = unflagged). This flag is purely a labeling aid for filtering; it does not itself force inclusion/exclusion from LLM context.
+
+**Visual**:
+- Blue filled square = flagged (default for new messages)
+- Grey outlined circle = unflagged
 
 **Syntax**:
-- `a` - Allowed/included in context (includeInContext = true)
-- `x` - Excluded from context (includeInContext = false)
-
-**Aliases (backward-compatible)**:
-- `p` ≡ `a` (legacy "pinned")
-- `u` ≡ `x` (legacy "unpinned")
+- `b` – Flagged (blue)
+- `g` – Unflagged (grey)
+- `!b` – Equivalent to `g`
 
 **Examples**:
 ```
-a           # Only allowed/included messages
-x           # Only excluded messages
-!a          # All except allowed (equivalent to 'x')
+b           # Only flagged (blue) messages
+g           # Only unflagged (grey) messages
+!b          # Same as g
 ```
 
 ### Model Filtering (`m`)
@@ -190,7 +191,7 @@ t'Programming...' & m'gpt-4'      # Programming topics from GPT-4
 
 **Examples**:
 ```
-s3 | a                  # 3-star messages OR allowed messages
+s3 | b                  # 3-star messages OR flagged (blue) messages
 m'gpt-4' | m'claude'    # Messages from either model
 ```
 
@@ -202,7 +203,7 @@ m'gpt-4' | m'claude'    # Messages from either model
 ```
 !s0                     # Exclude unstarred messages
 !t'Archive...'          # Exclude archived topics
-!(s0 | x)               # Exclude unstarred AND excluded messages
+!(s0 | g)               # Exclude unstarred AND unflagged (grey) messages
 ```
 
 ### Grouping with Parentheses
@@ -211,8 +212,8 @@ m'gpt-4' | m'claude'    # Messages from either model
 
 **Examples**:
 ```
-(r50 | s3) & a          # (Recent OR 3-star) AND allowed
-!((s0 & x) | t'Archive...') # NOT ((unstarred AND excluded) OR archived)
+(r50 | s3) & b          # (Recent OR 3-star) AND flagged
+!((s0 & g) | t'Archive...') # NOT ((unstarred AND unflagged) OR archived)
 (t'AI...' | t'Programming...') & s>=2  # Important messages from two topic trees
 ```
 
@@ -224,14 +225,14 @@ m'gpt-4' | m'claude'    # Messages from either model
 3. **AND** `&` (and adjacency)
 4. **OR** `|` and `+`
 
-**Example**: `!s0 & t'AI...' | a` is evaluated as `((!s0) & t'AI...') | a`
+**Example**: `!s0 & t'AI...' | b` is evaluated as `((!s0) & t'AI...') | b`
 
 ## Common Usage Patterns
 
 ### Context Curation
 ```
 r30 & s>=2              # Focus on recent important content (min 2 stars)
-a | s3                  # High-value messages (allowed or exactly 3-star)
+(b | s3)                # High-value messages (flagged or exactly 3-star)
 t'Research...' & !s0    # Non-zero-starred research content
 ```
 
@@ -282,7 +283,7 @@ c'algorithm' & s>=1     # Starred content about algorithms (min 1 star)
 
 - History saves only successful commands; invalid commands are not recorded.
 - Inline hint appears near the CLI input for validation or parser errors and clears on input change, history navigation, or successful execution.
-- Keyboard: Ctrl+P/Ctrl+N reserved for history in both Command and View modes; View mode `a` toggles Allow/Exclude, `x` explicitly excludes; star ratings use bare keys `1`/`2`/`3` (Space clears) with no modifiers.
+- Keyboard: Ctrl+P/Ctrl+N reserved for history in both Command and View modes; View mode `a` toggles the color flag; star ratings use bare keys `1`/`2`/`3` (Space clears) with no modifiers.
 
 ### Performance Optimization
 
@@ -307,7 +308,7 @@ c'algorithm' & s>=1     # Starred content about algorithms (min 1 star)
 r10                     # Last 10 messages
 s2                      # 2-star messages
 t'Programming'          # Programming topic only
-a                       # Allowed/included messages
+b                       # Flagged (blue) messages
 ```
 
 ### Intermediate Queries
@@ -321,7 +322,7 @@ m'gpt-4' | s3           # GPT-4 messages or 3-star content
 ```
 (r50 | s2) & !t'Archive...'             # Recent or important, not archived
 (t'*Research*' | c'study') & s>=1       # Research content that's been starred
-!(s0 & x) & (d<30d | t'Current...')     # Active content from last month or current topics
+!(s0 & g) & (d<30d | t'Current...')     # Active content from last month or current topics
 ```
 
 This specification provides a complete blueprint for implementing a powerful, intuitive CLI filtering system that matches the vim-inspired philosophy of MaiChat while enabling sophisticated context management for AI conversations.

@@ -132,7 +132,7 @@ Implemented / Planned (M5 focus):
 * `Ctrl+i` / `Ctrl+d` / `Ctrl+v`: Direct mode activation.
 * `*`: Cycle star rating (0→1→2→3→0) for active pair.
 * `1` `2` `3`: Directly set star to 1/2/3; `Space` sets 0.
-* `a`: Toggle includeInContext.
+* `a`: Toggle color flag (blue ↔ grey).
 ## 16. Keyboard Reference (Planned Separate Doc)
 See `docs/keyboard_reference.md` for the authoritative, continually updated key mapping. This UI layout spec retains only high‑level rationale.
 

@@ -24,7 +24,10 @@ const DEFAULTS = {
   scrollAnimEasing: 'easeOutQuad', // 'linear' | 'easeOutQuad' | 'easeInOutCubic' | 'easeOutExpo'
   scrollAnimDynamic: true,      // scale duration by distance relative to viewport height
   scrollAnimMinMs: 80,          // min duration clamp when dynamic
-  scrollAnimMaxMs: 600          // max duration clamp when dynamic
+  scrollAnimMaxMs: 600,         // max duration clamp when dynamic
+  // Context assembly performance guardrails
+  assumedUserTokens: 256,       // allowance reserved in boundary calc for next prompt
+  showTrimNotice: false         // if true, show transient notice when large prompt trims extra pairs
 }
 
 const LS_KEY = 'maichat.settings.v1'

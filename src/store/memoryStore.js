@@ -96,6 +96,15 @@ export class MemoryStore {
     return true
   }
 
+  removePair(id){
+    const pair = this.pairs.get(id)
+    if(!pair) return false
+    this.pairs.delete(id)
+    this._decrementCountsForTopic(pair.topicId)
+    this.emitter.emit('pair:delete', id)
+    return true
+  }
+
   getAllPairs(){ return Array.from(this.pairs.values()) }
   getAllTopics(){ return Array.from(this.topics.values()) }
 

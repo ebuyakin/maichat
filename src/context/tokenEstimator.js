@@ -13,9 +13,15 @@ export function estimateTokens(text, charsPerToken=4){
 
 /** Estimate tokens for a message pair (user + assistant parts) */
 export function estimatePairTokens(pair, charsPerToken=4){
+  // Simple cache: recompute if missing or lengths changed vs stored tokenLength heuristic (cannot reverse accurately, so recompute when undefined)
+  if(pair.tokenLength != null){
+    return pair.tokenLength
+  }
   const userT = estimateTokens(pair.userText||'', charsPerToken)
   const asstT = estimateTokens(pair.assistantText||'', charsPerToken)
-  return userT + asstT
+  const total = userT + asstT
+  pair.tokenLength = total
+  return total
 }
 
 /** Build a model budget descriptor (placeholder; later load per-model metadata) */
@@ -35,12 +41,13 @@ export function getModelBudget(model){
  * @param {number} opts.charsPerToken
  * @returns {{included: import('../models/messagePair.js').MessagePair[], excluded: import('../models/messagePair.js').MessagePair[], stats: object}}
  */
-export function computeContextBoundary(orderedPairs, { charsPerToken=4 }={}){
+export function computeContextBoundary(orderedPairs, { charsPerToken=4, assumedUserTokens=0 }={}){
   if(!Array.isArray(orderedPairs)) orderedPairs = []
   const model = orderedPairs.length? orderedPairs[orderedPairs.length-1].model : 'gpt'
   const budget = getModelBudget(model)
   const { maxContext, responseReserve, softBuffer, safetyMargin } = budget
-  const maxUsable = maxContext - responseReserve - safetyMargin
+  const maxUsableRaw = maxContext - responseReserve - safetyMargin
+  const maxUsable = Math.max(0, maxUsableRaw - (assumedUserTokens||0))
   let total=0
   const included=[]
   for(let i=orderedPairs.length-1; i>=0; i--){
@@ -70,7 +77,9 @@ export function computeContextBoundary(orderedPairs, { charsPerToken=4 }={}){
       responseReserve,
       softBuffer,
       safetyMargin,
-      maxUsable,
+  maxUsable,
+  maxUsableRaw,
+  assumedUserTokens,
       charsPerToken
     }
   }

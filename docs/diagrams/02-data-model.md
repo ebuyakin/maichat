@@ -9,7 +9,7 @@ classDiagram
     +string userText
     +string assistantText
     +number star
-    +boolean includeInContext
+  +string colorFlag  // 'b' or 'g'
     +number createdAt
   }
 

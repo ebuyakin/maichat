@@ -7,7 +7,7 @@
  * @property {string} topicId
  * @property {string} model
  * @property {number} star - 0..3 integer
- * @property {boolean} includeInContext
+ * @property {'b'|'g'} colorFlag - simple user flag (b=blue flagged, g=grey unflagged)
  * @property {string} userText
  * @property {string} assistantText
  * @property {('idle'|'sending'|'error'|'complete')} lifecycleState
@@ -33,7 +33,7 @@ export function createMessagePair({ id, topicId, model, userText, assistantText,
     topicId,
     model,
     star: 0,
-    includeInContext: true,
+  colorFlag: 'b',
     userText,
     assistantText,
     lifecycleState: 'idle',

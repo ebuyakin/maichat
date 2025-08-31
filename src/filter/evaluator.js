@@ -27,8 +27,8 @@ export function evaluate(ast, pairs){
     switch(kind){
       case 's': return filterStar(op, value)
       case 'r': return filterRecent(value)
-      case 'a': return pairs.filter(p=>p.includeInContext)
-      case 'x': return pairs.filter(p=>!p.includeInContext)
+  case 'b': return pairs.filter(p=>p.colorFlag === 'b')
+  case 'g': return pairs.filter(p=>p.colorFlag === 'g')
       case 't': {
         if(!value) return pairs
         // basic substring match on topic name resolved externally (pass in pre-resolved names via pair?)
