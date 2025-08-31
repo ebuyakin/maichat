@@ -1,6 +1,6 @@
 import { gatherContext } from '../context/gatherContext.js'
 import { getProvider, ProviderError } from '../provider/adapter.js'
-import { estimateTokens } from '../context/tokenEstimator.js'
+import { estimateTokens, getModelBudget, estimatePairTokens } from '../context/tokenEstimator.js'
 import { getSettings } from '../settings/index.js'
 import { getApiKey } from '../api/keys.js'
 
@@ -17,20 +17,29 @@ export function buildMessages({ includedPairs, newUserText }){
 }
 
 /** Execute send using provider; returns { assistantText, usage } or throws */
-export async function executeSend({ store, model, userText, signal }){
-  const visible = store.getAllPairs().sort((a,b)=> a.createdAt - b.createdAt) // later: pass filtered subset
-  const ctx = gatherContext(visible, { charsPerToken:4 })
-  // Re-run with actual user text allowance if needed (store already subtracted assumed allowance earlier)
-  const settings = getSettings()
-  // (We could recompute dropping more here if needed; for now rely on send-time earlier logic.)
-  const included = ctx.included
-  const messages = buildMessages({ includedPairs: included, newUserText: userText })
-  // Large single prompt guard
+export async function executeSend({ store, model, userText, signal, visiblePairs }){
+  // visiblePairs should be the currently filtered chronological list (already sorted)
+  const baseline = visiblePairs ? visiblePairs.slice() : store.getAllPairs().sort((a,b)=> a.createdAt - b.createdAt)
+  const ctx = gatherContext(baseline, { charsPerToken:4 })
+  // Re-trim with actual user text: allow any assumedUserTokens to be replaced by real size; if overflow drop oldest.
   const userTokens = estimateTokens(userText, 4)
-  const maxUsableRaw = ctx.stats.maxUsableRaw || (ctx.stats.maxUsable + (ctx.stats.assumedUserTokens||0))
+  const budget = getModelBudget(model)
+  const maxUsableRaw = budget.maxContext - budget.responseReserve - budget.safetyMargin
   if(userTokens > maxUsableRaw){
     throw new Error('message too large for model window')
   }
+  // Build list of included pairs newest→oldest until fits with userTokens
+  let total= userTokens
+  const selectedRev=[]
+  for(let i=baseline.length-1;i>=0;i--){
+    const p = baseline[i]
+    const tok = estimatePairTokens(p,4)
+    if(total + tok > maxUsableRaw) break
+    selectedRev.push(p)
+    total += tok
+  }
+  const finalIncluded = selectedRev.reverse()
+  const messages = buildMessages({ includedPairs: finalIncluded, newUserText: userText })
   const provider = getProvider('openai')
   if(!provider) throw new Error('provider_not_registered')
   const apiKey = getApiKey('openai')

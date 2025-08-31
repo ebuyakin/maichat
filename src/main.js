@@ -115,7 +115,7 @@ window.addEventListener('resize', ()=>{
   if(delta >= 0.10){
     __lastViewportH = h
     invalidatePartitionCacheOnResize()
-    renderHistory(store.getAllPairs())
+  renderCurrentView({ preserveActive:true })
   }
 })
 
@@ -147,7 +147,7 @@ bindHistoryErrorActions(document.getElementById('history'), {
     renderPendingMeta()
     pair.lifecycleState = 'editing'
     pair.errorMessage = undefined
-    renderHistory(store.getAllPairs())
+  renderCurrentView({ preserveActive:true })
     modeManager.set(MODES.INPUT)
     inputField.focus()
     // Track editing target
@@ -155,7 +155,7 @@ bindHistoryErrorActions(document.getElementById('history'), {
   },
   onDelete: (pairId)=>{
     store.removePair(pairId)
-    renderHistory(store.getAllPairs())
+  renderCurrentView({ preserveActive:true })
     activeParts.last(); applyActivePart()
   }
 })
@@ -173,7 +173,7 @@ subscribeSettings((s)=>{
     __lastPadding = s.partPadding
     invalidatePartitionCacheOnResize()
   }
-  applySpacingStyles(s); layoutHistoryPane(); renderHistory(store.getAllPairs()) 
+  applySpacingStyles(s); layoutHistoryPane(); renderCurrentView({ preserveActive:true }) 
 })
 let overlay = null // { type: 'topic', list:[], activeIndex:0 } (model selection now separate overlay component)
 let pendingMessageMeta = { topicId: null, model: getActiveModel() || 'gpt-4o' }
@@ -203,6 +203,31 @@ function renderHistory(pairs){
   updateMessageCount(ctx.included.length, pairs.length)
   requestAnimationFrame(()=>{ scrollController.remeasure(); applyActivePart() })
   lifecycle.updateNewReplyBadgeVisibility()
+}
+
+// Central filtered render (sticky filter re-evaluation)
+function renderCurrentView(opts={}){
+  const { preserveActive=false } = opts
+  const prevActiveId = preserveActive && activeParts.active() ? activeParts.active().id : null
+  let all = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
+  const fq = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : ''
+  if(fq){
+    try {
+      const ast = parse(fq)
+      all = evaluate(ast, all)
+      if(commandErrEl) commandErrEl.textContent=''
+    } catch(ex){
+      // On parse/eval error keep previous view (do not clobber) but surface error; caller responsible for not updating active selection
+      if(commandErrEl) commandErrEl.textContent = ex.message || 'filter error'
+      return
+    }
+  }
+  renderHistory(all)
+  if(prevActiveId){
+    activeParts.setActiveById(prevActiveId)
+    if(!activeParts.active()){ activeParts.last() }
+    applyActivePart()
+  }
 }
 
 function applyActivePart(){
@@ -335,7 +360,7 @@ async function bootstrap(){
   if(store.getAllPairs().length === 0){
     seedDemoPairs()
   }
-  renderHistory(store.getAllPairs())
+  renderCurrentView()
   renderTopics()
   renderStatus()
   applyActivePart()
@@ -455,7 +480,7 @@ const commandHandler = (e)=>{
       }
       // Filter changed from something to empty OR no previous active stored
       commandErrEl.textContent=''
-      renderHistory(store.getAllPairs())
+      renderCurrentView()
       activeParts.last(); applyActivePart()
       __lastAppliedFilter = ''
       pushCommandHistory(q)
@@ -464,10 +489,12 @@ const commandHandler = (e)=>{
       return true
     }
     try {
-      const ast = parse(q)
-      const res = evaluate(ast, store.getAllPairs())
+  const ast = parse(q)
+  const basePairs = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
+  const res = evaluate(ast, basePairs)
       const changed = q !== prevFilter
-      renderHistory(res)
+      lifecycle.setFilterQuery(q)
+      renderHistory(res) // direct since we already have filtered list
       commandErrEl.textContent=''
       modeManager.set(MODES.VIEW)
       if(!changed && prevActiveId){
@@ -480,7 +507,7 @@ const commandHandler = (e)=>{
   }
   if(e.key === 'Escape'){
     // Clear filter but remain in command mode
-    if(commandInput.value){ commandInput.value=''; renderHistory(store.getAllPairs()); activeParts.last(); applyActivePart(); commandErrEl.textContent='' }
+    if(commandInput.value){ commandInput.value=''; lifecycle.setFilterQuery(''); __lastAppliedFilter=''; renderCurrentView(); activeParts.last(); applyActivePart(); commandErrEl.textContent='' }
     return true
   }
 }
@@ -508,10 +535,13 @@ const inputHandler = (e)=>{
       }
       ;(async()=>{
         try {
-          const { content } = await executeSend({ store, model, userText: text, signal: undefined })
+          // Use currently visible (filtered) chronological list for context WYSIWYG
+          const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean)
+          const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt)
+          const { content } = await executeSend({ store, model, userText: text, signal: undefined, visiblePairs: chrono })
           store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined })
-          lifecycle.completeSend()
-          renderHistory(store.getAllPairs())
+          lifecycle.completeSend(); updateSendDisabled()
+          renderCurrentView({ preserveActive:true })
           lifecycle.handleNewAssistantReply(id)
         } catch(ex){
           let errMsg = (ex && ex.message) ? ex.message : 'error'
@@ -528,8 +558,8 @@ const inputHandler = (e)=>{
             })
           }
           store.updatePair(id, { assistantText: '', lifecycleState:'error', errorMessage: errMsg })
-          lifecycle.completeSend()
-          renderHistory(store.getAllPairs())
+          lifecycle.completeSend(); updateSendDisabled()
+          renderCurrentView({ preserveActive:true })
           // no new reply badge on error
         } finally {
           if(getSettings().showTrimNotice){
@@ -541,8 +571,8 @@ const inputHandler = (e)=>{
           }
         }
       })()
-      inputField.value=''
-      renderHistory(store.getAllPairs())
+  inputField.value=''
+  renderCurrentView({ preserveActive:true })
       activeParts.last(); applyActivePart()
   updateSendDisabled()
     }
@@ -567,21 +597,21 @@ function cycleStar(){
   const act = activeParts.active(); if(!act) return
   const pair = store.pairs.get(act.pairId); if(!pair) return
   store.updatePair(pair.id, { star: (pair.star+1)%4 })
-  renderHistory(store.getAllPairs())
+  renderCurrentView({ preserveActive:true })
 }
 function setStarRating(star){
   const act = activeParts.active(); if(!act) return
   const pair = store.pairs.get(act.pairId); if(!pair) return
   if(pair.star === star) return
   store.updatePair(pair.id, { star })
-  renderHistory(store.getAllPairs())
+  renderCurrentView({ preserveActive:true })
 }
 function toggleFlag(){
   const act = activeParts.active(); if(!act) return
   const pair = store.pairs.get(act.pairId); if(!pair) return
   const next = pair.colorFlag === 'b' ? 'g' : 'b'
   store.updatePair(pair.id, { colorFlag: next })
-  renderHistory(store.getAllPairs())
+  renderCurrentView({ preserveActive:true })
 }
 
 const keyRouter = createKeyRouter({ modeManager, handlers:{ view:viewHandler, command:commandHandler, input:inputHandler } })
@@ -652,7 +682,7 @@ function openQuickTopicPicker({ prevMode }){
         try { localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) } catch{}
       } else if(openMode === MODES.VIEW){
         const act = activeParts.active(); if(act){
-          const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id, { topicId }); renderHistory(store.getAllPairs()); activeParts.setActiveById(act.id); applyActivePart() }
+          const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id, { topicId }); renderCurrentView({ preserveActive:true }); activeParts.setActiveById(act.id); applyActivePart() }
         }
       }
       if(prevMode) modeManager.set(prevMode)
@@ -867,12 +897,22 @@ requestAnimationFrame(updateHud)
 function updateMessageCount(included, visible){
   const el = document.getElementById('messageCount')
   if(!el) return
-  el.textContent = `${included}/${visible}`
+  // Determine if newest chronological pair is currently filtered out (not visible in activeParts parts list)
+  let newestHidden = false
+  try {
+    const allPairs = [...__store.getAllPairs()].sort((a,b)=> a.createdAt - b.createdAt)
+    const newest = allPairs[allPairs.length-1]
+    if(newest){
+      const visiblePairIds = new Set(activeParts.parts.map(p=> p.pairId))
+      if(!visiblePairIds.has(newest.id)) newestHidden = true
+    }
+  } catch{}
+  const prefix = newestHidden ? '(-)' : ''
+  el.textContent = `${prefix}${included}/${visible}`
   if(__lastContextStats){
-    const allowance = getSettings().assumedUserTokens
-    el.title = `Included (with reserved allowance) / Visible. Included tokens: ${__lastContextStats.totalIncludedTokens} / usable after allowance ${__lastContextStats.maxUsable}. Allowance reserved.`
+    el.title = (newestHidden? 'Latest message hidden by filter. ' : '') + `Included (with reserved allowance) / Visible. Included tokens: ${__lastContextStats.totalIncludedTokens} / usable after allowance ${__lastContextStats.maxUsable}. Allowance reserved.`
   } else {
-    el.title = 'Included/Visible pairs'
+    el.title = (newestHidden? 'Latest message hidden by filter. ' : '') + 'Included/Visible pairs'
   }
 }
 
@@ -1031,9 +1071,23 @@ function updateSendDisabled(){
   const zeroIncluded = (__lastContextStats && __lastContextStats.includedCount === 0)
   sendBtn.disabled = empty || lifecycle.isPending() || zeroIncluded
   if(lifecycle.isPending()){
-    sendBtn.textContent = 'AI is thinking'
+  if(!sendBtn.__animTimer){
+    sendBtn.__animPhase = 0
+    sendBtn.__animTimer = setInterval(()=>{
+      if(!lifecycle.isPending()) return // let cleanup handle
+      sendBtn.__animPhase = (sendBtn.__animPhase + 1) % 4
+      const dots = '.'.repeat(sendBtn.__animPhase)
+      sendBtn.textContent = `AI is thinking${dots.padEnd(3,' ')}`
+    }, 500)
+  }
+  // Initial text (phase 0)
+  const dots = '.'.repeat(sendBtn.__animPhase||0)
+  sendBtn.textContent = `AI is thinking${dots.padEnd(3,' ')}`
+  sendBtn.classList.add('pending')
   } else {
+    if(sendBtn.__animTimer){ clearInterval(sendBtn.__animTimer); sendBtn.__animTimer=null }
     sendBtn.textContent = 'Send'
+    sendBtn.classList.remove('pending')
     if(zeroIncluded){ sendBtn.title = 'Cannot send: no pairs included in context (token budget exhausted)'; }
     else { sendBtn.title = 'Send' }
   }
@@ -1058,22 +1112,24 @@ if(sendBtn){
     try { localStorage.setItem('maichat_pending_topic', topicId) } catch{}
     ;(async()=>{
       try {
-        const { content } = await executeSend({ store, model, userText: text, signal: undefined })
-        store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined })
-        lifecycle.completeSend()
-        renderHistory(store.getAllPairs())
+  const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean)
+  const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt)
+  const { content } = await executeSend({ store, model, userText: text, signal: undefined, visiblePairs: chrono })
+  store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined })
+  lifecycle.completeSend(); updateSendDisabled()
+    renderCurrentView({ preserveActive:true })
         lifecycle.handleNewAssistantReply(id)
       } catch(ex){
         let errMsg = (ex && ex.message) ? ex.message : 'error'
         if(errMsg === 'missing_api_key') errMsg = 'API key missing (Ctrl+.) -> API Keys'
         store.updatePair(id, { assistantText: '', lifecycleState:'error', errorMessage: errMsg })
-        lifecycle.completeSend()
-        renderHistory(store.getAllPairs())
+  lifecycle.completeSend(); updateSendDisabled()
+    renderCurrentView({ preserveActive:true })
       } finally {
         updateSendDisabled()
       }
     })()
-  inputField.value=''; renderHistory(store.getAllPairs()); activeParts.last(); applyActivePart(); updateSendDisabled()
+  inputField.value=''; renderCurrentView({ preserveActive:true }); activeParts.last(); applyActivePart(); updateSendDisabled()
   })
   inputField.addEventListener('input', updateSendDisabled)
   renderPendingMeta(); updateSendDisabled()
@@ -1097,7 +1153,7 @@ window.seedTestMessages = function(){
   // Clear existing pairs then reseed
   store.pairs.clear()
   seedDemoPairs()
-  renderHistory(store.getAllPairs())
+  renderCurrentView()
   activeParts.first(); applyActivePart()
   console.log('Test messages reseeded.')
 }
@@ -1144,7 +1200,7 @@ window.generateWordCountDataset = function(){
   store.pairs.clear()
   const data = buildWordCountDataset()
   data.forEach(d=> store.addMessagePair({ topicId, model:d.model, userText:d.user, assistantText:d.assistant }))
-  renderHistory(store.getAllPairs())
+  renderCurrentView()
   activeParts.first(); applyActivePart()
   console.timeEnd('generateWordCountDataset')
   console.log('Generated', data.length, 'pairs for sizes 100..1000 (x2 each).')

@@ -160,8 +160,10 @@ body { min-height:100vh; overflow:hidden; }
 #inputBar .row { display:flex; align-items:center; gap:12px; }
 #inputBar .row.second { justify-content:space-between; margin-top:2px; }
 #inputBar input { flex:1; background:var(--bg-alt); border:none; color:var(--text); padding:10px 0 10px 0; font:var(--size-base)/1.5 var(--font-ui); border-radius:4px; }
-#sendBtn { background:var(--bg-alt); color:var(--text); border:1px solid #2a2a2a; padding:6px 20px; cursor:pointer; font-size:var(--size-base); border-radius:4px; font-weight:400; }
+#sendBtn { background:var(--bg-alt); color:var(--text); border:1px solid #2a2a2a; padding:6px 20px; cursor:pointer; font-size:var(--size-base); border-radius:4px; font-weight:400; min-width:134px; display:inline-flex; justify-content:flex-end; align-items:center; font-family:var(--font-ui); letter-spacing:.3px; }
 #sendBtn:disabled { opacity:.5; cursor:default; }
+/* Keep 'AI is thinking' legible (we set text content while pending but keep normal color) */
+#sendBtn.pending { opacity:1 !important; justify-content:flex-start; }
 .mode-label { font-size:11px; color:var(--text-dim); font-weight:400; letter-spacing:.5px; width:70px; display:inline-flex; justify-content:flex-start; align-items:center; background:transparent; height:34px; }
 /* group for left side of second row */
 .input-meta-left { display:flex; gap:10px; align-items:center; }
