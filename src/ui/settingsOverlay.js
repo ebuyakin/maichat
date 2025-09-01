@@ -14,7 +14,7 @@ export function openSettingsOverlay({ onClose }){
     <div class="overlay-panel settings-panel compact">
       <header>Settings</header>
       <div class="settings-tabs" role="tablist">
-        ${['layout','spacing','visibility','scroll'].map((t,i)=>`<button type="button" class="tab-btn${i===0?' active':''}" data-tab="${t}" role="tab" aria-selected="${i===0}" aria-controls="tab-${t}">${t}</button>`).join('')}
+  ${['layout','spacing','visibility','scroll','context'].map((t,i)=>`<button type="button" class="tab-btn${i===0?' active':''}" data-tab="${t}" role="tab" aria-selected="${i===0}" aria-controls="tab-${t}">${t}</button>`).join('')}
       </div>
       <div class="settings-body">
         <form id="settingsForm" autocomplete="off">
@@ -100,6 +100,21 @@ export function openSettingsOverlay({ onClose }){
               </label>
             </fieldset>
           </div>
+          <div class="tab-section" data-tab-section="context" id="tab-context" hidden>
+            <fieldset class="spacing-fieldset context-fieldset">
+              <legend>Context Assembly</legend>
+              <label>User Request Allowance (URA)
+                <input name="userRequestAllowance" type="number" min="0" max="5000" step="10" value="${existing.userRequestAllowance != null ? existing.userRequestAllowance : 100}" />
+              </label>
+              <label>Max Trim Attempts (NTA)
+                <input name="maxTrimAttempts" type="number" min="0" max="100" step="1" value="${existing.maxTrimAttempts != null ? existing.maxTrimAttempts : 10}" />
+              </label>
+              <label>Chars Per Token (CPT)
+                <input name="charsPerToken" type="number" min="1.5" max="8" step="0.1" value="${existing.charsPerToken != null ? existing.charsPerToken : 3.5}" />
+              </label>
+              <div style="font-size:11px;opacity:.7;line-height:1.3;margin-top:4px;">Trimming only occurs after provider overflow errors. Predicted context (X) reserves URA tokens for your next message. Counter after trimming shows [X-T]/Y.</div>
+            </fieldset>
+          </div>
           <div class="buttons">
             <button type="button" data-action="cancel">Cancel</button>
             <button type="button" data-action="apply">Apply</button>
@@ -150,7 +165,11 @@ export function openSettingsOverlay({ onClose }){
   const scrollAnimMinMs = clampRange(parseInt(fd.get('scrollAnimMinMs')),0,1000)
   const scrollAnimMaxMs = clampRange(parseInt(fd.get('scrollAnimMaxMs')),0,5000)
   const scrollAnimEasing = fd.get('scrollAnimEasing') || 'easeOutQuad'
-  saveSettings({ partFraction, anchorMode, edgeAnchoringMode, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing })
+  // Context assembly fields (may be absent if tab not visited but FormData still collects defaults)
+  const userRequestAllowance = clampRange(parseInt(fd.get('userRequestAllowance')),0,500000) // wide upper bound
+  const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')),0,1000)
+  const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')),1.0,10.0)
+  saveSettings({ partFraction, anchorMode, edgeAnchoringMode, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, maxTrimAttempts, charsPerToken })
     markSaved()
   }
   function clampPF(v){ if(isNaN(v)) v = existing.partFraction || 0.6; return Math.min(1.00, Math.max(0.10, v)) }

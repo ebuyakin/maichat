@@ -6,9 +6,9 @@ export function openModelEditor({ onClose }){
   const backdrop = document.createElement('div')
   backdrop.className = 'overlay-backdrop centered'
   const panel = document.createElement('div')
-  panel.className = 'overlay-panel compact'
-  panel.style.minWidth = '420px'
-  panel.innerHTML = `<header>Models</header><div class="list"><ul tabindex="0" class="me-list"></ul></div><footer><span style="font-size:11px;color:#888;">j/k move · Space toggle · Enter/Esc close</span></footer>`
+  panel.className = 'overlay-panel model-editor'
+  panel.style.minWidth = '620px'
+  panel.innerHTML = `<header>Models</header><div class="list"><ul tabindex="0" class="me-list"></ul></div><footer><span class="me-hint">j/k move · Space toggle · Enter/Esc close</span></footer>`
   backdrop.appendChild(panel)
   document.body.appendChild(backdrop)
   const ul = panel.querySelector('ul')
@@ -31,13 +31,17 @@ export function openModelEditor({ onClose }){
       const li = document.createElement('li')
       li.dataset.id = m.id
       li.tabIndex = -1
-      li.style.display='flex'; li.style.justifyContent='space-between'; li.style.gap='12px'
+      li.classList.add('me-row')
       if(i === activeIndex) li.classList.add('active')
-      li.innerHTML = `<span>${m.id} ${m.id===activeModel?'<strong style=\"color:#8ab4ff\">(active)</strong>':''}</span><span style="font-size:11px; color:${m.enabled?'#6fa8ff':'#666'}">${m.enabled? 'enabled':'disabled'} · ${formatCW(m.contextWindow)}</span>`
+      const activeBadge = m.id===activeModel?'<span class="me-active">active</span>':''
+      li.innerHTML = `
+        <span class="me-col me-col-toggle ${m.enabled?'on':'off'}" data-role="toggle" aria-label="${m.enabled?'enabled':'disabled'}">${m.enabled? '●':'○'}</span>
+        <span class="me-col me-col-name">${m.id} ${activeBadge}</span>
+        <span class="me-col me-col-metrics">${fmt(m.contextWindow)}/${fmt(m.tpm)} · r${m.rpm} · d${fmt(m.tpd)}</span>`
       ul.appendChild(li)
     })
   }
-  function formatCW(n){ if(n>=1000) return (n/1000)+'k'; return String(n) }
+  function fmt(n){ return Math.round(n/1000) }
   function toggle(id){
     const preserveId = id
     toggleModelEnabled(id)

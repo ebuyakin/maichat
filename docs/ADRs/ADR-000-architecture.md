@@ -46,7 +46,7 @@ Enforcement Examples:
 - Future tokenization upgrades must plug into the send-time pipeline, not the typing loop.
 
 ## Allowance-Based Context Strategy
-The included/visible counter (X/Y) is computed with `assumedUserTokens` subtracted from the usable window so X already reflects what will fit alongside a typical prompt. Large prompts may cause a one-time additional trim at send. This replaces any earlier live inline token estimate concept, adhering to P1.
+The included/visible counter (X/Y) and prediction pipeline now subtract a configurable User Request Allowance (URA) before selecting history: `effectiveMaxContext = min(model.contextWindow, model.tpm)` then reserve `userRequestAllowance` (default 100) so the newest visible pairs are included only while `(historyTokens + URA) ≤ effectiveMaxContext`. On send, actual user tokens are measured; if the prompt alone exceeds the model limit an immediate error is raised (`user_prompt_too_large`). Provider overflow responses trigger a discrete overflow-only trimming loop (one oldest predicted pair per attempt) rather than continuous proactive recalculation while typing. This preserves P1 (zero-cost passive keystrokes) by deferring token budgeting to explicit send actions. Future enhancements: rpm/tdp quota integration, proactive adjustment when AUT encroaches on URA, richer error taxonomy.
 
 ## Alternatives Considered
 - React/Svelte: rejected (added complexity overhead & not aligned with pure JS learning goal).

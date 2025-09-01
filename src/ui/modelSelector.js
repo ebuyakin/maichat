@@ -20,13 +20,13 @@ export function openModelSelector({ onClose }){
     ul.innerHTML = ''
     items.forEach((m,i)=>{
       const li = document.createElement('li')
-      li.textContent = `${m.id} · ${formatCW(m.contextWindow)}`
+      li.textContent = `${m.id} (${fmt(m.contextWindow)}/${fmt(m.tpm)})`
       li.dataset.id = m.id
       if(i===activeIndex) li.classList.add('active')
       ul.appendChild(li)
     })
   }
-  function formatCW(n){ if(n>=1000) return (n/1000)+'k'; return String(n) }
+  function fmt(n){ return Math.round(n/1000) }
   function applyFilter(){
     const q = filterInput.value.trim().toLowerCase()
     items = models.filter(m=> !q || m.id.toLowerCase().includes(q))

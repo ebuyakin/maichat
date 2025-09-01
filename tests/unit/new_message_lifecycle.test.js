@@ -25,19 +25,18 @@ describe('new message lifecycle', ()=>{
     expect(lifecycle.isPending()).toBe(false)
   })
 
-  it('sets badge visible when reply arrives and user not at logical end', ()=>{
+  it('handles reply arrival when user not at logical end (badge removed; state.visible stays false)', ()=>{
     const store = mockStore()
     addPair(store, { id:'p2', assistantText:'old' })
-  const partsList = [ { id:'p2:user:0', pairId:'p2', role:'user' }, { id:'p2:assistant:0', pairId:'p2', role:'assistant' } ]
-  // Active is first part; last part is assistant, so not at logical end
-  const activeParts = { parts: partsList, active(){ return partsList[0] }, setActiveById(){} }
+    const partsList = [ { id:'p2:user:0', pairId:'p2', role:'user' }, { id:'p2:assistant:0', pairId:'p2', role:'assistant' } ]
+    const activeParts = { parts: partsList, active(){ return partsList[0] }, setActiveById(){} }
     const lifecycle = createNewMessageLifecycle({ store, activeParts, commandInput:null, renderHistory:()=>{}, applyActivePart:()=>{} })
     lifecycle.handleNewAssistantReply('p2')
     const state = lifecycle.getBadgeState()
-    expect(state.visible).toBe(true)
+    expect(state.visible).toBe(false)
   })
 
-  it('jump hides badge when at reply (filter scenario skipped in non-DOM env)', ()=>{
+  it('jump call no-ops (badge removed)', ()=>{
     const store = mockStore()
     addPair(store, { id:'p3', assistantText:'A reply' })
     const partsList = [ { id:'p3:user:0', pairId:'p3', role:'user' }, { id:'p3:assistant:0', pairId:'p3', role:'assistant' } ]
@@ -45,11 +44,12 @@ describe('new message lifecycle', ()=>{
     const lifecycle = createNewMessageLifecycle({ store, activeParts, commandInput:{ value:'f star>=2' }, renderHistory:()=>{}, applyActivePart:()=>{} })
     lifecycle.setFilterQuery('f star>=2')
     lifecycle.handleNewAssistantReply('p3')
-    lifecycle.jumpToNewReply('first')
+    const jumped = lifecycle.jumpToNewReply('first')
+    expect(jumped).toBe(false)
     expect(lifecycle.getBadgeState().visible).toBe(false)
   })
 
-  it('removes dim when reply becomes visible without jump', ()=>{
+  it('updateNewReplyBadgeVisibility is inert after badge removal', ()=>{
     const store = mockStore()
     addPair(store, { id:'p4', assistantText:'R' })
     const partsList = [ { id:'p4:user:0', pairId:'p4', role:'user' }, { id:'p4:assistant:0', pairId:'p4', role:'assistant' } ]
@@ -60,6 +60,6 @@ describe('new message lifecycle', ()=>{
     // emulate filter cleared externally making reply visible -> setFilterQuery('') then update
     lifecycle.setFilterQuery('')
     lifecycle.updateNewReplyBadgeVisibility()
-    expect(lifecycle.getBadgeState().dim).toBe(false)
+    expect(lifecycle.getBadgeState().visible).toBe(false)
   })
 })

@@ -16,7 +16,7 @@ describe('new reply extended navigation', ()=>{
     global.document = dom.window.document
     global.getComputedStyle = (el)=> dom.window.getComputedStyle(el)
   })
-  it('jumpToNewReply first selects first assistant part ("n" behavior for new reply)', ()=>{
+  it('jumpToNewReply first no-ops after badge removal', ()=>{
     const store = mockStore()
     addPair(store, { id:'p1', assistantText:'reply one part one\npart two' })
     // simulate two assistant parts
@@ -32,10 +32,10 @@ describe('new reply extended navigation', ()=>{
       setActiveById(id){ activeId = id }
     }
     const lifecycle = createNewMessageLifecycle({ store, activeParts, commandInput:null, renderHistory:()=>{}, applyActivePart:()=>{} })
-    lifecycle.handleNewAssistantReply('p1') // badge visible
-    const jumped = lifecycle.jumpToNewReply('first')
-    expect(jumped).toBe(true)
-    expect(activeId).toBe('p1:assistant:0')
+  lifecycle.handleNewAssistantReply('p1')
+  const jumped = lifecycle.jumpToNewReply('first')
+  expect(jumped).toBe(false)
+  expect(activeId).toBe(parts[0].id)
   })
 
   it('auto-focuses first assistant part when user at logical end on reply arrival (no badge)', ()=>{
@@ -59,7 +59,7 @@ describe('new reply extended navigation', ()=>{
     expect(activeId).toBe('p2:assistant:0')
   })
 
-  it('filtered reply dim cleared via jump ("n" path clears filter)', ()=>{
+  it('filtered reply jump no-op after badge removal', ()=>{
     const store = mockStore()
     addPair(store, { id:'p3', assistantText:'Z' })
     const parts = [
@@ -71,15 +71,13 @@ describe('new reply extended navigation', ()=>{
     let rendered = false
     const lifecycle = createNewMessageLifecycle({ store, activeParts, commandInput:{ value:'topic:foo' }, renderHistory:()=>{ rendered = true }, applyActivePart:()=>{} })
     lifecycle.setFilterQuery('topic:foo')
-    lifecycle.handleNewAssistantReply('p3')
-    let badge = lifecycle.getBadgeState()
-    expect(badge.visible).toBe(true)
-    expect(badge.dim).toBe(true)
-    const jumped = lifecycle.jumpToNewReply('first')
-    expect(jumped).toBe(true)
-    badge = lifecycle.getBadgeState()
-    expect(badge.visible).toBe(false)
-    expect(rendered).toBe(true)
-    expect(activeId).toBe('p3:assistant:0')
+  lifecycle.handleNewAssistantReply('p3')
+  let badge = lifecycle.getBadgeState()
+  expect(badge.visible).toBe(false)
+  const jumped = lifecycle.jumpToNewReply('first')
+  expect(jumped).toBe(false)
+  expect(rendered).toBe(false) // renderHistory not triggered by jump anymore
+  // activeId unchanged
+  expect(activeId).toBe(parts[0].id)
   })
 })

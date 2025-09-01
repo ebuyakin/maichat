@@ -1,7 +1,7 @@
 # New Message Send & Response Workflow (Draft for Review)
 
-Last updated: 2025-08-30
-Status: APPROVED – extended WYSIWYG with token budget marking (Phase 1 M6 starting).
+Last updated: 2025-09-01 (post overflow-only trimming, model catalog v2, URA prediction integration)
+Status: PARTIALLY IMPLEMENTED – WYSIWYG, URA‑aware prediction, overflow-only trimming, telemetry, bracket counter. Pending: rpm/tdp quota logic, proactive AUT > URA adjustment, enhanced error taxonomy, user-facing trim summaries.
 
 ## 1. Core Principle (WYSIWYG Context)
 "What You See Is What You Send": The context sent to the LLM consists of exactly the *currently visible* message pairs in the history pane **after** the active filter is applied, in the on‑screen order (top → bottom), plus the *new user request* being sent. No hidden / filtered out / partially excluded content is added implicitly. Visual partitioning (multiple rendered parts of one logical message) collapses back to a single user or assistant message in the API payload.
@@ -95,21 +95,68 @@ Visible list may hide the sending pair; it will only reappear if filter later in
 5. Do not include metadata (topics, stars) in message content (they are purely filter & indexing attributes now).
 6. Snapshot persisted only on error (for potential debugging display); not on success.
 
-## 7. Token Budgeting (Heuristic First Pass)
-Definitions:
-- charsPerToken = 4 (configurable later).
-- estimatedTokens = sum( ceil(len(content)/charsPerToken) ).
-- modelMaxTokens table (heuristic):
-  - gpt-4o-mini: 128k (context) – we will treat a soft cap e.g. 120k for safety.
-- responseReserve: user-configurable later; default 800.
-Preflight Rule: if estimatedTokens + responseReserve > modelMaxTokensSoft → warn user (blocking dialog with options: Abort / Force Send). *No automatic trimming in M6 to avoid hidden behavior.*
+## 7. Token Budgeting & Trimming (Current Implementation + Planned Enhancements)
+
+We distinguish between the pre-send predicted context (what is visibly marked included) and the final sent context (after any runtime overflow trims). Current implementation covers: prediction without URA, provider overflow classification, single-pair iterative trimming, and telemetry surfaced in the debug HUD.
+
+### 7.1 Definitions (Current)
+| Term | Meaning |
+|------|---------|
+| ML (Model Limit) | `effectiveMaxContext = min(model.contextWindow, model.tpm)` – simplistic throughput-aware cap (rpm/tdp not yet modeled). |
+| CPT (Chars Per Token) | Heuristic estimate divisor (default 3.5 via `charsPerToken` setting). |
+| URA (User Request Allowance) | Fixed reserve (default 100 via settings) subtracted during prediction & boundary computation. Configurable in settings overlay. |
+| Predicted Context (X) | Newest-first suffix of visible pairs such that `(historyTokens + URA) ≤ ML`. Count = X. |
+| Actual User Tokens (AUT) | Estimated tokens of the outgoing user prompt (blocking error if `AUT > ML`). Currently no proactive shrink of predicted context if `AUT > URA` (future). |
+| Trimming (Runtime) | Overflow-only: upon provider overflow classification remove exactly one oldest predicted pair; retry (≤ NTA). |
+| T (Trimmed Count) | Number of predicted pairs removed in overflow loop (telemetry + counter). |
+| NTA (Max Attempts) | `maxTrimAttempts` setting (default 10). |
+| sentCount | `X - T` after overflow loop finishes (displayed as part of bracket counter). |
+
+### 7.2 Two-Stage Assembly (Mechanics)
+1. Prediction: accumulate newest→oldest until adding the next pair would make `(historyEstimate + pairTokens + URA) > ML`; included set becomes predicted context X.
+2. Validation: estimate user prompt tokens (AUT). If `AUT > ML` raise `user_prompt_too_large` (no trimming attempts).
+3. Send Attempt: build messages from predicted context + user prompt and call provider.
+4. Overflow Loop: if classified overflow → remove exactly one oldest predicted pair, increment T and attempts count, retry (≤ NTA). Stops on success or when attempts exhausted → error `context_overflow_after_trimming`.
+5. Telemetry: emits on each attempt with fields: `predictedCount`, `trimmedCount (T)`, `attemptsUsed`, `predictedHistoryTokens`, `historyTokens`, `userTokens`, `remainingReserve`, stage labels (`overflow_initial`, `overflow_retry`, `overflow_exhausted`, etc.).
+
+### 7.3 Counter Display Logic (Implemented)
+Idle / no trimming: `X / Y` (predicted included / total visible pairs).
+After a send where trimming occurred: `[X-T]/Y` where `X` = predicted count before trimming, `T` = trimmed count, displayed as `[sent-trimmed]/Y` (e.g. `[12-1]/34`).
+Tooltip (current content): indicates predicted vs visible, URA mode active, number trimmed last send, and total included tokens. Future enhancement: richer breakdown (Predicted, Trimmed, Sent, Visible, URA, AUT, CPT, ML) and user-facing wording.
+
+### 7.4 Parameters (Defaults / Settings)
+* `charsPerToken` (CPT): 3.5 (settings)
+* `userRequestAllowance` (URA): 100 (settings)
+* `maxTrimAttempts` (NTA): 10 (settings)
+* Trimming granularity: one whole oldest pair per overflow attempt
+* Assistant reply reserve: none (removed legacy `responseReserve`); reply size not pre-reserved yet.
+
+### 7.5 Overflow Classification
+Substring match (case-insensitive) for: `context_length`, `maximum context length`, `too many tokens`, `context too long`, `exceeds context window`.
+
+### 7.6 Edge Conditions
+| Scenario | Behavior |
+|----------|----------|
+| AUT alone > ML | Immediate error `user_prompt_too_large` before first attempt (implemented). |
+| All predicted trimmed still overflow | Error `context_overflow_after_trimming` (implemented); future: improved user-facing guidance. |
+| Filter changes mid-loop | Current: trimming loop operates on snapshot list; UI may hide some pairs; no abort logic yet. Planned: explicit abort + notice if filter changes during retries. |
+| URA adjustment mid-session | Prediction uses latest settings value each send; running overflow loop does not re-expand after settings change. |
+
+### 7.7 Telemetry Fields (Current Emissions)
+Core payload (per attempt via debug hook):
+`{ model, budget:{maxContext,maxUsableRaw}, selection:[{id,model,tokens}], predictedCount, trimmedCount, attemptsUsed, userTokens, charsPerToken, predictedHistoryTokens, historyTokens, totalTokensEstimate, remainingReserve, messages[], lastErrorMessage?, overflowMatched?, stage }`
+Derived (UI internal): `sentCount = predictedCount - trimmedCount`.
+
+### 7.8 Status
+Implemented: effectiveMaxContext=min(cw,tpm); URA reserve in prediction & boundary; overflow-only trimming loop; bracket counter `[X-T]/Y`; telemetry (HUD PARAMETERS / TRIMMING / ERROR groups); resizable HUD.
+Pending: rpm/tdp live quota modeling; proactive adjustment when `AUT` encroaches on URA; richer tooltip & user-facing trim summaries; enhanced error taxonomy (distinguish rate limits vs network vs context exhaustion); abort-on-filter-change policy.
 
 ## 8. UI Elements (Initial M6 Slice)
 | Element | Behavior |
 |---------|----------|
 | Send Button → "Thinking…" badge | Indicates in-flight (button disabled); input still editable. |
 | In-flight badge | Inline small muted text after user message (not a separate assistant block). |
-| Context Counter | Shows `X / Y` (included / visible). Tooltip: token stats & limits. Updates live. |
+| Context Counter | Shows `X / Y` or `[X-T]/Y` post-trim. Tooltip currently summarizes predicted vs visible, URA active, trimmed last send (future: richer breakdown). Updates live. |
 | Out-of-Context (OOC) Marking | Oldest excluded pairs get `.ooc` class, reduced opacity, "OUT" badge. |
 | Boundary Jump | Shift+O jumps to first included pair (boundary). If all included shows HUD notice. |
 | Error Display | `[error: code] shortMessage` + buttons `[Edit & Resend] [Delete]` (keyboard: `e`, `x`). |
@@ -118,13 +165,13 @@ Preflight Rule: if estimatedTokens + responseReserve > modelMaxTokensSoft → wa
 | Token Estimate | Small gray `~N` near Send (debounced). |
 | Over-budget Alert | Blocking confirm dialog (no auto-trim). |
 
-## 9. Defer / Removed From M6
+## 9. Defer / Removed / Revised From M6
 - Manual per-message deselect (removed; rely on filters).
 - Streaming partial response (defer).
 - HUD token diff (maybe dev-only later).
 - System/style injection (hook only; no UI yet).
 
-## 10. Resolved Decisions Summary
+## 10. Resolved Decisions Summary (Updated)
 | # | Decision | Status |
 |---|----------|--------|
 | 1 | Abort (Esc) omitted in M6 | Accepted |
@@ -134,7 +181,7 @@ Preflight Rule: if estimatedTokens + responseReserve > modelMaxTokensSoft → wa
 | 5 | No snapshot on success (errors only) | Accepted |
 | 6 | Timeout → `[error: network]` (30s default) | Accepted |
 | 7 | Min send validation: trimmed length ≥1 | Accepted |
-| 8 | Over-budget handling: mark-oldest (dim) + X/Y counter (no blocking) | Accepted |
+| 8 | Over-budget handling: URA + discrete overflow-only trimming with bracket counter `[X-T]/Y`. | Implemented (further UX enhancements pending) |
 | 9 | Token estimate beside Send | Accepted |
 | 10 | Canceled path N/A (no abort) | Accepted |
 | 11 | Edit-in-place resend replaces retry | Accepted |

@@ -190,12 +190,111 @@ function renderTopics(){ /* hidden for now */ }
 
 let __lastContextStats = null
 let __lastContextIncludedIds = new Set()
+let __requestDebugEnabled = false
+let __lastSentRequest = null
+let __lastPredictedCount = 0 // X
+let __lastTrimmedCount = 0   // T for last successful send
+// Initialize request debug from URL (?reqdbg=1)
+try {
+  const usp = new URLSearchParams(window.location.search)
+  if(usp.get('reqdbg') === '1'){ __requestDebugEnabled = true; requestAnimationFrame(()=> renderRequestDebug()) }
+} catch{}
+
+function ensureRequestDebugOverlay(){
+  if(document.getElementById('requestDebugOverlay')) return
+  const pane = document.createElement('div')
+  pane.id = 'requestDebugOverlay'
+  pane.style.position='fixed'
+  pane.style.bottom='110px'
+  pane.style.right='16px'
+  pane.style.width='480px'
+  pane.style.maxHeight='40vh'
+  pane.style.overflow='auto'
+  pane.style.background='rgba(10,20,30,0.92)'
+  pane.style.border='1px solid #244'
+  pane.style.font='11px/1.4 var(--font-mono, monospace)'
+  pane.style.padding='8px 10px'
+  pane.style.borderRadius='6px'
+  pane.style.boxShadow='0 4px 18px rgba(0,0,0,0.5)'
+  pane.style.zIndex='1600'
+  pane.style.whiteSpace='pre-wrap'
+  pane.style.letterSpacing='.3px'
+  pane.style.display='none'
+  pane.setAttribute('aria-live','polite')
+  document.body.appendChild(pane)
+}
+function renderRequestDebug(){
+  ensureRequestDebugOverlay()
+  const pane = document.getElementById('requestDebugOverlay')
+  if(!pane) return
+  if(!__requestDebugEnabled){ pane.style.display='none'; return }
+  pane.style.display='block'
+  if(!__lastSentRequest){ pane.textContent = '[request debug] No request sent yet.'; return }
+  const { model, budget, selection, userTokens, totalTokensEstimate, historyTokens, predictedHistoryTokens, remainingReserve, attemptsUsed, trimmedCount, predictedCount, messages, lastErrorMessage, overflowMatched, stage } = __lastSentRequest
+  const settings = getSettings()
+  const uraVal = __lastContextStats?__lastContextStats.assumedUserTokens: settings.userRequestAllowance
+  const cpt = settings.charsPerToken
+  const nta = settings.maxTrimAttempts
+  const ml = (budget.maxContext||budget.maxUsableRaw)
+  const initialAttemptTotal = (predictedHistoryTokens!=null && userTokens!=null) ? (predictedHistoryTokens + userTokens) : null
+  const finalAttemptTotal = (historyTokens!=null && userTokens!=null) ? (historyTokens + userTokens) : null
+  const trimmedTok = (predictedHistoryTokens!=null && historyTokens!=null) ? (predictedHistoryTokens - historyTokens) : 0
+  const lines = []
+  lines.push(`MODEL: ${model}`)
+  lines.push(`PARAMETERS: URA=${uraVal} CPT=${cpt} NTA=${nta} ML=${ml}`)
+  lines.push(`PREDICTED_HISTORY_CONTEXT: n_of_messages=${predictedCount} n_of_tokens=${predictedHistoryTokens!=null?predictedHistoryTokens:'-'}`)
+  lines.push(`ACTUAL:`)
+  lines.push(`  tokens_in_new_user_request=${userTokens!=null?userTokens:'-'}`)
+  lines.push(`  tokens_in_initial_attempted_request=${initialAttemptTotal!=null?initialAttemptTotal:'-'}`)
+  lines.push(`TRIMMING:`)
+  lines.push(`  N_of_attempts=${attemptsUsed!=null?attemptsUsed:0}`)
+  lines.push(`  N_of_tokens_trimmed=${trimmedTok}`)
+  lines.push(`  tokens_in_final_attempted_request=${finalAttemptTotal!=null?finalAttemptTotal:'-'}`)
+  lines.push(`  remaining_estimate=${remainingReserve!=null?remainingReserve:'-'}`)
+  if(lastErrorMessage){
+    lines.push(`ERROR: msg="${lastErrorMessage}" overflowMatched=${overflowMatched?'1':'0'} stage=${stage||'-'}`)
+  }
+  lines.push(`INCLUDED PAIRS (${selection.length}):`)
+  selection.forEach(s=> lines.push(`  - ${s.id.slice(0,8)} m:${s.model} estTok:${s.tokens}`))
+  lines.push('MESSAGES:')
+  messages.forEach((m,i)=>{
+    lines.push(`  [${i}] ${m.role}:`)
+    const txt = (m.content||'').split(/\n/)
+    txt.slice(0,20).forEach(l=> lines.push('      '+l))
+    if(txt.length>20) lines.push('      ...')
+  })
+  // Raw JSON payload (without apiKey) exactly as passed to provider
+  try {
+    const raw = { model, messages }
+    lines.push('RAW REQUEST JSON:')
+    lines.push(JSON.stringify(raw, null, 2))
+  } catch{}
+  // Add copy button (lightweight) once
+  if(!pane.__hasCopy){
+    const btn = document.createElement('button')
+    btn.textContent = 'Copy JSON'
+    btn.style.position='absolute'; btn.style.top='4px'; btn.style.right='6px'; btn.style.font='10px var(--font-ui)'; btn.style.padding='2px 6px'; btn.style.background='#123a55'; btn.style.border='1px solid #25506f'; btn.style.color='#cce'; btn.style.cursor='pointer'; btn.style.borderRadius='4px'
+    btn.addEventListener('click', ()=>{
+      try { navigator.clipboard.writeText(JSON.stringify({ model, messages }, null, 2)) } catch{}
+      btn.textContent = 'Copied'
+      setTimeout(()=>{ btn.textContent='Copy JSON' }, 1400)
+    })
+    pane.appendChild(btn)
+    pane.__hasCopy = true
+  }
+  // Replace (but preserve button) content region
+  let pre = pane.querySelector('pre')
+  if(!pre){ pre = document.createElement('pre'); pre.style.margin='0'; pre.style.padding='0 0 4px'; pre.style.font='11px/1.4 var(--font-mono, monospace)'; pane.appendChild(pre) }
+  pre.textContent = lines.join('\n')
+}
 function renderHistory(pairs){
   pairs = [...pairs].sort((a,b)=> a.createdAt - b.createdAt)
   const settings = getSettings()
-  const ctx = gatherContext(pairs, { charsPerToken: 4, pendingUserText: undefined })
+  const cpt = settings.charsPerToken || 3.5
+  const ctx = gatherContext(pairs, { charsPerToken: cpt, pendingUserText: undefined, assumedUserTokens: settings.userRequestAllowance || 0 })
   __lastContextStats = ctx.stats
   __lastContextIncludedIds = new Set(ctx.included.map(p=>p.id))
+  __lastPredictedCount = ctx.included.length
   const parts = buildParts(pairs)
   activeParts.setParts(parts)
   historyView.render(parts)
@@ -426,18 +525,10 @@ const viewHandler = (e)=>{
   if(e.key === 'j' || e.key === 'ArrowDown'){ activeParts.next(); applyActivePart(); return true }
   if(e.key === 'k' || e.key === 'ArrowUp'){ activeParts.prev(); applyActivePart(); return true }
   if(e.key === 'g'){ activeParts.first(); applyActivePart(); return true }
-  if(e.key === 'G'){
-    // If there's a new reply badge (any state), treat Shift+G as jump to LAST part of newest reply; else normal last part navigation
-    const badgeState = lifecycle.getBadgeState()
-    if(badgeState.visible){
-      const jumped = lifecycle.jumpToNewReply('last')
-      if(jumped) return true
-    }
-  activeParts.last(); applyActivePart(); return true
-  }
+  if(e.key === 'G'){ activeParts.last(); applyActivePart(); return true }
   if(e.key === 'R'){ cycleAnchorMode(); return true } // Shift+R cycles reading position
   if(e.key === 'O' && e.shiftKey){ jumpToBoundary(); return true }
-  if(e.key === 'n'){ lifecycle.jumpToNewReply('first'); return true }
+  // 'n' previously jumped to new reply; now unused
   if(e.key === '*'){ cycleStar(); return true }
   if(e.key === 'a'){ toggleFlag(); return true }
   if(e.key === '1'){ setStarRating(1); return true }
@@ -533,12 +624,13 @@ const inputHandler = (e)=>{
       } else {
         id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
       }
-      ;(async()=>{
+    __lastTrimmedCount = 0
+    ;(async()=>{
         try {
           // Use currently visible (filtered) chronological list for context WYSIWYG
           const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean)
           const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt)
-          const { content } = await executeSend({ store, model, userText: text, signal: undefined, visiblePairs: chrono })
+      const { content } = await executeSend({ store, model, userText: text, signal: undefined, visiblePairs: chrono, onDebugPayload: (payload)=>{ __lastSentRequest = payload; if(payload.predictedCount!=null){ __lastPredictedCount = payload.predictedCount } if(payload.trimmedCount!=null){ __lastTrimmedCount = payload.trimmedCount } renderRequestDebug(); updateMessageCount(__lastPredictedCount, chrono.length) } })
           store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined })
           lifecycle.completeSend(); updateSendDisabled()
           renderCurrentView({ preserveActive:true })
@@ -661,6 +753,9 @@ window.addEventListener('keydown', e=>{
   }
   else if(k===','){ e.preventDefault(); const prevMode = modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
   else if(e.key === '.' || e.code === 'Period'){ e.preventDefault(); toggleMenu(); }
+  else if(e.shiftKey && k==='r'){ // Ctrl+Shift+R toggles request debug overlay
+    e.preventDefault(); __requestDebugEnabled = !__requestDebugEnabled; renderRequestDebug();
+  }
   // Developer shortcut: Ctrl+Shift+S to reseed long test messages
   if(e.shiftKey && k==='s'){ e.preventDefault(); window.seedTestMessages && window.seedTestMessages() }
 })
@@ -872,8 +967,44 @@ function updateHud(){
     }
   } catch{}
   const metaParams = []
-  // D. Meta
-  metaParams.push(`${n++}. focus: ${focusDesc}`)
+  metaParams.push(`focus: ${focusDesc}`)
+  // Structured budgeting groups
+  try {
+    const settings = getSettings()
+    const ura = __lastContextStats ? __lastContextStats.assumedUserTokens : settings.userRequestAllowance
+    const cpt = settings.charsPerToken
+    const nta = settings.maxTrimAttempts
+    const ml = __lastContextStats ? __lastContextStats.maxContext : null
+    const predictedHistoryTokens = (__lastSentRequest && typeof __lastSentRequest.predictedHistoryTokens==='number') ? __lastSentRequest.predictedHistoryTokens : (__lastContextStats ? __lastContextStats.totalIncludedTokens : null)
+    // Count predicted messages
+    const predictedMessages = __lastPredictedCount
+    // Character count
+    let predictedChars = 0
+    if(__lastContextIncludedIds && __lastContextIncludedIds.size){
+      for(const p of __store.getAllPairs()){
+        if(__lastContextIncludedIds.has(p.id)) predictedChars += (p.userText?p.userText.length:0) + (p.assistantText?p.assistantText.length:0)
+      }
+    }
+    const userTok = (__lastSentRequest && typeof __lastSentRequest.userTokens==='number') ? __lastSentRequest.userTokens : null
+    const historyTokens = (__lastSentRequest && typeof __lastSentRequest.historyTokens==='number') ? __lastSentRequest.historyTokens : predictedHistoryTokens
+    const initialAttemptTotal = (predictedHistoryTokens!=null && userTok!=null) ? (predictedHistoryTokens + userTok) : null
+    const finalAttemptTotal = (historyTokens!=null && userTok!=null) ? (historyTokens + userTok) : null
+    const trimmedTok = (predictedHistoryTokens!=null && historyTokens!=null) ? (predictedHistoryTokens - historyTokens) : 0
+    const attempts = (__lastSentRequest && typeof __lastSentRequest.attemptsUsed==='number') ? __lastSentRequest.attemptsUsed : 0
+    // PARAMETERS
+    metaParams.push(`PARAMETERS: URA=${ura!=null?ura:'-'} CPT=${cpt!=null?cpt:'-'} NTA=${nta!=null?nta:'-'} ML=${ml!=null?ml:'-'}`)
+    // PREDICTED HISTORY CONTEXT
+    metaParams.push(`PREDICTED_HISTORY_CONTEXT: n_of_messages=${predictedMessages} n_of_characters=${predictedChars} n_of_tokens=${predictedHistoryTokens!=null?predictedHistoryTokens:'-'}`)
+    // ACTUAL
+  metaParams.push(`ACTUAL:`)
+  metaParams.push(`  tokens_in_new_user_request=${userTok!=null?userTok:'-'}`)
+  metaParams.push(`  tokens_in_initial_attempted_request=${initialAttemptTotal!=null?initialAttemptTotal:'-'}`)
+  // TRIMMING
+  metaParams.push(`TRIMMING:`)
+  metaParams.push(`  N_of_attempts=${attempts}`)
+  metaParams.push(`  N_of_tokens_trimmed=${trimmedTok}`)
+  metaParams.push(`  tokens_in_final_attempted_request=${finalAttemptTotal!=null?finalAttemptTotal:'-'}`)
+  } catch{}
   // Build HTML with sections
   function sectionHTML(key, title, arr){
     const open = __hudState[key]
@@ -907,12 +1038,20 @@ function updateMessageCount(included, visible){
       if(!visiblePairIds.has(newest.id)) newestHidden = true
     }
   } catch{}
-  const prefix = newestHidden ? '(-)' : ''
-  el.textContent = `${prefix}${included}/${visible}`
-  if(__lastContextStats){
-    el.title = (newestHidden? 'Latest message hidden by filter. ' : '') + `Included (with reserved allowance) / Visible. Included tokens: ${__lastContextStats.totalIncludedTokens} / usable after allowance ${__lastContextStats.maxUsable}. Allowance reserved.`
+  const prefix = newestHidden ? '(-) ' : ''
+  let body
+  if(__lastTrimmedCount>0 && __lastPredictedCount===included){
+    // show [X-T]/Y where X = included (predicted), T = trimmed
+    const sent = included - __lastTrimmedCount
+    body = `[${sent}-${__lastTrimmedCount}]/${visible}`
   } else {
-    el.title = (newestHidden? 'Latest message hidden by filter. ' : '') + 'Included/Visible pairs'
+    body = `${included}/${visible}`
+  }
+  el.textContent = prefix + body
+  if(__lastContextStats){
+    el.title = (newestHidden? 'Latest message hidden by filter. ' : '') + `Predicted included / Visible. Predicted tokens: ${__lastContextStats.totalIncludedTokens}. URA model active. Trimmed last send: ${__lastTrimmedCount}`
+  } else {
+    el.title = (newestHidden? 'Latest message hidden by filter. ' : '') + 'Predicted Included / Visible'
   }
 }
 
@@ -1071,19 +1210,24 @@ function updateSendDisabled(){
   const zeroIncluded = (__lastContextStats && __lastContextStats.includedCount === 0)
   sendBtn.disabled = empty || lifecycle.isPending() || zeroIncluded
   if(lifecycle.isPending()){
-  if(!sendBtn.__animTimer){
-    sendBtn.__animPhase = 0
-    sendBtn.__animTimer = setInterval(()=>{
-      if(!lifecycle.isPending()) return // let cleanup handle
-      sendBtn.__animPhase = (sendBtn.__animPhase + 1) % 4
-      const dots = '.'.repeat(sendBtn.__animPhase)
-      sendBtn.textContent = `AI is thinking${dots.padEnd(3,' ')}`
-    }, 500)
-  }
-  // Initial text (phase 0)
-  const dots = '.'.repeat(sendBtn.__animPhase||0)
-  sendBtn.textContent = `AI is thinking${dots.padEnd(3,' ')}`
-  sendBtn.classList.add('pending')
+    if(!sendBtn.__animTimer){
+      // Build fixed structure once
+      sendBtn.innerHTML = '<span class="lbl">AI is thinking</span><span class="dots"><span>.</span><span>.</span><span>.</span></span>'
+      sendBtn.__animPhase = 0
+      const applyPhase = ()=>{
+        const dotsWrap = sendBtn.querySelector('.dots')
+        if(!dotsWrap) return
+        const spans = dotsWrap.querySelectorAll('span')
+        spans.forEach((sp,i)=>{ sp.style.opacity = (i < sendBtn.__animPhase) ? '1' : '0' })
+      }
+      applyPhase()
+      sendBtn.__animTimer = setInterval(()=>{
+        if(!lifecycle.isPending()) return
+        sendBtn.__animPhase = (sendBtn.__animPhase + 1) % 4
+        applyPhase()
+      }, 500)
+    }
+    sendBtn.classList.add('pending')
   } else {
     if(sendBtn.__animTimer){ clearInterval(sendBtn.__animTimer); sendBtn.__animTimer=null }
     sendBtn.textContent = 'Send'
@@ -1114,7 +1258,7 @@ if(sendBtn){
       try {
   const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean)
   const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt)
-  const { content } = await executeSend({ store, model, userText: text, signal: undefined, visiblePairs: chrono })
+  const { content } = await executeSend({ store, model, userText: text, signal: undefined, visiblePairs: chrono, onDebugPayload: (payload)=>{ __lastSentRequest = payload; renderRequestDebug() } })
   store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined })
   lifecycle.completeSend(); updateSendDisabled()
     renderCurrentView({ preserveActive:true })

@@ -46,11 +46,16 @@ body { min-height:100vh; overflow:hidden; }
   padding:6px 8px;
   border:1px solid #333;
   border-radius:4px;
-  width:520px; /* widened for full parameter visibility */
-  max-width:60vw; /* responsive cap */
-  pointer-events:none;
+  width:520px; /* default width */
+  max-width:70vw; /* responsive cap */
+  min-width:260px;
+  max-height:80vh;
+  min-height:120px;
+  resize:both; /* user can drag to resize */
+  pointer-events:auto; /* allow mouse to grab resize handle */
+  user-select:text;
   white-space:pre; /* keep alignment */
-  overflow:auto; /* allow scroll if content wider */
+  overflow:auto; /* allow scroll if content larger */
   z-index:1000;
 }
  #hud .warn { color:#f6d365; }
@@ -66,6 +71,16 @@ body { min-height:100vh; overflow:hidden; }
 .overlay-panel li { padding:4px 10px; cursor:pointer; }
 .overlay-panel li.active { background:#1e3a5a; color:#fff; }
 .overlay-panel li dim { color:#777; }
+.overlay-panel.model-editor { max-width:900px; }
+.overlay-panel.model-editor ul { padding:0; }
+.overlay-panel.model-editor li { display:grid; grid-template-columns: 56px 1fr 240px; align-items:center; gap:8px; font:var(--size-base)/1.4 var(--font-ui); padding:6px 14px; }
+.overlay-panel.model-editor li.me-row .me-col-toggle { text-align:center; font-size:14px; cursor:pointer; color:#6fa8ff; }
+.overlay-panel.model-editor li.me-row .me-col-toggle.off { color:#555; }
+.overlay-panel.model-editor li.me-row .me-col-name { font-weight:400; letter-spacing:.3px; }
+.overlay-panel.model-editor li.me-row .me-col-name .me-active { background:#123; color:#8ab4ff; font-size:11px; padding:2px 6px; border:1px solid #1e3a5a; border-radius:12px; margin-left:8px; letter-spacing:.4px; }
+.overlay-panel.model-editor li.me-row .me-col-metrics { font:var(--size-base)/1.4 var(--font-ui); color:#8a9aab; letter-spacing:.3px; }
+.overlay-panel.model-editor footer { justify-content:flex-end; }
+.overlay-panel.model-editor .me-hint { font-size:11px; color:#888; }
 .overlay-panel footer { border-top:1px solid #222; padding:4px 8px; display:flex; gap:4px; }
 .overlay-panel input[type=text] { flex:1; background:#0a0a0a; border:1px solid #333; color:#eee; padding:4px 6px; font:var(--size-base)/1.4 var(--font-ui); }
 .settings-panel .settings-body { padding:8px 16px 40px; display:flex; flex-direction:column; gap:0; flex:1; overflow:hidden; }
@@ -160,10 +175,13 @@ body { min-height:100vh; overflow:hidden; }
 #inputBar .row { display:flex; align-items:center; gap:12px; }
 #inputBar .row.second { justify-content:space-between; margin-top:2px; }
 #inputBar input { flex:1; background:var(--bg-alt); border:none; color:var(--text); padding:10px 0 10px 0; font:var(--size-base)/1.5 var(--font-ui); border-radius:4px; }
-#sendBtn { background:var(--bg-alt); color:var(--text); border:1px solid #2a2a2a; padding:6px 20px; cursor:pointer; font-size:var(--size-base); border-radius:4px; font-weight:400; min-width:134px; display:inline-flex; justify-content:flex-end; align-items:center; font-family:var(--font-ui); letter-spacing:.3px; }
+#sendBtn { background:var(--bg-alt); color:var(--text); border:1px solid #2a2a2a; padding:6px 20px; cursor:pointer; font-size:var(--size-base); border-radius:4px; font-weight:400; min-width:134px; display:inline-flex; justify-content:flex-end; align-items:center; font-family:var(--font-ui); letter-spacing:.3px; position:relative; }
 #sendBtn:disabled { opacity:.5; cursor:default; }
 /* Keep 'AI is thinking' legible (we set text content while pending but keep normal color) */
 #sendBtn.pending { opacity:1 !important; justify-content:flex-start; }
+#sendBtn .lbl { display:inline-block; }
+#sendBtn .dots { display:inline-flex; width:18px; margin-left:6px; justify-content:flex-start; }
+#sendBtn .dots span { width:4px; text-align:center; opacity:0; transition:opacity .25s linear; }
 .mode-label { font-size:11px; color:var(--text-dim); font-weight:400; letter-spacing:.5px; width:70px; display:inline-flex; justify-content:flex-start; align-items:center; background:transparent; height:34px; }
 /* group for left side of second row */
 .input-meta-left { display:flex; gap:10px; align-items:center; }

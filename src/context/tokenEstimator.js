@@ -24,16 +24,14 @@ export function estimatePairTokens(pair, charsPerToken=4){
   return total
 }
 
-import { getContextWindow } from '../models/modelCatalog.js'
+import { getContextWindow, getModelMeta } from '../models/modelCatalog.js'
 /** Build a model budget descriptor using catalog metadata */
 export function getModelBudget(model){
   const cw = getContextWindow(model)
-  return {
-    maxContext: cw,
-    responseReserve: 800,
-    softBuffer: 300,
-    safetyMargin: 40
-  }
+  const meta = getModelMeta(model)
+  const tpm = meta.tpm || cw
+  const effective = Math.min(cw, tpm) // simplistic: minute throughput cap may be stricter than window
+  return { maxContext: effective, rawContextWindow: cw, tpm }
 }
 
 /** Compute inclusion boundary.
@@ -46,8 +44,9 @@ export function computeContextBoundary(orderedPairs, { charsPerToken=4, assumedU
   if(!Array.isArray(orderedPairs)) orderedPairs = []
   const model = orderedPairs.length? orderedPairs[orderedPairs.length-1].model : 'gpt'
   const budget = getModelBudget(model)
-  const { maxContext, responseReserve, softBuffer, safetyMargin } = budget
-  const maxUsableRaw = maxContext - responseReserve - safetyMargin
+  const { maxContext } = budget
+  // New semantics: assumedUserTokens (URA) is reserved for upcoming user request; no separate assistant reserve or safety margin.
+  const maxUsableRaw = maxContext
   const maxUsable = Math.max(0, maxUsableRaw - (assumedUserTokens||0))
   let total=0
   const included=[]
@@ -60,9 +59,6 @@ export function computeContextBoundary(orderedPairs, { charsPerToken=4, assumedU
     }
     included.push(p)
     total += pairTokens
-    if(total > maxUsable - softBuffer){
-      // we are within soft buffer; still ok, just note in stats
-    }
   }
   included.reverse()
   const excluded = orderedPairs.filter(p=> !included.includes(p))
@@ -75,9 +71,9 @@ export function computeContextBoundary(orderedPairs, { charsPerToken=4, assumedU
       excludedCount: excluded.length,
       model,
       maxContext,
-      responseReserve,
-      softBuffer,
-      safetyMargin,
+  responseReserve: 0,
+  softBuffer: 0,
+  safetyMargin: 0,
   maxUsable,
   maxUsableRaw,
   assumedUserTokens,

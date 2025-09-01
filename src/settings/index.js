@@ -26,8 +26,11 @@ const DEFAULTS = {
   scrollAnimMinMs: 80,          // min duration clamp when dynamic
   scrollAnimMaxMs: 600,         // max duration clamp when dynamic
   // Context assembly performance guardrails
-  assumedUserTokens: 256,       // allowance reserved in boundary calc for next prompt
-  showTrimNotice: false         // if true, show transient notice when large prompt trims extra pairs
+  assumedUserTokens: 256,       // legacy (deprecated in favor of userRequestAllowance)
+  userRequestAllowance: 100,    // URA: reserved tokens for upcoming user request (predicted context selection)
+  maxTrimAttempts: 10,          // NTA: max overflow retry trims (one pair per attempt)
+  charsPerToken: 3.5,           // CPT heuristic for estimation
+  showTrimNotice: false         // if true, show transient notice when trimming performed (future)
 }
 
 const LS_KEY = 'maichat.settings.v1'

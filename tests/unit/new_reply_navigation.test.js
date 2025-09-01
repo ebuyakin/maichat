@@ -9,7 +9,7 @@ function addPair(store, { id, userText='u', assistantText='a' }){
 }
 
 describe('new reply navigation', ()=>{
-  it('jumpToNewReply last selects last assistant part when badge visible', ()=>{
+  it('jumpToNewReply last now no-ops after badge removal', ()=>{
     const store = mockStore()
     addPair(store, { id:'p1', assistantText:'reply one' })
     // two assistant parts simulation
@@ -18,7 +18,7 @@ describe('new reply navigation', ()=>{
       { id:'p1:assistant:0', pairId:'p1', role:'assistant' },
       { id:'p1:assistant:1', pairId:'p1', role:'assistant' }
     ]
-    let activeId = null
+  let activeId = parts[0].id
     const activeParts = {
       parts,
       active(){ return activeId ? parts.find(p=>p.id===activeId) : parts[0] },
@@ -26,8 +26,9 @@ describe('new reply navigation', ()=>{
     }
     const lifecycle = createNewMessageLifecycle({ store, activeParts, commandInput:null, renderHistory:()=>{}, applyActivePart:()=>{} })
     lifecycle.handleNewAssistantReply('p1') // simulate arrival -> badge visible
-    const jumped = lifecycle.jumpToNewReply('last')
-    expect(jumped).toBe(true)
-    expect(activeId).toBe('p1:assistant:1')
+  const jumped = lifecycle.jumpToNewReply('last')
+  expect(jumped).toBe(false)
+  // activeId unchanged (still first part)
+  expect(activeId).toBe(parts[0].id)
   })
 })
