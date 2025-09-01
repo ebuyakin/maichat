@@ -11,16 +11,20 @@ export function estimateTokens(text, charsPerToken=4){
   return Math.max(1, Math.ceil(len / charsPerToken))
 }
 
-/** Estimate tokens for a message pair (user + assistant parts) */
+/** Estimate tokens for a message pair (user + assistant parts).
+ * Caches per charsPerToken & text lengths; invalidates automatically if either side changes.
+ */
 export function estimatePairTokens(pair, charsPerToken=4){
-  // Simple cache: recompute if missing or lengths changed vs stored tokenLength heuristic (cannot reverse accurately, so recompute when undefined)
-  if(pair.tokenLength != null){
-    return pair.tokenLength
+  const uLen = (pair.userText||'').length
+  const aLen = (pair.assistantText||'').length
+  const cache = pair._tokenCache
+  if(cache && cache.cpt === charsPerToken && cache.uLen === uLen && cache.aLen === aLen){
+    return cache.tok
   }
   const userT = estimateTokens(pair.userText||'', charsPerToken)
   const asstT = estimateTokens(pair.assistantText||'', charsPerToken)
   const total = userT + asstT
-  pair.tokenLength = total
+  pair._tokenCache = { cpt: charsPerToken, uLen, aLen, tok: total }
   return total
 }
 
@@ -40,9 +44,12 @@ export function getModelBudget(model){
  * @param {number} opts.charsPerToken
  * @returns {{included: import('../models/messagePair.js').MessagePair[], excluded: import('../models/messagePair.js').MessagePair[], stats: object}}
  */
-export function computeContextBoundary(orderedPairs, { charsPerToken=4, assumedUserTokens=0 }={}){
+export function computeContextBoundary(orderedPairs, { charsPerToken=4, assumedUserTokens=0, model }={}){
   if(!Array.isArray(orderedPairs)) orderedPairs = []
-  const model = orderedPairs.length? orderedPairs[orderedPairs.length-1].model : 'gpt'
+  // Model inference: if caller supplies a model (current selection in input zone) use it; otherwise fall back to newest pair's model or default 'gpt'.
+  if(!model){
+    model = orderedPairs.length? (orderedPairs[orderedPairs.length-1].model || 'gpt') : 'gpt'
+  }
   const budget = getModelBudget(model)
   const { maxContext } = budget
   // New semantics: assumedUserTokens (URA) is reserved for upcoming user request; no separate assistant reserve or safety margin.

@@ -6,6 +6,27 @@ Status: PARTIALLY IMPLEMENTED – WYSIWYG, URA‑aware prediction, overflow-only
 ## 1. Core Principle (WYSIWYG Context)
 "What You See Is What You Send": The context sent to the LLM consists of exactly the *currently visible* message pairs in the history pane **after** the active filter is applied, in the on‑screen order (top → bottom), plus the *new user request* being sent. No hidden / filtered out / partially excluded content is added implicitly. Visual partitioning (multiple rendered parts of one logical message) collapses back to a single user or assistant message in the API payload.
 
+### Model Selection Source (Correction)
+Unless explicitly overridden, all budgeting (prediction boundary, trimming attempts) uses the **currently selected model in the input zone (model selector)** – NOT the model of the newest existing pair. If no selection exists (edge case during first load), we fall back to the newest pair's model or a default (`gpt`).
+
+### Payload Terminology (Authoritative)
+We distinguish between structured *payloads* (ordered arrays of role/content messages) and their numeric *token estimates*. Each payload name gains a token counterpart by appending `Tokens`. Terms below supersede any earlier informal wording; if a prior section used a different label, this glossary is canonical.
+
+Definitions:
+* PredictedHistoryPayload – The ordered set of existing (already sent) message pairs selected by the prediction algorithm (newest→oldest) that fit when reserving URA; does NOT include the *new* user request being composed.
+* PredictedHistoryTokens – Estimated token sum of PredictedHistoryPayload.
+* PredictedTotalPayload – PredictedHistoryPayload plus the *new* user message (pre‑send, before any trimming). Conceptual sizing aid; not necessarily transmitted if overflow leads to trimming.
+* PredictedTotalTokens – Token estimate of PredictedTotalPayload.
+* SentAttemptPayload – The concrete payload array (history messages + current user message) used for a single API attempt (initial or trimmed retry). Attempt N may have fewer history pairs than attempt N‑1.
+* SentAttemptTokens – Token estimate for a given SentAttemptPayload.
+* FinalDeliveredPayload – The SentAttemptPayload of the last successful attempt (assistant response received) OR (in error telemetry) the last attempted payload if all attempts failed.
+* FinalDeliveredTokens – Token estimate of FinalDeliveredPayload.
+* TrimmingRemovedPayload (optional telemetry) – Ordered list of history pairs dropped (PredictedHistoryPayload \ FinalDeliveredPayload.historyPart) during overflow trimming.
+* TrimmingRemovedTokens – Token estimate for TrimmingRemovedPayload.
+* JsonDoc – The final JSON document passed to the provider adapter (e.g. `{ model, messages:[...] }`). This contains FinalDeliveredPayload encoded as provider chat messages.
+
+When a telemetry field name ends with `Payload` it always refers to a *sequence of chat messages*. When it ends with `Tokens` it refers to the numeric token estimate for that sequence under the active estimation heuristic (charsPerToken, etc.).
+
 Future extension (out of current scope): augment context with explicit user commands that inject synthetic system or style messages (e.g. tone/style directives). Architecture will leave a hook `composeSystemPrelude()` returning an optional system message (initially returns null).
 
 Implications:
@@ -171,7 +192,7 @@ Invariants:
 2. Validation: estimate user prompt tokens (AUT). If `AUT > ML` raise `user_prompt_too_large` (no trimming attempts).
 3. Send Attempt: build messages from predicted context + user prompt and call provider.
 4. Overflow Loop: if classified overflow → remove exactly one oldest predicted pair, increment T and attempts count, retry (≤ NTA). Stops on success or when attempts exhausted → error `context_overflow_after_trimming`.
-5. Telemetry: emits on each attempt with logical fields: `predictedMessageCount (X)`, `predictedHistoryTokens`, `predictedTotalTokens`, `attemptHistoryTokens`, `attemptTotalTokens`, `AUT`, `trimmedCount (T)`, `attemptsUsed`, `remainingReserve`, plus stage labels (`overflow_initial`, `overflow_retry`, `overflow_exhausted`, etc.). (Implementation note: current code still emits legacy names `predictedCount`, `historyTokens` (attempt value), `userTokens` (AUT) for backward compatibility; mapping given in §7.7.)
+5. Telemetry: emits on each attempt with fields: `predictedMessageCount (X)`, `predictedHistoryTokens`, `predictedTotalTokens`, `attemptHistoryTokens`, `attemptTotalTokens`, `AUT`, `trimmedCount (T)`, `attemptsUsed`, `remainingReserve`, plus stage labels (`overflow_initial`, `overflow_retry`, `overflow_exhausted`, etc.). Legacy field aliases removed.
 
 ### 7.3 Counter Display Logic (Implemented)
 Idle / no trimming: `X / Y` (predicted included / total visible pairs).
@@ -186,7 +207,18 @@ Tooltip (current content): indicates predicted vs visible, URA mode active, numb
 * Assistant reply reserve: none (removed legacy `responseReserve`); reply size not pre-reserved yet.
 
 ### 7.5 Overflow Classification
-Substring match (case-insensitive) for: `context_length`, `maximum context length`, `too many tokens`, `context too long`, `exceeds context window`.
+Detection hierarchy (case-insensitive):
+1. Provider error code `context_length_exceeded` (if surfaced by adapter).
+2. Substring match in message for any of:
+  - `context_length`
+  - `maximum context length`
+  - `too many tokens`
+  - `context too long`
+  - `exceeds context window`
+  - `request too large`
+  - `too large for`
+
+Rationale: API variants sometimes emit concise messages ("Request too large for <model>") lacking legacy phrases; expanded list reduces false negatives so trimming loop activates reliably.
 
 ### 7.6 Edge Conditions
 | Scenario | Behavior |
@@ -196,23 +228,11 @@ Substring match (case-insensitive) for: `context_length`, `maximum context lengt
 | Filter changes mid-loop | Current: trimming loop operates on snapshot list; UI may hide some pairs; no abort logic yet. Planned: explicit abort + notice if filter changes during retries. |
 | URA adjustment mid-session | Prediction uses latest settings value each send; running overflow loop does not re-expand after settings change. |
 
-### 7.7 Telemetry Fields (Current Emissions & Mapping)
-Normative logical schema (target):
-`{ model, budget:{maxContext,maxUsableRaw}, selection:[{id,model,tokens}], predictedMessageCount, predictedHistoryTokens, predictedTotalTokens, attemptHistoryTokens, attemptTotalTokens, AUT, trimmedCount, attemptsUsed, charsPerToken, remainingReserve, totalTokensEstimate, stage, lastErrorMessage?, overflowMatched?, messages[] }`
+### 7.7 Telemetry Fields (Active Schema)
+Schema:
+`{ model, budget:{maxContext,maxUsableRaw}, selection:[{id,model,tokens}], predictedMessageCount, predictedHistoryTokens, predictedTotalTokens, attemptHistoryTokens, attemptTotalTokens, AUT, trimmedCount, attemptsUsed, charsPerToken, remainingReserve, stage, lastErrorMessage?, overflowMatched?, messages[] }`
 
-Derived: `sentCount = predictedMessageCount - trimmedCount`.
-
-Implementation (legacy field names still emitted until code update):
-| Emitted (Legacy) | Logical Meaning | Planned Rename |
-|------------------|-----------------|----------------|
-| predictedCount | predictedMessageCount (X) | predictedMessageCount |
-| predictedHistoryTokens | predictedHistoryTokens | (same) |
-| historyTokens | attemptHistoryTokens | attemptHistoryTokens |
-| userTokens | AUT (Actual User Tokens) | AUT |
-| trimmedCount | trimmedCount (T) | (same) |
-| totalTokensEstimate | attemptTotalTokens (approx) | attemptTotalTokens |
-
-When code is updated we will emit both old + new names for one version, then drop legacy.
+Derived convenience: `sentCount = predictedMessageCount - trimmedCount`.
 
 ### 7.8 Status
 Implemented: effectiveMaxContext=min(cw,tpm); URA reserve in prediction & boundary; overflow-only trimming loop; bracket counter `[X-T]/Y`; telemetry (HUD PARAMETERS / TRIMMING / ERROR groups); resizable HUD.

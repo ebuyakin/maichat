@@ -25,7 +25,8 @@ import { ensureCatalogLoaded, getActiveModel } from './models/modelCatalog.js'
 import { openModelSelector } from './ui/modelSelector.js'
 import { openModelEditor } from './ui/modelEditor.js'
 import { openHelpOverlay } from './ui/helpOverlay.js'
-import { gatherContext } from './context/gatherContext.js'
+// Boundary manager supersedes legacy gatherContext.
+import { createBoundaryManager } from './context/boundaryManager.js'
 import { registerProvider } from './provider/adapter.js'
 import { createOpenAIAdapter } from './provider/openaiAdapter.js'
 import { executeSend } from './send/pipeline.js'
@@ -193,6 +194,8 @@ let __lastContextIncludedIds = new Set()
 let __requestDebugEnabled = false
 let __lastSentRequest = null
 let __lastPredictedCount = 0 // X
+// Phase 1 boundary manager instance
+const boundaryMgr = createBoundaryManager()
 let __lastTrimmedCount = 0   // T for last successful send
 // Initialize request debug from URL (?reqdbg=1)
 try {
@@ -230,27 +233,42 @@ function renderRequestDebug(){
   if(!__requestDebugEnabled){ pane.style.display='none'; return }
   pane.style.display='block'
   if(!__lastSentRequest){ pane.textContent = '[request debug] No request sent yet.'; return }
-  const { model, budget, selection, userTokens, totalTokensEstimate, historyTokens, predictedHistoryTokens, remainingReserve, attemptsUsed, trimmedCount, predictedCount, messages, lastErrorMessage, overflowMatched, stage } = __lastSentRequest
+  const { model, budget, selection, AUT, attemptTotalTokens, attemptHistoryTokens, predictedHistoryTokens, remainingReserve, attemptsUsed, trimmedCount, predictedMessageCount, messages, lastErrorMessage, overflowMatched, stage, timing } = __lastSentRequest
   const settings = getSettings()
-  const uraVal = __lastContextStats?__lastContextStats.assumedUserTokens: settings.userRequestAllowance
+  const uraVal = (__lastContextStats && (('URA' in __lastContextStats)? __lastContextStats.URA : __lastContextStats.assumedUserTokens)) ?? settings.userRequestAllowance
   const cpt = settings.charsPerToken
   const nta = settings.maxTrimAttempts
   const ml = (budget.maxContext||budget.maxUsableRaw)
-  const initialAttemptTotal = (predictedHistoryTokens!=null && userTokens!=null) ? (predictedHistoryTokens + userTokens) : null
-  const finalAttemptTotal = (historyTokens!=null && userTokens!=null) ? (historyTokens + userTokens) : null
-  const trimmedTok = (predictedHistoryTokens!=null && historyTokens!=null) ? (predictedHistoryTokens - historyTokens) : 0
+  const initialAttemptTotal = (predictedHistoryTokens!=null && AUT!=null) ? (predictedHistoryTokens + AUT) : null
+  const finalAttemptTotal = (attemptHistoryTokens!=null && AUT!=null) ? (attemptHistoryTokens + AUT) : null
+  const trimmedTok = (predictedHistoryTokens!=null && attemptHistoryTokens!=null) ? (predictedHistoryTokens - attemptHistoryTokens) : 0
   const lines = []
   lines.push(`MODEL: ${model}`)
   lines.push(`PARAMETERS: URA=${uraVal} CPT=${cpt} NTA=${nta} ML=${ml}`)
-  lines.push(`PREDICTED_HISTORY_CONTEXT: n_of_messages=${predictedCount} n_of_tokens=${predictedHistoryTokens!=null?predictedHistoryTokens:'-'}`)
+  lines.push(`PREDICTED_HISTORY_CONTEXT: n_of_messages=${predictedMessageCount} n_of_tokens=${predictedHistoryTokens!=null?predictedHistoryTokens:'-'}`)
   lines.push(`ACTUAL:`)
-  lines.push(`  tokens_in_new_user_request=${userTokens!=null?userTokens:'-'}`)
+  lines.push(`  tokens_in_new_user_request=${AUT!=null?AUT:'-'}`)
   lines.push(`  tokens_in_initial_attempted_request=${initialAttemptTotal!=null?initialAttemptTotal:'-'}`)
   lines.push(`TRIMMING:`)
   lines.push(`  N_of_attempts=${attemptsUsed!=null?attemptsUsed:0}`)
   lines.push(`  N_of_tokens_trimmed=${trimmedTok}`)
   lines.push(`  tokens_in_final_attempted_request=${finalAttemptTotal!=null?finalAttemptTotal:'-'}`)
   lines.push(`  remaining_estimate=${remainingReserve!=null?remainingReserve:'-'}`)
+  if(timing){
+    const tPredict = timing.tAfterPrediction!=null ? (timing.tAfterPrediction - timing.t0).toFixed(1) : '-'
+    lines.push(`TIMING:`)
+    lines.push(`  prediction_ms=${tPredict}`)
+    if(Array.isArray(timing.attempts)){
+      timing.attempts.forEach(a=>{
+        const dur = a.duration!=null? a.duration.toFixed(1):'-'
+        let prov=''
+        if(a.provider){
+          prov = ` serialize=${a.provider.serialize_ms?.toFixed(1)||'-'} fetch=${a.provider.fetch_ms?.toFixed(1)||'-'} parse=${a.provider.parse_ms?.toFixed(1)||'-'}`
+        }
+        lines.push(`  attempt_${a.attempt}_ms=${dur} trimmedCountAtStart=${a.trimmedCount}${prov}`)
+      })
+    }
+  }
   if(lastErrorMessage){
     lines.push(`ERROR: msg="${lastErrorMessage}" overflowMatched=${overflowMatched?'1':'0'} stage=${stage||'-'}`)
   }
@@ -291,15 +309,20 @@ function renderHistory(pairs){
   pairs = [...pairs].sort((a,b)=> a.createdAt - b.createdAt)
   const settings = getSettings()
   const cpt = settings.charsPerToken || 3.5
-  const ctx = gatherContext(pairs, { charsPerToken: cpt, pendingUserText: undefined, assumedUserTokens: settings.userRequestAllowance || 0 })
-  __lastContextStats = ctx.stats
-  __lastContextIncludedIds = new Set(ctx.included.map(p=>p.id))
-  __lastPredictedCount = ctx.included.length
+  const activeModel = pendingMessageMeta.model || getActiveModel() || 'gpt'
+  // Update boundary manager inputs and compute boundary
+  boundaryMgr.applySettings({ userRequestAllowance: settings.userRequestAllowance||0, charsPerToken: cpt })
+  boundaryMgr.setModel(activeModel)
+  boundaryMgr.updateVisiblePairs(pairs)
+  const boundary = boundaryMgr.getBoundary()
+  __lastContextStats = boundary.stats
+  __lastContextIncludedIds = new Set(boundary.included.map(p=>p.id))
+  __lastPredictedCount = boundary.included.length
   const parts = buildParts(pairs)
   activeParts.setParts(parts)
   historyView.render(parts)
   applyOutOfContextStyling()
-  updateMessageCount(ctx.included.length, pairs.length)
+  updateMessageCount(boundary.included.length, pairs.length)
   requestAnimationFrame(()=>{ scrollController.remeasure(); applyActivePart() })
   lifecycle.updateNewReplyBadgeVisibility()
 }
@@ -613,8 +636,12 @@ const inputHandler = (e)=>{
   if(lifecycle.isPending()) return true
       // Recompute boundary with actual user text (may drop additional pairs if larger than allowance)
       const settings = getSettings()
-      const preCtx = gatherContext(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt), { charsPerToken:4 })
-      const beforeIncludedIds = new Set(preCtx.included.map(p=>p.id))
+  // Snapshot boundary before send (for trim diff logging)
+  boundaryMgr.updateVisiblePairs(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt))
+  boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel())
+  boundaryMgr.applySettings(getSettings())
+  const preBoundary = boundaryMgr.getBoundary()
+  const beforeIncludedIds = new Set(preBoundary.included.map(p=>p.id))
   lifecycle.beginSend()
       let id
       if(editingId){
@@ -630,7 +657,12 @@ const inputHandler = (e)=>{
           // Use currently visible (filtered) chronological list for context WYSIWYG
           const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean)
           const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt)
-      const { content } = await executeSend({ store, model, userText: text, signal: undefined, visiblePairs: chrono, onDebugPayload: (payload)=>{ __lastSentRequest = payload; if(payload.predictedCount!=null){ __lastPredictedCount = payload.predictedCount } if(payload.trimmedCount!=null){ __lastTrimmedCount = payload.trimmedCount } renderRequestDebug(); updateMessageCount(__lastPredictedCount, chrono.length) } })
+          // Ensure boundary manager up-to-date with current filtered visible chronological list
+          boundaryMgr.updateVisiblePairs(chrono)
+          boundaryMgr.setModel(model)
+          boundaryMgr.applySettings(getSettings())
+          const boundarySnapshot = boundaryMgr.getBoundary()
+          const { content } = await executeSend({ store, model, userText: text, signal: undefined, visiblePairs: chrono, boundarySnapshot, onDebugPayload: (payload)=>{ __lastSentRequest = payload; if(payload.predictedMessageCount!=null){ __lastPredictedCount = payload.predictedMessageCount } if(payload.trimmedCount!=null){ __lastTrimmedCount = payload.trimmedCount } renderRequestDebug(); updateMessageCount(__lastPredictedCount, chrono.length) } })
           store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined })
           lifecycle.completeSend(); updateSendDisabled()
           renderCurrentView({ preserveActive:true })
@@ -655,8 +687,11 @@ const inputHandler = (e)=>{
           // no new reply badge on error
         } finally {
           if(getSettings().showTrimNotice){
-            const postCtx = gatherContext(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt), { charsPerToken:4 })
-            const afterIncludedIds = new Set(postCtx.included.map(p=>p.id))
+            boundaryMgr.updateVisiblePairs(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt))
+            boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel())
+            boundaryMgr.applySettings(getSettings())
+            const postBoundary = boundaryMgr.getBoundary()
+            const afterIncludedIds = new Set(postBoundary.included.map(p=>p.id))
             let trimmed=0
             beforeIncludedIds.forEach(pid=>{ if(!afterIncludedIds.has(pid)) trimmed++ })
             if(trimmed>0){ console.log(`[context] large prompt trimmed ${trimmed} older pair(s)`) }
@@ -737,12 +772,12 @@ window.addEventListener('keydown', e=>{
     if(e.shiftKey){
       e.preventDefault();
       const prevMode = modeManager.mode
-  openModelEditor({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); modeManager.set(prevMode) } })
+  openModelEditor({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } })
     } else {
       if(modeManager.mode !== MODES.INPUT) return
       e.preventDefault();
       const prevMode = modeManager.mode
-  openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); modeManager.set(prevMode) } })
+  openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } })
     }
   }
   else if(k==='k'){
@@ -971,7 +1006,7 @@ function updateHud(){
   // Structured budgeting groups
   try {
     const settings = getSettings()
-    const ura = __lastContextStats ? __lastContextStats.assumedUserTokens : settings.userRequestAllowance
+  const ura = (__lastContextStats && (('URA' in __lastContextStats)? __lastContextStats.URA : __lastContextStats.assumedUserTokens)) ?? settings.userRequestAllowance
     const cpt = settings.charsPerToken
     const nta = settings.maxTrimAttempts
     const ml = __lastContextStats ? __lastContextStats.maxContext : null

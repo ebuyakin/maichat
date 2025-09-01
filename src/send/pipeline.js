@@ -1,4 +1,3 @@
-import { gatherContext } from '../context/gatherContext.js'
 import { getProvider, ProviderError } from '../provider/adapter.js'
 import { estimateTokens, getModelBudget, estimatePairTokens } from '../context/tokenEstimator.js'
 import { getSettings } from '../settings/index.js'
@@ -17,28 +16,39 @@ export function buildMessages({ includedPairs, newUserText }){
 }
 
 /** Execute send using provider; returns { assistantText, usage } or throws */
-export async function executeSend({ store, model, userText, signal, visiblePairs, onDebugPayload }){
+export async function executeSend({ store, model, userText, signal, visiblePairs, boundarySnapshot, onDebugPayload }){
   const settings = getSettings()
   const { userRequestAllowance=100, maxTrimAttempts=10, charsPerToken=3.5 } = settings
   // Baseline (chronological filtered list)
   const baseline = visiblePairs ? visiblePairs.slice() : store.getAllPairs().sort((a,b)=> a.createdAt - b.createdAt)
-  // Predicted context (X) – reserve URA (userRequestAllowance); gatherContext currently still uses legacy budgeting but we override selection here.
-  // We'll recompute a prediction: accumulate newest→oldest until (history + URA) exceeds raw maxUsable.
-  const budget = getModelBudget(model)
-  const maxContext = budget.maxContext
-  // For this revised model we ignore responseReserve for prediction.
-  const allowance = userRequestAllowance
-  const predictedRev=[]
-  let historyEstimate=0
-  for(let i=baseline.length-1;i>=0;i--){
-    const p = baseline[i]
-    const tok = estimatePairTokens(p, charsPerToken)
-    if(historyEstimate + tok + allowance > maxContext) break
-    predictedRev.push(p)
-    historyEstimate += tok
+  const t0 = (typeof performance!=='undefined'? performance.now(): Date.now())
+  let predicted = []
+  let allowance = userRequestAllowance
+  let maxContext
+  const timing = { t0, tAfterPrediction:null, attempts:[] }
+  if(boundarySnapshot){
+    // Use provided predicted boundary (Phase 1 integration)
+    predicted = boundarySnapshot.included ? boundarySnapshot.included.slice() : []
+    allowance = boundarySnapshot.stats ? (boundarySnapshot.stats.URA ?? userRequestAllowance) : userRequestAllowance
+    // Derive maxContext from snapshot if present
+    maxContext = boundarySnapshot.stats ? boundarySnapshot.stats.maxContext : getModelBudget(model).maxContext
+  } else {
+    const budget = getModelBudget(model)
+    maxContext = budget.maxContext
+    allowance = userRequestAllowance
+    const predictedRev=[]
+    let historyEstimate=0
+    for(let i=baseline.length-1;i>=0;i--){
+      const p = baseline[i]
+      const tok = estimatePairTokens(p, charsPerToken)
+      if(historyEstimate + tok + allowance > maxContext) break
+      predictedRev.push(p)
+      historyEstimate += tok
+    }
+    predicted = predictedRev.reverse()
   }
-  const predicted = predictedRev.reverse() // X
   const userTokens = estimateTokens(userText, charsPerToken)
+  timing.tAfterPrediction = (typeof performance!=='undefined'? performance.now(): Date.now())
   if(userTokens > maxContext){
     const err = new Error('message too large for model window')
     err.code='user_prompt_too_large'
@@ -51,44 +61,77 @@ export async function executeSend({ store, model, userText, signal, visiblePairs
   // helper to build and optionally debug
   function emitDebug(extra={}){
     if(typeof onDebugPayload !== 'function') return
-    const historyTokens = currentIncluded.reduce((acc,p)=> acc + estimatePairTokens(p, charsPerToken), 0)
-    const totalTokensEstimate = historyTokens + userTokens
+    const attemptHistoryTokens = currentIncluded.reduce((acc,p)=> acc + estimatePairTokens(p, charsPerToken), 0)
+    const attemptTotalTokens = attemptHistoryTokens + userTokens
+    const predictedHistoryTokens = predicted.reduce((acc,p)=> acc + estimatePairTokens(p, charsPerToken), 0)
+    const predictedTotalTokens = predictedHistoryTokens + allowance // conceptual envelope using reserved URA, not actual AUT
     onDebugPayload({
       model,
       budget: { maxContext, maxUsableRaw: maxContext },
       selection: currentIncluded.map(p=> ({ id:p.id, model:p.model, tokens: estimatePairTokens(p,charsPerToken) })),
-      predictedCount: predicted.length,
+      predictedMessageCount: predicted.length,
       trimmedCount,
       attemptsUsed,
-      userTokens,
+      AUT: userTokens,
       charsPerToken,
-      predictedHistoryTokens: predicted.reduce((acc,p)=> acc + estimatePairTokens(p, charsPerToken), 0),
-      historyTokens,
-      totalTokensEstimate,
-      remainingReserve: maxContext - historyTokens - userTokens,
+      predictedHistoryTokens,
+      predictedTotalTokens,
+      attemptHistoryTokens,
+      attemptTotalTokens,
+      remainingReserve: maxContext - attemptHistoryTokens - userTokens,
       messages: buildMessages({ includedPairs: currentIncluded, newUserText: userText }),
+      timing: { ...timing },
       ...extra
     })
   }
   async function attemptSend(){
+    const idx = attemptsUsed // current attempt index before increment (0 for first attempt)
+    const aStart = (typeof performance!=='undefined'? performance.now(): Date.now())
+    timing.attempts.push({ attempt: idx+1, start: aStart, end: null, duration: null, trimmedCount })
     emitDebug()
     const provider = getProvider('openai')
     if(!provider) throw new Error('provider_not_registered')
     const apiKey = getApiKey('openai')
     if(!apiKey) throw new Error('missing_api_key')
-    return provider.sendChat({ model, messages: buildMessages({ includedPairs: currentIncluded, newUserText: userText }), apiKey, signal })
+    const result = await provider.sendChat({ model, messages: buildMessages({ includedPairs: currentIncluded, newUserText: userText }), apiKey, signal })
+    const aEnd = (typeof performance!=='undefined'? performance.now(): Date.now())
+    const rec = timing.attempts[timing.attempts.length-1]
+    if(rec){
+      rec.end = aEnd; rec.duration = aEnd - rec.start
+      if(result && result.__timing){
+        rec.provider = {
+          serialize_ms: result.__timing.tSerializeEnd - result.__timing.tSerializeStart,
+          fetch_ms: result.__timing.tFetchEnd - result.__timing.tFetchStart,
+          parse_ms: result.__timing.tParseEnd - result.__timing.tParseStart
+        }
+      }
+    }
+    emitDebug({ stage: 'attempt_success' })
+    return result
   }
   function isOverflowError(e){
     if(!e) return false
+    // Provider-specific explicit code
+    if(e.providerCode && e.providerCode === 'context_length_exceeded') return true
     const msg = (e.message||'').toLowerCase()
-    return ['context_length','maximum context length','too many tokens','context too long','exceeds context window'].some(s=> msg.includes(s))
+    // Expanded pattern list (doc §7.5) – include variants observed in newer API responses
+    const patterns = [
+      'context_length',
+      'maximum context length',
+      'too many tokens',
+      'context too long',
+      'exceeds context window',
+      'request too large',
+      'too large for'
+    ]
+    return patterns.some(s=> msg.includes(s))
   }
   try {
     return await attemptSend()
   } catch(ex){
     if(isOverflowError(ex)){
       // initial overflow before trimming
-      emitDebug({ lastErrorMessage: ex.message, overflowMatched:true, stage:'overflow_initial' })
+  emitDebug({ lastErrorMessage: ex.message, overflowMatched:true, stage:'overflow_initial' })
       while(trimmedCount < maxTrimAttempts && currentIncluded.length){
         currentIncluded.shift() // drop oldest
         trimmedCount++
@@ -110,7 +153,7 @@ export async function executeSend({ store, model, userText, signal, visiblePairs
       const err = new Error('context_overflow_after_trimming')
       err.code='context_overflow_after_trimming'
       err.trimmedCount = trimmedCount
-      err.predictedCount = predicted.length
+  err.predictedMessageCount = predicted.length
       emitDebug({ lastErrorMessage: err.message, overflowMatched:true, stage:'overflow_exhausted' })
       throw err
     }
