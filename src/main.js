@@ -145,7 +145,7 @@ bindHistoryErrorActions(document.getElementById('history'), {
     pendingMessageMeta.topicId = pair.topicId
     pendingMessageMeta.model = pair.model
     renderPendingMeta()
-    pair.lifecycleState = 'editing'
+  // (Removed) editing lifecycle state no longer used; editing tracked via window.__editingPairId only.
     pair.errorMessage = undefined
   renderCurrentView({ preserveActive:true })
     modeManager.set(MODES.INPUT)

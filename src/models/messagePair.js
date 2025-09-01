@@ -10,7 +10,7 @@
  * @property {'b'|'g'} colorFlag - simple user flag (b=blue flagged, g=grey unflagged)
  * @property {string} userText
  * @property {string} assistantText
- * @property {('idle'|'sending'|'error'|'complete')} lifecycleState
+ * @property {('idle'|'sending'|'error'|'complete')} lifecycleState  // canonical lifecycle (editing handled externally)
  * @property {string|undefined} errorMessage
  * @property {number|undefined} tokenLength  // cached estimated total tokens (user+assistant)
  */

@@ -1,6 +1,6 @@
 # MaiChat Implementation Plan (Single Source of Truth)
 
-Last updated: 2025-09-01 (post budgeting + model catalog v2 update)
+Last updated: 2025-09-01 (post URA-aware prediction, runtime trimming, terminology sync)
 
 Purpose: One hierarchical, authoritative view of what exists, what is in progress, and what is next. No duplicated sections. Use this file only when planning or reviewing scope.
 
@@ -139,42 +139,41 @@ M6.0 Extended WYSIWYG Contract & Context Function
 
 M6.1 Token Estimation & Budgeting
 1. [x] Token estimator (heuristic) implemented with per‑pair caching (`tokenLength`).
-2. [x] Multi‑model catalog v2 with per‑model metrics (contextWindow, tpm, rpm, tpd); effective model limit now `effectiveMaxContext = min(contextWindow, tpm)` (throughput‑aware). Legacy single hard-coded budget removed.
+2. [x] Multi‑model catalog v2 with per‑model metrics (contextWindow, tpm, rpm, tpd); effective model limit now `effectiveMaxContext = min(contextWindow, tpm)`.
 3. [x] Included vs excluded sets powering X / Y counter integrated in `renderHistory`.
-4. [ ] Unit tests (estimator ranges, boundary recalculation, large single message) not yet written.
-5. [ ] Introduce URA (User Request Allowance) concept (supersedes `responseReserve`) – default 100 tokens (setting) (NOT IMPLEMENTED YET; current X uses full effectiveMaxContext minus zero reserve).
-6. [ ] Switch gatherContext boundary to (historyEstimate + URA ≤ effectiveMaxContext) rule; current implementation: accumulate newest-first until would exceed `effectiveMaxContext`.
-7. [ ] Add CPT constant 3.5 (future user setting) – presently implicit heuristic constant (hard-coded) pending extraction.
+4. [ ] Unit tests (estimator ranges, boundary recalculation triggers, large single message) not yet written.
+5. [x] URA (User Request Allowance) setting (default 100) implemented (supersedes legacy `responseReserve`).
+6. [x] Boundary uses rule `(predictedHistoryTokens + URA) ≤ effectiveMaxContext` (newest‑first suffix selection).
+7. [x] CPT constant (3.5) surfaced as setting value (editable future; currently constant).
 8. [ ] Throughput quota tracking (rpm/tpd live usage + queue / backoff) – not started.
 
 M6.2 Out-of-Context Visualization & Navigation
-1. [x] Apply `.ooc` class + off badge (renamed from OUT) to excluded pairs; opacity styling applied.
-2. [x] Message counter shows `X / Y`; tooltip with token stats.
-3. [ ] (New) Post-trim counter format `[X-T]/Y` when runtime trimming occurs; idle still `X / Y`.
+1. [x] Apply `.ooc` class + off badge to excluded pairs; opacity styling applied.
+2. [x] Message counter shows `X / Y` or `[X-T]/Y` post-trim.
 3. [x] Navigation shortcut (Shift+O) jumps to first included pair.
 4. [x] Disable send when X=0.
-5. [~] Tests: boundary scenarios covered; UI state & navigation tests still pending.
+5. [~] Tests: boundary triggers & trim bracket format missing; UI state & navigation tests pending.
 
 M6.3 Provider Adapter (OpenAI Chat Completions)
 1. [x] Lightweight `ProviderAdapter` interface & registry.
-2. [~] OpenAI adapter non‑streaming first pass (basic fetch, error classification minimal; needs integration & tests).
- 3. [ ] Send pipeline integration (build messages, model guard, API key fetch) – partial code (pipeline.js) awaiting lifecycle wiring & UI states.
-3. [ ] API key retrieval from localStorage; if missing → open API Keys overlay automatically (abort send).
-4. [ ] Error classification util (auth / rate / network / generic).
-5. [ ] Tests: adapter called with exact context array; error mapping.
+2. [~] OpenAI adapter non‑streaming first pass (basic fetch; error classification minimal; tests missing).
+3. [~] Send pipeline integration (messages build, model guard, runtime trimming & telemetry wired). Reply append verified manually; automated tests pending.
+4. [ ] API key retrieval UX (auto‑prompt overlay if missing) – not implemented.
+5. [ ] Error classification expansion (auth / rate / network / prompt-too-large / overflow-exhausted).
+6. [ ] Tests: adapter context array exactness; error mapping.
 
 M6.4 Send Pipeline & Edit-In-Place Resend
-1. [ ] Send flow scaffold (pair creation, lifecycle states) – NOT STARTED (UI placeholder only; logic pending integration).
-2. [ ] Build context from INCLUDED pairs + new user message.
-3. [ ] Adapter call success/error path wiring.
-4. [ ] Edit-in-place resend behavior.
+1. [x] Send flow scaffold (pair creation, lifecycle states idle→sending→complete|error).
+2. [x] Build context from INCLUDED pairs + new user message.
+3. [~] Adapter call success/error wiring (basic; error taxonomy minimal; no abort/cancel state).
+4. [ ] Edit-in-place resend behavior (UI spec complete; implementation pending).
 5. [ ] Delete pair (`x`) full lifecycle.
-6. [ ] Tests: success, error, resend after edit, delete, disappearing under filter.
-7. [ ] User request allowance adjustment (URA) (future once URA implemented).
-8. [x] Discrete overflow trimming loop (runtime only, no proactive trimming) – implemented in pipeline (one oldest predicted pair per overflow attempt, capped by max attempts const).
-9. [x] Trimming telemetry instrumentation (predictedHistoryTokens, trimmedCount, attemptsUsed, stage classification, overflowMatched, lastErrorMessage) added to debug/HUD overlay.
-10. [x] Debug overlay updated with TRIMMING + ERROR sections (multiline formatting, resizable HUD).
-11. [ ] Error message taxonomy (prompt too large vs exhausted attempts) – partial (basic stage tagging present; user-facing messages pending).
+6. [ ] Tests: success, error, resend after edit, delete, disappearing under filter mid-send.
+7. [x] URA integrated into prediction boundary (no dynamic adjustment mid-send; Option A chosen).
+8. [x] Runtime overflow trimming loop (one oldest predicted pair per overflow attempt, capped by max attempts setting) – Option A (no preflight shrink) implemented.
+9. [x] Trimming telemetry (predictedMessageCount, predictedHistoryTokens, trimmedCount, attemptsUsed, stages).
+10. [x] HUD updated with PARAMETERS / PREDICTED / ACTUAL / TRIMMING / ERROR sections.
+11. [ ] Error taxonomy expansion (prompt-too-large, overflow-exhausted vs generic, auth, rate, network) – pending.
 
 M6.4a Settings Extension (New Subsection)
 1. [x] Add URA numeric setting (default 100) to settings overlay (persist localStorage).
@@ -186,10 +185,10 @@ M6.5 Streaming (Optional Sub‑Phase) (deferred unless trivial)
 2. [ ] Flag as [deferred] if skipped.
 
 M6.6 UX & Feedback
-1. [-] (Dropped) Inline token estimate (replaced by allowance-based stable X counter – zero-cost typing principle).
-2. [ ] Error display with buttons `[Edit & Resend] [Delete]` (keyboard e/x).
-3. [ ] (New) Tooltip update for counter showing: `Predicted X | Trimmed T | Sent X-T | Visible Y | URA | AUT | CPT | ML`.
-3. [ ] Optional toast for send errors (defer if time). 
+1. [x] Inline token estimate present (small `~N` near Send) – retained; zero-cost typing principle preserved (debounced / lightweight).
+2. [ ] Error display with buttons `[Edit & Resend] [Delete]` (keyboard e/x) – partially styled, not fully wired.
+3. [ ] Tooltip enhancement (planned richer breakdown: Predicted, Trimmed, Sent, Visible, URA, AUT, CPT, ML) – current minimal tooltip.
+4. [ ] Optional toast for send errors (deferred).
 
 M6.7 Robustness & Edge Cases
 1. [ ] Large single message over hard limit: block with explanatory error (after allowance recompute) (reword for URA model).
@@ -209,9 +208,10 @@ M6.10 Test Matrix Completion
 1. [ ] Integration tests (jsdom): filter change boundary shift, error path, edit-resend path, delete path, zero-included disable send.
 2. [ ] Performance micro-check (<10ms gatherContext on 1k pairs synthetic) — note results.
 
-Acceptance (M6) (UPDATED DRAFT – partially implemented):
-User with a valid OpenAI key can: (a) view visible history with overflow dimmed and counter X/Y (or bracketed `[X-T]/Y` post-trim) using `effectiveMaxContext = min(model.contextWindow, model.tpm)` and URA reserve, (b) send a prompt; predicted set = newest suffix satisfying `(historyTokens + URA) ≤ effectiveMaxContext`, (c) on overflow error the runtime trimming loop removes one oldest pair per attempt up to `maxTrimAttempts`, updating telemetry and bracket counter, (d) (pending) receive assistant reply appended via provider adapter wiring (currently placeholder path), (e) (pending) edit and resend in place (UI wiring partial), (f) (pending) delete any pair (UI action partial), (g) see debug HUD with instrumentation (implemented), (h) future: differentiated prompt-too-large vs exhausted-attempts vs rate/network errors taxonomy, (i) future: rpm/tdp quota tracking & proactive allowance adjustment.
-Removed from pending: URA reserve, allowance-aware prediction, bracket counter basics (now implemented). Remaining enhancements: richer tooltip breakdown, user-facing trim summaries.
+Acceptance (M6) (CURRENT PARTIAL):
+User with a valid OpenAI key can: (a) view visible history with prediction boundary dimming and counter X/Y (or bracketed `[X-T]/Y` after runtime trimming) using `effectiveMaxContext = min(model.contextWindow, model.tpm)` and URA reserve (default 100), (b) send a prompt; predicted set = newest suffix satisfying `(predictedHistoryTokens + URA) ≤ effectiveMaxContext`, (c) on provider overflow the runtime trimming loop removes one oldest predicted pair per attempt up to `maxTrimAttempts` updating telemetry and bracket counter; predicted* fields remain constant, attempt* tokens decrease, (d) (partial) receive assistant reply (basic success path; limited error taxonomy), (e) (pending) edit and resend in place, (f) (pending) delete a pair, (g) view HUD with PARAMETERS / PREDICTED / ACTUAL / TRIMMING / ERROR groups, (h) (future) richer tooltip & user-facing trim summary, (i) (future) rpm/tdp quota tracking & proactive URA/AUT reconciliation.
+Implemented: URA-aware prediction, stable boundary (Option A), runtime overflow trimming only (no preflight shrink), telemetry & bracket counter.
+Pending: edit & resend, delete, enhanced tooltip, error taxonomy, throughput quotas, preflight Option B.
 
 ### M7 Enhanced Filtering (Full Spec)
 - [ ] Wildcards (*, pattern decisions)

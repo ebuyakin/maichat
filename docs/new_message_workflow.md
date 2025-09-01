@@ -1,7 +1,7 @@
 # New Message Send & Response Workflow (Draft for Review)
 
 Last updated: 2025-09-01 (post overflow-only trimming, model catalog v2, URA prediction integration)
-Status: PARTIALLY IMPLEMENTED – WYSIWYG, URA‑aware prediction, overflow-only trimming, telemetry, bracket counter. Pending: rpm/tdp quota logic, proactive AUT > URA adjustment, enhanced error taxonomy, user-facing trim summaries.
+Status: PARTIALLY IMPLEMENTED – WYSIWYG, URA‑aware prediction, overflow-only trimming, telemetry, bracket counter. Pending: rpm/tdp quota logic, proactive AUT > URA adjustment, enhanced error taxonomy, user-facing trim summaries, optional cancel.
 
 ## 1. Core Principle (WYSIWYG Context)
 "What You See Is What You Send": The context sent to the LLM consists of exactly the *currently visible* message pairs in the history pane **after** the active filter is applied, in the on‑screen order (top → bottom), plus the *new user request* being sent. No hidden / filtered out / partially excluded content is added implicitly. Visual partitioning (multiple rendered parts of one logical message) collapses back to a single user or assistant message in the API payload.
@@ -9,50 +9,49 @@ Status: PARTIALLY IMPLEMENTED – WYSIWYG, URA‑aware prediction, overflow-only
 Future extension (out of current scope): augment context with explicit user commands that inject synthetic system or style messages (e.g. tone/style directives). Architecture will leave a hook `composeSystemPrelude()` returning an optional system message (initially returns null).
 
 Implications:
-- Any filter (topics, model, star, in/out, etc.) directly shapes context. If a pair is not rendered, it is absent from the request.
-- The in/out (include/exclude) flag is *just another attribute* leveraged exclusively by filters; it does **not** implicitly alter the context beyond visibility.
+- Any filter (topics, model, star, colorFlag, etc.) directly shapes context. If a pair is not rendered, it is absent from the request.
+- The colorFlag (formerly "in/out" include/exclude) is *just another attribute* leveraged exclusively by filters; it does **not** implicitly alter inclusion beyond visibility.
 - The user has full manual control of context composition through the command filter language (no secondary hidden rule set).
 
 ## 2. Entities & Data Snapshots
 | Entity | Description |
 |--------|-------------|
-| MessagePair | { id, topicId, model, userText, assistantText, meta (star, in/out, etc.), lifecycleState, timestamp } |
-| Lifecycle State | idle, sending, awaiting, succeeded, error, canceled |
-| Context Snapshot | Immutable array captured at send time: list of visible pairs (user+assistant messages present at that moment) + pending user message (if new). Stored for retry/error introspection. |
-| Pending Send Lock | Global flag preventing concurrent sends. |
+| MessagePair | { id, topicId, model, userText, assistantText, star, colorFlag, lifecycleState, timestamp (alias of createdAt) } |
+| Lifecycle State | idle, sending, complete, error (canonical; cancel & streaming not yet implemented) |
+| Context Snapshot | (Planned) Immutable capture of INCLUDED pair IDs + outgoing prompt on error only. |
 
-assistantText is absent until response arrives (no empty assistant placeholder block). A lightweight inline status badge is shown instead ("thinking…").
+assistantText is absent until response arrives (no empty assistant placeholder block). A lightweight inline status badge is shown instead ("…" while sending).
 
 ## 3. State Machine (Logical)
 ```
-Draft → (Enter/Send) → Sending(User Pair Created) → AwaitingResponse
-  → ResponseSuccess → Done
-  → ProviderError → ErrorShown → (Retry | Delete | LeaveAsIs)
-  → NetworkError  → ErrorShown → (Retry | Delete | LeaveAsIs)
-  → UserAbort (Esc) → Canceled (pair optionally deleted per decision) 
+idle → sending → complete
+            ↘ error
+
+Edit & Resend: complete|error (user triggers edit) → sending (reuses same pair, assistantText cleared)
 ```
 Notes:
-- Sending & AwaitingResponse may be merged (we still show immediately so user sees their prompt).
-- Retry uses stored snapshot (context stability across edits after initial send).
+- No separate awaiting state; `sending` covers until response or error.
+- No cancel path yet; Esc does not abort active network call.
+- Edit & Resend reuses the same pair; assistantText cleared before new send.
 
 ## 4. Standard Flow (Happy Path)
 1. User types text in input field.
 2. User presses Enter or clicks Send.
-3. System gathers *visible* message pairs (render order) at that instant.
+3. System gathers *visible* message pairs (render order) at that instant (candidate list; INCLUDED subset resolved via prediction boundary – see §§6 & 7).
 4. Creates new MessagePair with userText; (no assistant part yet), lifecycleState = `sending` (displayed with a subtle inline "thinking…" badge).
-5. Captures context set = *visible pairs prior to adding* the new pair, plus the new user message (never the assistant part). Not persisted on success; only on error.
+5. (Planned) Optional context snapshot of visible pairs prior to adding the new pair; currently only telemetry/debug payloads (no stored snapshot).
 6. Input remains active (user can compose next prompt). Send button indicates busy (disabled) to prevent a second concurrent send.
 7. Calls OpenAI Chat Completions with messages:
    - For each visible pair (in order):
      - If userText present: { role: "user", content: userText }
      - If assistantText present & non-empty: { role: "assistant", content: assistantText }
    - Append new outgoing: { role: "user", content: newUserText }
-8. On 200 OK success: append assistantText with provider content; lifecycleState = `succeeded`; busy state cleared.
+8. On 200 OK success: append assistantText with provider content; lifecycleState = `complete`; busy state cleared.
 9. Update HUD / internal stats (optional dev view) and scroll anchoring logic as usual.
-9. Scroll / focus policy:
+10. Scroll / focus policy:
   - If assistant reply fits in viewport: keep mode INPUT; focus stays in input.
   - If reply overflows and user is not actively typing (no keystroke in last 1s): auto-switch to VIEW and focus first assistant part.
-  - If user is typing: do not steal focus; mark first assistant part with a small "(new)" badge.
+  - If user is typing: do not steal focus. (New reply badge deferred.)
   - Setting: `autoEnterViewOnOverflow` (default true).
 
 ## 5. Branch Scenarios
@@ -69,13 +68,13 @@ Similar to provider error but classification `[network]`.
 Not implemented in M6 (no abort path). Esc retains its existing mode behavior only.
 
 ### 5.4 Edit & Resend (Replaces Retry)
-1. Available for pairs in states: `succeeded` (refinement) or `error`.
+1. Available for pairs in states: `complete` (refinement) or `error`.
 2. Action `e` transforms userText into inline editable area (assistant part hidden during edit; previous assistant text discarded once resend starts).
 3. On submit (Enter / Ctrl+Enter): lifecycleState → `sending`; assistant part removed; send uses current visible context + edited user text.
 4. Success: assistant response added; history remains single concise pair.
 5. Delete (`x`): removes pair (confirmation if existing assistant text).
 
-### 5.5 User Edits Filter While AwaitingResponse
+### 5.5 User Edits Filter During In-Flight Send
 - In-flight request is *not* affected; context already snapped.
 Visible list may hide the sending pair; it will only reappear if filter later includes it (documented; no toast Phase 1).
 
@@ -86,38 +85,93 @@ Visible list may hide the sending pair; it will only reappear if filter later in
 - Provide a command (future) or inline action to delete a MessagePair (only acts locally; persistence layer updates and saves). Not mandatory for first M6 slice except for abort delete path if Option A chosen.
 
 ## 6. Context Assembly Rules (Formal)
-1. Source list = array of MessagePairs currently rendered (already filtered & ordered) at *send time*.
-2. For each pair in order:
-   a. If userText.trim() != "": push user message.  
-   b. If assistantText.trim() != "": push assistant message.
-3. Append new outgoing user message (if this is a send action).
-4. Omit any placeholder assistant value.
-5. Do not include metadata (topics, stars) in message content (they are purely filter & indexing attributes now).
-6. Snapshot persisted only on error (for potential debugging display); not on success.
+1. Candidate List: All currently *visible* (filtered) message pairs in on‑screen (chronological top→bottom) order at send time.
+2. Prediction Boundary (see §7): Walk newest→oldest accumulating pair token estimates until adding the next would violate `(predictedHistoryTokens + URA) ≤ ML` (model limit). Mark accumulated pairs as INCLUDED. Remaining visible pairs are EXCLUDED (OOC: still rendered, not sent).
+3. Serialization Order: INCLUDED pairs are serialized in chronological (top→bottom) order. For each INCLUDED pair:
+  a. If `userText.trim() !== ''` emit `{ role:'user', content:userText }`.
+  b. If `assistantText.trim() !== ''` emit `{ role:'assistant', content:assistantText }`.
+4. Append New Outgoing: Add the new user prompt as the final message `{ role:'user', content:newUserText }`.
+5. (Optional Future) If `composeSystemPrelude()` returns a system/style message, prepend it (not yet implemented).
+6. (Planned) Context Snapshot: On *error only* capture `{ includedPairIds, outgoingUserText }` for retry/debug display. Not yet implemented; current debug HUD derives info live.
+7. Excluded / OOC Pairs: Never serialized into the provider request; presence is purely visual (styling + boundary navigation aid).
+8. Trimming Non‑Recompute: We do not recompute X during trimming; the loop operates on the initial predicted INCLUDED set minus oldest removals.
+9. Metadata Exclusion: Topic, star, colorFlag, and other metadata are not injected into message contents.
+
+### 6.9 Prediction Boundary Update Policy
+The prediction boundary (INCLUDED vs EXCLUDED pairs) is intentionally *stable* during ordinary typing to honor zero‑cost keystrokes. It is recomputed only when underlying inputs that can change the maximal includable suffix change.
+
+Recompute Triggers (set boundary dirty → recompute lazily on next need or immediately if user opens HUD / counter refresh / send):
+- Filter execution (user submits/executes a new filter query changing visible set or order).
+- Model change (different context window or tpm → ML changes).
+- URA (userRequestAllowance) change.
+- charsPerToken change.
+- Assistant reply arrival (assistantText appended; token length of a pair grows).
+- Pair deletion.
+- Pair edit commit (userText or assistantText modified & saved).
+- Topic/star/flag edit that affects current filter result (visibility changes).
+- Bulk load/import that adds or mutates pairs.
+
+Non‑Triggers (no boundary recompute):
+- Individual keystrokes while drafting a new prompt (URA reserve absorbs size variance).
+- Scroll/viewport/partitioning adjustments.
+- Pure metadata edits not referenced by current filter (no visibility change).
+- Interim overflow trimming attempts inside a send (the original predicted set X is conceptually preserved; trimming operates on a working copy).
+
+Send Action Behavior (Option A – current):
+- On send, if boundary is clean (not dirty) we reuse cached INCLUDED set.
+- If dirty, we recompute once just before assembling messages.
+- If `predictedHistoryTokens + AUT > ML` (actual prompt larger than reserved URA budget), we still attempt the send with the predicted INCLUDED set. Overflow, if any, is handled by the runtime trimming loop. No preflight shrink or UI re-render occurs.
+
+Rationale for Option A:
+- Avoids UI churn/flicker at the moment of submission.
+- Keeps the mental model: boundary reflects a stable reserve policy (URA), not reactive to every character of the outgoing prompt.
+- Simpler implementation; rare large prompts incur at most one extra overflow attempt.
+
+Future Enhancement (Deferred – Option B):
+- Preflight invisible trimming: if `predictedHistoryTokens + AUT > ML`, drop oldest included pairs until fit before first provider call (still no UI boundary change). Would reduce wasted overflow attempts while preserving visual stability.
+
+Invariant: User never sees the boundary shrink *because* of last‑second prompt length; any trimming performed (overflow loop, or future preflight) is only revealed post‑send via the bracket counter `[X-T]/Y` and tooltip telemetry.
 
 ## 7. Token Budgeting & Trimming (Current Implementation + Planned Enhancements)
 
-We distinguish between the pre-send predicted context (what is visibly marked included) and the final sent context (after any runtime overflow trims). Current implementation covers: prediction without URA, provider overflow classification, single-pair iterative trimming, and telemetry surfaced in the debug HUD.
+We distinguish between the pre-send predicted context (what is visibly marked included) and the final sent context (after any runtime overflow trims). Implementation: URA‑aware newest→oldest prediction, provider overflow classification, single-pair iterative trimming, and telemetry surfaced in the debug HUD.
 
-### 7.1 Definitions (Current)
-| Term | Meaning |
-|------|---------|
-| ML (Model Limit) | `effectiveMaxContext = min(model.contextWindow, model.tpm)` – simplistic throughput-aware cap (rpm/tdp not yet modeled). |
-| CPT (Chars Per Token) | Heuristic estimate divisor (default 3.5 via `charsPerToken` setting). |
-| URA (User Request Allowance) | Fixed reserve (default 100 via settings) subtracted during prediction & boundary computation. Configurable in settings overlay. |
-| Predicted Context (X) | Newest-first suffix of visible pairs such that `(historyTokens + URA) ≤ ML`. Count = X. |
-| Actual User Tokens (AUT) | Estimated tokens of the outgoing user prompt (blocking error if `AUT > ML`). Currently no proactive shrink of predicted context if `AUT > URA` (future). |
-| Trimming (Runtime) | Overflow-only: upon provider overflow classification remove exactly one oldest predicted pair; retry (≤ NTA). |
-| T (Trimmed Count) | Number of predicted pairs removed in overflow loop (telemetry + counter). |
-| NTA (Max Attempts) | `maxTrimAttempts` setting (default 10). |
-| sentCount | `X - T` after overflow loop finishes (displayed as part of bracket counter). |
+### 7.1 Definitions (Current Terminology & Invariants)
+We explicitly separate *message counts* from *token counts* to avoid dimension confusion.
+
+| Term | Meaning | Constant During Send? |
+|------|---------|-----------------------|
+| ML (Model Limit) | `effectiveMaxContext = min(model.contextWindow, model.tpm)` – simplistic throughput-aware cap (rpm/tdp not yet modeled). | Yes (unless model switched mid-send – not supported) |
+| CPT (Chars Per Token) | Heuristic divisor (default 3.5 via `charsPerToken`). | Yes |
+| URA (User Request Allowance) | Fixed reserve (default 100) subtracted during prediction (boundary calc). | Yes |
+| Predicted Message Count (X) | Number of INCLUDED (prediction boundary) message pairs. | Yes |
+| Predicted History Tokens | Token sum of those X predicted pairs at prediction time. | Yes |
+| Predicted Total Tokens | `predictedHistoryTokens + URA` – conceptual envelope reserved for history plus allowance. | Yes |
+| AUT (Actual User Tokens) | Estimated tokens of outgoing user prompt; error if `AUT > ML`. | N/A (single value) |
+| Attempt History Tokens | Token sum of currently *still included* pairs this attempt (after any trims so far). | Decreases (monotonic) |
+| Attempt Total Tokens | `attemptHistoryTokens + AUT`. | Decreases (monotonic) |
+| Trimming (Runtime) | Overflow-only removal of one oldest predicted pair per overflow attempt (≤ NTA). | — |
+| T (Trimmed Count) | Number of pairs removed so far in overflow loop. | Increases (monotonic) |
+| sentCount | `X - T` after loop finishes (final included pairs actually sent). | Final value only |
+| NTA (Max Attempts) | `maxTrimAttempts` setting (default 10). | Yes |
+
+Initial attempt relationships:
+- `attemptHistoryTokens (attempt 1) = predictedHistoryTokens`
+- `attemptTotalTokens (attempt 1) = predictedHistoryTokens + AUT`
+- Therefore `attemptTotalTokens (attempt 1) = predictedTotalTokens + AUT - URA`
+
+Invariants:
+- All fields prefixed `predicted...` are *frozen* for the lifecycle of one send.
+- All fields prefixed `attempt...` may change only via trimming (never increase).
+- We never “refund” URA; it is purely a planning reserve.
+- Message count (X) and token sums are tracked separately; token-based decisions never alter X mid-loop except through explicit trimming (which updates attemptHistoryTokens, not X; X stays as original predictedMessageCount used for bracket notation `[X-T]/Y`).
 
 ### 7.2 Two-Stage Assembly (Mechanics)
-1. Prediction: accumulate newest→oldest until adding the next pair would make `(historyEstimate + pairTokens + URA) > ML`; included set becomes predicted context X.
+1. Prediction: accumulate newest→oldest maintaining `cumulativeHistoryTokens`; stop before a next pair whose addition would make `(cumulativeHistoryTokens + nextPairTokens + URA) > ML`; included set becomes predicted context X (then freeze `predictedHistoryTokens = cumulativeHistoryTokens`).
 2. Validation: estimate user prompt tokens (AUT). If `AUT > ML` raise `user_prompt_too_large` (no trimming attempts).
 3. Send Attempt: build messages from predicted context + user prompt and call provider.
 4. Overflow Loop: if classified overflow → remove exactly one oldest predicted pair, increment T and attempts count, retry (≤ NTA). Stops on success or when attempts exhausted → error `context_overflow_after_trimming`.
-5. Telemetry: emits on each attempt with fields: `predictedCount`, `trimmedCount (T)`, `attemptsUsed`, `predictedHistoryTokens`, `historyTokens`, `userTokens`, `remainingReserve`, stage labels (`overflow_initial`, `overflow_retry`, `overflow_exhausted`, etc.).
+5. Telemetry: emits on each attempt with logical fields: `predictedMessageCount (X)`, `predictedHistoryTokens`, `predictedTotalTokens`, `attemptHistoryTokens`, `attemptTotalTokens`, `AUT`, `trimmedCount (T)`, `attemptsUsed`, `remainingReserve`, plus stage labels (`overflow_initial`, `overflow_retry`, `overflow_exhausted`, etc.). (Implementation note: current code still emits legacy names `predictedCount`, `historyTokens` (attempt value), `userTokens` (AUT) for backward compatibility; mapping given in §7.7.)
 
 ### 7.3 Counter Display Logic (Implemented)
 Idle / no trimming: `X / Y` (predicted included / total visible pairs).
@@ -142,10 +196,23 @@ Substring match (case-insensitive) for: `context_length`, `maximum context lengt
 | Filter changes mid-loop | Current: trimming loop operates on snapshot list; UI may hide some pairs; no abort logic yet. Planned: explicit abort + notice if filter changes during retries. |
 | URA adjustment mid-session | Prediction uses latest settings value each send; running overflow loop does not re-expand after settings change. |
 
-### 7.7 Telemetry Fields (Current Emissions)
-Core payload (per attempt via debug hook):
-`{ model, budget:{maxContext,maxUsableRaw}, selection:[{id,model,tokens}], predictedCount, trimmedCount, attemptsUsed, userTokens, charsPerToken, predictedHistoryTokens, historyTokens, totalTokensEstimate, remainingReserve, messages[], lastErrorMessage?, overflowMatched?, stage }`
-Derived (UI internal): `sentCount = predictedCount - trimmedCount`.
+### 7.7 Telemetry Fields (Current Emissions & Mapping)
+Normative logical schema (target):
+`{ model, budget:{maxContext,maxUsableRaw}, selection:[{id,model,tokens}], predictedMessageCount, predictedHistoryTokens, predictedTotalTokens, attemptHistoryTokens, attemptTotalTokens, AUT, trimmedCount, attemptsUsed, charsPerToken, remainingReserve, totalTokensEstimate, stage, lastErrorMessage?, overflowMatched?, messages[] }`
+
+Derived: `sentCount = predictedMessageCount - trimmedCount`.
+
+Implementation (legacy field names still emitted until code update):
+| Emitted (Legacy) | Logical Meaning | Planned Rename |
+|------------------|-----------------|----------------|
+| predictedCount | predictedMessageCount (X) | predictedMessageCount |
+| predictedHistoryTokens | predictedHistoryTokens | (same) |
+| historyTokens | attemptHistoryTokens | attemptHistoryTokens |
+| userTokens | AUT (Actual User Tokens) | AUT |
+| trimmedCount | trimmedCount (T) | (same) |
+| totalTokensEstimate | attemptTotalTokens (approx) | attemptTotalTokens |
+
+When code is updated we will emit both old + new names for one version, then drop legacy.
 
 ### 7.8 Status
 Implemented: effectiveMaxContext=min(cw,tpm); URA reserve in prediction & boundary; overflow-only trimming loop; bracket counter `[X-T]/Y`; telemetry (HUD PARAMETERS / TRIMMING / ERROR groups); resizable HUD.
@@ -154,10 +221,10 @@ Pending: rpm/tdp live quota modeling; proactive adjustment when `AUT` encroaches
 ## 8. UI Elements (Initial M6 Slice)
 | Element | Behavior |
 |---------|----------|
-| Send Button → "Thinking…" badge | Indicates in-flight (button disabled); input still editable. |
+| Send Button → "AI is thinking…" badge | Indicates in-flight (button disabled); input still editable. |
 | In-flight badge | Inline small muted text after user message (not a separate assistant block). |
 | Context Counter | Shows `X / Y` or `[X-T]/Y` post-trim. Tooltip currently summarizes predicted vs visible, URA active, trimmed last send (future: richer breakdown). Updates live. |
-| Out-of-Context (OOC) Marking | Oldest excluded pairs get `.ooc` class, reduced opacity, "OUT" badge. |
+| Out-of-Context (OOC) Marking | Excluded pairs (beyond prediction boundary) get `.ooc` class, reduced opacity, "off" badge. |
 | Boundary Jump | Shift+O jumps to first included pair (boundary). If all included shows HUD notice. |
 | Error Display | `[error: code] shortMessage` + buttons `[Edit & Resend] [Delete]` (keyboard: `e`, `x`). |
 | Edit Mode | User text → textarea; Esc cancels; Enter/Ctrl+Enter sends. Assistant part hidden during edit. |
@@ -166,59 +233,6 @@ Pending: rpm/tdp live quota modeling; proactive adjustment when `AUT` encroaches
 | Over-budget Alert | Blocking confirm dialog (no auto-trim). |
 
 ## 9. Defer / Removed / Revised From M6
-- Manual per-message deselect (removed; rely on filters).
 - Streaming partial response (defer).
-- HUD token diff (maybe dev-only later).
 - System/style injection (hook only; no UI yet).
 
-## 10. Resolved Decisions Summary (Updated)
-| # | Decision | Status |
-|---|----------|--------|
-| 1 | Abort (Esc) omitted in M6 | Accepted |
-| 2 | In-flight pair may disappear under filter | Accepted |
-| 3 | Error prefix `[error: code]` | Accepted |
-| 4 | Delete action present Phase 1 (all pairs) | Accepted |
-| 5 | No snapshot on success (errors only) | Accepted |
-| 6 | Timeout → `[error: network]` (30s default) | Accepted |
-| 7 | Min send validation: trimmed length ≥1 | Accepted |
-| 8 | Over-budget handling: URA + discrete overflow-only trimming with bracket counter `[X-T]/Y`. | Implemented (further UX enhancements pending) |
-| 9 | Token estimate beside Send | Accepted |
-| 10 | Canceled path N/A (no abort) | Accepted |
-| 11 | Edit-in-place resend replaces retry | Accepted |
-| 12 | Version history deferred | Accepted |
-| 13 | System/style injection deferred (hook only) | Accepted |
-| 14 | Auto enter view on overflow (setting ON) | Accepted |
-| 15 | Delete allowed for all pairs | Accepted |
-
-## 11. Minimal Data Additions
-Add fields to MessagePair (non-breaking):
-```
-{
-  ...,
-  lifecycleState: 'sending' | 'awaiting' | 'succeeded' | 'error' | 'canceled',
-  contextSnapshot?: ChatMessage[],
-  errorCode?: string,
-  errorType?: 'auth' | 'rate' | 'network' | 'server' | 'unknown',
-  createdAt: number,
-  updatedAt: number
-}
-```
-(Only lifecycleState + contextSnapshot + error metadata strictly required for M6 base.)
-
-## 12. Implementation Phasing (Adjusted for Decisions)
-Phase 1: gatherContext(), estimator + boundary calculation, X/Y counter, .ooc marking, OpenAI adapter, send flow (thinking badge), success & error display, edit-in-place resend, delete, inline token estimate.
-Phase 2: timeout handling fine‑tune, autoEnterViewOnOverflow setting toggle, optional hud metrics, system prelude hook stub, (optional block mode setting if needed).
-Phase 3 (post‑M6 or late M6 if time): streaming, style injection UI, performance tuning.
-
-## 13. Proposed Plan Adjustments
-- Preview overlay removed for initial M6; rely on WYSIWYG + inline token count. Read‑only preview can be added later if needed.
-
-## 14. Next Steps After Approval
-1. Update implementation plan (M6) per decisions (especially removal of deselect, preview specifics).
-2. Implement gatherContext + tests.
-3. Implement OpenAI adapter + tests (mock fetch).
-4. Extend send pipeline with lifecycleState + placeholder, success & error handling.
-5. Add abort path (decision dependent), retry path, token budgeting.
-
----
-All decisions captured; proceeding to implementation (Phase 1 tasks now executable).

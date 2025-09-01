@@ -1,6 +1,6 @@
 # ADR-000: Architecture Overview
 
-Date: 2025-08-22
+Date: 2025-08-22 (last reviewed 2025-09-01)
 Status: Accepted
 Decision: Adopt layered vanilla JS architecture with overlay-based topic system (no persistent side panels)
 
@@ -34,19 +34,26 @@ Layers:
 - Explicit AST allows future optimizations (index-based prefilter) without rewriting queries.
 
 ## Performance Principles (Added 2025-08-31)
-**P1 Zero-Cost Passive Keystrokes**: Ordinary typing & navigation keystrokes MUST NOT trigger O(n) scans over history, token estimation passes, network calls, or full DOM rebuilds. Only explicit execution actions (filter submit, send, settings/model/topic change, new message arrival) may perform heavier work.
+**P1 Zero-Cost Passive Keystrokes**: Ordinary typing & navigation keystrokes MUST NOT trigger O(n) history scans, token re-estimation passes, network calls, or full DOM rebuilds. Only explicit execution actions (filter submit, send, settings/model/topic change, message arrival) perform heavier work.
 
-**P2 Bounded Rendering Work**: Passive key interactions update only localized DOM (input field, active highlight) without reconstructing the history list.
+**P2 Bounded Rendering Work**: Passive key interactions update only localized DOM (input field, active highlight) without reconstructing the full history list.
 
-**P3 Predictable Latency**: Any operation on the passive typing path completes within ~1ms independent of history size (amortized); heavier tasks are deferred or shifted to explicit user actions.
+**P3 Predictable Latency**: Passive typing path operations complete within ~1ms (amortized) independent of history size; heavier tasks are deferred to explicit user actions.
 
-Enforcement Examples:
-- Context boundary does not re-evaluate per keystroke; instead, an allowance (default 256 tokens) is reserved.
-- On send, boundary recalculated once with actual prompt size; if larger than allowance, oldest included pairs are trimmed silently (optional notice).
-- Future tokenization upgrades must plug into the send-time pipeline, not the typing loop.
+Enforcement (Current Option A Strategy):
+- Prediction boundary not recomputed per keystroke; URA (default 100) reserve stabilizes inclusion despite prompt growth.
+- On send we use the cached predicted set (or recompute once if boundary dirty). If actual prompt causes overflow the provider response triggers a runtime trimming loop (removing one oldest predicted pair per attempt) rather than preflight shrinking.
+- Future Option B (deferred): preflight invisible trimming if `(predictedHistoryTokens + AUT) > ML` while keeping boundary visually stable.
+- Tokenization upgrades must attach to explicit send or boundary recompute triggers—not passive typing.
 
-## Allowance-Based Context Strategy
-The included/visible counter (X/Y) and prediction pipeline now subtract a configurable User Request Allowance (URA) before selecting history: `effectiveMaxContext = min(model.contextWindow, model.tpm)` then reserve `userRequestAllowance` (default 100) so the newest visible pairs are included only while `(historyTokens + URA) ≤ effectiveMaxContext`. On send, actual user tokens are measured; if the prompt alone exceeds the model limit an immediate error is raised (`user_prompt_too_large`). Provider overflow responses trigger a discrete overflow-only trimming loop (one oldest predicted pair per attempt) rather than continuous proactive recalculation while typing. This preserves P1 (zero-cost passive keystrokes) by deferring token budgeting to explicit send actions. Future enhancements: rpm/tdp quota integration, proactive adjustment when AUT encroaches on URA, richer error taxonomy.
+## Allowance-Based Context Strategy (Prediction Boundary)
+We select a newest-first suffix of the *visible* message pairs such that `(predictedHistoryTokens + URA) ≤ effectiveMaxContext`, where `effectiveMaxContext = min(model.contextWindow, model.tpm)` and URA (`userRequestAllowance`, default 100) is a stable planning reserve. The count of selected pairs is X (Predicted Message Count). Remaining visible pairs are Out-of-Context (OOC) but still rendered (dimming only).
+
+At send time we append the new user message. If `AUT > ML` we raise `user_prompt_too_large`. Otherwise we attempt the provider call with the predicted set. If provider returns an overflow-classified error we enter a runtime overflow trimming loop: remove one oldest predicted pair, increment trimmed count T, retry (≤ maxTrimAttempts). We do not recompute X during trimming; predicted* fields remain constant; attempt* token fields shrink. This realizes P1 by eliminating per-keystroke or preflight recalculation.
+
+Deferred Option (B): before first attempt, if `(predictedHistoryTokens + AUT) > ML`, perform invisible oldest-pair drops until fit (no UI boundary change) to reduce wasted overflow attempts.
+
+Future enhancements: rpm/tdp quota integration, proactive advisory when AUT approaches URA, richer error taxonomy (auth, rate, network, overflow-exhausted, prompt-too-large).
 
 ## Alternatives Considered
 - React/Svelte: rejected (added complexity overhead & not aligned with pure JS learning goal).
@@ -61,7 +68,7 @@ The included/visible counter (X/Y) and prediction pipeline now subtract a config
 | Token estimation accuracy | Start heuristic, swap pluggable tokenizer later |
 
 ## Decision
-Pending (will mark Accepted after initial scaffolding stabilized).
+Accepted (layered vanilla JS + allowance-based stable prediction boundary, runtime overflow trimming Option A).
 
 ## Consequences
 - Need disciplined modular boundaries to avoid tight coupling.
