@@ -57,7 +57,7 @@ export function createHistoryView({ store, onActivePartRendered }){
         stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage||'error')}">err</span>`
         errActions = `<span class="err-actions"><button class="mini-btn resend" data-action="resend" title="Edit & Resend">edit</button><button class="mini-btn del" data-action="delete" title="Delete pair">del</button></span>`
       }
-        return `<div class="part meta" data-part-id="${pt.id}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
+  return `<div class="part meta" data-part-id="${pt.id}" data-role="meta" data-pair-id="${pt.pairId}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
           <div class="meta-left">
             <span class="badge flag" data-flag="${pair.colorFlag}" title="${pair.colorFlag==='b'?'Flagged (blue)':'Unflagged (grey)'}"></span>
             <span class="badge stars">${'★'.repeat(pair.star)}${'☆'.repeat(Math.max(0,3-pair.star))}</span>
@@ -71,7 +71,7 @@ export function createHistoryView({ store, onActivePartRendered }){
           </div>
         </div></div>`
     }
-    return `<div class="part ${pt.role}" data-part-id="${pt.id}"><div class="part-inner">${escapeHtml(pt.text)}</div></div>`
+  return `<div class="part ${pt.role}" data-part-id="${pt.id}" data-role="${pt.role}" data-pair-id="${pt.pairId}"><div class="part-inner">${escapeHtml(pt.text)}</div></div>`
   }
 
   return { render }

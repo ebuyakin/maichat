@@ -34,6 +34,9 @@ import { executeSend } from './send/pipeline.js'
 
 // Mode management
 const modeManager = createModeManager()
+// Expose for late-bound lifecycle logic (avoids circular import)
+window.__modeManager = modeManager
+window.__MODES = MODES
 
 // Root layout
 const appEl = document.querySelector('#app')

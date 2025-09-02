@@ -69,11 +69,13 @@ Notes:
    - Append new outgoing: { role: "user", content: newUserText }
 8. On 200 OK success: append assistantText with provider content; lifecycleState = `complete`; busy state cleared.
 9. Update HUD / internal stats (optional dev view) and scroll anchoring logic as usual.
-10. Scroll / focus policy:
-  - If assistant reply fits in viewport: keep mode INPUT; focus stays in input.
-  - If reply overflows and user is not actively typing (no keystroke in last 1s): auto-switch to VIEW and focus first assistant part.
-  - If user is typing: do not steal focus. (New reply badge deferred.)
-  - Setting: `autoEnterViewOnOverflow` (default true).
+10. Scroll / focus policy (Refined):
+  - After send, the new user part is focused (INPUT mode retained).
+  - When assistant reply renders, measure its full rendered height (top of first assistant part to bottom of last assistant part of that reply).
+  - If current mode is INPUT, input box is empty, and the reply height exceeds the viewport (cannot fully fit): switch to VIEW mode and focus the first assistant part of the new reply.
+  - If the reply fully fits: remain in INPUT mode; focus stays in input (user can continue drafting next prompt).
+  - If user changed to VIEW or COMMAND while waiting (not in INPUT at arrival): do not alter mode or focus.
+  - Future options (not implemented): user preference to always/never switch; partial-height threshold tuning.
 
 ## 5. Branch Scenarios
 ### 5.1 Provider Error (4xx/5xx JSON)
