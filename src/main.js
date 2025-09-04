@@ -1,32 +1,33 @@
 import './style.css'
-import { createStore } from './store/memoryStore.js'
-import { attachIndexes } from './store/indexes.js'
+// Step 1 extraction: runtime setup moved to runtime/runtimeSetup.js
+import { initRuntime } from './runtime/runtimeSetup.js'
+// (Removed direct imports: createStore, attachIndexes, createIndexedDbAdapter, attachContentPersistence, createHistoryView, ActivePartController, createScrollController, createBoundaryManager, createNewMessageLifecycle)
+// Removed unused TEMP imports (createStore, attachIndexes) after runtime extraction
 import { parse } from './filter/parser.js'
 import { evaluate } from './filter/evaluator.js'
 import { createModeManager, MODES } from './ui/modes.js'
 import { createKeyRouter } from './ui/keyRouter.js'
-import { buildParts, ActivePartController } from './ui/parts.js'
-import { createHistoryView, bindHistoryErrorActions } from './ui/history/historyView.js'
-import { createAnchorManager } from './ui/anchorManager.js'
-import { createScrollController } from './ui/scrollControllerV3.js'
+import { bindHistoryErrorActions } from './ui/history/historyView.js'
+import { createHistoryRuntime } from './ui/history/historyRuntime.js'
+// Removed unused TEMP UI construction imports (anchorManager, scrollController)
 import { getSettings, subscribeSettings, saveSettings } from './settings/index.js'
 import { invalidatePartitionCacheOnResize } from './partition/partitioner.js'
-import { createIndexedDbAdapter } from './store/indexedDbAdapter.js'
-import { attachContentPersistence } from './persistence/contentPersistence.js'
+// Removed unused persistence construction imports
 import { createTopicPicker } from './ui/topicPicker.js'
 import { openTopicEditor } from './ui/topicEditor.js'
 import { modalIsActive, createFocusTrap } from './ui/focusTrap.js'
 import { escapeHtml } from './ui/util.js'
-import { createNewMessageLifecycle } from './ui/newMessageLifecycle.js'
+// newMessageLifecycle provided via runtimeSetup
 import { openSettingsOverlay } from './ui/settingsOverlay.js'
 import { openApiKeysOverlay } from './ui/apiKeysOverlay.js'
 import { getApiKey } from './api/keys.js'
 import { ensureCatalogLoaded, getActiveModel } from './models/modelCatalog.js'
+import { seedDemoPairs, exposeSeedingHelpers } from './store/demoSeeding.js'
 import { openModelSelector } from './ui/modelSelector.js'
 import { openModelEditor } from './ui/modelEditor.js'
 import { openHelpOverlay } from './ui/helpOverlay.js'
 // Boundary manager supersedes legacy gatherContext.
-import { createBoundaryManager } from './context/boundaryManager.js'
+// boundaryManager provided via runtimeSetup
 import { registerProvider } from './provider/adapter.js'
 import { createOpenAIAdapter } from './provider/openaiAdapter.js'
 import { executeSend } from './send/pipeline.js'
@@ -94,52 +95,25 @@ loadingEl.style.fontFamily = 'inherit'
 loadingEl.textContent = 'Loading…'
 document.body.appendChild(loadingEl)
 
-// Initial layout pass
-requestAnimationFrame(layoutHistoryPane)
+// (layoutHistoryPane now provided by historyRuntime after runtime init)
 
-// Dynamic layout sizing to avoid hidden first/last messages when bar heights change
-function layoutHistoryPane(){
-  const topBar = document.getElementById('topBar')
-  const inputBar = document.getElementById('inputBar')
-  const histPane = document.getElementById('historyPane')
-  if(!topBar || !inputBar || !histPane) return
-  // Outer gap now implemented as internal padding; pane spans bars directly
-  const topH = topBar.getBoundingClientRect().height
-  const botH = inputBar.getBoundingClientRect().height
-  histPane.style.top = topH + 'px'
-  histPane.style.bottom = botH + 'px'
-}
-window.addEventListener('resize', layoutHistoryPane)
-// Partition resize threshold handling (≥10% viewport height change)
-let __lastViewportH = window.innerHeight
-window.addEventListener('resize', ()=>{
-  const h = window.innerHeight
-  if(!h || !__lastViewportH) { __lastViewportH = h; return }
-  const delta = Math.abs(h - __lastViewportH) / __lastViewportH
-  if(delta >= 0.10){
-    __lastViewportH = h
-    invalidatePartitionCacheOnResize()
-  renderCurrentView({ preserveActive:true })
-  }
-})
+// (Removed duplicate layoutHistoryPane & resize listeners – historyRuntime owns them)
 
 // Debug HUD container
 const hudEl = document.createElement('div')
 hudEl.id = 'hud'
 document.body.appendChild(hudEl)
 
-// Store & persistence
-const store = createStore()
-attachIndexes(store)
-const persistence = attachContentPersistence(store, createIndexedDbAdapter())
+// Runtime context (Phase 1 minimal extraction)
+const __runtime = initRuntime()
+const { store, persistence, activeParts, historyView, scrollController, boundaryMgr, lifecycle, pendingMessageMeta } = __runtime
+// History runtime (Phase 1 Step 3 extraction)
+const historyRuntime = createHistoryRuntime(__runtime)
+const { layoutHistoryPane, applySpacingStyles, renderHistory, renderCurrentView, applyActivePart, updateFadeVisibility, updateMessageCount, applyOutOfContextStyling, jumpToBoundary, renderStatus } = historyRuntime
+// Initial layout pass (deferred until after historyRuntime creation)
+requestAnimationFrame(layoutHistoryPane)
 let currentTopicId = store.rootTopicId
-const activeParts = new ActivePartController()
 const historyPaneEl = document.getElementById('historyPane')
-const anchorManager = null // legacy removed
-const scrollController = createScrollController({ container: historyPaneEl })
-// Expose for diagnostics
-window.__scrollController = scrollController
-const historyView = createHistoryView({ store, onActivePartRendered: ()=> applyActivePart() })
 bindHistoryErrorActions(document.getElementById('history'), {
   onResend: (pairId)=>{
     const pair = store.pairs.get(pairId)
@@ -163,7 +137,7 @@ bindHistoryErrorActions(document.getElementById('history'), {
     activeParts.last(); applyActivePart()
   }
 })
-// Preload settings (future partition logic will use them)
+// Preload settings
 getSettings()
 let __lastPF = getSettings().partFraction
 let __lastPadding = getSettings().partPadding
@@ -180,26 +154,13 @@ subscribeSettings((s)=>{
   applySpacingStyles(s); layoutHistoryPane(); renderCurrentView({ preserveActive:true }) 
 })
 let overlay = null // { type: 'topic', list:[], activeIndex:0 } (model selection now separate overlay component)
-let pendingMessageMeta = { topicId: null, model: getActiveModel() || 'gpt-4o' }
-// New message lifecycle module
-const lifecycle = createNewMessageLifecycle({
-  store,
-  activeParts,
-  commandInput: null, // assigned after element retrieval
-  renderHistory: (pairs)=> renderHistory(pairs),
-  applyActivePart: ()=> applyActivePart()
-})
+// pendingMessageMeta & lifecycle sourced from runtime setup now
 
 function renderTopics(){ /* hidden for now */ }
 
-let __lastContextStats = null
-let __lastContextIncludedIds = new Set()
 let __requestDebugEnabled = false
 let __lastSentRequest = null
-let __lastPredictedCount = 0 // X
-// Phase 1 boundary manager instance
-const boundaryMgr = createBoundaryManager()
-let __lastTrimmedCount = 0   // T for last successful send
+// context stats & counts now sourced from historyRuntime getters
 // Initialize request debug from URL (?reqdbg=1)
 try {
   const usp = new URLSearchParams(window.location.search)
@@ -238,7 +199,8 @@ function renderRequestDebug(){
   if(!__lastSentRequest){ pane.textContent = '[request debug] No request sent yet.'; return }
   const { model, budget, selection, AUT, attemptTotalTokens, attemptHistoryTokens, predictedHistoryTokens, remainingReserve, attemptsUsed, trimmedCount, predictedMessageCount, messages, lastErrorMessage, overflowMatched, stage, timing } = __lastSentRequest
   const settings = getSettings()
-  const uraVal = (__lastContextStats && (('URA' in __lastContextStats)? __lastContextStats.URA : __lastContextStats.assumedUserTokens)) ?? settings.userRequestAllowance
+  const ctxStats = historyRuntime.getContextStats()
+  const uraVal = (ctxStats && (('URA' in ctxStats)? ctxStats.URA : ctxStats.assumedUserTokens)) ?? settings.userRequestAllowance
   const cpt = settings.charsPerToken
   const nta = settings.maxTrimAttempts
   const ml = (budget.maxContext||budget.maxUsableRaw)
@@ -308,164 +270,19 @@ function renderRequestDebug(){
   if(!pre){ pre = document.createElement('pre'); pre.style.margin='0'; pre.style.padding='0 0 4px'; pre.style.font='11px/1.4 var(--font-mono, monospace)'; pane.appendChild(pre) }
   pre.textContent = lines.join('\n')
 }
-function renderHistory(pairs){
-  pairs = [...pairs].sort((a,b)=> a.createdAt - b.createdAt)
-  const settings = getSettings()
-  const cpt = settings.charsPerToken || 3.5
-  const activeModel = pendingMessageMeta.model || getActiveModel() || 'gpt'
-  // Update boundary manager inputs and compute boundary
-  boundaryMgr.applySettings({ userRequestAllowance: settings.userRequestAllowance||0, charsPerToken: cpt })
-  boundaryMgr.setModel(activeModel)
-  boundaryMgr.updateVisiblePairs(pairs)
-  const boundary = boundaryMgr.getBoundary()
-  __lastContextStats = boundary.stats
-  __lastContextIncludedIds = new Set(boundary.included.map(p=>p.id))
-  __lastPredictedCount = boundary.included.length
-  const parts = buildParts(pairs)
-  activeParts.setParts(parts)
-  historyView.render(parts)
-  applyOutOfContextStyling()
-  updateMessageCount(boundary.included.length, pairs.length)
-  requestAnimationFrame(()=>{ scrollController.remeasure(); applyActivePart() })
-  lifecycle.updateNewReplyBadgeVisibility()
-}
-
-// Central filtered render (sticky filter re-evaluation)
-function renderCurrentView(opts={}){
-  const { preserveActive=false } = opts
-  const prevActiveId = preserveActive && activeParts.active() ? activeParts.active().id : null
-  let all = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
-  const fq = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : ''
-  if(fq){
-    try {
-      const ast = parse(fq)
-      all = evaluate(ast, all)
-      if(commandErrEl) commandErrEl.textContent=''
-    } catch(ex){
-      // On parse/eval error keep previous view (do not clobber) but surface error; caller responsible for not updating active selection
-      if(commandErrEl) commandErrEl.textContent = ex.message || 'filter error'
-      return
-    }
-  }
-  renderHistory(all)
-  if(prevActiveId){
-    activeParts.setActiveById(prevActiveId)
-    if(!activeParts.active()){ activeParts.last() }
-    applyActivePart()
-  }
-}
-
-function applyActivePart(){
-  document.querySelectorAll('.part.active').forEach(el=>el.classList.remove('active'))
-  const act = activeParts.active(); if(!act) return
-  const el = document.querySelector(`[data-part-id="${act.id}"]`)
-  if(el){
-    el.classList.add('active')
-    scrollController.apply(activeParts.activeIndex, true)
-    updateFadeVisibility()
-  }
-}
+// renderHistory, renderCurrentView, applyActivePart now provided by historyRuntime
 
 // ---------- Spacing Runtime Styles & Debug Toggles ----------
 let __hudEnabled = false
 let __maskDebug = true // reserved for future debug gradients
-function applySpacingStyles(settings){
-  if(!settings) return
-  const { partPadding=4, gapOuterPx=6, gapMetaPx=6, gapIntraPx=6, gapBetweenPx=10, fadeInMs=120, fadeOutMs=120, fadeTransitionMs=120 } = settings
-  // Use max of in/out for baseline CSS transition; per-change override applied inline based on direction.
-  const baseFadeMs = Math.max(fadeInMs||0, fadeOutMs||0, fadeTransitionMs||0)
-  let styleEl = document.getElementById('runtimeSpacing')
-  if(!styleEl){ styleEl = document.createElement('style'); styleEl.id='runtimeSpacing'; document.head.appendChild(styleEl) }
-  styleEl.textContent = `#historyPane{padding-top:${gapOuterPx}px; padding-bottom:${gapOuterPx}px;}
-  .history{gap:0;}
-  /* Gaps now explicit elements */
-  .gap{width:100%; flex:none;}
-  .gap-between{height:${gapBetweenPx}px;}
-  .gap-meta{height:${gapMetaPx}px;}
-  .gap-intra{height:${gapIntraPx}px;}
-  /* Base part reset */
-  .part{margin:0;box-shadow:none;background:transparent;opacity:1;transition:opacity ${baseFadeMs}ms linear;}
-  /* Uniform padding only for user/assistant; meta intentionally minimal */
-  .part.user .part-inner, .part.assistant .part-inner{padding:${partPadding}px;}
-  /* Meta part horizontally aligns its content with text padding of user/assistant parts */
-  .part.meta .part-inner{padding:0 ${partPadding}px; display:flex; flex-direction:row; align-items:center; gap:12px; min-height:1.6em; width:100%; box-sizing:border-box;}
-  .part.meta .badge.model{color:#aaa;}
-  .part.meta{white-space:nowrap;}
-  .part.meta .meta-left{display:flex; gap:10px; align-items:center; white-space:nowrap;}
-  .part.meta .meta-right{display:flex; gap:10px; align-items:center; margin-left:auto; white-space:nowrap;}
-  /* Prevent wrapping inside badges */
-  .part.meta .badge{white-space:nowrap;}
-  /* Backgrounds */
-  .part.user .part-inner{background:#0d2233; border-radius:3px; position:relative;}
-  .part.assistant .part-inner{background:transparent;}
-  .part.meta .part-inner{background:transparent; position:relative;}
-  .part.assistant .part-inner, .part.meta .part-inner{position:relative;}
-  /* Active state: inset highlight border (1px) to avoid occasional top-line clipping due to scroll alignment / container inset shadow */
-  .part.active .part-inner::after{content:''; position:absolute; top:1px; left:1px; right:1px; bottom:1px; border:1px solid var(--focus-ring); border-radius:3px; pointer-events:none;}
-  .part.active.assistant .part-inner{background:rgba(40,80,120,0.10);} 
-  .part.active{box-shadow:none; background:transparent;}`
-}
+// applySpacingStyles now from historyRuntime
 
 // Show/hide top mask based on anchor mode (only in 'top'). Keeps layout gap structural via padding while visually hiding any preceding slice.
-function updateFadeVisibility(){
-  const settings = getSettings()
-  const G = settings.gapOuterPx || 0
-  const fadeMode = settings.fadeMode || 'binary'
-  const hiddenOp = typeof settings.fadeHiddenOpacity === 'number' ? settings.fadeHiddenOpacity : 0
-  const fadeInMs = settings.fadeInMs != null ? settings.fadeInMs : (settings.fadeTransitionMs || 120)
-  const fadeOutMs = settings.fadeOutMs != null ? settings.fadeOutMs : (settings.fadeTransitionMs || 120)
-  const pane = historyPaneEl
-  if(!pane) return
-  const S = pane.scrollTop
-  const H = pane.clientHeight
-  const fadeZone = G
-  const parts = pane.querySelectorAll('#history > .part')
-  parts.forEach(p=>{
-    const top = p.offsetTop
-    const h = p.offsetHeight
-    const bottom = top + h
-    const isActive = p.classList.contains('active')
-    const relTop = top - S
-    const relBottom = bottom - S
-    let op = 1
-    if(fadeMode === 'gradient'){
-      let topFade = 1
-      if(relTop < fadeZone){ topFade = Math.max(0, relTop / fadeZone) }
-      let bottomFade = 1
-      const distFromBottom = H - relBottom
-      if(distFromBottom < fadeZone){ bottomFade = Math.max(0, distFromBottom / fadeZone) }
-      op = Math.min(topFade, bottomFade)
-      if(op < 0) op = 0
-      if(op > 1) op = 1
-    } else { // binary
-  // Part intrudes if ANY portion overlaps top gap (relTop < fadeZone) or bottom gap (H - relBottom < fadeZone)
-  const topIntrudes = relTop < fadeZone
-  const bottomIntrudes = (H - relBottom) < fadeZone
-  if(topIntrudes || bottomIntrudes) op = hiddenOp
-    }
-    if(isActive) op = 1 // active always fully visible
-    const prev = p.__lastOpacity != null ? p.__lastOpacity : parseFloat(p.style.opacity||'1')
-    if(prev !== op){
-      // Directional transition control
-      const dirIn = op > prev
-      const dur = dirIn ? fadeInMs : fadeOutMs
-      // Only set if different to avoid layout thrash
-      if(p.__lastFadeDur !== dur){
-        p.style.transitionDuration = dur + 'ms'
-        p.__lastFadeDur = dur
-      }
-      p.style.opacity = String(op)
-      p.__lastOpacity = op
-    }
-    p.style.pointerEvents = op === 0 ? 'none' : ''
-  })
-}
-
-historyPaneEl.addEventListener('scroll', ()=>{ updateFadeVisibility() })
+// updateFadeVisibility now from historyRuntime (scroll listener attached there)
 
 // escapeHtml centralized in ui/util.js
 
-function renderStatus(){ const modeEl = document.getElementById('modeIndicator'); if(modeEl) modeEl.textContent = `[${modeManager.mode.toUpperCase()}]` }
+// renderStatus now from historyRuntime
 
 
 async function bootstrap(){
@@ -483,7 +300,7 @@ async function bootstrap(){
     }
   } catch{}
   if(store.getAllPairs().length === 0){
-    seedDemoPairs()
+    seedDemoPairs(store)
   }
   renderCurrentView()
   renderTopics()
@@ -578,7 +395,7 @@ const commandHandler = (e)=>{
   if(q === ':anim on' || q === ':noanim off') { scrollController.setAnimationEnabled(true); console.log('Scroll animation enabled'); commandInput.value=''; commandErrEl.textContent=''; return true }
   if(q === ':scrolllog on'){ window.__scrollLog = true; console.log('Scroll log ON'); commandInput.value=''; commandErrEl.textContent=''; return true }
   if(q === ':scrolllog off'){ window.__scrollLog = false; console.log('Scroll log OFF'); commandInput.value=''; commandErrEl.textContent=''; return true }
-    updateFadeVisibility()
+  updateFadeVisibility()
     const prevFilter = __lastAppliedFilter
     const prevActiveId = __commandModeEntryActivePartId || (activeParts.active() && activeParts.active().id)
     lifecycle.setFilterQuery(q)
@@ -665,7 +482,7 @@ const inputHandler = (e)=>{
           boundaryMgr.setModel(model)
           boundaryMgr.applySettings(getSettings())
           const boundarySnapshot = boundaryMgr.getBoundary()
-          const { content } = await executeSend({ store, model, userText: text, signal: undefined, visiblePairs: chrono, boundarySnapshot, onDebugPayload: (payload)=>{ __lastSentRequest = payload; if(payload.predictedMessageCount!=null){ __lastPredictedCount = payload.predictedMessageCount } if(payload.trimmedCount!=null){ __lastTrimmedCount = payload.trimmedCount } renderRequestDebug(); updateMessageCount(__lastPredictedCount, chrono.length) } })
+          const { content } = await executeSend({ store, model, userText: text, signal: undefined, visiblePairs: chrono, boundarySnapshot, onDebugPayload: (payload)=>{ __lastSentRequest = payload; historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount); renderRequestDebug(); historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length) } })
           store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined })
           lifecycle.completeSend(); updateSendDisabled()
           renderCurrentView({ preserveActive:true })
@@ -1009,25 +826,27 @@ function updateHud(){
   // Structured budgeting groups
   try {
     const settings = getSettings()
-  const ura = (__lastContextStats && (('URA' in __lastContextStats)? __lastContextStats.URA : __lastContextStats.assumedUserTokens)) ?? settings.userRequestAllowance
+  const ctxStats = historyRuntime.getContextStats()
+  const ura = (ctxStats && (('URA' in ctxStats)? ctxStats.URA : ctxStats.assumedUserTokens)) ?? settings.userRequestAllowance
     const cpt = settings.charsPerToken
     const nta = settings.maxTrimAttempts
-    const ml = __lastContextStats ? __lastContextStats.maxContext : null
-    const predictedHistoryTokens = (__lastSentRequest && typeof __lastSentRequest.predictedHistoryTokens==='number') ? __lastSentRequest.predictedHistoryTokens : (__lastContextStats ? __lastContextStats.totalIncludedTokens : null)
+  const ml = ctxStats ? ctxStats.maxContext : null
+  const predictedHistoryTokens = (__lastSentRequest && typeof __lastSentRequest.predictedHistoryTokens==='number') ? __lastSentRequest.predictedHistoryTokens : (ctxStats ? ctxStats.totalIncludedTokens : null)
     // Count predicted messages
-    const predictedMessages = __lastPredictedCount
+  const predictedMessages = historyRuntime.getPredictedCount()
     // Character count
     let predictedChars = 0
-    if(__lastContextIncludedIds && __lastContextIncludedIds.size){
+    const includedIds = historyRuntime.getIncludedIds()
+    if(includedIds && includedIds.size){
       for(const p of __store.getAllPairs()){
-        if(__lastContextIncludedIds.has(p.id)) predictedChars += (p.userText?p.userText.length:0) + (p.assistantText?p.assistantText.length:0)
+        if(includedIds.has(p.id)) predictedChars += (p.userText?p.userText.length:0) + (p.assistantText?p.assistantText.length:0)
       }
     }
     const userTok = (__lastSentRequest && typeof __lastSentRequest.userTokens==='number') ? __lastSentRequest.userTokens : null
     const historyTokens = (__lastSentRequest && typeof __lastSentRequest.historyTokens==='number') ? __lastSentRequest.historyTokens : predictedHistoryTokens
     const initialAttemptTotal = (predictedHistoryTokens!=null && userTok!=null) ? (predictedHistoryTokens + userTok) : null
     const finalAttemptTotal = (historyTokens!=null && userTok!=null) ? (historyTokens + userTok) : null
-    const trimmedTok = (predictedHistoryTokens!=null && historyTokens!=null) ? (predictedHistoryTokens - historyTokens) : 0
+  const trimmedTok = (predictedHistoryTokens!=null && historyTokens!=null) ? (predictedHistoryTokens - historyTokens) : 0
     const attempts = (__lastSentRequest && typeof __lastSentRequest.attemptsUsed==='number') ? __lastSentRequest.attemptsUsed : 0
     // PARAMETERS
     metaParams.push(`PARAMETERS: URA=${ura!=null?ura:'-'} CPT=${cpt!=null?cpt:'-'} NTA=${nta!=null?nta:'-'} ML=${ml!=null?ml:'-'}`)
@@ -1063,65 +882,11 @@ function updateHud(){
 requestAnimationFrame(updateHud)
 
 // ---------- Message Counter ----------
-function updateMessageCount(included, visible){
-  const el = document.getElementById('messageCount')
-  if(!el) return
-  // Determine if newest chronological pair is currently filtered out (not visible in activeParts parts list)
-  let newestHidden = false
-  try {
-    const allPairs = [...__store.getAllPairs()].sort((a,b)=> a.createdAt - b.createdAt)
-    const newest = allPairs[allPairs.length-1]
-    if(newest){
-      const visiblePairIds = new Set(activeParts.parts.map(p=> p.pairId))
-      if(!visiblePairIds.has(newest.id)) newestHidden = true
-    }
-  } catch{}
-  const prefix = newestHidden ? '(-) ' : ''
-  let body
-  if(__lastTrimmedCount>0 && __lastPredictedCount===included){
-    // show [X-T]/Y where X = included (predicted), T = trimmed
-    const sent = included - __lastTrimmedCount
-    body = `[${sent}-${__lastTrimmedCount}]/${visible}`
-  } else {
-    body = `${included}/${visible}`
-  }
-  el.textContent = prefix + body
-  if(__lastContextStats){
-    el.title = (newestHidden? 'Latest message hidden by filter. ' : '') + `Predicted included / Visible. Predicted tokens: ${__lastContextStats.totalIncludedTokens}. URA model active. Trimmed last send: ${__lastTrimmedCount}`
-  } else {
-    el.title = (newestHidden? 'Latest message hidden by filter. ' : '') + 'Predicted Included / Visible'
-  }
-}
+// updateMessageCount now from historyRuntime
 
-function applyOutOfContextStyling(){
-  const partEls = document.querySelectorAll('#history .part')
-  partEls.forEach(el=>{
-    const partId = el.getAttribute('data-part-id')
-    if(!partId) return
-    const partObj = activeParts.parts.find(p=> p.id === partId)
-    if(!partObj) return
-    const included = __lastContextIncludedIds.has(partObj.pairId)
-    el.classList.toggle('ooc', !included)
-    if(el.classList.contains('meta')){
-      const off = el.querySelector('.badge.offctx')
-      if(off){
-        if(!included){
-          off.textContent = 'off'
-          off.setAttribute('data-offctx','1')
-        } else {
-          off.textContent = ''
-          off.setAttribute('data-offctx','0')
-        }
-      }
-    }
-  })
-}
+// applyOutOfContextStyling now from historyRuntime
 
-function jumpToBoundary(){
-  if(!__lastContextIncludedIds || __lastContextIncludedIds.size === 0) return
-  const idx = activeParts.parts.findIndex(pt=> __lastContextIncludedIds.has(pt.pairId))
-  if(idx >= 0){ activeParts.activeIndex = idx; applyActivePart() }
-}
+// jumpToBoundary now from historyRuntime
 
 // ---------- App Menu (Hamburger) ----------
 const menuBtn = () => document.getElementById('appMenuBtn')
@@ -1245,7 +1010,7 @@ function middleTruncate(str, max){
 function updateSendDisabled(){
   if(!sendBtn) return
   const empty = inputField.value.trim().length === 0
-  const zeroIncluded = (__lastContextStats && __lastContextStats.includedCount === 0)
+  const zeroIncluded = (historyRuntime.getContextStats() && historyRuntime.getContextStats().includedCount === 0)
   sendBtn.disabled = empty || lifecycle.isPending() || zeroIncluded
   if(lifecycle.isPending()){
     if(!sendBtn.__animTimer){
@@ -1319,26 +1084,8 @@ if(sendBtn){
 
 // End main.js
 
-// ---------------- Demo Seeding Utilities (testing partitioning) ----------------
-function seedDemoPairs(){
-  const topicId = store.rootTopicId
-  const data = buildWordCountDataset()
-  const starCycle = [0,1,2,3]
-  data.forEach((d,i)=>{
-    const id = store.addMessagePair({ topicId, model:d.model, userText:d.user, assistantText:d.assistant })
-    const pair = store.pairs.get(id)
-    pair.star = starCycle[i % starCycle.length]
-  if(i===2) pair.colorFlag = 'g' // one grey example
-  })
-}
-window.seedTestMessages = function(){
-  // Clear existing pairs then reseed
-  store.pairs.clear()
-  seedDemoPairs()
-  renderCurrentView()
-  activeParts.first(); applyActivePart()
-  console.log('Test messages reseeded.')
-}
+// Seeding helpers now provided by demoSeeding.js
+exposeSeedingHelpers(store, ()=> renderCurrentView(), activeParts, ()=> applyActivePart())
 
 function cycleAnchorMode(){
   const settings = getSettings()
@@ -1352,38 +1099,4 @@ function cycleAnchorMode(){
 }
 
 // ---------- Word-count dataset generator ----------
-function buildWordCountDataset(){
-  const sizes = []
-  for(let w=100; w<=1000; w+=50){ sizes.push(w) }
-  const loremWords = baseLoremWords()
-  function makeText(wordCount){
-    const words = []
-    while(words.length < wordCount){
-      words.push(loremWords[words.length % loremWords.length])
-    }
-    const textBody = words.join(' ')
-    const chars = textBody.length
-    return `[${wordCount} words | ${chars} chars]\n` + textBody
-  }
-  const dataset = []
-  sizes.forEach(sz=>{
-    for(let i=0;i<2;i++){
-      dataset.push({ model: (sz%2?'gpt':'claude'), user: makeText(sz), assistant: makeText(sz) })
-    }
-  })
-  return dataset
-}
-function baseLoremWords(){
-  return `lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum professional workflow architecture partition anchor context management hierarchical topics adaptive strict token estimation performance optimization deterministic stable id navigation focus management experimental feature toggle granular measurement responsive viewport fraction test dataset generation`.split(/\s+/)
-}
-window.generateWordCountDataset = function(){
-  console.time('generateWordCountDataset')
-  const topicId = store.rootTopicId
-  store.pairs.clear()
-  const data = buildWordCountDataset()
-  data.forEach(d=> store.addMessagePair({ topicId, model:d.model, userText:d.user, assistantText:d.assistant }))
-  renderCurrentView()
-  activeParts.first(); applyActivePart()
-  console.timeEnd('generateWordCountDataset')
-  console.log('Generated', data.length, 'pairs for sizes 100..1000 (x2 each).')
-}
+// (Removed local buildWordCountDataset/baseLoremWords/generateWordCountDataset definitions – centralized in demoSeeding.js)
