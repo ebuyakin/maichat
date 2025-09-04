@@ -177,3 +177,50 @@ Current codebase meets MVP functional pillars; largest divergence from vision is
 
 ---
 ### End of Document
+
+---
+## 13. Folder Structure Purpose & Assessment (Added 2025-09-04)
+
+The current repository favors functional grouping (feature / concern based) instead of strict layering beyond the natural domain vs UI separation. Below each top-level `src/` subfolder (and notable files) is described with purpose, primary contents, assessment, and recommendations.
+
+| Folder / Path | Purpose / Responsibility Boundary | Key Contents (Representative) | Strengths | Issues / Overlap | Recommendation |
+|---------------|------------------------------------|------------------------------|-----------|------------------|----------------|
+| `models/` | Pure data model factories & simple domain helpers (shape, defaults). | `messagePair.js`, `topic.js`, `modelCatalog.js` | Lean, dependency-light, easy to test. | `modelCatalog` mixes static catalog + persistence nuance (minor). | Keep; consider splitting catalog persistence later if it grows. |
+| `store/` | Canonical in‑memory state, indexes, adapters, higher-level runtime construction (post-refactor includes `runtimeSetup.js`, `demoSeeding.js`). | `memoryStore.js`, `indexes.js`, `indexedDbAdapter.js`, (planned) `runtimeSetup.js`, `demoSeeding.js` | Centralizes state wiring cleanly. | Risk of becoming a “misc runtime bucket” if UI-specific logic leaks in. | Accept new runtime setup here but keep only creation/assembly; avoid UI behavior. |
+| `persistence/` | Persistence orchestration (debounced saves, migrations). | `contentPersistence.js` | Encapsulates durability concerns away from store logic. | Light coupling to store instance creation sequence. | Keep as-is; if migrations expand, sub-split `migrations/`. |
+| `settings/` | Reactive settings store, migrations, accessors. | `index.js` | Small stable API, widely reused. | Minor: could become a dumping ground for non-settings constants. | Keep; enforce only settings-related logic here. |
+| `context/` | Context boundary prediction & token estimation heuristics. | `boundaryManager.js`, `tokenEstimator.js`, legacy `gatherContext.js` | Clear domain boundary; algorithms testable. | Legacy file still present; potential confusion. | Remove legacy (`gatherContext.js`) after refactor + tests updated. |
+| `filter/` | Query language (lex/parse/eval) for message filtering. | `lexer.js`, `parser.js`, `evaluator.js` | Properly isolated DSL core. | Command execution logic currently lives in `main.js` (soon `ui/interaction.js`) and partly conceptually belongs adjacent. | Leave DSL core here; do NOT mix UI command handlers; future: add `README` spec + topic/date extensions. |
+| `partition/` | Message → wrapped lines → parts (visual segmentation). | `partitioner.js` | Encapsulates computation separate from DOM rendering. | Partition cache invalidation triggered externally (resize logic partly in `main.js`). | After refactor, move resize invalidation glue next to runtime or provide small exported helper used by `historyRuntime`. |
+| `ui/` | All presentation, user interaction, overlays, modes, rendering, scroll mechanics. Post-refactor will absorb: `historyRuntime.js`, `interaction.js`, `requestDebugOverlay.js`, `hud.js`, `bootstrap.js`. | Many: `modes.js`, `keyRouter.js`, overlays, `history/historyView.js`, `scrollControllerV3.js` | Logical home for all DOM concerns; separation from domain intact. | Risk of becoming large catch-all; overlays vs core rendering vs instrumentation not sub‑segmented. | Introduce internal subfolders gradually: `ui/overlays/`, `ui/runtime/`, `ui/instrumentation/` once stabilized (Phase 2+); avoid premature split now. |
+| `send/` | Send pipeline business logic (trimming loop, assembling provider payload). | `pipeline.js` | Pure domain algorithm, minimal DOM coupling (good). | Request debug overlay currently implemented in UI but conceptually tied to send; boundary is clear though. | Keep pure; expose structured events later instead of UI hooks. |
+| `provider/` | Provider abstraction and concrete adapters. | `adapter.js`, `openaiAdapter.js` | Extensible; supports future providers. | Lacks streaming interface placeholder. | Add streaming & abort method signatures (no-op) when feature planned. |
+| `api/` | API key storage & retrieval. | `keys.js` | Simple and isolated. | Might expand if multi-provider key mgmt adds complexity. | Keep; if grows, rename to `api/keys/` with per-provider schemes. |
+| `ui/util.js` | Tiny shared UI utilities (escapeHtml). | `util.js` | Minimal. | Could accumulate unrelated helpers. | Keep small; create `ui/utils/` only if > ~5 utilities appear. |
+| (root) `main.js` | Pre-refactor: God file (composition + rendering + interaction). Post-refactor: slim entry (layout injection + invocation). | N/A | Clear entry after slimming. | Current size is primary architectural debt. | Execute planned extraction; then freeze to minimal responsibilities. |
+
+### 13.1 Structural Adequacy & Optimality Assessment
+
+Current structure is broadly sensible: functional cohesion is mostly preserved, domain logic does not leak upward, and UI concerns (though numerous) reside in a single place. The largest deficiency is the absence of a discrete “composition/runtime” layer, leading to `main.js` bloat. Rather than adding a new top-level folder (`app/`), layering composition via a few focused files inside existing folders (`store/runtimeSetup.js`, `ui/bootstrap.js`) maintains clarity and avoids parallel taxonomies.
+
+Optimality considerations:
+1. Separation of Concerns: Strong at domain vs UI boundary. WEAK at composition (being addressed) and instrumentation (HUD + debug overlay intermixed with rendering in main.js today).
+2. Scalability: UI folder risks internal sprawl. Introducing sub-packages only after refactor prevents over-engineering.
+3. Discoverability: New contributors can map “where to look” fairly intuitively (models→data shape, filter→DSL, send→pipeline). Composition becoming explicit further improves this.
+4. Testing Surface: Domain folders are test-friendly; UI runtime code still centralized—post-extraction, targeted tests (e.g., rendering pipeline, command handling) become easier to isolate.
+5. Change Impact Radius: Refactor reduces blast radius of editing send or command logic by isolating them from layout/render code.
+
+### 13.2 Potential Future Adjustments (Deferred)
+| Adjustment | Trigger Condition | Benefit | Cost / Risk |
+|-----------|-------------------|---------|-------------|
+| Add `ui/runtime/` subfolder | After historyRuntime + interaction stabilize | Cleaner grouping of core runtime vs overlays | Minor churn; new relative import paths |
+| Add `ui/instrumentation/` (HUD, requestDebug) | If instrumentation grows (events, metrics panel) | Keeps rendering lean | Slight fragmentation if overdone |
+| Remove legacy files (`anchorManager.js`, `windowScroller.js`, `gatherContext.js`) | After confirming no hidden references in tests | Clarity, reduces search noise | Need to update any stray imports (unlikely) |
+| Introduce `events/` (pub/sub) | When multiple modules need telemetry (send, boundary, UI) | Decouples instrumentation & logging | Must avoid premature abstraction |
+| Split `scrollControllerV3.js` (geometry vs animation) | If modifications > ~200 LOC net new or performance tuning begins | Easier targeted optimization & testing | More files; ensure naming clarity |
+| Split oversized overlays (`settingsOverlay.js`, `topicEditor.js`) | When feature expansion resumes | Maintainable overlay components | Requires light componentisation strategy |
+
+### 13.3 Summary Judgment
+The existing folder layout is *sufficient and appropriate* for the current project scale. Creating a new top-level structural layer now would add cognitive overhead without offsetting complexity. The optimal path is: (a) finish `main.js` deconstruction into existing folders; (b) defer any new top-level additions until concrete pain emerges (e.g., instrumentation sprawl or event-driven extensibility). Present taxonomy supports incremental feature growth with minimal friction.
+
+(End of Added Section)
