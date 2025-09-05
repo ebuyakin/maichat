@@ -1,4 +1,4 @@
-import { openModal } from './openModal.js'
+import { openModal } from '../shared/openModal.js'
 export function openHelpOverlay({ onClose, modeManager }){
   const backdrop = document.createElement('div')
   backdrop.className = 'overlay-backdrop centered'

@@ -1,5 +1,4 @@
-// TEMP STUB re-export (Phase 3). Original moved to infrastructure/provider/adapter.js
-export * from '../infrastructure/provider/adapter.js'
+// Moved from src/provider/adapter.js (Phase 3 infrastructure move)
 // Generic ProviderAdapter interface and registry
 
 /** @typedef {{ sendChat: (req: ChatRequest) => Promise<ChatResponse> }} ProviderAdapter */

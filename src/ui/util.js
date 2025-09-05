@@ -1,5 +1,3 @@
-// Shared UI utility helpers
-export function escapeHtml(s){
-  if(!s && s!==0) return ''
-  return String(s).replace(/[&<>]/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
-}
+// TEMP STUB re-export during Phase 4 move
+export * from '../shared/util.js'
+

@@ -9,7 +9,7 @@ export function saveApiKeys(obj){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(obj||{}))
 }
 
-import { openModal } from './openModal.js'
+import { openModal } from '../shared/openModal.js'
 export function openApiKeysOverlay({ onClose, modeManager }){
   const existing = loadApiKeys()
   const backdrop = document.createElement('div')

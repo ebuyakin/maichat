@@ -1,5 +1,4 @@
-// TEMP STUB re-export (Phase 3). Original moved to infrastructure/api/keys.js
-export * from '../infrastructure/api/keys.js'
+// Moved from src/api/keys.js (Phase 3 infrastructure move)
 // Centralized API key storage & retrieval utilities
 // Keys stored in localStorage under single JSON object 'maichat_api_keys'
 // Legacy (pre M6.3) OpenAI key lived at 'maichat.openai.key' (string). We migrate transparently.

@@ -1,5 +1,5 @@
 // Topic Editor Overlay - full CRUD + move
-import { openModal } from './openModal.js'
+import { openModal } from '../shared/openModal.js'
 // Keyboard:
 //  j/k navigate, h collapse/go parent, l expand/first child
 //  n new child, N new top-level, r rename, d delete, m mark, p paste

@@ -1,7 +1,7 @@
 # Folder Structure Migration Plan
 
 Date: 2025-09-05
-Status: Draft (no moves performed yet)
+Status: Phase 2 (Instrumentation) partially executed: steps 2.1–2.4 complete; stubs removed (step 2.5 deferred commit pending).
 Scope: Safely transition from current ad-hoc `src/` layout to the proposed structure:
 
 ```
@@ -62,7 +62,6 @@ Scope: Safely transition from current ad-hoc `src/` layout to the proposed struc
 | 7 Runtime Polishing | 7.1 | Review runtime folder borders | Low | chore:migrate:runtime-review |
 | 8 Legacy | 8.1 | Quarantine legacy into `/legacy` | Low | chore:migrate:legacy-quarantine |
 | 8 Legacy | 8.2 | Delete legacy after double check | Low | chore:migrate:legacy-remove |
-| 9 (Optional) | 9.1 | Move `src/main.js` to repo root | Medium | feat:structure:entry-root |
 
 ---
 ## Detailed Steps
@@ -85,19 +84,17 @@ Rollback: Delete newly created empty folders & READMEs.
 ### Phase 2 – Instrumentation First
 Reason: Lowest coupling; only referenced by overlays / entry; minimal imports.
 
-**Step 2.1 Move**
+**Step 2.1 Move (Executed)**
 Files:
 - `ui/debug/hudRuntime.js` → `instrumentation/hudRuntime.js`
 - `ui/debug/requestDebugOverlay.js` → `instrumentation/requestDebugOverlay.js`
 
-Approach:
-1. Move both files.
-2. Create temporary re-export shims in old paths:
-   - `ui/debug/hudRuntime.js` (new stub): `export * from '../../instrumentation/hudRuntime.js'`
-   - `ui/debug/requestDebugOverlay.js` stub similar.
-3. Run tests & smoke.
-4. Update all imports referencing `ui/debug/` to point directly to `instrumentation/`.
-5. Remove stubs.
+Approach (Actual Execution Outcome):
+1. Implementations moved into `instrumentation/`.
+2. Temporary re-export stubs added under `ui/debug/`.
+3. Tests run (all passing) + manual browser smoke confirmed.
+4. Imports in `main.js` updated to reference `instrumentation/` directly.
+5. Stubs now removed (awaiting commit per user instruction to pause before commit).
 
 Rollback: Restore original files from git; remove instrumentation copies.
 
@@ -199,13 +196,8 @@ Smoke: Ensure no runtime import errors; grep for any leftover references.
 
 Commit messages clearly note deletion.
 
-### Phase 9 – Optional Entry Relocation
-**Step 9.1 Move Entry (Deferred)**
-If desired later: move `src/main.js` → project root `main.js`.
-- Create stub `src/main.js` re-exporting: `import '../main.js'` (or adjust bundler entry config if needed) – remove after build config updated.
-- Re-run build & smoke.
-
-Rollback: Move file back; delete stub.
+### (Removed) Phase 9 – Entry Relocation
+Decision: Keep `main.js` inside `src/` permanently. Rationale: Consistent path for bundlers & tooling, keeps all runtime source under one root, avoids extra top-level noise. Any newcomer expects an entry inside `src/`; we preserve that convention.
 
 ---
 ## Import Update Strategy Summary
@@ -239,11 +231,12 @@ create_stub() {
 
 ---
 ## Completion Criteria
-- All directories reflect target structure.
+- All directories reflect target structure (excluding removed optional entry relocation).
 - Zero re-export stubs remain.
 - Legacy directory either empty (deleted) or documented with removal date.
+- `main.js` stays in `src/` (explicit decision recorded).
 - Tests pass; manual smoke passes.
-- Architecture document updated Section 3 & Appendix reflect *actual* (not proposed) state; proposed appendix removed or clearly marked as historical.
+- Architecture document Section 3 & Appendix updated to actual state; proposal appendix either removed or marked historical.
 
 ---
 ## Post-Migration Follow-Ups (Non-blocking)
@@ -256,8 +249,8 @@ create_stub() {
 ## Quick Reference Move Map
 | From | To |
 |------|----|
-| ui/debug/hudRuntime.js | instrumentation/hudRuntime.js |
-| ui/debug/requestDebugOverlay.js | instrumentation/requestDebugOverlay.js |
+| (DONE) ui/debug/hudRuntime.js | instrumentation/hudRuntime.js |
+| (DONE) ui/debug/requestDebugOverlay.js | instrumentation/requestDebugOverlay.js |
 | provider/adapter.js | infrastructure/provider/adapter.js |
 | provider/openaiAdapter.js | infrastructure/provider/openaiAdapter.js |
 | api/keys.js | infrastructure/api/keys.js |

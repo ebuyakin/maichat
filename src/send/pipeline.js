@@ -1,7 +1,7 @@
-import { getProvider, ProviderError } from '../provider/adapter.js'
+import { getProvider, ProviderError } from '../infrastructure/provider/adapter.js'
 import { estimateTokens, getModelBudget, estimatePairTokens } from '../context/tokenEstimator.js'
 import { getSettings } from '../settings/index.js'
-import { getApiKey } from '../api/keys.js'
+import { getApiKey } from '../infrastructure/api/keys.js'
 
 /** Build chat messages array from included pairs plus new user text */
 export function buildMessages({ includedPairs, newUserText }){

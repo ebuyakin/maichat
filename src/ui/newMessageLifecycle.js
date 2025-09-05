@@ -1,7 +1,7 @@
 // New Message Lifecycle module
 // Handles: pending send, auto-focus, filter adjustment (new reply badge removed)
 
-import { escapeHtml } from './util.js'
+import { escapeHtml } from '../shared/util.js'
 
 export function createNewMessageLifecycle({ store, activeParts, commandInput, renderHistory, applyActivePart }){
   let pendingSend = false

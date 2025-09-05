@@ -22,8 +22,8 @@ No redesign, no performance tuning, no streaming/abort, no filter language chang
 | `bootstrap.js` | `src/runtime/bootstrap.js` | Orchestrate startup (providers, persistence init, apply spacing styles, optional seeding, first render, remove loading overlay, beforeunload flush). |
 | `demoSeeding.js` | `src/store/demoSeeding.js` | Demo / test dataset (`seedDemoPairs`, word-count dataset, reseed & generate helpers). Dev-only utilities. |
 | `historyRuntime.js` | `src/ui/history/historyRuntime.js` | Layout sizing, spacing styles, render pipeline (`renderHistory`, `renderCurrentView`), active part handling, fade visibility, message count & status, context inclusion styling, boundary jump. |
-| `requestDebugOverlay.js` | `src/ui/debug/requestDebugOverlay.js` | Request debug overlay creation & rendering (prediction / trimming / timing diagnostics). |
-| `hud.js` | `src/ui/debug/hudRuntime.js` | HUD container, timestamp formatting, metrics section toggle, continuous update loop. |
+| `requestDebugOverlay.js` | `src/ui/debug/requestDebugOverlay.js` (moved → `src/instrumentation/requestDebugOverlay.js` Phase 2) | Request debug overlay creation & rendering (prediction / trimming / timing diagnostics). |
+| `hud.js` | `src/ui/debug/hudRuntime.js` (moved → `src/instrumentation/hudRuntime.js` Phase 2) | HUD container, timestamp formatting, metrics section toggle, continuous update loop. |
 | `interaction.js` | `src/ui/interaction/interaction.js` | Modes & key handlers, command history & execution, star/flag toggles, quick topic picker integration, menu system, anchor mode cycle, pending meta rendering, send button enable + animation, request debug toggle dispatch. |
 | (slim) `main.js` | `src/main.js` | Root layout HTML & loading guard injection, ordered initializer calls, temporary debug window exposes. |
 

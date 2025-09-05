@@ -3,8 +3,8 @@
 // spacing styles, optional seeding, first render, loading overlay removal, and beforeunload flush.
 // ZERO behavioral changes.
 
-import { registerProvider } from '../provider/adapter.js'
-import { createOpenAIAdapter } from '../provider/openaiAdapter.js'
+import { registerProvider } from '../infrastructure/provider/adapter.js'
+import { createOpenAIAdapter } from '../infrastructure/provider/openaiAdapter.js'
 import { ensureCatalogLoaded } from '../models/modelCatalog.js'
 import { seedDemoPairs } from '../store/demoSeeding.js'
 import { getSettings } from '../settings/index.js'

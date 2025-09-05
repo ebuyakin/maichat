@@ -1,5 +1,4 @@
-// TEMP STUB re-export (Phase 3). Original moved to infrastructure/provider/openaiAdapter.js
-export * from '../infrastructure/provider/openaiAdapter.js'
+// Moved from src/provider/openaiAdapter.js (Phase 3 infrastructure move)
 import { ProviderError, classifyError } from './adapter.js'
 
 /** Simple non-streaming OpenAI Chat Completions adapter */

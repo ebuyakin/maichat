@@ -1,6 +1,6 @@
 // Simple Model Editor (Ctrl+Shift+M) for enable/disable only
 import { listModels, toggleModelEnabled, getActiveModel, setActiveModel } from '../models/modelCatalog.js'
-import { openModal } from './openModal.js'
+import { openModal } from '../shared/openModal.js'
 
 export function openModelEditor({ onClose }){
   const backdrop = document.createElement('div')

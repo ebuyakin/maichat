@@ -1,7 +1,7 @@
 // HistoryView: encapsulates rendering of message parts list.
 // Currently performs full re-render; future optimization may diff or virtualize.
 
-import { escapeHtml } from '../util.js'
+import { escapeHtml } from '../../shared/util.js'
 import { getSettings } from '../../settings/index.js'
 
 export function createHistoryView({ store, onActivePartRendered }){

@@ -1,6 +1,6 @@
 // Quick Topic Picker (Selection Mode)
 // Responsibilities: render filtered tree subset, keyboard nav (j/k), selection callback, focus isolation.
-import { openModal } from './openModal.js'
+import { openModal } from '../shared/openModal.js'
 
 export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
   let filter = ''

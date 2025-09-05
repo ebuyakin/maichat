@@ -48,7 +48,7 @@ Refactor Outcome: Previous monolithic composition collapsed into explicit strata
 | Send & Context Prediction | Predict inclusion boundary, trimming & retry, request assembly, provider invocation, error classification | `send/pipeline.js`, `context/boundaryManager.js`, `context/tokenEstimator.js`, `provider/adapter.js`, `provider/openaiAdapter.js` |
 | Partitioning & Scroll Mechanics | Logical line wrapping into parts, active part controller, anchor-based scroll invariants | `partition/partitioner.js`, `ui/scrollControllerV3.js`, `ui/parts.js` |
 | Overlays (Modal UI) | Topical editors, pickers, settings, model management, API key input, help | `ui/topicEditor.js`, `ui/topicPicker.js`, `ui/settingsOverlay.js`, `ui/modelSelector.js`, `ui/modelEditor.js`, `ui/apiKeysOverlay.js`, `ui/helpOverlay.js`, `ui/openModal.js`, `ui/focusTrap.js` |
-| Diagnostics / Instrumentation | Live HUD metrics, request-level debug payload presentation | `ui/debug/hudRuntime.js`, `ui/debug/requestDebugOverlay.js` |
+| Diagnostics / Instrumentation | Live HUD metrics, request-level debug payload presentation | `instrumentation/hudRuntime.js`, `instrumentation/requestDebugOverlay.js` |
 | Domain Models & State | Message & topic factories, in-memory store, derived indexes, persistence boundary, catalog & settings | `models/*.js`, `store/*.js`, `persistence/contentPersistence.js`, `settings/index.js`, `api/keys.js` |
 | Legacy (To Retire) | Superseded context & scrolling implementations | `context/gatherContext.js`, `ui/anchorManager.js`, `ui/windowScroller.js` |
 
@@ -124,8 +124,8 @@ LOC values reflect post-refactor snapshot (#codebase measurement on key modified
 | `ui/helpOverlay.js` | 25 | Help overlay | A | Stable. |
 | `ui/openModal.js` | 30 | Modal shell | A | Generic primitive. |
 | `ui/focusTrap.js` | 33 | Focus management | A | Reusable. |
-| `ui/debug/hudRuntime.js` | 216 | Live metrics HUD | B | Verbose string assembly; possible section modules. |
-| `ui/debug/requestDebugOverlay.js` | 123 | Request diagnostics overlay | A | Self-contained. |
+| `instrumentation/hudRuntime.js` | 216 | Live metrics HUD | B | Verbose string assembly; possible section modules. |
+| `instrumentation/requestDebugOverlay.js` | 123 | Request diagnostics overlay | A | Self-contained. |
 | `ui/util.js` | 5 | HTML escape util | A | Keep minimal. |
 | `ui/anchorManager.js` | 62 | Legacy anchor logic | L | Remove after verification. |
 | `ui/windowScroller.js` | 152 | Legacy scroll impl | L | Remove; replaced by V3 controller. |
@@ -206,13 +206,13 @@ End of document.
 
 ---
 ## Appendix: Proposed Folder & File Inventory (Updated per Instructions)
-This proposal applies the requested adjustments: (1) Replace previous `app/` concept with `runtime/` (startup wiring only). (2) Place `main.js` at repository root for immediate discoverability. (3) Relocate `partitioner.js` into the history feature (its behavior is purely about how the user reads & navigates long messages). No file renames or edits—only moves. Health scale: A (clean) · B (watch) · C (refactor desirable) · L (legacy delete candidate).
+This proposal applies the requested adjustments: (1) Replace previous `app/` concept with `runtime/` (startup wiring only). (2) Keep `main.js` inside `src/` (conventional source-root entry; avoids root clutter). (3) Relocate `partitioner.js` into the history feature (its behavior is purely about how the user reads & navigates long messages). No file renames or edits—only moves. Health scale: A (clean) · B (watch) · C (refactor desirable) · L (legacy delete candidate).
 
 | Path / Folder | LOC | Role (Summary) | Health | Notes (User-Oriented Responsibility) |
 |---------------|----:|----------------|--------|-------------------------------------|
 | **(total project)** | 5032 | All JS sources (current) | B | Baseline before performing moves. |
 | **Total (non-legacy)** | 4796 | Active code (ex legacy) | B | Working surface after removing deprecated files. |
-| main.js | 146 | Application entrypoint | B | Small file that creates static DOM shell then delegates startup; you open this first to understand “how the app boots”. Keep minimal & readable. |
+| src/main.js | 146 | Application entrypoint | B | Slim entry inside conventional `src/` root keeps repository top-level free of noise. |
 | **runtime/** | 128 | Startup orchestration layer | A | Houses only boot sequencing & runtime container creation; when reading from top → you see how services are wired before any UI logic. |
 | runtime/runtimeSetup.js | 75 | Build service container | A | Instantiates store, settings, context prediction & returns a plain object; no DOM or rendering entanglement. |
 | runtime/bootstrap.js | 53 | Ordered initialization | A | Performs provider registration, persistence init, optional seeding, first render, layout sizing—each step obvious & linear for easy auditing. |
@@ -271,7 +271,7 @@ This proposal applies the requested adjustments: (1) Replace previous `app/` con
 Key Placement Justifications:
 * Partitioner moved under history because segmentation serves reading & navigation experience (not a core data concern once algorithm stabilized).
 * Runtime separated from core so future additions (events, telemetry init) stay clearly “startup only”.
-* main.js elevated to root for immediate discoverability (open repo → see entry). This reduces navigation friction for new contributors.
+* main.js remains in `src/` for conventional bundler expectations and to avoid polluting repository root with executable code.
 * Core intentionally excludes UI & provider specifics to keep business rules stable amidst UI or vendor changes.
 
 End of appendix.

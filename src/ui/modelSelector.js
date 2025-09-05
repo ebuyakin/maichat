@@ -1,6 +1,6 @@
 // Lightweight model selector overlay (Ctrl+M)
 import { listModels, getActiveModel, setActiveModel } from '../models/modelCatalog.js'
-import { openModal } from './openModal.js'
+import { openModal } from '../shared/openModal.js'
 
 export function openModelSelector({ onClose }){
   const models = listModels().filter(m=> m.enabled)
