@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { partitionMessage, invalidatePartitionCacheOnResize } from '../../src/partition/partitioner.js'
+import { partitionMessage, invalidatePartitionCacheOnResize } from '../../src/features/history/partitioner.js'
 
 // Basic smoke tests; DOM-dependent metrics faked via jsdom sizes.
 

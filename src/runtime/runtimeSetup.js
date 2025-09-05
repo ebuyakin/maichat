@@ -6,17 +6,15 @@ import { createStore } from '../core/store/memoryStore.js'
 import { attachIndexes } from '../core/store/indexes.js'
 import { createIndexedDbAdapter } from '../core/store/indexedDbAdapter.js'
 import { attachContentPersistence } from '../core/persistence/contentPersistence.js'
-import { createHistoryView, bindHistoryErrorActions } from '../ui/history/historyView.js'
-import { ActivePartController } from '../ui/parts.js'
-import { createScrollController } from '../ui/scrollControllerV3.js'
 import { getSettings } from '../core/settings/index.js'
-import { createNewMessageLifecycle } from '../ui/newMessageLifecycle.js'
-import { createBoundaryManager } from '../core/context/boundaryManager.js'
-import { evaluate } from '../filter/evaluator.js' // used indirectly via lifecycle callbacks
-import { parse } from '../filter/parser.js' // reserved for lifecycle (filter application later)
 import { getActiveModel } from '../core/models/modelCatalog.js'
-
-// initRuntime constructs and returns the shared context object used by downstream modules.
+// History feature (post Phase 6.1 transplant)
+import { createHistoryView, bindHistoryErrorActions } from '../features/history/historyView.js'
+import { ActivePartController } from '../features/history/parts.js'
+import { createScrollController } from '../features/history/scrollControllerV3.js'
+import { createNewMessageLifecycle } from '../features/history/newMessageLifecycle.js'
+import { createBoundaryManager } from '../core/context/boundaryManager.js'
+import { evaluate } from '../features/command/evaluator.js' // used indirectly via lifecycle callbacks
 export function initRuntime() {
   const store = createStore()
   attachIndexes(store)

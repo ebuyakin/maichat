@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parse } from '../../src/filter/parser.js'
+import { parse } from '../../src/features/command/parser.js'
 
 describe('parser basic', () => {
   it('parses simple star filter', () => {

@@ -5,11 +5,11 @@ import { describe, it } from 'vitest'
 // We simulate by monkey-patching minimal DOM APIs required and invoking exported functions if possible.
 // Note: Deep UI interaction not covered here; goal is regression guard for unintended mode change.
 
-import { createModeManager, MODES } from '../../src/ui/modes.js'
+import { createModeManager, MODES } from '../../src/features/interaction/modes.js'
 
 // We can only test what is exported. Help overlay and openApiKeysOverlay accept modeManager param.
-import { openHelpOverlay } from '../../src/ui/helpOverlay.js'
-import { openApiKeysOverlay } from '../../src/ui/apiKeysOverlay.js'
+import { openHelpOverlay } from '../../src/features/config/helpOverlay.js'
+import { openApiKeysOverlay } from '../../src/features/config/apiKeysOverlay.js'
 
 // Provide minimal DOM environment hooks (jsdom already present via Vitest config)
 

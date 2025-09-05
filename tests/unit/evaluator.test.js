@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { evaluate } from '../../src/filter/evaluator.js'
+import { evaluate } from '../../src/features/command/evaluator.js'
 
 function makePair(id, star, colorFlag='b', model='gpt', topicId='topic'){
   return { id, createdAt: Date.now(), topicId, model, star, colorFlag, userText:'hello', assistantText:'world' }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { shouldAutoSwitchToView } from '../../src/ui/newMessageLifecycle.js'
+import { shouldAutoSwitchToView } from '../../src/features/history/newMessageLifecycle.js'
 
 describe('auto-switch heuristic v2', ()=>{
   it('switches when mode is input, inputEmpty, and replyHeight > paneHeight', ()=>{

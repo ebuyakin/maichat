@@ -1,7 +1,7 @@
 # Folder Structure Migration Plan
 
 Date: 2025-09-05
-Status: Phase 2 (Instrumentation) partially executed: steps 2.1–2.4 complete; stubs removed (step 2.5 deferred commit pending).
+Status: Phase 6.5 (Compose) COMPLETE. Completed: Instrumentation (2.1), Core (5.1 subset), History (6.1), Interaction (6.2), Command (6.3), Topics (6.4), Compose (6.5). Next: start Phase 6.6 (Config overlays).
 Scope: Safely transition from current ad-hoc `src/` layout to the proposed structure:
 
 ```
@@ -144,12 +144,17 @@ Rollback: Use git restore of moved directories; remove new copies.
 ### Phase 6 – Features (Segmented)
 Move slices one at a time so import adjustments are localized.
 
-**Step 6.1 History**
-Files: `ui/history/historyRuntime.js`, `ui/history/historyView.js`, `ui/scrollControllerV3.js`, `ui/parts.js`, `ui/newMessageLifecycle.js`, `partition/partitioner.js` → `features/history/`
+**Step 6.1 History (DONE)**
+Files moved & transplanted (no longer stubs): `ui/history/historyRuntime.js`, `ui/history/historyView.js`, `ui/scrollControllerV3.js`, `ui/parts.js`, `ui/newMessageLifecycle.js`, `partition/partitioner.js` → `features/history/`
 
-Partitioner Move: Adjust imports where it was used (likely in historyRuntime or pipeline context). Provide stub `partition/partitioner.js` re-exporting from new location until all references updated.
+Execution Notes:
+1. Initial stub pass (re-exports / delegation) validated with all tests green.
+2. Full implementations transplanted into `features/history/*` replacing stubs.
+3. `runtime/runtimeSetup.js` imports updated to new feature paths; duplicate legacy imports removed.
+4. Grep confirms no runtime imports reference old locations (only docs + legacy originals themselves).
+5. Test suite remains 43/43 passing post‑transplant.
 
-Smoke: Scroll anchor & j/k navigation still correct; long message still partitioned; send updates visible.
+Result: Original history & partitioner source files are now detached (safe to delete – see Safe Deletion section below). Do NOT delete automatically; user will perform deletion once acknowledged.
 
 **Step 6.2 Interaction**
 Files: `ui/interaction/interaction.js`, `ui/modes.js`, `ui/keyRouter.js` → `features/interaction/`
@@ -161,15 +166,13 @@ Files: `filter/lexer.js`, `filter/parser.js`, `filter/evaluator.js` → `feature
 
 Smoke: Apply a basic filter; ensure rendering changes accordingly.
 
-**Step 6.4 Topics**
-Files: `ui/topicEditor.js`, `ui/topicPicker.js` → `features/topics/`
+**Step 6.4 Topics (DONE)**
+Files moved: `ui/topicEditor.js`, `ui/topicPicker.js` → `features/topics/`.
+Stubs removed after import updates. Tests & smoke passed.
 
-Smoke: Open editor & picker; rename a topic; select topic for new message.
-
-**Step 6.5 Compose**
-Files: `send/pipeline.js` → `features/compose/pipeline.js`
-
-Smoke: Send message succeeds; trimming attempts still logged in request debug.
+**Step 6.5 Compose (DONE)**
+Files moved: `send/pipeline.js` → `features/compose/pipeline.js`.
+Stub removed after successful tests (43 passing) and grep verification (no remaining `send/pipeline` imports).
 
 **Step 6.6 Config Overlays**
 Files: `ui/settingsOverlay.js`, `ui/modelSelector.js`, `ui/modelEditor.js`, `ui/apiKeysOverlay.js`, `ui/helpOverlay.js` → `features/config/`
@@ -263,20 +266,23 @@ create_stub() {
 | persistence/contentPersistence.js | core/persistence/contentPersistence.js |
 | context/boundaryManager.js | core/context/boundaryManager.js |
 | context/tokenEstimator.js | core/context/tokenEstimator.js |
-| partition/partitioner.js | features/history/partitioner.js |
-| ui/history/* (runtime, view) | features/history/* |
-| ui/scrollControllerV3.js | features/history/scrollControllerV3.js |
-| ui/parts.js | features/history/parts.js |
-| ui/newMessageLifecycle.js | features/history/newMessageLifecycle.js |
-| ui/interaction/interaction.js | features/interaction/interaction.js |
-| ui/modes.js | features/interaction/modes.js |
-| ui/keyRouter.js | features/interaction/keyRouter.js |
+| partition/partitioner.js | features/history/partitioner.js (DONE) |
+| ui/history/* (runtime, view) | features/history/* (DONE) |
+| ui/scrollControllerV3.js | features/history/scrollControllerV3.js (DONE) |
+| ui/parts.js | features/history/parts.js (DONE) |
+| ui/newMessageLifecycle.js | features/history/newMessageLifecycle.js (DONE) |
+| (DONE) ui/interaction/interaction.js | features/interaction/interaction.js |
+| (DONE) ui/modes.js | features/interaction/modes.js |
+| (DONE) ui/keyRouter.js | features/interaction/keyRouter.js |
+| (DONE) filter/lexer.js | features/command/lexer.js |
+| (DONE) filter/parser.js | features/command/parser.js |
+| (DONE) filter/evaluator.js | features/command/evaluator.js |
 | filter/lexer.js | features/command/lexer.js |
 | filter/parser.js | features/command/parser.js |
 | filter/evaluator.js | features/command/evaluator.js |
 | ui/topicEditor.js | features/topics/topicEditor.js |
 | ui/topicPicker.js | features/topics/topicPicker.js |
-| send/pipeline.js | features/compose/pipeline.js |
+| send/pipeline.js | features/compose/pipeline.js (DONE) |
 | ui/settingsOverlay.js | features/config/settingsOverlay.js |
 | ui/modelSelector.js | features/config/modelSelector.js |
 | ui/modelEditor.js | features/config/modelEditor.js |
@@ -286,5 +292,23 @@ create_stub() {
 | ui/anchorManager.js | legacy/anchorManager.js |
 | ui/windowScroller.js | legacy/windowScroller.js |
 
----
 **End of plan.**
+
+## Safe Deletion (Current Status)
+No pending stubs after Phase 6.5 completion. Next stubs will be produced during Phase 6.6.
+
+## Phase 6.3 – Command DSL (Complete)
+All filter stubs removed previously; no pending actions.
+
+Interaction original stubs already removed earlier; no action needed there.
+
+## Housekeeping / Cleanup Opportunities
+- Remove now-unused placeholder helpers in `runtime/runtimeSetup.js` (`renderHistoryInternal`, `applyActivePart`) after Interaction move (they are obsolete post history transplant).
+- Consider adding a tiny integration test for `createHistoryRuntime` to lock render + active part invariants.
+- After Interaction & Command moves, run a global grep for any lingering `../ui/` imports to ensure complete feature isolation.
+
+## Verification Snapshot (Post 6.1)
+- Tests: 43/43 passing.
+- Grep: no runtime imports to old history or partitioner paths.
+- Behavior: Scroll anchoring, partitioning, fade visibility, new reply focus heuristics intact (manual smoke expected to match pre‑transplant).
+

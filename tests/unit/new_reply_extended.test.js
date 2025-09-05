@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { JSDOM } from 'jsdom'
-import { createNewMessageLifecycle } from '../../src/ui/newMessageLifecycle.js'
+import { createNewMessageLifecycle } from '../../src/features/history/newMessageLifecycle.js'
 
 function mockStore(){
   return { pairs:new Map(), getAllPairs(){ return Array.from(this.pairs.values()) } }

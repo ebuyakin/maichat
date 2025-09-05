@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { JSDOM } from 'jsdom'
-import { createScrollController } from '../../src/ui/scrollControllerV3.js'
+import { createScrollController } from '../../src/features/history/scrollControllerV3.js'
 import { saveSettings } from '../../src/core/settings/index.js'
 
 // Helper to build a fake history DOM with padding representing outer gap G.
