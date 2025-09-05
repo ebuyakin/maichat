@@ -1,226 +1,280 @@
-## MaiChat Architecture Review & Functional Alignment (2025-09-04)
+## MaiChat Architecture (Revised After Phase 1 Refactor)
 
-Author: Automated analysis
-
-### Purpose
-Consolidated architectural inventory, dependency & health assessment, and alignment review against the functional areas defined in `dev-notes.md` (Modal system, Message history, Topics, Command line filtering, New message processing, Configuration). Includes improvement roadmap.
+Date: 2025-09-04
+Scope: Architectural description & evaluation only. Execution status, task checklists, and granular roadmap tracking are intentionally excluded per guideline. Focus is on what the system *is*, why it is shaped this way, and where structural leverage exists for future evolution.
 
 ---
-## 1. Layered Architectural Overview
+## 1. Functional Structure (Problem / Capability View)
+Source: Consolidated from `dev-notes.md` (#codebase) with clarified boundaries and implicit contracts. Each numbered capability is the “why”; later layers & files are the “how”.
 
-| Layer | Core Responsibilities | Key Modules / Files |
-|-------|-----------------------|---------------------|
-| Entry / Composition | Bootstrap DOM, wire subsystems, global event & key handling, HUD/debug, send lifecycle orchestration | `src/main.js` |
-| Domain Model & State | Message & topic models, in‑memory storage, derived indexes, persistence (IndexedDB), settings, model catalog | `models/*.js`, `store/memoryStore.js`, `store/indexes.js`, `persistence/contentPersistence.js`, `store/indexedDbAdapter.js`, `settings/index.js`, `models/modelCatalog.js` |
-| Context & Budgeting | Token heuristics, predictive inclusion boundary (URA reserve) | `context/tokenEstimator.js`, `context/boundaryManager.js` (legacy: `gatherContext.js`) |
-| Filtering Language | Lexing, parsing, evaluating subset query language | `filter/lexer.js`, `filter/parser.js`, `filter/evaluator.js` |
-| Partition & Presentation | Text → wrapped lines → parts, part navigation, history rendering, scroll anchoring, auto view switch | `partition/partitioner.js`, `ui/parts.js`, `ui/history/historyView.js`, `ui/scrollControllerV3.js`, `ui/newMessageLifecycle.js` |
-| Interaction & Modes | Mode state machine, keyboard routing, focus trap, modal primitives | `ui/modes.js`, `ui/keyRouter.js`, `ui/focusTrap.js`, `ui/openModal.js` |
-| Overlays / Editors | Settings, Topics (editor & picker), Models (selector & editor), API keys, Help | `ui/settingsOverlay.js`, `ui/topicEditor.js`, `ui/topicPicker.js`, `ui/modelSelector.js`, `ui/modelEditor.js`, `ui/apiKeysOverlay.js`, `ui/helpOverlay.js` |
-| Send Pipeline & Provider | Message assembly, overflow trimming loop, telemetry, provider abstraction & adapter, API keys | `send/pipeline.js`, `provider/adapter.js`, `provider/openaiAdapter.js`, `api/keys.js` |
-| Utilities & Legacy | HTML escaping, (legacy) anchor/window scroller, deprecated gatherContext | `ui/util.js`, `ui/anchorManager.js`*, `ui/windowScroller.js`*, `context/gatherContext.js`* |
+0. Modal System & Mode Management
+	Inputs: keyboard events, focus changes. Outputs: active mode state (INPUT | VIEW | COMMAND), visual mode indicator, constrained keybinding dispatch.
+	Invariants: exactly one active mode; global key router delegates by mode; UI zones reflect mode semantics (top = command line, middle = history viewport, bottom = input composer).
 
-*Starred entries are legacy / removal candidates.
+1. Message History
+	Concerns: persistence-backed ordered list of message pairs + metadata (stars, flags, topic ref, model, error state). Partitioning of long texts into “parts” sized relative to viewport fraction. Active part navigation and stable scroll anchoring. Visual context inclusion marking. Adjustable spacing & fading heuristics.
+	Primary invariant: Active part remains visually positioned according to anchor mode (bottom|center|top) while preserving continuity under content growth or resize.
+
+2. Topic Management
+	Hierarchical topic tree (rooted), CRUD + move + rename, path derivation, selection for new message, re-assignment for existing messages.
+	Invariant: All message pairs reference a valid topic ID; root is never deleted.
+
+3. Command Line Filtering System
+	Domain-specific filtering DSL (lexer → parser → evaluator) producing a subset of message pairs for view & context prediction. Command input doubles as future scripting extension point.
+	Invariant: Filter application is pure relative to store state (side-effect free outside of view selection). Errors surfaced inline without altering prior selection.
+
+4. New Message Processing & API Interaction
+	Assemble candidate context (predictive inclusion using boundary manager), submit to provider with trimming retry loop, capture response, update store, reposition focus, optionally switch modes.
+	Invariant: Send pipeline never mutates store mid-attempt except to mark sending state; only final accepted attempt commits content or error.
+
+5. Configuration & Preferences
+	Settings (token heuristics, spacing/fade, anchor mode, attempts), API keys, model catalog management, help overlay. Real-time reactive updates (e.g., partition invalidation on spacing change).
+	Invariant: Settings mutations are versioned/migrated and immediately reflected in runtime rendering/layout when relevant.
+
+Cross-Cutting (Enablers):
+	Predictive Context Budgeting (URA concept), Diagnostics (HUD + Request Debug), Keyboard-Centric Interaction, Deterministic Rendering Pipeline.
 
 ---
-## 2. Dependency Characteristics
+## 2. Layered Architectural Overview (Implementation View)
+Refactor Outcome: Previous monolithic composition collapsed into explicit strata. Each layer has a narrow responsibility boundary and communicates through plain data objects & small function contracts—no global event bus yet (intentionally deferred to avoid premature abstraction).
 
-* Fan‑in hubs (used by many): `settings/index.js`, `tokenEstimator.js`, `memoryStore.js`.
-* Single dominant fan‑out: `main.js` (imports nearly every subsystem → God file risk).
-* Cycles avoided; UI does not leak into lower domain layers (good separation at data & estimation layers).
-* BoundaryManager cleanly supersedes `gatherContext` (legacy still present → cleanup opportunity).
+| Layer | Responsibility Focus | Key Modules (post-refactor) |
+|-------|----------------------|-----------------------------|
+| Entry (Slim) | Inject static DOM skeleton, instantiate core modules, delegate boot & exposure | `src/main.js` |
+| Runtime Composition | Construct foundational services (store, indexes, persistence, boundary mgr, scroll, lifecycle, pending meta) | `runtime/runtimeSetup.js` |
+| Bootstrap Orchestration | Order-sensitive startup (provider registration, persistence init, catalog load, spacing styles, seeding, first render, unload flush) | `runtime/bootstrap.js` |
+| History Rendering Runtime | Build parts, render history, layout pane sizing, active part update, fading, context stats integration, status indicators | `ui/history/historyRuntime.js`, `ui/history/historyView.js`, `ui/parts.js` |
+| Interaction Layer | Mode-aware key routing, command filter application, command history, star/flag/model/topic actions, send triggers, menu & overlays dispatch | `ui/interaction/interaction.js`, `ui/modes.js`, `ui/keyRouter.js` |
+| Send & Context Prediction | Predict inclusion boundary, trimming & retry, request assembly, provider invocation, error classification | `send/pipeline.js`, `context/boundaryManager.js`, `context/tokenEstimator.js`, `provider/adapter.js`, `provider/openaiAdapter.js` |
+| Partitioning & Scroll Mechanics | Logical line wrapping into parts, active part controller, anchor-based scroll invariants | `partition/partitioner.js`, `ui/scrollControllerV3.js`, `ui/parts.js` |
+| Overlays (Modal UI) | Topical editors, pickers, settings, model management, API key input, help | `ui/topicEditor.js`, `ui/topicPicker.js`, `ui/settingsOverlay.js`, `ui/modelSelector.js`, `ui/modelEditor.js`, `ui/apiKeysOverlay.js`, `ui/helpOverlay.js`, `ui/openModal.js`, `ui/focusTrap.js` |
+| Diagnostics / Instrumentation | Live HUD metrics, request-level debug payload presentation | `ui/debug/hudRuntime.js`, `ui/debug/requestDebugOverlay.js` |
+| Domain Models & State | Message & topic factories, in-memory store, derived indexes, persistence boundary, catalog & settings | `models/*.js`, `store/*.js`, `persistence/contentPersistence.js`, `settings/index.js`, `api/keys.js` |
+| Legacy (To Retire) | Superseded context & scrolling implementations | `context/gatherContext.js`, `ui/anchorManager.js`, `ui/windowScroller.js` |
 
-Simplified data flow for a send:
-Store → (filtered chronological list) → BoundaryManager prediction → Send Pipeline (attempt + trimming) → Provider → Store update → Partitioning → History render → Scroll & Focus logic → (optional) Mode auto-switch.
+Layer Interaction Narrative:
+	1. Entry builds runtime context (composition layer) and history runtime, then hands control to bootstrap.
+	2. Bootstrap performs one-time sequence (provider reg → persistence init → catalog ensure → optional demo seeding → initial render → layout sizing → remove loading overlay).
+	3. Interaction layer responds to user input, mutating store or lifecycle state and invoking history runtime re-renders.
+	4. Send pipeline (triggered from interaction) queries boundary manager for predicted inclusion, orchestrates trimming attempts, and feeds debug overlays via simple callbacks.
+	5. History runtime renders parts and coordinates scroll controller to enforce anchor invariants; diagnostics read its getters (no back-calls) – a unidirectional observability edge.
+
+Design Rationale:
+	* Chose function factories over classes for ergonomic dependency injection (plain objects reduce coupling & ease test doubles).
+	* Deferred event bus: current synchronous direct calls preserve clarity; bus will add value only when multiple observers (telemetry, UI instrumentation, plugins) emerge simultaneously.
+	* Diagnostics isolated so removal for production build (future) is trivial (tree-shakable boundary).
 
 ---
-## 3. File Inventory & Health Ratings
-
-Health Scale: A (fits well) · B (minor issues) · C (needs refactor) · D (problem) · L (legacy to remove)
-
-| File / Module | LOC | Purpose (Concise) | Health | Notes |
-|---------------|----:|------------------|--------|-------|
-| `src/main.js` | 1389 | Monolithic bootstrap + UI orchestration & debug | D | Primary architectural debt; split recommended. |
-| `models/messagePair.js` | 43 | Message pair factory & shape | A | Cohesive & simple. |
-| `models/topic.js` | 22 | Topic factory | A | OK. |
-| `models/modelCatalog.js` | 70 | Static model metadata & persistence | B | Extract persistence if catalog grows. |
-| `store/memoryStore.js` | 203 | Canonical state + counts + events | A | Core abstraction solid. |
-| `store/indexes.js` | 70 | Derived indexes | B | Rebuild-on-update simple; scalable optimization later. |
-| `persistence/contentPersistence.js` | 129 | Debounced persistence + migrations | B | Migration helpers could separate. |
-| `store/indexedDbAdapter.js` | 65 | IndexedDB adapter | A | Thin & focused. |
-| `settings/index.js` | 80 | Reactive settings + migrations | A | Clear; consider schema version constant. |
-| `context/tokenEstimator.js` | 90 | Token estimation & boundary compute | A | Well-scoped; consider adaptive refinement later. |
-| `context/boundaryManager.js` | 100 | Cached boundary + dirty reasons | A | Good encapsulation. |
-| `context/gatherContext.js` | 22 | Legacy boundary assembly | L | Remove after test purge. |
+## 3. Folder & File Inventory (Hierarchical Health)
+Health Scale: A (clean & cohesive) · B (minor issues / watch) · C (refactor desirable) · L (legacy)  
+LOC values reflect post-refactor snapshot (#codebase measurement on key modified files).
+| Path / Folder | LOC | Role (Summary) | Health | Notes |
+|---------------|----:|----------------|--------|-------|
+| **(total project)** | 5032 | All JS sources (excludes assets/CSS) | B | Concentrated size in `ui/` (61%). Optimization targets identified below. |
+| **ROOT:** | 5032 | Root source aggregate | B | Single entry + functional folders; no circular deps observed. |
+| `src/main.js` | 146 | Slim entry: DOM skeleton + composition & bootstrap call | B | Could externalize static markup if theming needed. |
+| **RUNTIME:** | 128 | Runtime composition & startup orchestration | A | Small, ordered, side-effects isolated. |
+| `runtime/runtimeSetup.js` | 75 | Build core runtime context object | A | Straight-line factory, stable. |
+| `runtime/bootstrap.js` | 53 | Deterministic startup sequencing | A | Explicit ordering; easy to extend. |
+| **STORE:** | 399 | Canonical state, indexes, persistence wiring, demo data | A | Central abstraction stable; watch for UI leakage. |
+| `store/memoryStore.js` | 203 | In-memory state + events | A | Clear mutation API. |
+| `store/indexes.js` | 70 | Derived indexes | B | Recompute strategy fine; perf tuning later. |
+| `store/indexedDbAdapter.js` | 65 | IndexedDB adapter boundary | A | Thin & focused. |
+| `store/demoSeeding.js` | 61 | Demo dataset seeding helpers | A | Dev-only; isolated. |
+| **MODELS:** | 135 | Data shape factories & model catalog | A | Simple, dependency-light. |
+| `models/messagePair.js` | 43 | Message pair factory | A | Minimal. |
+| `models/topic.js` | 22 | Topic factory | A | Minimal. |
+| `models/modelCatalog.js` | 70 | Model registry & selection | B | Mixes static + active; acceptable scale. |
+| **PERSISTENCE:** | 129 | Persistence policy (debounce, migrations) | B | Could extract migrations if they grow. |
+| `persistence/contentPersistence.js` | 129 | Persistence orchestration | B | Debounce + schema logic. |
+| **SETTINGS:** | 80 | Reactive settings & migrations | A | Cohesive, widely reused. |
+| `settings/index.js` | 80 | Settings API | A | Version hook ready. |
+| **CONTEXT:** | 212 | Context prediction & token estimation | A | Core heuristics; one legacy file pending removal. |
+| `context/boundaryManager.js` | 100 | Predict & cache inclusion boundary | A | Clear invalidation model. |
+| `context/tokenEstimator.js` | 90 | Char→token heuristic | A | Simple, calibratable. |
+| `context/gatherContext.js` | 22 | Legacy gather logic | L | Remove post test confirmation. |
+| **FILTER:** | 213 | Filtering DSL (lex/parse/eval) | A | Pure; ready for topic/date extensions. |
 | `filter/lexer.js` | 61 | Tokenization | A | Extensible. |
-| `filter/parser.js` | 65 | AST builder w/ implicit AND | A | Minimal & correct. |
-| `filter/evaluator.js` | 87 | Filter execution | A | Extend with topics & dates later. |
-| `partition/partitioner.js` | 194 | Text wrapping & part slicing | B | Measurement & cache logic could modularize. |
-| `ui/parts.js` | 65 | Parts building & active navigation | A | Clean. |
-| `ui/history/historyView.js` | 120 | DOM assembly of parts & gaps | A | Full re-render acceptable for now; diffing later. |
-| `ui/scrollControllerV3.js` | 264 | Anchor invariant + adaptive scroll | B | Dense; candidate for sub-modules (geometry, animation). |
-| `ui/newMessageLifecycle.js` | 99 | Pending send & auto switch heuristic | A | Focus logic isolated; testable helper exported. |
-| `ui/modes.js` | 17 | Mode FSM | A | Minimal & stable. |
-| `ui/keyRouter.js` | 31 | Global key dispatch | A | Clear; consider plug-in mapping. |
-| `ui/settingsOverlay.js` | 370 | Settings UI | C | Break into sectional components. |
-| `ui/topicEditor.js` | 328 | Topic CRUD & navigation | C | Extract tree abstraction & command actions. |
-| `ui/topicPicker.js` | 139 | Topic selection overlay | B | Reasonable; unify shared modal list patterns. |
-| `ui/modelSelector.js` | 58 | Model picker | A | Lean. |
-| `ui/modelEditor.js` | 84 | Model enable/disable & active selection | A | Fine. |
-| `ui/apiKeysOverlay.js` | 84 | API key entry | A | OK. |
-| `ui/helpOverlay.js` | 25 | Help info overlay | A | OK. |
-| `ui/focusTrap.js` | 33 | Focus management for modals | A | Reusable. |
-| `ui/openModal.js` | 30 | Modal shell | A | Good primitive. |
-| `ui/anchorManager.js` | 62 | Deprecated anchor logic | L | Remove (replaced by scrollControllerV3). |
-| `ui/windowScroller.js` | 152 | Legacy scroll impl | L | Remove after confirming unused. |
-| `send/pipeline.js` | 168 | Send & trimming attempts + telemetry | A | Solid; add event hooks & streaming later. |
-| `provider/adapter.js` | 39 | Provider registry & error classification | A | Extensible. |
-| `provider/openaiAdapter.js` | 60 | OpenAI integration + timings | A | Consider streaming upgrade. |
-| `api/keys.js` | 40 | API key storage | A | Minimal. |
-| `ui/util.js` | 5 | HTML escape | A | Fine. |
+| `filter/parser.js` | 65 | AST builder | A | Minimal & correct. |
+| `filter/evaluator.js` | 87 | Filter execution | A | Extend with topics/dates. |
+| **PARTITION:** | 194 | Text wrapping & part sizing | B | Dense; split measurement logic later. |
+| `partition/partitioner.js` | 194 | Partition computation | B | Candidate for helper extraction. |
+| **SEND** | 168 | Send pipeline & trimming loop | A | Streaming hook pending. |
+| `send/pipeline.js` | 168 | Attempt orchestration | A | Ready for events/streaming. |
+| **PROVIDER** | 99 | Provider abstraction & OpenAI adapter | A | Add streaming/abort signatures later. |
+| `provider/adapter.js` | 39 | Provider registry | A | Extensible. |
+| `provider/openaiAdapter.js` | 60 | OpenAI implementation | A | Streaming upgrade path. |
+| **API:** | 40 | API key storage | A | Minimal boundary. |
+| `api/keys.js` | 40 | Key persistence | A | Fine. |
+| **UI:** | 3089 | Presentation, interaction, overlays, instrumentation | B | Largest surface; two large hotspots plus legacy files. |
+| `ui/interaction/interaction.js` | 506 | Consolidated interaction logic | B | Consider internal split if >600 LOC. |
+| `ui/history/historyRuntime.js` | 278 | History render/layout/fade/stats | B | Could separate visibility/layout later. |
+| `ui/history/historyView.js` | 120 | DOM assembly of parts | A | Pure view. |
+| `ui/scrollControllerV3.js` | 264 | Anchor-based scroll control | B | Geometry vs animation split possible. |
+| `ui/parts.js` | 65 | Part controller & navigation | A | Lean. |
+| `ui/newMessageLifecycle.js` | 99 | Pending send & focus heuristics | A | Stable. |
+| `ui/modes.js` | 17 | Mode FSM | A | Minimal. |
+| `ui/keyRouter.js` | 31 | Mode-aware key dispatch | A | Registry-compatible. |
+| `ui/settingsOverlay.js` | 370 | Settings UI | C | Modularize into panels. |
+| `ui/topicEditor.js` | 328 | Topic CRUD/navigation | C | Extract tree & keyboard command module. |
+| `ui/topicPicker.js` | 139 | Topic selection modal | B | Good; unify list patterns later. |
+| `ui/modelSelector.js` | 58 | Model picker | A | Focused. |
+| `ui/modelEditor.js` | 84 | Model enable/disable | A | Lean. |
+| `ui/apiKeysOverlay.js` | 84 | API key management | A | Minimal. |
+| `ui/helpOverlay.js` | 25 | Help overlay | A | Stable. |
+| `ui/openModal.js` | 30 | Modal shell | A | Generic primitive. |
+| `ui/focusTrap.js` | 33 | Focus management | A | Reusable. |
+| `ui/debug/hudRuntime.js` | 216 | Live metrics HUD | B | Verbose string assembly; possible section modules. |
+| `ui/debug/requestDebugOverlay.js` | 123 | Request diagnostics overlay | A | Self-contained. |
+| `ui/util.js` | 5 | HTML escape util | A | Keep minimal. |
+| `ui/anchorManager.js` | 62 | Legacy anchor logic | L | Remove after verification. |
+| `ui/windowScroller.js` | 152 | Legacy scroll impl | L | Remove; replaced by V3 controller. |
+| **overlays (subset)** | 1234 | (Sum of overlay-related files) | B | Internal modularization candidate (settings/topic). |
+| **diagnostics (subset)** | 339 | HUD + request debug | A | Read-only dependencies; removable for prod build. |
+| **legacy (subset)** | 236 | Legacy anchor/scroll/context gather | L | Safe to delete post test grep. |
+| **styles / misc** | - | (CSS, assets excluded from LOC calc) | - | Out of scope for code health table. |
+| **Total (non-legacy)** | 4796 | Active codebase excluding legacy rows | B | Legacy removal will drop noise by ~4.7%. |
+
+Structural Observations:
+	* Entry shrink 1389 → 146 LOC reduced composition risk surface dramatically.
+	* Hotspots: `ui/interaction/interaction.js` & `ui/history/historyRuntime.js`; both cohesive; monitor size creep.
+	* UI folder dominates (61% LOC); targeted splits should prioritize overlays & interaction if complexity grows.
+	* Legacy subset isolation clarifies deletion path (no active dependencies expected). Legacy removal reduces search noise.
 
 ---
-## 4. Functional Specification Alignment (from `dev-notes.md`)
+## 4. Architectural Evaluation (Qualitative)
+Strengths:
+	* Clear vertical seams: prediction, rendering, interaction, diagnostics decoupled via data callbacks—not shared mutable globals.
+	* Predictive context pipeline isolated, enabling future model-specific strategies without UI churn.
+	* Diagnostics read-only dependency flow prevents instrumentation from influencing core logic (low risk of Heisenbugs).
+	* Keyboard-first modality implemented with minimal surface (tiny FSM + router) → adaptable for future keybinding registry.
 
-### 0. Modal System & Mode Management
-Status: Implemented (INPUT, VIEW, COMMAND) with `ModeManager`, `KeyRouter`, distinct UI zones. Auto-switch heuristic for large reply integrated. Missing: formal abstraction for per-mode keybinding maps (currently hard-coded), and separation of command interpreter logic out of `main.js`.
+Tensions / Trade-offs:
+	* High LOC interaction module balances latency (fewer indirections) against maintainability; future micro-modularization must avoid over-fragmentation (cognitive load > benefit if premature).
+	* Absence of event bus deliberately postpones decoupling; adding one too early could obscure execution order (critical during early correctness maturation).
+	* Partition recalculation & scroll measurement are tightly timed; more abstraction could impair performance predictability prior to adding virtualization.
 
-### 1. Message History
-Implemented Features: Data model, partitioning by viewport-based part fraction, active part navigation, anchor-based scrolling invariant, spacing/fade configuration, metadata display (stars, flags, token inclusion state), error resend/delete.
-
-Gaps: Metadata editing breadth (ranking variants), search highlighting, virtualization for very large histories, accessibility semantics.
-
-### 2. Topic Management System
-Implemented: Hierarchical topics, counts, editor CRUD/move, picker, persistence.
-Gaps: Semantic topic filter integration, advanced search, batch operations.
-
-### 3. Command Line Filtering System
-Implemented: Lexer/parser/evaluator for s,r,m,b,g,c filters, logical ops, command history, debug toggles.
-Gaps: Topic & date filters, token/length predicates, scripting extensions.
-
-### 4. New Message Processing & API Calls
-Implemented: Predictive boundary (URA), trimming retries, telemetry, focus auto-switch, error handling.
-Gaps: Streaming responses, abort, adaptive token calibration, event emission abstraction.
-
-### 5. Configuration Management
-Implemented: Settings overlay (UI + token params), API keys, model catalog, help overlay.
-Gaps: Modularization, export/import, dynamic keybinding help.
-
-Cross-Cutting: Flexible context management partially realized (automatic prediction + trimming) but lacks manual include/exclude and scripting DSL.
+Risks (Residual After Phase 1):
+	* Growth in interaction commands may push file >650 LOC → refactor trigger threshold.
+	* Settings overlay expansion without decomposition may reduce approachability for new contributors.
+	* Manual context overrides (future feature) risk entangling boundary manager with UI state unless mediated by an event or policy layer.
 
 ---
-## 5. Gap Summary & Impact Matrix
+## 5. Future Refactoring & Evolution Suggestions (Architecture-Focused)
+Ordered by leverage (impact / effort ratio), not by feature marketing priority. These are *suggestions*, not a committed plan document.
 
-| Gap | Area | Impact | Effort | Priority |
-|-----|------|--------|--------|----------|
-| Monolithic `main.js` | Composition | High | Medium | P1 |
-| Legacy modules undeleted | Clarity | Medium | Low | P1 |
-| Weak topic filtering semantics | Filtering | Medium | Low-Med | P2 |
-| No streaming responses | UX | Medium-High | Medium | P2 |
-| No abort send | Reliability | Medium | Low | P2 |
-| Lack keybinding registry | Ergonomics | Medium | Low-Med | P2 |
-| Oversized overlays | Maintainability | Medium | Medium | P2 |
-| Missing manual context overrides | Context control | Medium | Med-High | P3 |
-| Absent scripting extensions | Differentiator | High | High | P3 |
-| Adaptive token heuristic missing | Accuracy | Medium | Medium | P3 |
-| Accessibility gaps | Quality | Medium | Medium | P2 |
+1. Remove Legacy Files (Low Effort / High Clarity)
+	 Delete `context/gatherContext.js`, `ui/anchorManager.js`, `ui/windowScroller.js` once test grep confirms non-use. Eliminates misleading search hits and reduces cognitive noise.
 
----
-## 6. Recommended Refactor & Feature Roadmap
-(Phased list retained – see discussion section for rationale.)
+2. Introduce Lightweight Event / Telemetry Facade (Moderate)
+	 Scope: minimal pub/sub for send lifecycle (attempt, success, error) + context prediction outcome. Keep synchronous dispatch; avoid wildcard subscriptions. Benefit: instrumentation & potential future plugin surface without tight coupling to send pipeline. Guardrail: forbid business logic mutations inside subscribers (documentation + TypeScript typedef later).
 
-Phase 1: Extract modules from `main.js`, remove legacy, introduce `events.js`, unify telemetry.
-Phase 2: Keybinding registry, streaming + abort, richer filters, overlay modularization.
-Phase 3: Manual context include/exclude, adaptive token calibration, CLI scripting primitives, settings export/import.
-Phase 4: Virtualized history, incremental partition caching, telemetry aggregation.
+3. Interaction Module Internal Splitting (Conditional Trigger)
+	 If file exceeds ~600 LOC or churn hot-spot emerges, split by concern: `commandExecution`, `menuAndOverlays`, `sendHandlers`, `metadataActions`. Each submodule pure functions returning binder objects to preserve current factory pattern.
 
----
-## 7. Risks & Mitigations
-| Risk | Mitigation |
-|------|------------|
-| Centralized orchestration complexity | Early modular extraction + event bus |
-| Performance at scale | Virtualization & diff rendering (Phase 4) |
-| Token prediction drift | Adaptive calibration + user overrides |
-| Overlay complexity growth | Componentization & size budgets |
-| Filter language stagnation | Formal mini-spec & incremental test-driven extension |
+4. History Runtime Micro-Split (Deferred)
+	 Extract `fadeVisibilityEngine` & `layoutSizing` if additional complexity (e.g., accessibility overlays, virtualization scaffolding) appears. Until then single-file locality aids reasoning about render timing.
 
----
-## 8. Strengths
-Decoupled prediction layer, robust trimming pipeline, keyboard-first design, partition abstraction enabling future virtualization, clear token budgeting semantics.
+5. Provider Streaming & Abort Hooks (Strategic)
+	 Add optional callbacks (`onToken`, `onAbort`) to `provider/adapter` contract. Pipeline can branch: immediate optimistic part insertion vs buffered finalize. Architectural prerequisite: stable event facade (#2) to keep diagnostics decoupled from streaming state transitions.
 
-## 9. Weaknesses
-Monolithic composition file, legacy remnants, limited command language depth, large overlay modules, lack of centralized events/telemetry facade.
+6. Keybinding Registry Abstraction
+	 Replace hard-coded conditionals with declarative registry: `{ mode, key, handler, when? }`. Enables dynamic help generation and future user customization. Registry can live adjacent to interaction layer; maintain deterministic ordering (first-match precedence) to avoid ambiguity.
+
+7. Overlay Modularization
+	 Apply internal composition to `settingsOverlay.js` & `topicEditor.js` (panel components + data adapters). Benefit: isolate stateful logic for unit testing; reduce PR conflict surface.
+
+8. Manual Context Override Layer
+	 Add a “context policy” module sitting between interaction and boundary manager: merges auto-predicted inclusion with user pins/exclusions. Ensures prediction algorithm stays pure; avoids scattering override checks across render & send logic.
+
+9. Adaptive Token Heuristic Calibration
+	 Introduce background sampler comparing predicted vs actual token counts (once real provider usage metrics accrued). Event facade (#2) used to feed calibration data; boundary manager updated via stable interface (no structural churn).
+
+10. Virtualized History (Scale Phase)
+	 Only upon demonstrated performance pain: replace full re-render of parts with windowed renderer. Keep `ActivePartController` API stable so higher layers unaffected. Partitioning stays separate; virtualization layer becomes a thin mapping from logical part indices → mounted DOM nodes.
+
+Non-Goals (Explicit for Clarity Right Now):
+	* Theming system (no concrete need yet).
+	* Plugin API (defer until event facade mature & use-cases validated).
+	* Full scripting DSL in command line (premature without validated advanced filtering demand).
 
 ---
-## 10. Immediate Action Checklist
-1. Create `src/app/` directory and extract: `bootstrap.js`, `hud.js`, `commandProcessor.js`, `menuAndShortcuts.js`.
-2. Add `src/app/events.js` (pub/sub) + emit autoFocusSwitch, sendAttempt, sendResult.
-3. Delete legacy (`gatherContext.js`, `anchorManager.js`, `windowScroller.js`) after test audit.
-4. Implement topic name/path filter in evaluator (`t:"Design/*"`).
-5. Add provider streaming callback skeleton (no UI changes yet) for OpenAI adapter.
+## 6. Summary
+The codebase now reflects intentional layering: composition, interaction, rendering, prediction, and diagnostics are separated with minimal abstraction overhead. Remaining architectural debt concentrates in two high-LOC but cohesive modules and in unremoved legacy files. Future leverage lies in introducing a *thin* event/telemetry seam, cautious modularization of large overlays, and preparing seams (streaming, context policy) that do not destabilize current correctness. The design is structurally sound for iterative feature growth while maintaining the keyboard-centric, context-aware vision.
+
+End of document.
 
 ---
-## 11. Alignment Verdict
-Current codebase meets MVP functional pillars; largest divergence from vision is advanced CLI scripting & manual context curation. Architectural debt is localized (main.js, legacy files) and manageable if addressed prior to expanding feature surface.
+## Appendix: Proposed Folder & File Inventory (Updated per Instructions)
+This proposal applies the requested adjustments: (1) Replace previous `app/` concept with `runtime/` (startup wiring only). (2) Place `main.js` at repository root for immediate discoverability. (3) Relocate `partitioner.js` into the history feature (its behavior is purely about how the user reads & navigates long messages). No file renames or edits—only moves. Health scale: A (clean) · B (watch) · C (refactor desirable) · L (legacy delete candidate).
+
+| Path / Folder | LOC | Role (Summary) | Health | Notes (User-Oriented Responsibility) |
+|---------------|----:|----------------|--------|-------------------------------------|
+| **(total project)** | 5032 | All JS sources (current) | B | Baseline before performing moves. |
+| **Total (non-legacy)** | 4796 | Active code (ex legacy) | B | Working surface after removing deprecated files. |
+| main.js | 146 | Application entrypoint | B | Small file that creates static DOM shell then delegates startup; you open this first to understand “how the app boots”. Keep minimal & readable. |
+| **runtime/** | 128 | Startup orchestration layer | A | Houses only boot sequencing & runtime container creation; when reading from top → you see how services are wired before any UI logic. |
+| runtime/runtimeSetup.js | 75 | Build service container | A | Instantiates store, settings, context prediction & returns a plain object; no DOM or rendering entanglement. |
+| runtime/bootstrap.js | 53 | Ordered initialization | A | Performs provider registration, persistence init, optional seeding, first render, layout sizing—each step obvious & linear for easy auditing. |
+| **core/** | 933 | Domain & algorithmic engine | A | Data shapes, persistence policy, settings, predictive heuristics – everything that should remain stable even if UI changes drastically. |
+| core/models/messagePair.js | 43 | Message factory | A | Defines the canonical structure of a user ↔ model exchange; single source of truth for message fields. |
+| core/models/topic.js | 22 | Topic factory | A | Creates nodes for the hierarchical topic tree; minimal fields. |
+| core/models/modelCatalog.js | 70 | Model registry | B | Tracks available LLM models & default selection; mixes config + state (watch growth). |
+| core/store/memoryStore.js | 203 | In-memory state & mutations | A | Central mutation API (add messages, update metadata, topics) – other layers call here to change app state. |
+| core/store/indexes.js | 70 | Derived indexes | B | Computes fast lookup maps (by topic, id); refactor only if perf hotspots emerge. |
+| core/store/indexedDbAdapter.js | 65 | Persistence adapter | A | Encapsulates browser DB specifics so higher layers stay storage-agnostic. |
+| core/store/demoSeeding.js | 61 | Demo data loader | A | Dev convenience for instantly populating a realistic conversation; isolated from production logic. |
+| core/persistence/contentPersistence.js | 129 | Debounced persistence engine | B | Handles save timing & schema versioning; candidate to split migrations if they expand. |
+| core/settings/index.js | 80 | Reactive settings store | A | Central place users’ adjustable preferences live; immediate propagation to runtime consumers. |
+| core/context/boundaryManager.js | 100 | Context inclusion predictor | A | Decides which prior messages likely fit within token budget before sending; core to efficient prompting. |
+| core/context/tokenEstimator.js | 90 | Token size heuristic | A | Rough sizing function supporting boundary decisions; calibrate later with real telemetry. |
+| **features/** | 3043 | User-visible capabilities | B | Organized by “what the user does”: reading history, interacting via keys, filtering, managing topics, composing requests, configuring environment. |
+| features/history/historyRuntime.js | 278 | History render & layout engine | B | Builds visual list of message parts, applies fading, recalculates layout on resize; user perceives this as smooth scrolling & consistent anchor. |
+| features/history/historyView.js | 120 | History DOM builder | A | Creates actual DOM nodes for parts; intentionally dumb (no business logic) for easy future theming or virtualization swap. |
+| features/history/scrollControllerV3.js | 264 | Anchor-based scroll control | B | Maintains chosen anchor (e.g. center) while new content arrives so user’s reading position doesn’t jump. |
+| features/history/parts.js | 65 | Part navigation controller | A | Tracks which part is “active” (user focus) & exposes movement operations (j/k style navigation). |
+| features/history/newMessageLifecycle.js | 99 | Post-send focus & insertion rules | A | Ensures after sending a prompt the viewport & focus update predictably for continued typing or reading. |
+| features/history/partitioner.js | 194 | Message segmentation engine | B | Splits long messages into viewport-sized parts to optimize readability & keyboard navigation granularity. |
+| features/interaction/interaction.js | 506 | Keyboard command hub | B | Parses keystrokes (based on mode) and routes to actions (filter, move, star, send); single place user “intent” mapping resides. |
+| features/interaction/modes.js | 17 | Mode state machine | A | Minimal finite set (INPUT/VIEW/COMMAND); guarantees only one active mode at a time. |
+| features/interaction/keyRouter.js | 31 | Mode-aware key dispatch | A | Sends key events to correct handlers; future registry injection point for customizable bindings. |
+| features/command/lexer.js | 61 | Filter language tokenizer | A | Breaks command input into tokens; foundation for extending syntax (topics, dates). |
+| features/command/parser.js | 65 | Filter AST builder | A | Converts tokens into a structured tree; errors stay local for clear user feedback. |
+| features/command/evaluator.js | 87 | Filter execution | A | Pure function selecting which messages display; easy to test & extend. |
+| features/topics/topicEditor.js | 328 | Topic tree editor UI | C | Complex UI: CRUD + reordering + keyboard navigation; needs decomposition into tree + actions panels for clarity. |
+| features/topics/topicPicker.js | 139 | Topic selection modal | B | Lets user choose where new message lands; quick keyboard navigation focus. |
+| features/compose/pipeline.js | 168 | Send & trimming pipeline | A | Orchestrates retries with shrinking context until provider accepts; central to reliable sending UX. |
+| features/config/settingsOverlay.js | 370 | Settings interface | C | All settings panels bundled; refactor into modules to improve discoverability. |
+| features/config/modelSelector.js | 58 | Model list UI | A | Simple enable/disable selection surface for models before editing details. |
+| features/config/modelEditor.js | 84 | Model configuration editor | A | Adjust per-model parameters (future extension: temperature, etc.). |
+| features/config/apiKeysOverlay.js | 84 | API key management UI | A | Secure input & storage boundary for keys the user provides. |
+| features/config/helpOverlay.js | 25 | Help & key reference UI | A | Quick on-demand guidance so power users avoid leaving the app. |
+| **infrastructure/** | 139 | External integration boundaries | A | All outward calls (providers, key storage) centralized; easy to swap providers or add new ones. |
+| infrastructure/provider/adapter.js | 39 | Provider registry facade | A | Unified interface so send pipeline doesn’t care which LLM vendor is active. |
+| infrastructure/provider/openaiAdapter.js | 60 | OpenAI provider implementation | A | Concrete implementation; future streaming/abort goes here first. |
+| infrastructure/api/keys.js | 40 | Local key persistence | A | Keeps secret handling isolated; future encryption layer slot. |
+| **instrumentation/** | 339 | Diagnostics & metrics overlays | A | Read-only observers showing token estimates, counts, request details; safe to remove for performance builds. |
+| instrumentation/hudRuntime.js | 216 | Live metrics HUD | B | Aggregates runtime stats; could split into small panels for maintainability. |
+| instrumentation/requestDebugOverlay.js | 123 | Request & trimming inspector | A | Displays assembled context & each trim attempt so user understands why context changed. |
+| **shared/** | 68 | Reusable UI primitives | A | Cross-feature presentation helpers (modal lifecycle, focus containment, safe HTML escaping) kept small and generic. |
+| shared/openModal.js | 30 | Modal container primitive | A | Provides consistent overlay structure, close behavior & focus restoration across features. |
+| shared/focusTrap.js | 33 | Focus management helper | A | Constrains keyboard focus within active modal; improves accessibility & prevents accidental context switching. |
+| shared/util.js | 5 | HTML escaping helper | A | Central safe text rendering utility preventing unintended HTML execution. |
+| **legacy/** | 236 | Deprecated implementations (quarantine) | L | Isolated outdated code; safe to delete after confirming no imports. |
+| legacy/gatherContext.js | 22 | Old context assembly | L | Replaced by boundary manager; kept only until deletion PR. |
+| legacy/anchorManager.js | 62 | Old anchor logic | L | Superseded by scrollControllerV3; remove soon. |
+| legacy/windowScroller.js | 152 | Old scrolling implementation | L | Legacy; replaced by modern scroll controller. |
+| **aggregates (overlays subset)** | 1234 | Sum overlay UIs (topics + config + help) | B | Represents interactive surfaces where user edits structure, preferences, and keys. |
+| **aggregates (instrumentation subset)** | 339 | HUD + request debug | A | Pure observers; can be stripped for lean production bundle. |
+| **aggregates (legacy subset)** | 236 | Deprecated code | L | Pending deletion to reduce noise & search clutter. |
+
+Key Placement Justifications:
+* Partitioner moved under history because segmentation serves reading & navigation experience (not a core data concern once algorithm stabilized).
+* Runtime separated from core so future additions (events, telemetry init) stay clearly “startup only”.
+* main.js elevated to root for immediate discoverability (open repo → see entry). This reduces navigation friction for new contributors.
+* Core intentionally excludes UI & provider specifics to keep business rules stable amidst UI or vendor changes.
+
+End of appendix.
 
 ---
-## 12. Event Taxonomy (Proposed)
-| Event | Payload (indicative) | Purpose |
-|-------|----------------------|---------|
-| send.attempt | { attempt, model, predictedTokens, includedCount } | Trim efficiency analysis |
-| send.success | { attempt, durationMs, trimmedCount, usage } | Performance/usage metrics |
-| send.error | { attempt, code, trimmedCount, stage } | Reliability tracking |
-| context.predicted | { predictedCount, predictedTokens, URA } | Estimation calibration |
-| context.trimmed | { trimmedCount, finalTokens } | Budget health |
-| ui.autoFocusSwitch | { replyHeight, paneHeight, multiPart } | UX heuristic tuning |
-| filter.applied | { query, visibleCount } | Language usage insights |
-
----
-### End of Document
-
----
-## 13. Folder Structure Purpose & Assessment (Added 2025-09-04)
-
-The current repository favors functional grouping (feature / concern based) instead of strict layering beyond the natural domain vs UI separation. Below each top-level `src/` subfolder (and notable files) is described with purpose, primary contents, assessment, and recommendations.
-
-| Folder / Path | Purpose / Responsibility Boundary | Key Contents (Representative) | Strengths | Issues / Overlap | Recommendation |
-|---------------|------------------------------------|------------------------------|-----------|------------------|----------------|
-| `models/` | Pure data model factories & simple domain helpers (shape, defaults). | `messagePair.js`, `topic.js`, `modelCatalog.js` | Lean, dependency-light, easy to test. | `modelCatalog` mixes static catalog + persistence nuance (minor). | Keep; consider splitting catalog persistence later if it grows. |
-| `store/` | Canonical in‑memory state, indexes, adapters, higher-level runtime construction (post-refactor includes `runtimeSetup.js`, `demoSeeding.js`). | `memoryStore.js`, `indexes.js`, `indexedDbAdapter.js`, (planned) `runtimeSetup.js`, `demoSeeding.js` | Centralizes state wiring cleanly. | Risk of becoming a “misc runtime bucket” if UI-specific logic leaks in. | Accept new runtime setup here but keep only creation/assembly; avoid UI behavior. |
-| `persistence/` | Persistence orchestration (debounced saves, migrations). | `contentPersistence.js` | Encapsulates durability concerns away from store logic. | Light coupling to store instance creation sequence. | Keep as-is; if migrations expand, sub-split `migrations/`. |
-| `settings/` | Reactive settings store, migrations, accessors. | `index.js` | Small stable API, widely reused. | Minor: could become a dumping ground for non-settings constants. | Keep; enforce only settings-related logic here. |
-| `context/` | Context boundary prediction & token estimation heuristics. | `boundaryManager.js`, `tokenEstimator.js`, legacy `gatherContext.js` | Clear domain boundary; algorithms testable. | Legacy file still present; potential confusion. | Remove legacy (`gatherContext.js`) after refactor + tests updated. |
-| `filter/` | Query language (lex/parse/eval) for message filtering. | `lexer.js`, `parser.js`, `evaluator.js` | Properly isolated DSL core. | Command execution logic currently lives in `main.js` (soon `ui/interaction.js`) and partly conceptually belongs adjacent. | Leave DSL core here; do NOT mix UI command handlers; future: add `README` spec + topic/date extensions. |
-| `partition/` | Message → wrapped lines → parts (visual segmentation). | `partitioner.js` | Encapsulates computation separate from DOM rendering. | Partition cache invalidation triggered externally (resize logic partly in `main.js`). | After refactor, move resize invalidation glue next to runtime or provide small exported helper used by `historyRuntime`. |
-| `ui/` | All presentation, user interaction, overlays, modes, rendering, scroll mechanics. Post-refactor will absorb: `historyRuntime.js`, `interaction.js`, `requestDebugOverlay.js`, `hud.js`, `bootstrap.js`. | Many: `modes.js`, `keyRouter.js`, overlays, `history/historyView.js`, `scrollControllerV3.js` | Logical home for all DOM concerns; separation from domain intact. | Risk of becoming large catch-all; overlays vs core rendering vs instrumentation not sub‑segmented. | Introduce internal subfolders gradually: `ui/overlays/`, `ui/runtime/`, `ui/instrumentation/` once stabilized (Phase 2+); avoid premature split now. |
-| `send/` | Send pipeline business logic (trimming loop, assembling provider payload). | `pipeline.js` | Pure domain algorithm, minimal DOM coupling (good). | Request debug overlay currently implemented in UI but conceptually tied to send; boundary is clear though. | Keep pure; expose structured events later instead of UI hooks. |
-| `provider/` | Provider abstraction and concrete adapters. | `adapter.js`, `openaiAdapter.js` | Extensible; supports future providers. | Lacks streaming interface placeholder. | Add streaming & abort method signatures (no-op) when feature planned. |
-| `api/` | API key storage & retrieval. | `keys.js` | Simple and isolated. | Might expand if multi-provider key mgmt adds complexity. | Keep; if grows, rename to `api/keys/` with per-provider schemes. |
-| `ui/util.js` | Tiny shared UI utilities (escapeHtml). | `util.js` | Minimal. | Could accumulate unrelated helpers. | Keep small; create `ui/utils/` only if > ~5 utilities appear. |
-| (root) `main.js` | Pre-refactor: God file (composition + rendering + interaction). Post-refactor: slim entry (layout injection + invocation). | N/A | Clear entry after slimming. | Current size is primary architectural debt. | Execute planned extraction; then freeze to minimal responsibilities. |
-
-### 13.1 Structural Adequacy & Optimality Assessment
-
-Current structure is broadly sensible: functional cohesion is mostly preserved, domain logic does not leak upward, and UI concerns (though numerous) reside in a single place. The largest deficiency is the absence of a discrete “composition/runtime” layer, leading to `main.js` bloat. Rather than adding a new top-level folder (`app/`), layering composition via a few focused files inside existing folders (`store/runtimeSetup.js`, `ui/bootstrap.js`) maintains clarity and avoids parallel taxonomies.
-
-Optimality considerations:
-1. Separation of Concerns: Strong at domain vs UI boundary. WEAK at composition (being addressed) and instrumentation (HUD + debug overlay intermixed with rendering in main.js today).
-2. Scalability: UI folder risks internal sprawl. Introducing sub-packages only after refactor prevents over-engineering.
-3. Discoverability: New contributors can map “where to look” fairly intuitively (models→data shape, filter→DSL, send→pipeline). Composition becoming explicit further improves this.
-4. Testing Surface: Domain folders are test-friendly; UI runtime code still centralized—post-extraction, targeted tests (e.g., rendering pipeline, command handling) become easier to isolate.
-5. Change Impact Radius: Refactor reduces blast radius of editing send or command logic by isolating them from layout/render code.
-
-### 13.2 Potential Future Adjustments (Deferred)
-| Adjustment | Trigger Condition | Benefit | Cost / Risk |
-|-----------|-------------------|---------|-------------|
-| Add `ui/runtime/` subfolder | After historyRuntime + interaction stabilize | Cleaner grouping of core runtime vs overlays | Minor churn; new relative import paths |
-| Add `ui/instrumentation/` (HUD, requestDebug) | If instrumentation grows (events, metrics panel) | Keeps rendering lean | Slight fragmentation if overdone |
-| Remove legacy files (`anchorManager.js`, `windowScroller.js`, `gatherContext.js`) | After confirming no hidden references in tests | Clarity, reduces search noise | Need to update any stray imports (unlikely) |
-| Introduce `events/` (pub/sub) | When multiple modules need telemetry (send, boundary, UI) | Decouples instrumentation & logging | Must avoid premature abstraction |
-| Split `scrollControllerV3.js` (geometry vs animation) | If modifications > ~200 LOC net new or performance tuning begins | Easier targeted optimization & testing | More files; ensure naming clarity |
-| Split oversized overlays (`settingsOverlay.js`, `topicEditor.js`) | When feature expansion resumes | Maintainable overlay components | Requires light componentisation strategy |
-
-### 13.3 Summary Judgment
-The existing folder layout is *sufficient and appropriate* for the current project scale. Creating a new top-level structural layer now would add cognitive overhead without offsetting complexity. The optimal path is: (a) finish `main.js` deconstruction into existing folders; (b) defer any new top-level additions until concrete pain emerges (e.g., instrumentation sprawl or event-driven extensibility). Present taxonomy supports incremental feature growth with minimal friction.
-
-(End of Added Section)
+## Appendix: Proposed Immediate Inventory

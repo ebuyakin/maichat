@@ -1,7 +1,7 @@
 ## Main.js Refactor Plan (Phase 1 – Monolith Decomposition)
 
 Date: 2025-09-04  
-Status: Draft (no code changes applied yet)  
+Status: Phase 1 COMPLETE (Steps 1–7 implemented; tests green)  
 Goal: Decompose `src/main.js` (~1.3k LOC) into 7 focused modules + slim entry. Introduce minimal `runtime/` composition folder (approved Option A). ZERO behavior / DOM / API changes.
 
 ### 1. Objectives
@@ -23,7 +23,7 @@ No redesign, no performance tuning, no streaming/abort, no filter language chang
 | `demoSeeding.js` | `src/store/demoSeeding.js` | Demo / test dataset (`seedDemoPairs`, word-count dataset, reseed & generate helpers). Dev-only utilities. |
 | `historyRuntime.js` | `src/ui/history/historyRuntime.js` | Layout sizing, spacing styles, render pipeline (`renderHistory`, `renderCurrentView`), active part handling, fade visibility, message count & status, context inclusion styling, boundary jump. |
 | `requestDebugOverlay.js` | `src/ui/debug/requestDebugOverlay.js` | Request debug overlay creation & rendering (prediction / trimming / timing diagnostics). |
-| `hud.js` | `src/ui/debug/hud.js` | HUD container, timestamp formatting, metrics section toggle, continuous update loop. |
+| `hud.js` | `src/ui/debug/hudRuntime.js` | HUD container, timestamp formatting, metrics section toggle, continuous update loop. |
 | `interaction.js` | `src/ui/interaction/interaction.js` | Modes & key handlers, command history & execution, star/flag toggles, quick topic picker integration, menu system, anchor mode cycle, pending meta rendering, send button enable + animation, request debug toggle dispatch. |
 | (slim) `main.js` | `src/main.js` | Root layout HTML & loading guard injection, ordered initializer calls, temporary debug window exposes. |
 
@@ -106,17 +106,15 @@ Legacy slated for removal later (not part of this extraction): `ui/anchorManager
 6. `initInteraction(ctx)` → key routing, command handlers, menu, send logic, request debug toggle binding.
 7. `bootstrap(ctx)` → providers registration, persistence init, seeding, first render, loading guard removal.
 
-### 6. Extraction Order (Commit Plan)
-Each commit: (a) copy code verbatim, (b) export API, (c) replace original block with import/use, (d) run tests & manual smoke, (e) document verification in commit body.
-
-1. Add `runtime/runtimeSetup.js` (introduce `initRuntime`).
-2. Add `store/demoSeeding.js` (wire into bootstrap via ctx or direct import).
-3. Add `ui/history/historyRuntime.js` (replace rendering calls; keep fallback until verified then remove originals).
-4. Add `ui/debug/requestDebugOverlay.js`.
-5. Add `ui/debug/hud.js`.
-6. Add `ui/interaction/interaction.js` (remove all related handlers from main).
-7. Add `runtime/bootstrap.js` + slim `main.js` cleanup.
-8. Optional tidy pass (import ordering, inline comments summarizing init sequence).
+### 6. Extraction Order (Executed)
+1. runtimeSetup.js ✅
+2. demoSeeding.js ✅
+3. historyRuntime.js ✅
+4. requestDebugOverlay.js ✅
+5. hudRuntime.js ✅
+6. interaction.js ✅
+7. bootstrap.js + slim main.js ✅
+8. (Optional tidy pass) — pending
 
 ### 7. Context & Module Interfaces
 `initRuntime()` ⇒ ctx object:
@@ -177,6 +175,6 @@ Immediate git revert of last commit if ANY of:
 5. Extend filter language (topics, dates) after structural stabilization.
 
 ### 12. Next Action
-Proceed with Step 1: create `src/runtime/runtimeSetup.js` (copy + export), adapt `main.js` to call `initRuntime()`, leave original code blocks until verified, then remove. (Awaiting explicit go from user to start implementation.)
+Begin Post-Phase items or start Phase 2 planning (event bus, send consolidation). Optional: perform tidy pass & commit.
 
 (End of Document – Refactor Plan v1 Option A)
