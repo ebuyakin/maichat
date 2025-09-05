@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { JSDOM } from 'jsdom'
 import { createScrollController } from '../../src/ui/scrollControllerV3.js'
-import { saveSettings } from '../../src/settings/index.js'
+import { saveSettings } from '../../src/core/settings/index.js'
 
 // Utility to build a simple history pane with N parts of equal height
 function build({ partHeights, G=20, paneH=300 }){

@@ -2,7 +2,7 @@
 // Original comment:
 // hudRuntime.js (Step 5) Extracted HUD monitoring logic from main.js. No behavior changes intended.
 
-import { getSettings } from '../settings/index.js'
+import { getSettings } from '../core/settings/index.js'
 
 export function createHudRuntime({ store, activeParts, scrollController, historyPaneEl, historyRuntime, modeManager }){
 	const hudEl = document.getElementById('hud') || (()=>{ const el = document.createElement('div'); el.id='hud'; document.body.appendChild(el); return el })()

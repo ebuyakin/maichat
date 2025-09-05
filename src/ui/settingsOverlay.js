@@ -1,7 +1,7 @@
 // Settings Overlay UI (Ctrl+,)
 // Minimal implementation: allows editing partFraction, anchorMode, edgeAnchoringMode with Apply/Cancel.
 
-import { getSettings, saveSettings } from '../settings/index.js'
+import { getSettings, saveSettings } from '../core/settings/index.js'
 import { openModal } from '../shared/openModal.js'
 
 export function openSettingsOverlay({ onClose }){

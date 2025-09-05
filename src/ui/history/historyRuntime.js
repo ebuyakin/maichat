@@ -4,11 +4,11 @@
 // ZERO behavioral changes intended.
 
 import { buildParts } from '../parts.js'
-import { getSettings, subscribeSettings } from '../../settings/index.js'
+import { getSettings, subscribeSettings } from '../../core/settings/index.js'
 import { invalidatePartitionCacheOnResize } from '../../partition/partitioner.js'
 import { parse } from '../../filter/parser.js'
 import { evaluate } from '../../filter/evaluator.js'
-import { getActiveModel } from '../../models/modelCatalog.js'
+import { getActiveModel } from '../../core/models/modelCatalog.js'
 
 export function createHistoryRuntime(ctx){
   const { store, activeParts, historyView, scrollController, boundaryMgr, lifecycle, pendingMessageMeta } = ctx

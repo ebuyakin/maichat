@@ -5,9 +5,9 @@
 
 import { registerProvider } from '../infrastructure/provider/adapter.js'
 import { createOpenAIAdapter } from '../infrastructure/provider/openaiAdapter.js'
-import { ensureCatalogLoaded } from '../models/modelCatalog.js'
+import { ensureCatalogLoaded } from '../core/models/modelCatalog.js'
 import { seedDemoPairs } from '../store/demoSeeding.js'
-import { getSettings } from '../settings/index.js'
+import { getSettings } from '../core/settings/index.js'
 
 /**
  * Bootstrap the application.

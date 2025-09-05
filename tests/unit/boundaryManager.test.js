@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createBoundaryManager } from '../../src/context/boundaryManager.js'
+import { createBoundaryManager } from '../../src/core/context/boundaryManager.js'
 
 function makePair(id, userText, assistantText='', model='gpt-4o', createdAt){
   return { id, userText, assistantText, model, createdAt: createdAt ?? Date.now() + Math.random() }

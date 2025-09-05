@@ -1,4 +1,5 @@
-// Anchor Manager: aligns active part per settings (top/center/bottom) with adaptive/strict edge handling.
+// LEGACY: anchorManager (superseded by scrollControllerV3). Retained temporarily for reference; scheduled for deletion after confirmation of non-use.
+// Original location: src/ui/anchorManager.js
 import { getSettings } from '../core/settings/index.js'
 
 export function computeScrollFor(elementOffset, elementHeight, container, mode, edgeMode){
@@ -54,8 +55,8 @@ export function createAnchorManager({ container }){
     const elRect = el.getBoundingClientRect()
     const currentScroll = container.scrollTop
     const elementOffset = elRect.top - paneRect.top + currentScroll
-  const targetScroll = computeScrollFor(elementOffset, elRect.height, container, mode, edgeMode)
-  animateScroll(targetScroll)
+    const targetScroll = computeScrollFor(elementOffset, elRect.height, container, mode, edgeMode)
+    animateScroll(targetScroll)
   }
 
   return { applyAnchor }

@@ -5,7 +5,7 @@
 
 import { parse } from '../../filter/parser.js'
 import { evaluate } from '../../filter/evaluator.js'
-import { getSettings, saveSettings } from '../../settings/index.js'
+import { getSettings, saveSettings } from '../../core/settings/index.js'
 import { createKeyRouter } from '../keyRouter.js'
 import { createTopicPicker } from '../topicPicker.js'
 import { openTopicEditor } from '../topicEditor.js'
@@ -14,7 +14,7 @@ import { openApiKeysOverlay } from '../apiKeysOverlay.js'
 import { openModelSelector } from '../modelSelector.js'
 import { openModelEditor } from '../modelEditor.js'
 import { openHelpOverlay } from '../helpOverlay.js'
-import { getActiveModel } from '../../models/modelCatalog.js'
+import { getActiveModel } from '../../core/models/modelCatalog.js'
 import { executeSend } from '../../send/pipeline.js'
 
 export function createInteraction({

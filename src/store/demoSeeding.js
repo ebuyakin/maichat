@@ -2,7 +2,7 @@
 // Demo / test dataset generation utilities extracted from main.js
 // Provides: seedDemoPairs, buildWordCountDataset, baseLoremWords, window reseed helpers
 
-import { getSettings } from '../settings/index.js'
+import { getSettings } from '../core/settings/index.js'
 
 // baseLoremWords kept deterministic for repeatable dataset
 export function baseLoremWords(){

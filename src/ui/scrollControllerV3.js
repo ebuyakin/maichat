@@ -1,7 +1,7 @@
 // scrollControllerV3: canonical window based scrolling with full-or-hidden invariant
 // Assumes gap elements rendered explicitly (class 'gap') preceding parts as needed.
 
-import { getSettings } from '../settings/index.js'
+import { getSettings } from '../core/settings/index.js'
 
 export function createScrollController({ container, getParts }){
   // metrics: structural measurements for current DOM snapshot

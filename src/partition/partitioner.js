@@ -1,7 +1,7 @@
 // Partitioner v2: wraps text to viewport width using canvas measurement, groups lines into parts
 // constrained by maxLines derived from viewport height * partFraction.
 
-import { getSettings } from '../settings/index.js'
+import { getSettings } from '../core/settings/index.js'
 
 const cache = new Map() // key -> { width, partsMeta, textVersion }
 

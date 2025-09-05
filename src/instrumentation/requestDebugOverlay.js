@@ -1,7 +1,7 @@
 // requestDebugOverlay implementation moved here from ui/debug/requestDebugOverlay.js (Phase 2)
 // Original comment: Extracted from main.js. No behavior changes.
 
-import { getSettings } from '../settings/index.js'
+import { getSettings } from '../core/settings/index.js'
 
 export function createRequestDebugOverlay({ historyRuntime }){
 	let requestDebugEnabled = false

@@ -1,5 +1,5 @@
 // Simple Model Editor (Ctrl+Shift+M) for enable/disable only
-import { listModels, toggleModelEnabled, getActiveModel, setActiveModel } from '../models/modelCatalog.js'
+import { listModels, toggleModelEnabled, getActiveModel, setActiveModel } from '../core/models/modelCatalog.js'
 import { openModal } from '../shared/openModal.js'
 
 export function openModelEditor({ onClose }){

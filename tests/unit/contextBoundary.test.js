@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeContextBoundary } from '../../src/context/tokenEstimator.js'
+import { computeContextBoundary } from '../../src/core/context/tokenEstimator.js'
 
 function makePair(id, userLen, asstLen){
   return { id, userText:'u'.repeat(userLen), assistantText:'a'.repeat(asstLen), model:'gpt', createdAt:Date.now(), topicId:'t', star:0, colorFlag:'b' }

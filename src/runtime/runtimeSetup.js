@@ -2,19 +2,19 @@
 // Responsibility: construct core runtime (store, indexes, persistence, boundaryMgr, activeParts, historyView, scrollController, lifecycle, pendingMessageMeta)
 // NOTE: DOM queries limited to elements that already exist in main layout. No new behavior introduced.
 
-import { createStore } from '../store/memoryStore.js'
-import { attachIndexes } from '../store/indexes.js'
-import { createIndexedDbAdapter } from '../store/indexedDbAdapter.js'
-import { attachContentPersistence } from '../persistence/contentPersistence.js'
+import { createStore } from '../core/store/memoryStore.js'
+import { attachIndexes } from '../core/store/indexes.js'
+import { createIndexedDbAdapter } from '../core/store/indexedDbAdapter.js'
+import { attachContentPersistence } from '../core/persistence/contentPersistence.js'
 import { createHistoryView, bindHistoryErrorActions } from '../ui/history/historyView.js'
 import { ActivePartController } from '../ui/parts.js'
 import { createScrollController } from '../ui/scrollControllerV3.js'
-import { getSettings } from '../settings/index.js'
+import { getSettings } from '../core/settings/index.js'
 import { createNewMessageLifecycle } from '../ui/newMessageLifecycle.js'
-import { createBoundaryManager } from '../context/boundaryManager.js'
+import { createBoundaryManager } from '../core/context/boundaryManager.js'
 import { evaluate } from '../filter/evaluator.js' // used indirectly via lifecycle callbacks
 import { parse } from '../filter/parser.js' // reserved for lifecycle (filter application later)
-import { getActiveModel } from '../models/modelCatalog.js'
+import { getActiveModel } from '../core/models/modelCatalog.js'
 
 // initRuntime constructs and returns the shared context object used by downstream modules.
 export function initRuntime() {

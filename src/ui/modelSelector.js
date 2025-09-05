@@ -1,5 +1,5 @@
 // Lightweight model selector overlay (Ctrl+M)
-import { listModels, getActiveModel, setActiveModel } from '../models/modelCatalog.js'
+import { listModels, getActiveModel, setActiveModel } from '../core/models/modelCatalog.js'
 import { openModal } from '../shared/openModal.js'
 
 export function openModelSelector({ onClose }){

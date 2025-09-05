@@ -1,3 +1,5 @@
+// KEEP existing adapter file path consumed by runtime; if separate logic present, retain stub bridging
+export * from '../core/store/indexedDbAdapter.js'
 // IndexedDB adapter skeleton (Phase 1 placeholder)
 // Provides async init and basic CRUD mirroring MemoryStore subset.
 

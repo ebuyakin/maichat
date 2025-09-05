@@ -2,7 +2,7 @@
 // Currently performs full re-render; future optimization may diff or virtualize.
 
 import { escapeHtml } from '../../shared/util.js'
-import { getSettings } from '../../settings/index.js'
+import { getSettings } from '../../core/settings/index.js'
 
 export function createHistoryView({ store, onActivePartRendered }){
   const container = document.getElementById('history')
