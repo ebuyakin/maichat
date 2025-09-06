@@ -73,7 +73,11 @@ import { openModal } from '../../shared/openModal.js'
     }
     function selectActive(){
       const name = filtered[activeIndex]
-      if(name){ if(onSelect) onSelect(name); close() }
+      if(name){
+        try { setActiveModel(name) } catch(_){}
+        if(onSelect) onSelect(name)
+        close()
+      }
     }
   // Capture at root (capturing) so keys don't bubble to global keyRouter first
   function keyHandler(e){

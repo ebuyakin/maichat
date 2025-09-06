@@ -115,22 +115,10 @@ console.log('[MaiChat] createInteraction done')
 
 bindHistoryErrorActions(document.getElementById('history'), {
   onResend: (pairId)=>{
-    const pair = store.pairs.get(pairId)
-    if(!pair) return
-    inputField.value = pair.userText
-    pendingMessageMeta.topicId = pair.topicId
-    pendingMessageMeta.model = pair.model
-    interaction.renderPendingMeta()
-    pair.errorMessage = undefined
-    renderCurrentView({ preserveActive:true })
-    modeManager.set(MODES.INPUT)
-    inputField.focus()
-    window.__editingPairId = pair.id
+    interaction.prepareEditResend(pairId)
   },
   onDelete: (pairId)=>{
-    store.removePair(pairId)
-    renderCurrentView({ preserveActive:true })
-    activeParts.last(); applyActivePart()
+    interaction.deletePairWithFocus(pairId)
   }
 })
 // Preload settings

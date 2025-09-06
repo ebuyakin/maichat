@@ -48,12 +48,12 @@ assistantText is absent until response arrives (no empty assistant placeholder b
 idle → sending → complete
             ↘ error
 
-Edit & Resend: complete|error (user triggers edit) → sending (reuses same pair, assistantText cleared)
+Re-ask (error only): error (user triggers re-ask) → sending (creates a NEW pair at the end; old error pair is deleted)
 ```
 Notes:
 - No separate awaiting state; `sending` covers until response or error.
 - No cancel path yet; Esc does not abort active network call.
-- Edit & Resend reuses the same pair; assistantText cleared before new send.
+- Re-ask is available for error pairs. It copies the earlier user text to the input, and on send uses current context, deletes the old error pair, and appends a new pair at the end (new id, new timestamp).
 
 ## 4. Standard Flow (Happy Path)
 1. User types text in input field.
@@ -81,7 +81,7 @@ Notes:
 ### 5.1 Provider Error (4xx/5xx JSON)
 1. Response arrives with error.
 2. Placeholder replaced with formatted error text (e.g. `[error: <short classification>] <provider message>`); lifecycleState = error.
-3. Inline actions (Phase 1): `[Edit & Resend]` (`e`), `[Delete]` (`x`).
+3. Inline actions: `[Re-ask]` (`e` in VIEW), `[Delete]` (`d` in VIEW). Buttons are always clickable; keyboard shortcuts are VIEW-only.
 4. UI unlocks.
 
 ### 5.2 Network Error / Timeout
@@ -90,12 +90,12 @@ Similar to provider error but classification `[network]`.
 ### 5.3 User Abort
 Not implemented in M6 (no abort path). Esc retains its existing mode behavior only.
 
-### 5.4 Edit & Resend (Replaces Retry)
-1. Available for pairs in states: `complete` (refinement) or `error`.
-2. Action `e` transforms userText into inline editable area (assistant part hidden during edit; previous assistant text discarded once resend starts).
-3. On submit (Enter / Ctrl+Enter): lifecycleState → `sending`; assistant part removed; send uses current visible context + edited user text.
-4. Success: assistant response added; history remains single concise pair.
-5. Delete (`x`): removes pair (confirmation if existing assistant text).
+### 5.4 Re-ask (Error Pair; No Branching)
+1. Available for pairs in state: `error`.
+2. Action `e` (VIEW mode) copies the error pair's userText into the bottom input (no inline editor in history).
+3. On Send: the old error pair is deleted; a new pair is created at the end with the current timestamp/id, inheriting topic/model; the request uses the current visible context (WYSIWYG).
+4. Success: assistant response arrives for the new pair; chronology remains honest (no rewrites/branching).
+5. Delete (`d` in VIEW): removes the focused error pair (no confirm needed for error-only pairs).
 
 ### 5.5 User Edits Filter During In-Flight Send
 - In-flight request is *not* affected; context already snapped.
@@ -248,9 +248,9 @@ Pending: rpm/tdp live quota modeling; proactive adjustment when `AUT` encroaches
 | Context Counter | Shows `X / Y` or `[X-T]/Y` post-trim. Tooltip currently summarizes predicted vs visible, URA active, trimmed last send (future: richer breakdown). Updates live. |
 | Out-of-Context (OOC) Marking | Excluded pairs (beyond prediction boundary) get `.ooc` class, reduced opacity, "off" badge. |
 | Boundary Jump | Shift+O jumps to first included pair (boundary). If all included shows HUD notice. |
-| Error Display | `[error: code] shortMessage` + buttons `[Edit & Resend] [Delete]` (keyboard: `e`, `x`). |
-| Edit Mode | User text → textarea; Esc cancels; Enter/Ctrl+Enter sends. Assistant part hidden during edit. |
-| Delete | Removes pair (confirm if assistant present). Available for any pair. |
+| Error Display | `[error: code] shortMessage` + buttons `[Re-ask] [Delete]`. Keyboard: `e`/`d` in VIEW mode; per-row buttons clickable in any mode. |
+| Re-ask Draft | Copies earlier user text into the bottom input; Esc cancels; Enter sends. Old error pair is deleted on send; a new pair is appended. |
+| Delete | Removes pair. For error pairs, no confirm. |
 | Token Estimate | Small gray `~N` near Send (debounced). |
 | Over-budget Alert | Blocking confirm dialog (no auto-trim). |
 

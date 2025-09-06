@@ -55,6 +55,9 @@ export function createInteraction({
     if(e.key==='2'){ setStarRating(2); return true }
     if(e.key==='3'){ setStarRating(3); return true }
     if(e.key===' '){ setStarRating(0); return true }
+    // VIEW-only fast keys for error pairs
+    if(e.key==='e'){ if(handleEditIfErrorActive()) return true }
+    if(e.key==='d'){ if(handleDeleteIfErrorActive()) return true }
   }
   const commandHandler = (e)=>{
     if(window.modalIsActive && window.modalIsActive()) return false
@@ -103,7 +106,67 @@ export function createInteraction({
   const inputHandler = (e)=>{
     if(window.modalIsActive && window.modalIsActive()) return false
     if(e.key==='Enter'){
-      const text = inputField.value.trim(); if(text){ if(lifecycle.isPending()) return true; const editingId = window.__editingPairId; const topicId = pendingMessageMeta.topicId || currentTopicId; const model = pendingMessageMeta.model || 'gpt'; boundaryMgr.updateVisiblePairs(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt)); boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel()); boundaryMgr.applySettings(getSettings()); const preBoundary = boundaryMgr.getBoundary(); const beforeIncludedIds = new Set(preBoundary.included.map(p=>p.id)); lifecycle.beginSend(); let id; if(editingId){ store.updatePair(editingId, { userText:text, assistantText:'', lifecycleState:'sending', model, topicId }); id = editingId; window.__editingPairId=null } else { id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' }) } ;(async()=>{ try { const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean); const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt); boundaryMgr.updateVisiblePairs(chrono); boundaryMgr.setModel(model); boundaryMgr.applySettings(getSettings()); const boundarySnapshot = boundaryMgr.getBoundary(); const { content } = await executeSend({ store, model, userText:text, signal: undefined, visiblePairs: chrono, boundarySnapshot, onDebugPayload: (payload)=>{ historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount); requestDebug.setPayload(payload); historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length) } }); store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }); lifecycle.handleNewAssistantReply(id) } catch(ex){ let errMsg = (ex && ex.message)? ex.message : 'error'; store.updatePair(id, { assistantText:'', lifecycleState:'error', errorMessage: errMsg }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }) } finally { if(getSettings().showTrimNotice){ boundaryMgr.updateVisiblePairs(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt)); boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel()); boundaryMgr.applySettings(getSettings()); const postBoundary = boundaryMgr.getBoundary(); const afterIncludedIds = new Set(postBoundary.included.map(p=>p.id)); let trimmed=0; beforeIncludedIds.forEach(pid=>{ if(!afterIncludedIds.has(pid)) trimmed++ }); if(trimmed>0){ console.log(`[context] large prompt trimmed ${trimmed} older pair(s)`) } } } })(); inputField.value=''; historyRuntime.renderCurrentView({ preserveActive:true }); activeParts.last(); historyRuntime.applyActivePart(); updateSendDisabled() } return true }
+      const text = inputField.value.trim();
+      if(text){
+        if(lifecycle.isPending()) return true;
+        const editingId = window.__editingPairId;
+        const topicId = pendingMessageMeta.topicId || currentTopicId;
+        const model = pendingMessageMeta.model || 'gpt';
+        boundaryMgr.updateVisiblePairs(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt));
+        boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel());
+        boundaryMgr.applySettings(getSettings());
+        const preBoundary = boundaryMgr.getBoundary();
+        const beforeIncludedIds = new Set(preBoundary.included.map(p=>p.id));
+        lifecycle.beginSend();
+        let id;
+        if(editingId){
+          // Re-ask behavior: remove old error pair and create a new pair at end with same meta
+          const old = store.pairs.get(editingId);
+          if(old){ store.removePair(editingId) }
+          id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' });
+          window.__editingPairId = null;
+        } else {
+          id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' })
+        }
+        ;(async()=>{
+          try {
+            const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean);
+            const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt);
+            boundaryMgr.updateVisiblePairs(chrono);
+            boundaryMgr.setModel(model);
+            boundaryMgr.applySettings(getSettings());
+            const boundarySnapshot = boundaryMgr.getBoundary();
+            const { content } = await executeSend({ store, model, userText:text, signal: undefined, visiblePairs: chrono, boundarySnapshot, onDebugPayload: (payload)=>{ historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount); requestDebug.setPayload(payload); historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length) } });
+            store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined });
+            lifecycle.completeSend();
+            updateSendDisabled();
+            historyRuntime.renderCurrentView({ preserveActive:true });
+            lifecycle.handleNewAssistantReply(id)
+          } catch(ex){
+            let errMsg = (ex && ex.message)? ex.message : 'error';
+            store.updatePair(id, { assistantText:'', lifecycleState:'error', errorMessage: errMsg });
+            lifecycle.completeSend();
+            updateSendDisabled();
+            historyRuntime.renderCurrentView({ preserveActive:true })
+          } finally {
+            if(getSettings().showTrimNotice){
+              boundaryMgr.updateVisiblePairs(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt));
+              boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel());
+              boundaryMgr.applySettings(getSettings());
+              const postBoundary = boundaryMgr.getBoundary();
+              const afterIncludedIds = new Set(postBoundary.included.map(p=>p.id));
+              let trimmed=0; beforeIncludedIds.forEach(pid=>{ if(!afterIncludedIds.has(pid)) trimmed++ });
+              if(trimmed>0){ console.log(`[context] large prompt trimmed ${trimmed} older pair(s)`) }
+            }
+          }
+        })();
+        inputField.value='';
+        historyRuntime.renderCurrentView({ preserveActive:true });
+        activeParts.last(); historyRuntime.applyActivePart();
+        updateSendDisabled()
+      }
+      return true
+    }
     if(e.key==='Escape'){ modeManager.set('view'); return true }
   }
   function cycleStar(){ const act = activeParts.active(); if(!act) return; const pair = store.pairs.get(act.pairId); if(!pair) return; store.updatePair(pair.id, { star:(pair.star+1)%4 }); historyRuntime.renderCurrentView({ preserveActive:true }) }
@@ -128,8 +191,76 @@ export function createInteraction({
   modeManager.onChange((m)=>{ historyRuntime.renderStatus(); if(m==='view'){ commandInput.blur(); inputField.blur() } else if(m==='input'){ inputField.focus() } else if(m==='command'){ commandModeEntryActivePartId = activeParts.active() ? activeParts.active().id : null; commandInput.focus() } })
   const keyRouter = createKeyRouter({ modeManager, handlers:{ view:viewHandler, command:commandHandler, input:inputHandler } }); keyRouter.attach()
   document.addEventListener('click', e=>{ const el = e.target.closest('.part'); if(!el) return; activeParts.setActiveById(el.getAttribute('data-part-id')); historyRuntime.applyActivePart() })
-  window.addEventListener('keydown', e=>{ if(!e.ctrlKey) return; const k = e.key.toLowerCase(); if(window.modalIsActive && window.modalIsActive()) return; if(k==='i'){ e.preventDefault(); modeManager.set('input') } else if(k==='d'){ e.preventDefault(); modeManager.set('command') } else if(k==='v'){ e.preventDefault(); modeManager.set('view') } else if(k==='t'){ if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openQuickTopicPicker({ prevMode }) } } else if(k==='e'){ if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prevMode) } }) } } else if(k==='m'){ if(e.shiftKey){ e.preventDefault(); const prevMode=modeManager.mode; openModelEditor({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } }) } else { if(modeManager.mode!=='input') return; e.preventDefault(); const prevMode=modeManager.mode; openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } }) } } else if(k==='k'){ e.preventDefault(); const prevMode=modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prevMode) } }) } else if(k===','){ e.preventDefault(); const prevMode=modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) } else if(e.key==='.' || e.code==='Period'){ e.preventDefault(); toggleMenu(); } else if(e.shiftKey && k==='r'){ e.preventDefault(); requestDebug.toggle(); } if(e.shiftKey && k==='s'){ e.preventDefault(); window.seedTestMessages && window.seedTestMessages() } })
+  window.addEventListener('keydown', e=>{
+    if(!e.ctrlKey) return;
+    const k = e.key.toLowerCase();
+    if(window.modalIsActive && window.modalIsActive()) return;
+    if(k==='i'){ e.preventDefault(); modeManager.set('input') }
+    else if(k==='d' && !e.shiftKey){ e.preventDefault(); modeManager.set('command') }
+    else if(k==='v'){ e.preventDefault(); modeManager.set('view') }
+    else if(k==='t'){
+      if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openQuickTopicPicker({ prevMode }) }
+    }
+    else if(k==='e' && !e.shiftKey){
+      if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prevMode) } }) }
+    }
+  else if(k==='m'){
+      if(e.shiftKey){ e.preventDefault(); const prevMode=modeManager.mode; openModelEditor({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } }) }
+      else { if(modeManager.mode!=='input') return; e.preventDefault(); const prevMode=modeManager.mode; openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } }) }
+    }
+    else if(k==='k'){ e.preventDefault(); const prevMode=modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prevMode) } }) }
+    else if(k===','){ e.preventDefault(); const prevMode=modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
+    else if(e.key==='.' || e.code==='Period'){ e.preventDefault(); toggleMenu(); }
+    else if(e.shiftKey && k==='r'){ e.preventDefault(); requestDebug.toggle(); }
+    else if(e.shiftKey && k==='s'){ e.preventDefault(); window.seedTestMessages && window.seedTestMessages() }
+  // Removed global error actions for clarity; use VIEW-only e/d on focused row
+  })
   window.addEventListener('keydown', e=>{ if(e.key==='F1'){ e.preventDefault(); openHelpOverlay({ modeManager, onClose:()=>{} }) } })
-  if(sendBtn){ sendBtn.addEventListener('click', ()=>{ if(modeManager.mode!=='input') modeManager.set('input'); const text = inputField.value.trim(); if(!text) return; if(lifecycle.isPending()) return; lifecycle.beginSend(); const topicId = pendingMessageMeta.topicId || currentTopicId; const model = pendingMessageMeta.model || 'gpt'; const editingId = window.__editingPairId; let id; if(editingId){ store.updatePair(editingId,{ userText:text, assistantText:'', lifecycleState:'sending', model, topicId }); id=editingId; window.__editingPairId=null } else { id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' }) } try{ localStorage.setItem('maichat_pending_topic', topicId) }catch{} ;(async()=>{ try { const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean); const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt); const { content } = await executeSend({ store, model, userText:text, signal: undefined, visiblePairs: chrono, onDebugPayload:(payload)=>{ requestDebug.setPayload(payload) } }); store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }); lifecycle.handleNewAssistantReply(id) } catch(ex){ let errMsg = (ex && ex.message) ? ex.message : 'error'; if(errMsg==='missing_api_key') errMsg='API key missing (Ctrl+.) -> API Keys'; store.updatePair(id, { assistantText:'', lifecycleState:'error', errorMessage: errMsg }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }) } finally { updateSendDisabled() } })(); inputField.value=''; historyRuntime.renderCurrentView({ preserveActive:true }); activeParts.last(); historyRuntime.applyActivePart(); updateSendDisabled() }); inputField.addEventListener('input', updateSendDisabled) }
-  return { keyRouter, updateSendDisabled, renderPendingMeta, cycleAnchorMode, openQuickTopicPicker }
+  if(sendBtn){ sendBtn.addEventListener('click', ()=>{ if(modeManager.mode!=='input') modeManager.set('input'); const text = inputField.value.trim(); if(!text) return; if(lifecycle.isPending()) return; lifecycle.beginSend(); const topicId = pendingMessageMeta.topicId || currentTopicId; const model = pendingMessageMeta.model || 'gpt'; const editingId = window.__editingPairId; let id; if(editingId){ const old = store.pairs.get(editingId); if(old){ store.removePair(editingId) } id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' }); window.__editingPairId=null } else { id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' }) } try{ localStorage.setItem('maichat_pending_topic', topicId) }catch{} ;(async()=>{ try { const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean); const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt); const { content } = await executeSend({ store, model, userText:text, signal: undefined, visiblePairs: chrono, onDebugPayload:(payload)=>{ requestDebug.setPayload(payload) } }); store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }); lifecycle.handleNewAssistantReply(id) } catch(ex){ let errMsg = (ex && ex.message) ? ex.message : 'error'; if(errMsg==='missing_api_key') errMsg='API key missing (Ctrl+.) -> API Keys'; store.updatePair(id, { assistantText:'', lifecycleState:'error', errorMessage: errMsg }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }) } finally { updateSendDisabled() } })(); inputField.value=''; historyRuntime.renderCurrentView({ preserveActive:true }); activeParts.last(); historyRuntime.applyActivePart(); updateSendDisabled() }); inputField.addEventListener('input', updateSendDisabled) }
+  // Helpers for error edit/delete actions
+  function isErrorPair(pairId){ const p = store.pairs.get(pairId); return !!p && p.lifecycleState==='error' }
+  function handleEditIfErrorActive(){
+    const act = activeParts.active(); if(!act) return false
+    const pair = store.pairs.get(act.pairId); if(!pair || pair.lifecycleState!=='error') return false
+    prepareEditResend(pair.id)
+    return true
+  }
+  function handleDeleteIfErrorActive(){
+    const act = activeParts.active(); if(!act) return false
+    const pair = store.pairs.get(act.pairId); if(!pair || pair.lifecycleState!=='error') return false
+    deletePairWithFocus(pair.id)
+    return true
+  }
+  function prepareEditResend(pairId){
+    const pair = store.pairs.get(pairId); if(!pair) return
+    inputField.value = pair.userText || ''
+    pendingMessageMeta.topicId = pair.topicId
+    pendingMessageMeta.model = pair.model
+    renderPendingMeta()
+    // Clear error badge immediately for UX cleanliness (optional)
+    store.updatePair(pair.id, { errorMessage: undefined })
+    historyRuntime.renderCurrentView({ preserveActive:true })
+    modeManager.set('input')
+    inputField.focus()
+    window.__editingPairId = pair.id
+  }
+  function deletePairWithFocus(pairId){
+    const wasActive = !!activeParts.active() && activeParts.active().pairId === pairId
+    const preParts = activeParts.parts.slice()
+    let targetId = null
+    if(wasActive){
+      // Find previous non-meta part before the first part of the deleted pair
+      const firstIdx = preParts.findIndex(p=> p.pairId===pairId)
+      for(let i=firstIdx-1; i>=0; i--){ if(preParts[i].role!=='meta'){ targetId = preParts[i].id; break } }
+    } else {
+      const act = activeParts.active(); targetId = act ? act.id : null
+    }
+    store.removePair(pairId)
+    historyRuntime.renderCurrentView({ preserveActive:true })
+    if(targetId){ activeParts.setActiveById(targetId); historyRuntime.applyActivePart() }
+    else {
+      // No target available (likely empty list). Keep mode; nothing to focus.
+    }
+  }
+  return { keyRouter, updateSendDisabled, renderPendingMeta, cycleAnchorMode, openQuickTopicPicker, prepareEditResend, deletePairWithFocus, isErrorPair }
 }

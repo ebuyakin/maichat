@@ -148,6 +148,9 @@ body { min-height:100vh; overflow:hidden; }
 /* Global reusable button / input classes */
 .btn { background:var(--btn-bg); border:1px solid var(--btn-border); color:var(--text); padding:6px 14px; border-radius:4px; cursor:pointer; font:var(--size-base); font-family:var(--font-ui); letter-spacing:.2px; transition:background .15s, border-color .15s; }
 .btn:hover, .btn:focus { background:var(--btn-bg-hover); border-color:#444; }
+.btn-sm { padding:3px 10px; font-size:12px; }
+.btn-danger { color:#f99; border-color:#553; }
+.btn-danger:hover, .btn-danger:focus { border-color:#744; color:#faa; }
 .std-input { background:var(--input-bg); border:1px solid #333; color:var(--text); padding:6px 8px; font:var(--size-base)/1.4 var(--font-ui); border-radius:4px; width:100%; box-sizing:border-box; }
 .std-input:focus { border-color:var(--accent); }
 .api-keys-panel { width:420px; max-width:90vw; }
@@ -222,15 +225,29 @@ body { min-height:100vh; overflow:hidden; }
 .badge.flag[data-flag='g'] { background:transparent; border:1px solid #666; border-radius:50%; }
 .badge.offctx { background:transparent; border:none; color:#ff9fb2; text-transform:none; font-size:11px; letter-spacing:.3px; }
 .badge.model { background:transparent; border:none; color:var(--text-dim); }
-.badge.state { background:transparent; border:none; color:var(--text-dim); min-width:18px; text-align:center; }
+.badge.state { background:transparent; border:none; color:var(--text-dim); min-width:18px; text-align:center; border-radius:0; padding:0 2px; }
 .badge.state[data-state=sending] { animation:pulse 1.2s ease-in-out infinite; }
-.badge.state.error { color:#f88; }
+.badge.state.error { color:var(--text-dim); }
 @keyframes pulse { 0%{opacity:.3;} 50%{opacity:1;} 100%{opacity:.3;} }
-.err-actions { display:inline-flex; gap:4px; }
-.err-actions .mini-btn { background:transparent; border:1px solid #333; color:#bbb; font:10px var(--font-ui); padding:2px 6px; border-radius:4px; cursor:pointer; letter-spacing:.4px; }
-.err-actions .mini-btn:hover, .err-actions .mini-btn:focus { border-color:#444; color:#fff; }
-.err-actions .mini-btn.del { color:#f99; }
-.err-actions .mini-btn.del:hover, .err-actions .mini-btn.del:focus { border-color:#600; color:#faa; }
+.err-actions { display:inline-flex; gap:6px; }
+/* Align error action buttons' font-size with badges (11px) in the meta row */
+.part.meta .err-actions .btn-ghost { font-size:11px; padding:3px 8px; line-height:1.2; }
+
+/* Subtle ghost button for inline actions */
+.btn-ghost { 
+  background: transparent; 
+  border: 1px solid #2a2a2a; 
+  color: var(--text-dim); 
+  padding: 2px 8px; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  font: inherit; 
+  letter-spacing: .2px; 
+}
+.btn-ghost:hover, .btn-ghost:focus { 
+  border-color: #3a3a3a; 
+  color: var(--text); 
+}
 
 /* Global focus handling: remove default outlines (we supply custom states where needed) */
 *:focus { outline:none; }

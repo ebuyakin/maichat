@@ -63,6 +63,8 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | G | Jump to last part | Shift+g |
 | Shift+R | Cycle reading position (Bottom → Center → Top → Bottom) | Implemented anchorMode cycle |
 | n | Jump to FIRST part of last message | Clears new-message badge; re-anchors even if already there |
+| e | Re-ask focused error message | Copies text to input; on Send, old error pair is deleted and a new message is created at the end (uses current context) |
+| d | Delete focused error message | Removes the error pair; focus moves to previous part |
 | * | Cycle star (0→1→2→3→0) | Affects active pair |
 | 1 / 2 / 3 | Set star to 1 / 2 / 3 | Direct rating |
 | Space | Set star to 0 | Clear rating |
@@ -175,6 +177,7 @@ Vim-style navigation (j/k) may be intercepted by browser extensions (e.g. Vimium
 
 ## 13. Change Log
 - v0.11: Added Ctrl+K (API Keys overlay), unified API Keys overlay keyboard navigation, persistent command history navigation (Ctrl+P/Ctrl+N), refined Enter behavior in COMMAND (restore selection if filter unchanged), documentation updates.
+- v0.12: Error handling: VIEW-only `e` (Re-ask focused error) and `d` (Delete error). Removed global Ctrl+Shift+D/Y.
 - v0.10: Unified modal mode restoration via `openModal` helper (Topic Picker, Topic Editor, Model Selector, Model Editor, Settings, API Keys, Help); full key swallowing on close to prevent mode drift.
 - v0.9: Model selector limited to INPUT mode; model editor (Ctrl+Shift+M) available in all modes (j/k move, Space toggle, Enter/Esc close); Enter removed as toggle.
 - v0.8: Settings overlay unified keyboard model (j/k navigation, +/- numeric adjust with large Shift step, Space cycles selects, Enter apply w/out close, Esc cancel, persistent 'Saved' label until dirty).

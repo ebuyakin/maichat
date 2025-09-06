@@ -11,10 +11,11 @@ vi.mock('/Users/eugenebuyakin/Dev/mai-chat/src/core/models/modelCatalog.js', () 
     { id: 'beta', enabled: true },
     { id: 'gamma', enabled: true },
   ]
+  let active = 'beta'
   return {
     listModels: vi.fn(() => models.slice()),
-    getActiveModel: vi.fn(() => 'beta'),
-    setActiveModel: vi.fn(),
+    getActiveModel: vi.fn(() => active),
+    setActiveModel: vi.fn((id)=>{ active = id }),
   }
 })
 
@@ -98,5 +99,28 @@ describe('Model Selector overlay', () => {
   await flush(); await flush()
   expect(onClose).toHaveBeenCalled()
   expect(document.getElementById('modelSelectorRoot')).toBeNull()
+  })
+
+  it('selecting a model updates active model immediately (setActiveModel called)', async () => {
+    const { openModelSelector } = await import(SELECTOR_PATH)
+    const catalog = await import('/Users/eugenebuyakin/Dev/mai-chat/src/core/models/modelCatalog.js')
+    openModelSelector({ onSelect, onClose })
+    await flush()
+
+    // Type filter for 'alpha' (ensure unique match)
+    for (const ch of ['a','l','p','h','a']){
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: ch, bubbles: true, cancelable: true }))
+      await flush()
+    }
+    const only = document.querySelectorAll('.model-list .model-item')
+    expect(only.length).toBe(1)
+    expect(only[0]?.getAttribute('data-name')).toBe('alpha')
+
+    // Enter selects and should call setActiveModel('alpha') inside selector
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    await flush()
+
+    expect(catalog.getActiveModel()).toBe('alpha')
+    expect(onSelect).toHaveBeenCalledWith('alpha')
   })
 })

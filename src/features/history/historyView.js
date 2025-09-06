@@ -49,8 +49,9 @@ export function createHistoryView({ store, onActivePartRendered }){
 			let errActions = ''
 			if(pair.lifecycleState === 'sending') stateBadge = '<span class="badge state" data-state="sending">…</span>'
 			else if(pair.lifecycleState === 'error') {
-				stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage||'error')}">err</span>`
-				errActions = `<span class="err-actions"><button class="mini-btn resend" data-action="resend" title="Edit & Resend">edit</button><button class="mini-btn del" data-action="delete" title="Delete pair">del</button></span>`
+				const label = classifyErrLabel(pair)
+				stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage||'error')}">${label}</span>`
+				errActions = `<span class="err-actions"><button class="btn btn-ghost resend" data-action="resend" title="Copy to input and send as a new message (uses current context)">Re-ask</button><button class="btn btn-ghost del" data-action="delete" title="Delete pair">Delete</button></span>`
 			}
 			return `<div class="part meta" data-part-id="${pt.id}" data-role="meta" data-pair-id="${pt.pairId}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
 					<div class="meta-left">
@@ -68,17 +69,31 @@ export function createHistoryView({ store, onActivePartRendered }){
 		}
 		return `<div class="part ${pt.role}" data-part-id="${pt.id}" data-role="${pt.role}" data-pair-id="${pt.pairId}"><div class="part-inner">${escapeHtml(pt.text)}</div></div>`
 	}
+	function classifyErrLabel(pair){
+		// Map common errors to compact, lower-case labels with prefix per spec.
+		const msg = (pair.errorMessage||'').toLowerCase()
+		if(!msg) return 'error: unknown'
+		if(msg.includes('api key') || msg.includes('unauthorized') || msg.includes('401') || msg.includes('forbidden')) return 'error: auth'
+		// Treat rate limits and context length exceed under a single 'quota' umbrella
+		if(
+			msg.includes('429') || msg.includes('rate') || msg.includes('quota') || msg.includes('tpm') || msg.includes('rpm')
+		) return 'error: quota'
+		if(msg.includes('context') && (msg.includes('length') || msg.includes('window') || msg.includes('exceed'))) return 'error: quota'
+		if(msg.includes('network') || msg.includes('fetch') || msg.includes('failed')) return 'error: net'
+		return 'error: unknown'
+	}
 	return { render }
 }
 export function bindHistoryErrorActions(rootEl, { onResend, onDelete }) {
 	if(!rootEl.__errActionsBound) {
 		rootEl.addEventListener('click', e => {
-			const btn = e.target.closest('button.mini-btn')
+			const btn = e.target.closest('button[data-action]')
 			if(!btn) return
 			const action = btn.dataset.action
-			const pairEl = btn.closest('.pair')
-			if(!pairEl) return
-			const pairId = pairEl.getAttribute('data-id')
+			// Find nearest rendered part element and read pair id from data attribute
+			const partEl = btn.closest('.part[data-pair-id]')
+			if(!partEl) return
+			const pairId = partEl.getAttribute('data-pair-id')
 			if(action === 'resend' && onResend) onResend(pairId)
 			else if(action === 'delete' && onDelete) onDelete(pairId)
 		})
