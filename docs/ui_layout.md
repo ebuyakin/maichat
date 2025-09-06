@@ -1,6 +1,6 @@
-# Main Window Layout Specification
+# Main Window Layout Specification (Active)
 
-Status: Updated for M5 (anchoring & partitioning incorporated)
+Status: Active. For overall architecture see ARCHITECTURE.md; this doc focuses only on UI layout.
 
 ## 1. Core Principles (Normative)
 1. Visual Continuity: The three vertical zones (Top Bar, History Workspace, Input Bar) are always present; modes never reflow or hide them.

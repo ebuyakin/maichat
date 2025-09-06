@@ -14,7 +14,6 @@ import { ActivePartController } from '../features/history/parts.js'
 import { createScrollController } from '../features/history/scrollControllerV3.js'
 import { createNewMessageLifecycle } from '../features/history/newMessageLifecycle.js'
 import { createBoundaryManager } from '../core/context/boundaryManager.js'
-import { evaluate } from '../features/command/evaluator.js' // used indirectly via lifecycle callbacks
 export function initRuntime() {
   const store = createStore()
   attachIndexes(store)
@@ -22,7 +21,7 @@ export function initRuntime() {
   const historyPaneEl = document.getElementById('historyPane')
   const activeParts = new ActivePartController()
   const scrollController = createScrollController({ container: historyPaneEl })
-  const historyView = createHistoryView({ store, onActivePartRendered: ()=> applyActivePart(ctx) })
+  const historyView = createHistoryView({ store, onActivePartRendered: ()=> {} })
   const boundaryMgr = createBoundaryManager()
 
   // Pending message metadata (topic + model) initially set after catalog load; fallback model default.
@@ -33,8 +32,8 @@ export function initRuntime() {
     store,
     activeParts,
     commandInput: null, // assigned later by interaction module
-    renderHistory: (pairs)=> renderHistoryInternal(ctx, pairs),
-    applyActivePart: ()=> applyActivePart(ctx)
+    renderHistory: ()=> {},
+    applyActivePart: ()=> {}
   })
 
   const ctx = {
@@ -50,24 +49,20 @@ export function initRuntime() {
     getActiveModel
   }
 
-  // Expose for diagnostics (mirrors previous main.js behavior partially; full exposure remains in main during Phase 1)
-  window.__scrollController = scrollController
-  window.__store = store
+  // Expose for diagnostics in development when explicitly enabled via URL flag.
+  // Enabled if (a) Vite dev mode AND (b) URL contains `debug=1` (or `dbg=1`).
+  try {
+    const isDev = typeof import.meta !== 'undefined' && import.meta?.env?.DEV
+    const params = new URLSearchParams(window.location?.search || '')
+    const debugOn = params.get('debug') === '1' || params.get('dbg') === '1'
+    if (isDev && debugOn) {
+      window.__scrollController = scrollController
+      window.__store = store
+    }
+  } catch (_) {
+    // ignore – safe no-op for non-browser/test contexts
+  }
   return ctx
 }
 
-// Internal helper used by lifecycle callback before modules fully extracted.
-function renderHistoryInternal(ctx, pairs){
-  // Placeholder: real implementation still lives in main.js (historyRuntime extraction later).
-  // This function keeps lifecycle contract intact during step 1.
-  // It will be removed once historyRuntime.js is introduced.
-  if(!pairs) return
-  const sorted = [...pairs].sort((a,b)=> a.createdAt - b.createdAt)
-  const parts = ctx.activeParts ? ctx.activeParts.setParts && ctx.activeParts.setParts([]) : null
-  // No-op; full render pipeline still in main.js.
-}
-
-function applyActivePart(ctx){
-  // No-op placeholder (actual logic resides in main.js until step 3 extraction)
-  return
-}
+// Note: history rendering and active-part application are owned by historyRuntime now.

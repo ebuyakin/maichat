@@ -31,3 +31,9 @@ Message history is a set (potentially filtered) of all message exchanges (messag
 Topic tree is the key element of the app functionaliy. The capability of structuring the message history (at the level of individual messages) by hierarchically organized topics both in time of the request and at any point after that is seen as the major benefit of the app for the user.
 
 MaiChat is aimed to be a pure client app that shall use plain vanilla js.
+
+## Important files describing the project:
+
+### /src/docs/project_vision.md
+### /src/docs/ARCHITECTURE.md
+### /src/dev-notes.md 

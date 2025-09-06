@@ -1,7 +1,7 @@
-# Folder Structure Migration Plan
+# Folder Structure Migration Plan (Archived)
 
-Date: 2025-09-05
-Status: Phase 6.5 (Compose) COMPLETE. Completed: Instrumentation (2.1), Core (5.1 subset), History (6.1), Interaction (6.2), Command (6.3), Topics (6.4), Compose (6.5). Next: start Phase 6.6 (Config overlays).
+Date: 2025-09-05 (moved to legacy)
+Status: Archived. Migration is complete. See ARCHITECTURE.md for the stable structure and ADR-000 for the accepted decisions.
 Scope: Safely transition from current ad-hoc `src/` layout to the proposed structure:
 
 ```
@@ -58,7 +58,7 @@ Scope: Safely transition from current ad-hoc `src/` layout to the proposed struc
 | 6 Features Part 3 | 6.3 | Move command DSL (lexer/parser/evaluator) | Low | feat:structure:features-command |
 | 6 Features Part 4 | 6.4 | Move topics (editor/picker) | Medium | feat:structure:features-topics |
 | 6 Features Part 5 | 6.5 | Move compose pipeline (+ newMessageLifecycle? stays in history) | Low | feat:structure:features-compose |
-| 6 Features Part 6 | 6.6 | Move config overlays (settings/model/api/help) | Medium | feat:structure:features-config |
+| 6 Features Part 6 | 6.6 | Move config overlays (settings/model/api/help) | Medium | feat:structure:features-config (DONE) |
 | 7 Runtime Polishing | 7.1 | Review runtime folder borders | Low | chore:migrate:runtime-review |
 | 8 Legacy | 8.1 | Quarantine legacy into `/legacy` | Low | chore:migrate:legacy-quarantine |
 | 8 Legacy | 8.2 | Delete legacy after double check | Low | chore:migrate:legacy-remove |
@@ -174,12 +174,17 @@ Stubs removed after import updates. Tests & smoke passed.
 Files moved: `send/pipeline.js` → `features/compose/pipeline.js`.
 Stub removed after successful tests (43 passing) and grep verification (no remaining `send/pipeline` imports).
 
-**Step 6.6 Config Overlays**
+**Step 6.6 Config Overlays (DONE)**
 Files: `ui/settingsOverlay.js`, `ui/modelSelector.js`, `ui/modelEditor.js`, `ui/apiKeysOverlay.js`, `ui/helpOverlay.js` → `features/config/`
 
-Smoke: Open each overlay; modify a setting; model selection persists; help overlay appears.
+Execution Notes:
+1. Implementations moved/restored into `features/config/*` with zero functional change.
+2. Model Selector keyboard fixes and visual polish retained; unit tests added for selector/editor.
+3. Tests updated to import overlays from `features/config/*`; no remaining `/src/ui` imports.
+4. Removed shims and deleted `/src/ui`, `/src/api`, `/src/provider` after verifying no references remained (app uses `/src/infrastructure/*`).
+5. Full test suite green after removals; manual smoke OK.
 
-For each 6.x step: same shim approach (stubs in original locations) → update imports → remove stubs.
+Smoke: Open each overlay; modify a setting; model selection persists; help overlay appears.
 
 ### Phase 7 – Runtime Polishing
 **Step 7.1 Review runtime**
@@ -295,7 +300,7 @@ create_stub() {
 **End of plan.**
 
 ## Safe Deletion (Current Status)
-No pending stubs after Phase 6.5 completion. Next stubs will be produced during Phase 6.6.
+No pending stubs after Phase 6.6 completion. Deleted: `/src/ui`, `/src/api`, `/src/provider` (verified unused). Legacy files remain under `/src/legacy` pending Phase 8.
 
 ## Phase 6.3 – Command DSL (Complete)
 All filter stubs removed previously; no pending actions.
@@ -307,8 +312,8 @@ Interaction original stubs already removed earlier; no action needed there.
 - Consider adding a tiny integration test for `createHistoryRuntime` to lock render + active part invariants.
 - After Interaction & Command moves, run a global grep for any lingering `../ui/` imports to ensure complete feature isolation.
 
-## Verification Snapshot (Post 6.1)
-- Tests: 43/43 passing.
-- Grep: no runtime imports to old history or partitioner paths.
-- Behavior: Scroll anchoring, partitioning, fade visibility, new reply focus heuristics intact (manual smoke expected to match pre‑transplant).
+## Verification Snapshot (Post 6.6)
+- Tests: All passing.
+- Grep: no imports from `/src/ui`, `/src/api`, or `/src/provider` in source or tests.
+- Behavior: Overlays open/close correctly; model selector/editor interaction as expected; history rendering, partitioning, and scroll anchoring unchanged.
 
