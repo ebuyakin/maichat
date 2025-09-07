@@ -66,10 +66,13 @@ describe('Model Editor overlay', () => {
     expect(active).toBeTruthy()
 
     // Toggle with space
-    const currentId = active?.getAttribute('data-id')
+  const currentId = active?.getAttribute('data-id')
+  const beforeToggleClass = active.querySelector('.me-col-toggle')?.className
     window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
     await flush()
-    expect(toggleStub).toHaveBeenCalled()
+  const after = document.querySelector(`.model-editor li[data-id="${currentId}"] .me-col-toggle`)
+  expect(after).toBeTruthy()
+  expect(after.className).not.toEqual(beforeToggleClass)
   })
 
   it('closes with Esc', async () => {

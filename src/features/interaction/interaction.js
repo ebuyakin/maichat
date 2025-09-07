@@ -193,6 +193,8 @@ export function createInteraction({
   function runMenuAction(action){
     if(action==='topic-editor'){
       const prev=modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prev) } })
+    } else if(action==='model-editor'){
+      const prev=modeManager.mode; openModelEditor({ store, onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prev) } })
     } else if(action==='daily-stats'){
       openDailyStatsOverlay({ store, activeParts, historyRuntime, modeManager })
     } else if(action==='settings'){
@@ -227,7 +229,7 @@ export function createInteraction({
       if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prevMode) } }) }
     }
   else if(k==='m'){
-      if(e.shiftKey){ e.preventDefault(); const prevMode=modeManager.mode; openModelEditor({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } }) }
+      if(e.shiftKey){ e.preventDefault(); const prevMode=modeManager.mode; openModelEditor({ store, onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } }) }
       else { if(modeManager.mode!=='input') return; e.preventDefault(); const prevMode=modeManager.mode; openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } }) }
     }
     else if(k==='k'){ e.preventDefault(); const prevMode=modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prevMode) } }) }
