@@ -27,7 +27,17 @@ export function parse(input){
       let op = null, value = null
       if(peek().type === 'OP' && ['>','<','>=','<=','='].includes(peek().value)) op = consume().value
       const nxt = peek()
-      if(nxt.type === 'NUMBER' || nxt.type === 'STRING'){ value = consume().value }
+      if(nxt.type === 'NUMBER'){
+        // combine with following STRING unit if present (e.g., 24h, 7d, 2w, 6mo, 1y)
+        const numTok = consume()
+        const after = peek()
+        if(after.type === 'STRING' && /^(min|m|h|d|w|mo|y)$/i.test(after.value || '')){
+          const unitTok = consume()
+          value = String(numTok.value) + String(unitTok.value)
+        } else {
+          value = numTok.value
+        }
+      } else if(nxt.type === 'STRING'){ value = consume().value }
       return nFilter(t.value, { op, value })
     }
     throw new Error('Unexpected token: '+t.type+' '+t.value)

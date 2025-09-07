@@ -13,6 +13,7 @@ import { openApiKeysOverlay } from '../config/apiKeysOverlay.js'
 import { openModelSelector } from '../config/modelSelector.js'
 import { openModelEditor } from '../config/modelEditor.js'
 import { openHelpOverlay } from '../config/helpOverlay.js'
+import { openDailyStatsOverlay } from '../config/dailyStatsOverlay.js'
 import { getActiveModel } from '../../core/models/modelCatalog.js'
 // Compose pipeline not yet moved (Phase 6.5). Use current send/ path.
 // Compose pipeline moved (Phase 6.5) to features/compose
@@ -87,7 +88,8 @@ export function createInteraction({
       try {
         const ast = parse(q)
         const basePairs = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
-        const res = evaluate(ast, basePairs)
+  const currentBareTopicId = pendingMessageMeta.topicId || currentTopicId
+  const res = evaluate(ast, basePairs, { store, currentTopicId: currentBareTopicId })
         const changed = q !== prevFilter
         lifecycle.setFilterQuery(q)
         historyRuntime.renderHistory(res)
@@ -181,7 +183,19 @@ export function createInteraction({
   function menuGlobalKeyHandler(e){ const m = menuEl(); if(!m || m.hasAttribute('hidden')) return; const nav=['j','k','ArrowDown','ArrowUp','Enter','Escape']; if(nav.includes(e.key)){ e.preventDefault(); e.stopImmediatePropagation(); const items = Array.from(m.querySelectorAll('li')); let idx = items.findIndex(li=> li.classList.contains('active')); if(idx<0 && items.length){ idx=0; items[0].classList.add('active') } if(e.key==='Escape'){ toggleMenu(false); return } if(e.key==='j' || e.key==='ArrowDown'){ if(items.length){ idx=(idx+1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active') } return } if(e.key==='k' || e.key==='ArrowUp'){ if(items.length){ idx=(idx-1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active') } return } if(e.key==='Enter'){ const act=items[idx]||items[0]; if(act) activateMenuItem(act); return } } }
   function closeMenu(){ toggleMenu(false) }
   function activateMenuItem(li){ if(!li) return; const act = li.getAttribute('data-action'); closeMenu(); runMenuAction(act) }
-  function runMenuAction(action){ if(action==='topic-editor'){ const prev=modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prev) } }) } else if(action==='settings'){ const prev=modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prev) } }) } else if(action==='api-keys'){ const prev=modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prev) } }) } else if(action==='help'){ openHelpOverlay({ modeManager, onClose:()=>{} }) } }
+  function runMenuAction(action){
+    if(action==='topic-editor'){
+      const prev=modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prev) } })
+    } else if(action==='daily-stats'){
+      openDailyStatsOverlay({ store, activeParts, historyRuntime, modeManager })
+    } else if(action==='settings'){
+      const prev=modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prev) } })
+    } else if(action==='api-keys'){
+      const prev=modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prev) } })
+    } else if(action==='help'){
+      openHelpOverlay({ modeManager, onClose:()=>{} })
+    }
+  }
   document.addEventListener('click', e=>{ const btn = menuBtn(); const m = menuEl(); if(!btn||!m) return; if(e.target===btn){ e.stopPropagation(); toggleMenu(); return } if(m.contains(e.target)){ const li = e.target.closest('li[data-action]'); if(li) activateMenuItem(li); return } if(!btn.contains(e.target)) closeMenu() })
   function renderPendingMeta(){ const pm = document.getElementById('pendingModel'); const pt = document.getElementById('pendingTopic'); if(pm){ pm.textContent = pendingMessageMeta.model || getActiveModel() || 'gpt-4o'; if(!pm.textContent) pm.textContent='gpt-4o'; pm.title = `Model: ${pendingMessageMeta.model || getActiveModel() || 'gpt-4o'} (Ctrl+M select (Input mode) · Ctrl+Shift+M manage (any mode))` } if(pt){ const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId); if(topic){ const path = formatTopicPath(topic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { const rootTopic = store.topics.get(store.rootTopicId); if(rootTopic){ const path = formatTopicPath(rootTopic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { pt.textContent='Select Topic'; pt.title='No topic found (Ctrl+T)' } } } }
   function formatTopicPath(id){ const parts = store.getTopicPath(id); if(parts[0]==='Root') parts.shift(); return parts.join(' > ') }
@@ -196,7 +210,8 @@ export function createInteraction({
     const k = e.key.toLowerCase();
     if(window.modalIsActive && window.modalIsActive()) return;
     if(k==='i'){ e.preventDefault(); modeManager.set('input') }
-    else if(k==='d' && !e.shiftKey){ e.preventDefault(); modeManager.set('command') }
+  else if(e.shiftKey && k==='d'){ e.preventDefault(); openDailyStatsOverlay({ store, activeParts, historyRuntime, modeManager }) }
+  else if(k==='d' && !e.shiftKey){ e.preventDefault(); modeManager.set('command') }
     else if(k==='v'){ e.preventDefault(); modeManager.set('view') }
     else if(k==='t'){
       if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openQuickTopicPicker({ prevMode }) }

@@ -44,8 +44,17 @@ export function lex(input){
       push('STRING', str, start, i); continue
     }
     if(/\d/.test(ch)){
-      let num = ch; i++
-      while(i < len && /\d/.test(input[i])){ num += input[i++] }
+      // Scan digits; if followed by '-' treat the whole [0-9-]+ run as a STRING (date-like), else NUMBER
+      let j = i+1
+      while(j < len && /\d/.test(input[j])) j++
+      if(input[j] === '-'){
+        let str = input.slice(i, j)
+        let k = j
+        while(k < len && /[0-9\-]/.test(input[k])) k++
+        str = input.slice(i, k)
+        push('STRING', str, start, k); i = k; continue
+      }
+      let num = input.slice(i, j); i = j
       push('NUMBER', num, start, i); continue
     }
     // fallback: treat word chars as bare STRING (simplifies early impl)

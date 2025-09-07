@@ -27,7 +27,7 @@ export function createHudRuntime({ store, activeParts, scrollController, history
 		const hh = String(d.getHours()).padStart(2,'0')
 		const mi = String(d.getMinutes()).padStart(2,'0')
 		const ss = String(d.getSeconds()).padStart(2,'0')
-		return `${yy}-${dd}-${mm} ${hh}:${mi}:${ss}`
+		return `${yy}-${mm}-${dd} ${hh}:${mi}:${ss}`
 	}
 
 	function sectionHTML(key, title, arr){

@@ -37,6 +37,7 @@ appEl.innerHTML = `
       <div id="appMenu" class="app-menu" hidden>
         <ul>
           <li data-action="topic-editor"><span class="label">Topic Editor</span><span class="hint">Ctrl+E</span></li>
+          <li data-action="daily-stats"><span class="label">Daily Stats</span><span class="hint">Ctrl+Shift+D</span></li>
           <li data-action="settings"><span class="label">Settings</span><span class="hint">Ctrl+,</span></li>
           <li data-action="api-keys"><span class="label">API Keys</span><span class="hint">Ctrl+K</span></li>
           <li data-action="help"><span class="label">Help</span><span class="hint">F1</span></li>
