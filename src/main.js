@@ -32,6 +32,7 @@ appEl.innerHTML = `
       <input id="commandInput" placeholder=": command / filter" autocomplete="off" />
     </div>
     <div id="statusRight">
+  <span id="commandError"></span>
       <span id="messageCount" title="Visible message pairs" class="mc">0</span>
       <button id="appMenuBtn" aria-haspopup="true" aria-expanded="false" title="Menu (Ctrl+.)" class="menu-btn" tabindex="0">⋮</button>
       <div id="appMenu" class="app-menu" hidden>
@@ -43,7 +44,6 @@ appEl.innerHTML = `
           <li data-action="help"><span class="label">Help</span><span class="hint">F1</span></li>
         </ul>
       </div>
-      <span id="commandError"></span>
     </div>
   </div>
   <div id="historyPane" class="zone">

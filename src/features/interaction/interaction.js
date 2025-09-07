@@ -62,6 +62,9 @@ export function createInteraction({
   }
   const commandHandler = (e)=>{
     if(window.modalIsActive && window.modalIsActive()) return false
+  // Emacs-like editing shortcuts in command box
+  if(e.ctrlKey && (e.key==='u' || e.key==='U')){ e.preventDefault(); const el = commandInput; const end = el.selectionEnd; const start = 0; el.setRangeText('', start, end, 'end'); return true }
+  if(e.ctrlKey && (e.key==='w' || e.key==='W')){ e.preventDefault(); const el = commandInput; const pos = el.selectionStart; const left = el.value.slice(0, pos); const right = el.value.slice(el.selectionEnd); const newLeft = left.replace(/\s*[^\s]+\s*$/, ''); const delStart = newLeft.length; el.value = newLeft + right; el.setSelectionRange(delStart, delStart); return true }
     if(e.ctrlKey && (e.key==='p' || e.key==='P')){ historyPrev(); return true }
     if(e.ctrlKey && (e.key==='n' || e.key==='N')){ historyNext(); return true }
     if(e.key==='Enter'){
@@ -86,10 +89,11 @@ export function createInteraction({
         pushCommandHistory(q); commandHistoryPos=-1; modeManager.set('view'); return true
       }
       try {
-        const ast = parse(q)
-        const basePairs = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
+  const ast = parse(q)
+  const basePairs = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
   const currentBareTopicId = pendingMessageMeta.topicId || currentTopicId
-  const res = evaluate(ast, basePairs, { store, currentTopicId: currentBareTopicId })
+  const currentBareModel = pendingMessageMeta.model || getActiveModel()
+  const res = evaluate(ast, basePairs, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
         const changed = q !== prevFilter
         lifecycle.setFilterQuery(q)
         historyRuntime.renderHistory(res)
@@ -97,7 +101,7 @@ export function createInteraction({
         modeManager.set('view')
         if(!changed && prevActiveId){ activeParts.setActiveById(prevActiveId); historyRuntime.applyActivePart() }
         if(changed){ lastAppliedFilter=q; pushCommandHistory(q); commandHistoryPos=-1 }
-      } catch(ex){ commandErrEl.textContent = ex.message }
+  } catch(ex){ const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'; const friendly = (/^Unexpected token:/i.test(raw) || /^Unexpected trailing input/i.test(raw)) ? 'Incorrect command' : `Incorrect command: ${raw}`; commandErrEl.textContent = friendly }
       return true
     }
     if(e.key==='Escape'){
@@ -107,6 +111,9 @@ export function createInteraction({
   }
   const inputHandler = (e)=>{
     if(window.modalIsActive && window.modalIsActive()) return false
+  // Emacs-like editing shortcuts in input (new message) box
+  if(e.ctrlKey && (e.key==='u' || e.key==='U')){ e.preventDefault(); const el = inputField; const end = el.selectionEnd; const start = 0; el.setRangeText('', start, end, 'end'); return true }
+  if(e.ctrlKey && (e.key==='w' || e.key==='W')){ e.preventDefault(); const el = inputField; const pos = el.selectionStart; const left = el.value.slice(0, pos); const right = el.value.slice(el.selectionEnd); const newLeft = left.replace(/\s*[^\s]+\s*$/, ''); const delStart = newLeft.length; el.value = newLeft + right; el.setSelectionRange(delStart, delStart); return true }
     if(e.key==='Enter'){
       const text = inputField.value.trim();
       if(text){

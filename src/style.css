@@ -171,9 +171,10 @@ body { min-height:100vh; overflow:hidden; }
 
 #topBar { position:fixed; top:0; left:0; right:0; z-index:10; background:var(--bg-alt); padding:8px var(--gutter); display:flex; gap:8px; align-items:center; min-height:var(--topbar-h); border-bottom:1px solid var(--border); }
 #topBar input { width:100%; background:var(--bg-alt); border:1px solid var(--border); color:var(--text); padding:6px 0 6px 0; font:var(--size-base)/1.5 var(--font-ui); }
-#statusRight { margin-left:auto; display:flex; align-items:center; gap:10px; position:relative; }
+#statusRight { margin-left:auto; display:flex; align-items:center; gap:10px; position:relative; min-width:0; }
 /* Command zone element normalization */
 #statusRight > * { box-sizing:border-box; }
+#statusRight .mc, #statusRight .menu-btn { flex:0 0 auto; }
 #messageCount.mc { font:11px var(--font-mono); background:transparent; padding:6px 10px; border:1px solid #2a2a2a; border-radius:4px; color:#9ab; letter-spacing:.5px; display:flex; align-items:center; height:34px; }
 .menu-btn { background:transparent; border:1px solid #2a2a2a; color:#ddd; padding:6px 10px; cursor:pointer; border-radius:4px; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; height:34px; }
 .menu-btn:focus, .menu-btn:hover { border-color:#3a3a3a; color:#fff; }
@@ -205,7 +206,7 @@ body { min-height:100vh; overflow:hidden; }
 
 /* active-zone removed per spec (mode indicated by label only) */
 
-#commandError { color: var(--danger); font-size: 12px; }
+#commandError { color: var(--danger); font-size: 12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:50vw; flex:1 1 auto; }
 
 .history { display:flex; flex-direction:column; gap:0; }
 .pair { padding:2px 0 0; border-bottom:none; text-align:left; }

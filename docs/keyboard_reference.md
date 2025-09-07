@@ -78,6 +78,8 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Enter | Send message & remain in INPUT | Ignored if previous send pending ("AI is thinking") |
 | Escape | Return to VIEW | Restores active selection |
 | Ctrl+v / Ctrl+d / Ctrl+i | Direct mode switch | Overrides cycle |
+| Ctrl+U | Delete from line start to cursor | Emacs-style editing |
+| Ctrl+W | Delete previous word | Emacs-style editing |
 
 (Star / include keys intentionally disabled while typing to avoid accidental edits. Future: enable when input empty.)
 
@@ -89,6 +91,8 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+P | Previous command in history | Persistent (survives reload, max 100) |
 | Ctrl+N | Next command in history | Clears to empty at end |
 | Ctrl+v / Ctrl+i / Ctrl+d | Direct mode switch | |
+| Ctrl+U | Delete from line start to cursor | Emacs-style editing |
+| Ctrl+W | Delete previous word | Emacs-style editing |
 
 ## 6. Topic Quick Picker (Ctrl+T)
 Hidden root: the conceptual root node is not displayed; top-level rows are its children.

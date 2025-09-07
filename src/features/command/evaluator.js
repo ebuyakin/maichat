@@ -31,6 +31,7 @@ export function evaluate(ast, pairs, opts = {}){
       case 'r': return filterRecent(value)
       case 'b': return pairs.filter(p=>p.colorFlag === 'b')
       case 'g': return pairs.filter(p=>p.colorFlag === 'g')
+  case 'e': return pairs.filter(p=> p.lifecycleState === 'error' || (p.errorMessage && String(p.errorMessage).trim()!=='') )
       case 't': {
         // Resolve topic expression to a set of topicIds (supports bare t, wildcards, paths, descendants)
         const topicIds = resolveTopicFilter(value, { store: opts.store, currentTopicId: opts.currentTopicId })
@@ -38,8 +39,8 @@ export function evaluate(ast, pairs, opts = {}){
         return pairs.filter(p=> topicIds.has(p.topicId))
       }
   case 'd': return filterDate(op, value)
-      case 'm': return value ? pairs.filter(p=> p.model.toLowerCase() === String(value).toLowerCase()) : pairs
-      case 'c': return value ? pairs.filter(p=> (p.userText+"\n"+p.assistantText).toLowerCase().includes(String(value).toLowerCase())) : pairs
+  case 'm': return filterModel(value)
+  case 'c': return filterContent(value)
       default: return pairs
     }
   }
@@ -120,6 +121,43 @@ export function evaluate(ast, pairs, opts = {}){
       })
     }
     throw new Error('Invalid date value')
+  }
+
+  function globToRegExp(pattern){
+    const esc = String(pattern).replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    const re = '^' + esc.replace(/\*/g, '.*') + '$'
+    return new RegExp(re, 'i')
+  }
+  function filterModel(raw){
+    const pattern = (raw != null && String(raw).trim() !== '')
+      ? String(raw).trim()
+      : (opts.currentModel ? String(opts.currentModel).trim() : '')
+    if(!pattern) return pairs
+    const hasWildcard = pattern.includes('*')
+    if(hasWildcard){
+      const re = globToRegExp(pattern)
+      return pairs.filter(p=> re.test((p.model||'').toString()))
+    }
+    const target = pattern.toLowerCase()
+    return pairs.filter(p=> (p.model||'').toString().toLowerCase() === target)
+  }
+
+  function filterContent(raw){
+    if(raw == null || String(raw).trim()==='') return pairs
+    const textOf = (p)=> ((p.userText||'')+"\n"+(p.assistantText||''))
+    const pattern = String(raw)
+    if(pattern.includes('*')){
+      const re = globToContentRegExp(pattern)
+      return pairs.filter(p=> re.test(textOf(p)))
+    }
+    const sub = pattern.toLowerCase()
+    return pairs.filter(p=> textOf(p).toLowerCase().includes(sub))
+  }
+
+  function globToContentRegExp(pattern){
+    const esc = String(pattern).replace(/[.+^${}()|[\]\\]/g, '\\$&')
+  const re = esc.replace(/\*/g, '[\\s\\S]*')
+  return new RegExp(re, 'i')
   }
   function compare(actual, op, target){
     switch(op){

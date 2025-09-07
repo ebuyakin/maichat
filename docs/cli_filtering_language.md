@@ -119,16 +119,21 @@ g           # Only unflagged (grey) messages
 
 ### Model Filtering (`m`)
 
-Filter by assistant model name (case-insensitive). Matches against `assistant_message.metadata.model` (or `modelName` fallback). Supports `*` wildcard.
+Filter by assistant model name (case-insensitive). Supports `*` wildcards and a bare form.
 
-Syntax: `m'<model>'` or bare `m` (current model from the input area)
+Syntax: `m'<pattern>'` or bare `m` (uses current/pending model from the input bar)
+
+Semantics:
+- Wildcards: `*` matches any sequence of characters (no regex).
+- Exact: without `*`, performs a case-insensitive exact match.
+- Bare `m`: equivalent to `m'<current model>'` where the current model comes from the input bar (pending model if set; otherwise active model).
 
 Examples:
 ```
 m'gpt-4'              # exactly GPT-4
-m'gpt-*'              # all GPT family models
+m'gpt*'               # all GPT family models
 m'claude-3-opus'      # specific Claude variant
-m                    # current model selected in the input bar
+m                     # current model selected in the input bar
 ```
 
 ### Date Filtering (`d`)
@@ -162,9 +167,8 @@ Filter by message content (user+assistant text concatenated per pair).
 Syntax: `c'<pattern>'`
 
 - Case-insensitive substring match by default.
-- `*` acts as a wildcard for any sequence of characters.
-- No regex support (future option). To express non-contiguous terms in order, use `*` between them: `c'*transformer*attention*'`.
-- To require multiple independent terms in any order, AND multiple `c` predicates: `c'transformer' & c'attention'`.
+- `*` acts as a wildcard matching any sequence (order-preserving when used between terms). e.g. `c'mad*d'`.
+- No regex support. To express non-contiguous terms in any order, AND multiple `c` predicates: `c'transformer' & c'attention'`.
 
 Examples:
 ```
@@ -252,6 +256,22 @@ t'*Learning*' | t'*Neural*'  # All machine learning related topics
 ```
 c'algorithm' & s>=1     # Starred content about algorithms (min 1 star)
 (c'bug' | c'error') & t'Programming...'  # Debugging discussions
+```
+
+### Messages with Error Responses (`e`)
+
+Filter to only pairs where the assistant response errored.
+
+Syntax: `e`
+
+Semantics:
+- Includes pairs with `lifecycleState === 'error'` or a non-empty `errorMessage`.
+
+Examples:
+```
+e                       # only pairs with response errors
+e & d<7d                # error pairs from the last week
+e & t'API'              # error pairs inside the API topic tree
 ```
 
 ## Implementation Considerations

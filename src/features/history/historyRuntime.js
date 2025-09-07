@@ -97,8 +97,18 @@ export function createHistoryRuntime(ctx){
     let all = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
     const fq = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : ''
     if(fq){
-      try { const ast = parse(fq); all = evaluate(ast, all); if(commandErrEl) commandErrEl.textContent='' }
-      catch(ex){ if(commandErrEl) commandErrEl.textContent = ex.message || 'filter error'; return }
+      try { const ast = parse(fq); all = evaluate(ast, all); if(commandErrEl){ commandErrEl.textContent=''; commandErrEl.title=''; } }
+      catch(ex){
+        if(commandErrEl){
+          const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'
+          let friendly
+          if(/^Unexpected token:/i.test(raw) || /^Unexpected trailing input/i.test(raw)) friendly = 'Incorrect command'
+          else friendly = `Incorrect command: ${raw}`
+          commandErrEl.textContent = friendly
+          commandErrEl.title = friendly
+        }
+        return
+      }
     }
     renderHistory(all)
     if(prevActiveId){
