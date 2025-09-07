@@ -254,6 +254,14 @@ Pending: rpm/tdp live quota modeling; proactive adjustment when `AUT` encroaches
 | Token Estimate | Small gray `~N` near Send (debounced). |
 | Over-budget Alert | Blocking confirm dialog (no auto-trim). |
 
+### Error codes (UI labels)
+Recognized short codes shown in history for failed sends:
+- auth — invalid/missing API key; 401/403
+- quota — 429, rate/quota/tpm/rpm; context/window exceeded
+- net — network/fetch failures/timeouts
+- model — unknown/invalid/deprecated/removed model name
+- unknown — fallback when not matched
+
 ## 9. Defer / Removed / Revised From M6
 - Streaming partial response (defer).
 - System/style injection (hook only; no UI yet).

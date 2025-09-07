@@ -112,7 +112,7 @@ export function openModelEditor({ onClose, store }){
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.contextWindow||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpm||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-field="rpm" type="number" min="0" step="1" value="${m.rpm}" class="me-num"/></span>
-        <span class="me-col me-col-tpd"><div class="me-actions"><input aria-label="Tokens per day (K tokens)" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpd||0)/1000)}" class="me-num"/>${isBaseModel(m.id)?'':(inUse?`<span class=\"pending-meta\" title=\"Cannot delete: ${usedCounts.get(String(m.id).toLowerCase())||0} message(s) use this model\">in use</span>`:`<button class=\"btn-ghost\" data-action=\"del\" title=\"Delete custom model\">Delete</button>`)}</div></span>`
+  <span class="me-col me-col-tpd"><div class="me-actions"><input aria-label="Tokens per day (K tokens)" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpd||0)/1000)}" class="me-num"/></div></span>`
       ul.appendChild(li)
     })
   updateFooterState()
@@ -154,17 +154,6 @@ export function openModelEditor({ onClose, store }){
 
   function isBaseModel(id){ return ['gpt-5','gpt-5-mini','gpt-5-nano','gpt-4.1','gpt-4.1-mini','gpt-4.1-nano','o3','o4-mini','gpt-4o','gpt-4o-mini','gpt-3.5-turbo'].includes(id) }
   ul.addEventListener('click', e=>{ 
-    const delBtn = e.target.closest('button[data-action="del"]')
-    if(delBtn){
-      const row = delBtn.closest('li.me-row')
-      const id = row?.dataset?.id
-      if(!id || isBaseModel(id)) return
-      // Stage deletion in draft
-      stagedDeletes.add(id)
-      draftById.delete(id)
-      render()
-      return
-    }
     const li = e.target.closest('li.me-row')
     if(!li || li.classList.contains('me-add')) return
     activeIndex = Array.from(ul.querySelectorAll('li.me-row')).indexOf(li)

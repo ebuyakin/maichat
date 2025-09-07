@@ -70,19 +70,39 @@ export function createHistoryView({ store, onActivePartRendered }){
 		return `<div class="part ${pt.role}" data-part-id="${pt.id}" data-role="${pt.role}" data-pair-id="${pt.pairId}"><div class="part-inner">${escapeHtml(pt.text)}</div></div>`
 	}
 	function classifyErrLabel(pair){
-		// Map common errors to compact, lower-case labels with prefix per spec.
-		const msg = (pair.errorMessage||'').toLowerCase()
-		if(!msg) return 'error: unknown'
-		if(msg.includes('api key') || msg.includes('unauthorized') || msg.includes('401') || msg.includes('forbidden')) return 'error: auth'
-		// Treat rate limits and context length exceed under a single 'quota' umbrella
-		if(
-			msg.includes('429') || msg.includes('rate') || msg.includes('quota') || msg.includes('tpm') || msg.includes('rpm')
-		) return 'error: quota'
-		if(msg.includes('context') && (msg.includes('length') || msg.includes('window') || msg.includes('exceed'))) return 'error: quota'
-		if(msg.includes('network') || msg.includes('fetch') || msg.includes('failed')) return 'error: net'
-		return 'error: unknown'
+		return classifyErrorCode(pair.errorMessage)
 	}
 	return { render }
+}
+// Exported for tests and reuse: classify an error message to compact label
+export function classifyErrorCode(message){
+	const msg = (message||'').toLowerCase()
+	if(!msg) return 'error: unknown'
+	// Model name issues: unknown/invalid/removed/deprecated/unsupported/404 mentioning model
+	if(
+		(msg.includes('model') && (
+			msg.includes('not found') ||
+			msg.includes('unknown') ||
+			msg.includes('invalid') ||
+			msg.includes('does not exist') ||
+			msg.includes("doesn't exist") ||
+			msg.includes('no such') ||
+			msg.includes('unrecognized') ||
+			msg.includes('unsupported') ||
+			msg.includes('deprecated')
+		)) ||
+		(msg.includes('404') && msg.includes('model'))
+	) return 'error: model'
+	// Auth
+	if(msg.includes('api key') || msg.includes('unauthorized') || msg.includes('401') || msg.includes('forbidden')) return 'error: auth'
+	// Quota / rate / context
+	if(
+		msg.includes('429') || msg.includes('rate') || msg.includes('quota') || msg.includes('tpm') || msg.includes('rpm')
+	) return 'error: quota'
+	if(msg.includes('context') && (msg.includes('length') || msg.includes('window') || msg.includes('exceed'))) return 'error: quota'
+	// Network
+	if(msg.includes('network') || msg.includes('fetch') || msg.includes('failed')) return 'error: net'
+	return 'error: unknown'
 }
 export function bindHistoryErrorActions(rootEl, { onResend, onDelete }) {
 	if(!rootEl.__errActionsBound) {
