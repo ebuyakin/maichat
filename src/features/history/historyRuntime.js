@@ -85,8 +85,10 @@ export function createHistoryRuntime(ctx){
     lastPredictedCount = boundary.included.length
     const parts = buildParts(pairs)
     activeParts.setParts(parts)
-    historyView.render(parts)
-    applyOutOfContextStyling()
+  historyView.render(parts)
+  // Apply initial fade state before first paint to avoid bright-then-dim flicker on re-render
+  updateFadeVisibility({ initial: true })
+  applyOutOfContextStyling()
     updateMessageCount(boundary.included.length, pairs.length)
     requestAnimationFrame(()=>{ scrollController.remeasure(); applyActivePart() })
     lifecycle.updateNewReplyBadgeVisibility()
@@ -127,7 +129,8 @@ export function createHistoryRuntime(ctx){
       updateFadeVisibility()
     }
   }
-  function updateFadeVisibility(){
+  function updateFadeVisibility(opts={}){
+    const initial = !!opts.initial
     const settings = getSettings()
     const G = settings.gapOuterPx || 0
     const fadeMode = settings.fadeMode || 'binary'
@@ -140,7 +143,7 @@ export function createHistoryRuntime(ctx){
     const H = pane.clientHeight
     const fadeZone = G
     const parts = pane.querySelectorAll('#history > .part')
-    parts.forEach(p=>{
+  parts.forEach(p=>{
       const top = p.offsetTop
       const h = p.offsetHeight
       const bottom = top + h
@@ -166,7 +169,7 @@ export function createHistoryRuntime(ctx){
       const prev = p.__lastOpacity != null ? p.__lastOpacity : parseFloat(p.style.opacity||'1')
       if(prev !== op){
         const dirIn = op > prev
-        const dur = dirIn ? fadeInMs : fadeOutMs
+        const dur = initial ? 0 : (dirIn ? fadeInMs : fadeOutMs)
         if(p.__lastFadeDur !== dur){ p.style.transitionDuration = dur + 'ms'; p.__lastFadeDur = dur }
         p.style.opacity = String(op)
         p.__lastOpacity = op
