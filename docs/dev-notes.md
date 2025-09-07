@@ -1,24 +1,20 @@
 ## current problem notes and comments.
 
-The Model Editor design:
-7 vertical blocks:
-1. 'Models' - title
-2. Table with existing models (Grid)
-6. Hint/help row
-7. Sync models,
+1. Mouse/touchpad navigation vs. keys. Noticed issues:
+1.1. The app has modal/spatial correspondence. Ie. the top zone of the main window is used only in the command mode, the middle - only in the view zone, the bottom - only in the input mode. So the elements can be activated by keyboard only in the correct mode. e.g. I can change the CLI filter when I am in input mode. BUT touchpad/mouse allows me to activate elements without changing the mode. This is confusing and potentially leads to conflicts. So, can we correct mouse/touch pad events in such a way that before the element is activated, the mode is switched correctly. E.g. if I am in the command mode and I use mouse/touchpad to focus on topic selector in the input mode, the mode is automatically changed to Input (prior to the selector getting focus? or right after it gets focus, but before I can do anything with it)? Not sure how this issue can be addressed, but it's important
+1.2. Small issue, should be easy to fix. in the message history part meta (with metadata) is not focusable by keys, but it still can get focus by mouse/touchpad. Can we make it unfocusable for the mouse/touchpad as well?
+With keyboard, when I navigate up/down the history I jump over the meta parts, so they never get 'active/focused' in terms of messageHistory (message history always has one part active/focused, but this is always user part or assistant part and never meta part). So meta parts don't get blue border when I navigate the history with j/k g/G keys. But with the mouse I can click on part meta and it does get the blue border and become 'active/'focused'. - that's the bug.
 
-- The left-most elements: 'Models' badge, 'Add' button, hint/help row and 'Sync models' button shall be left aligned.
-- the columns of the grid shall be aligned with the corresponding columns of the new model row.
-- all blocks (1-7) shall be separated by 5 px margin
-- The vertical scroll bar of the table/grid shall be 12px and ALWAYS visible (not fading)
+2. Help (F1) needs update and more structured listing of the key bindings. 
+- Global keys (list and purpose)
+- Modal keys (working in specific mode)
+-- Input:
+-- View:
+-- Command:
 
-The Model Editor navigation:
+keys for overlays don't needed as the overlays have hints in most of the cases
 
-1. On open the Grid (table with existing models) and its first row is focused.
-2. j/k g/G moves the focus/scroll along the rows (between the models). When we move to the row, no column is focused (just the row focused in general, not a specific column). Space - toggles enabled/disabled indicator (as now)
-3. l/h - move the focus between the columns of a given row (ie parameters) Active parameter column is highlighted with thin blue border (as in other places in the app). the model name (model columnn) is not separately focusable (not editable). When we land to the row the first l moves focus to 'Context window' column. Parameters columns are editable.
-4. Ctrl-N creates the new pre-filled row in the model list and moves focus to that row. The New Model line is not necessary and shall be deleted (that was a mistake from the beginning, that's why it was so difficult)
-5. On Enter or Esc  - the separate yes/no dialogue window appears. On Enter - it says 'Confirm changes' Y/N - then on Y the changes are confirmed (take effect) and the overlays is close, on N - the focus goes back to the grid (last focused row) 
-On Esc - it says 'Disregard changes' Y/N? - then on Y, changes are disregarded and the overlay is closed, on N - focus goes back to the grid (last focused row)
+3. Tutorial like page. This is I don't know how to do correctly. Shall this be a separate static .html? What should be its structure? The idea is to explain the users what app is about and how to use it. Can you help here?
 
-Add, Save, Cancel - buttons shall be removed. 'Sync models' stays, but remains ghost button for the future.
+4. Initialization (for the release version). We need to initialize: 1. the topic tree (some basic/template starting point, so users don't start from scratch and easier get the idea how to use it), 2. model list - again, the users don't start from nothing, 3. the message history - I was thinking of initializing the app with 1 'greetings' message prepopulated, that would be a concise presentation of the app and its main features/purposes.
+

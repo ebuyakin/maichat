@@ -41,8 +41,14 @@ M8. Full filtering language implementation [x]
     8.6. Usability: ArrowUp/Down history and friendlier errors in Command mode [x]
     8.7. Performance: simple indexes/short-circuiting (optional) [x]
     8.8. Error messages filtering (e command) [x]
-M9. Model store/list management (api keys, model cw, tpm, rpm etc.) [ ]
+M9. Model store/list management (api keys, model cw, tpm, rpm etc.) [x]
 M10. UX polish (message formatting (.md), performance, flickering, smoothing, transitions) and Help, keyboard - touchpad - arrows correspondence - including mode switching [ ]
+    10.1 Mouse/touchpad vs keyboard navigation (controle of the app mode when touchpad is used) [ ]
+    10.2 Meta part focus avoidance in mouse/touchpad actions [ ]
+    10.3 Help [ ]
+    10.4 Tutorial [ ]
+    10.5 Initialization (topic tree, model tree, message history) [ ]
+
 - Release.
 
 ## Milestones for version 2.0

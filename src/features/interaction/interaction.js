@@ -213,7 +213,21 @@ export function createInteraction({
   function cycleAnchorMode(){ const settings = getSettings(); const order = ['bottom','center','top']; const idx = order.indexOf(settings.anchorMode || 'bottom'); const next = order[(idx+1)%order.length]; saveSettings({ anchorMode: next }); historyRuntime.applyActivePart(); console.log('Anchor mode ->', next) }
   modeManager.onChange((m)=>{ historyRuntime.renderStatus(); if(m==='view'){ commandInput.blur(); inputField.blur() } else if(m==='input'){ inputField.focus() } else if(m==='command'){ commandModeEntryActivePartId = activeParts.active() ? activeParts.active().id : null; commandInput.focus() } })
   const keyRouter = createKeyRouter({ modeManager, handlers:{ view:viewHandler, command:commandHandler, input:inputHandler } }); keyRouter.attach()
-  document.addEventListener('click', e=>{ const el = e.target.closest('.part'); if(!el) return; activeParts.setActiveById(el.getAttribute('data-part-id')); historyRuntime.applyActivePart() })
+  document.addEventListener('click', e=>{
+    const partEl = e.target.closest('.part'); if(!partEl) return
+    // Ignore selection changes when clicking meta parts (request was: meta never becomes active via mouse)
+    if(partEl.getAttribute('data-role') === 'meta'){
+      // However, allow interactive controls inside meta to work without changing selection
+      const t = e.target
+      const tag = t && t.tagName ? t.tagName.toLowerCase() : ''
+      const isInteractive = tag==='button' || tag==='a' || tag==='input' || tag==='textarea' || t.getAttribute('role')==='button' || t.isContentEditable
+      if(isInteractive){ return }
+      // Non-interactive click on meta: do nothing selection-wise
+      return
+    }
+    activeParts.setActiveById(partEl.getAttribute('data-part-id'))
+    historyRuntime.applyActivePart()
+  })
   window.addEventListener('keydown', e=>{
     if(!e.ctrlKey) return;
     const k = e.key.toLowerCase();

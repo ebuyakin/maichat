@@ -54,6 +54,7 @@ Cross-cutting enablers
 - Features (user-facing capabilities)
   - History: `src/features/history/*` — render and layout of message parts; anchor‑based scrolling; partitioning; active‑part control; post‑send focus rules.
   - Interaction: `src/features/interaction/*` — mode FSM and mode‑aware key routing; bindings for navigation, stars/flags, topic/model actions, send, and overlay invocation.
+    - `pointerModeSwitcher.js` — capture-phase mouse/touch mode switching based on `[data-mode]` zones; excluded while a modal is active. Keyboard routing unaffected.
   - Command: `src/features/command/*` — filter DSL pipeline (lexer → parser → evaluator); pure computation of visible message IDs.
   - Topics: `src/features/topics/*` — keyboard‑first topic picker and editor (CRUD/move); updates topic references in store.
   - Compose: `src/features/compose/pipeline.js` — request assembly and send attempts with bounded trimming; integrates with provider registry.
@@ -104,6 +105,7 @@ Cross-cutting enablers
 
 - Passive keystrokes stay cheap; explicit actions do heavier work.
 - One active part at a time; meta rows are never focusable.
+  - Mouse clicks on meta do not change selection; interactive controls inside meta remain functional without altering the active part.
 - Dead-band validation avoids visible “second-scroll” corrections.
 - Deterministic rendering from store state; pure filtering.
 

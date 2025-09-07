@@ -34,6 +34,8 @@ Status: Introduced Phase 5 (Topic Management MVP).
 ## Preventing Background Side-Effects
 - Because global handlers (mode switching, view navigation) are suppressed while a modal is active, repeated j/k or star toggles cannot affect the message history unintentionally.
 - Focus leakage (e.g., external browser focus changes) triggers trap re-focus via capturing `focusin`.
+- Pointer interactions (mouse/touch) switch modes before focus/activation: a capture-phase `pointerdown` listener on the main document promotes the app to the clicked zone’s mode (command/view/input) using `data-mode` markers. Overlays are excluded via `modalIsActive()`.
+- Meta parts in history are never focus targets: keyboard navigation already skips them; mouse clicks on the meta surface do not change the active selection. Interactive controls inside meta still operate normally without altering selection.
 
 ## Adding a New Overlay (Checklist)
 1. Create container element with distinctive backdrop class (e.g., `.my-overlay-backdrop`).

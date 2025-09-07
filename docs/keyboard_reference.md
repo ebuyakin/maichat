@@ -135,9 +135,11 @@ Notes:
 - Active Part: exactly one part is active; movement changes only index.
 - Auto-Scroll & Anchoring: Active part aligned to user-selected reading position (Bottom default) using spacer logic; meta row is never focusable.
 - Pair Association: Star / include act on the entire pair.
-- Meta Row: Visible but skipped in navigation; edits apply based on active part's pair.
+- Meta Row: Visible but skipped in navigation; edits apply based on active part's pair. Mouse clicks on meta do not change selection.
 - 'n' vs 'G': 'n' = first part of last message; 'G' = last part of last message.
 - New reply auto-focus only if user remained at end (no navigation since send); otherwise badge appears.
+
+Pointer interactions (mouse/touch): Clicking in a UI zone automatically switches to that zone’s mode (command/view/input) before the target receives focus. Overlays are excluded. Keyboard behavior unchanged.
 
 ## 9. Metadata Editing
 Current shortcuts (*, a) are VIEW-only to prevent accidental edits while typing. Potential future: enable when input empty.

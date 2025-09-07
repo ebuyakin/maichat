@@ -12,6 +12,7 @@ import { createRequestDebugOverlay } from './instrumentation/requestDebugOverlay
 import { createHudRuntime } from './instrumentation/hudRuntime.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
+import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
 window.addEventListener('error', (e)=>{ try { console.error('[MaiChat] window error', e.error || e.message || e) } catch{} })
 window.addEventListener('unhandledrejection', (e)=>{ try { console.error('[MaiChat] unhandled rejection', e.reason) } catch{} })
 window.__BOOT_STAGE = 'imports-complete'
@@ -27,7 +28,7 @@ window.__MODES = MODES
 const appEl = document.querySelector('#app')
 if(!appEl){ console.error('[MaiChat] #app element missing'); }
 appEl.innerHTML = `
-  <div id="topBar" class="zone">
+  <div id="topBar" class="zone" data-mode="command">
     <div id="commandWrapper">
       <input id="commandInput" placeholder=": command / filter" autocomplete="off" />
     </div>
@@ -47,10 +48,10 @@ appEl.innerHTML = `
       </div>
     </div>
   </div>
-  <div id="historyPane" class="zone">
+  <div id="historyPane" class="zone" data-mode="view">
   <div id="history" class="history"></div>
   </div>
-  <div id="inputBar" class="zone">
+  <div id="inputBar" class="zone" data-mode="input">
     <div class="inputBar-inner">
       <div class="row first">
         <input id="inputField" placeholder="Type message... (Enter to send)" autocomplete="off" />
@@ -149,6 +150,9 @@ console.log('[MaiChat] bootstrap invoked')
 // Seeding helpers
 exposeSeedingHelpers(store, ()=> renderCurrentView(), activeParts, ()=> applyActivePart())
 console.log('[MaiChat] boot complete')
+
+// Pointer-mode switching (mouse/touch): switch app mode before pointer focus lands (excludes overlays)
+installPointerModeSwitcher({ modeManager, isModalActiveFn: ()=> (window.modalIsActive && window.modalIsActive()) })
 
 // Hang detector (5s) – if not complete, show diagnostic overlay
 setTimeout(()=>{
