@@ -378,10 +378,76 @@ input:focus, button:focus, .overlay-panel input[type=text]:focus { border-color:
 
 
 /* Help Overlay */
-.help-panel { width:520px; max-width:90vw; }
-.help-panel .help-body { padding:14px 18px 12px; display:flex; flex-direction:column; gap:12px; font:var(--size-base)/1.45 var(--font-ui); color:var(--text); }
+.help-panel { width:1320px; max-width:98vw; box-sizing:border-box; overflow:hidden; }
+.help-panel .help-body { padding:14px 18px 12px; display:flex; flex-direction:column; gap:12px; font:var(--size-base)/1.45 var(--font-ui); color:var(--text); overflow:auto; }
+/* Responsive font scaling for Help overlay */
+.help-panel .help-body { font-size: clamp(12px, 1.5vw, var(--size-base)); }
 .help-panel .help-body section { font-weight:400; letter-spacing:.2px; }
 .help-panel .help-body strong { font-weight:500; color:var(--text); }
+
+/* Help overlay: 4-column aligned layout */
+.help-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1.05fr 1.35fr 1.45fr; /* ~10px more reduction for Global/Input */
+  gap: 16px 20px;
+  align-items: start;
+}
+
+.help-col {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 16px; /* increased gap by 10px */
+  row-gap: 8px; /* uniform row spacing across columns */
+  align-content: start; /* prevent stretch-based distribution */
+  border: 1px solid var(--border, #333); /* subtle column border, dark */
+  border-radius: 6px;
+  padding: 8px;
+  background: transparent;
+}
+
+.help-title {
+  grid-column: 1 / -1;
+  font-weight: 400; /* no bold */
+  color: var(--text-dim); /* different color only */
+  margin-bottom: 4px;
+}
+
+.help-subtitle { grid-column: 1 / -1; margin: 0; font-size: inherit; color: var(--text-dim); }
+
+.help-k {
+  /* same font type/size as the rest */
+  color: var(--text); /* white-ish */
+  background: transparent; /* no separate background */
+  border: none; /* no box */
+  border-radius: 0;
+  padding: 0; /* tight, terminal-like */
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.help-d { color: var(--text-dim); }
+
+@media (max-width: 1040px) {
+  /* Prefer font and gap scaling to keep 4 columns around 1024px */
+  .help-panel { width:96vw; }
+  .help-panel .help-body { font-size: clamp(11px, 1.2vw, var(--size-base)); }
+  .help-grid { gap: 14px 14px; }
+  .help-col { column-gap: 14px; }
+}
+
+@media (max-width: 1000px) {
+  /* Below ~1000px, switch to 2 columns for readability */
+  .help-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 720px) {
+  .help-grid { grid-template-columns: 1fr; }
+}
+
+/* If viewport height is tight, slightly reduce font-size to keep content visible */
+@media (max-height: 820px) {
+  .help-panel .help-body { font-size: clamp(11px, 1.3vh, var(--size-base)); }
+}
 .help-panel .help-hint { font-size:11px; opacity:.6; letter-spacing:.4px; }
 .help-panel .help-buttons { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
 

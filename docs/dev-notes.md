@@ -18,3 +18,34 @@ keys for overlays don't needed as the overlays have hints in most of the cases
 
 4. Initialization (for the release version). We need to initialize: 1. the topic tree (some basic/template starting point, so users don't start from scratch and easier get the idea how to use it), 2. model list - again, the users don't start from nothing, 3. the message history - I was thinking of initializing the app with 1 'greetings' message prepopulated, that would be a concise presentation of the app and its main features/purposes.
 
+
+HELP PAGE COMMENTS:
+
+1. general layout. Let's make 4 coluns: Global, Input mode, View mode, Command mode (in that order). Use narros group borders to visually separate the columns. Make the title, a different color, so it's easier to recognize.
+2. Global: add Enter/Esc cycle to describe the switching between the modes (in addition to CTrl+... commands. leave Enter/Esc in each mode help too). Ctrl+T and Ctrl+M are not global commands. They work differently in View and Input mode and shall be described there. Ctrl+E and Ctrl+Shift+M - are global (work the same in all modes)
+
+3. View. Group commands into sections: History navigation, Message attributes editing (stars, a, e, d, ctrl-T, space). Add n (does it work, by the way?) - it's go to new message first part command.
+
+4. Input: add Ctrl+T - for topic selection.
+
+
+
+
+ok, now make the overlay wider, so each command/key fits one row. Don't use bold colors. make the commands and their descriptions vertiaclly aligned (like column of shortcuts, the column of descriptions)
+
+the size of the overlay does not match the size of the content, so the content is out of the borders of the overlay itself. Adjust, sot the content fits the overlay.
+change titles to Input Mode, View Mode, Command Mode.
+Make Ctrl+I, Ctrl+D , Ctrl+W - 3 different rows, 
+In global mode: Enter - switch to next mode, Esc - switch to previous mode (2 separate lines)
+make the gap between the keys and their descriptions smaller by 20 px.
+Make the keys and descriptions different color.
+
+make the space between the rows the same in all columns (global/inpue mode/ etc..)
+in view mode: a - toggle color code (not include), does n - command work? can you check?
+everywhere where you describe Enter/Esc as Switch to ... add word 'mode'... 'Switch to Command Mode' / View Mode' etc..
+Use the same font size for 'history navigation' and 'message attributes' as for all other text. The same font size everywhere.
+
+Same row spacing across all columns: Done (uniform row-gap across sections). - probably you misunderstood me. In 'Global' columns the gap between the rows (eg F1 - help and Ctlr+. Toggle menu) is smalle than in Input Mode or Command mode, and all of them have bigger then View mode. It looks like the rows are spaced equally to fill the full height of the container. So, what I want: the height of the containers remain the same (as it is now), and the line spacing is constant across all columns regardless of the number of rows in the column. ok? let me know if this is not clear.
+
+great, that's what I wanted. Now increase the margin/padding above 'Message attributes' , so there is a visual separation between the sections of keys of the View mode.
+2. decrease the gap between the keys and their descriptions by 10px
