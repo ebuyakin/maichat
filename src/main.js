@@ -145,6 +145,13 @@ function renderTopics(){ /* hidden for now */ }
 
 console.log('[MaiChat] bootstrap start')
 bootstrap({ ctx: __runtime, historyRuntime, interaction, loadingEl })
+  .then(()=>{
+    try {
+      // Default to Input Mode on startup for immediate typing
+      window.__modeManager && window.__modeManager.set(MODES.INPUT)
+      console.log('[MaiChat] default mode set to INPUT')
+    } catch {}
+  })
 console.log('[MaiChat] bootstrap invoked')
 
 // Seeding helpers

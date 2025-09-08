@@ -1,5 +1,5 @@
 // Restored original (moved from src/ui/settingsOverlay.js) - path adjusted only.
-import { getSettings, saveSettings } from '../../core/settings/index.js'
+import { getSettings, saveSettings, resetSettings } from '../../core/settings/index.js'
 import { openModal } from '../../shared/openModal.js'
 
 export function openSettingsOverlay({ onClose }){
@@ -114,8 +114,9 @@ export function openSettingsOverlay({ onClose }){
             </fieldset>
           </div>
           <div class="buttons">
-            <button type="button" data-action="cancel">Cancel</button>
-            <button type="button" data-action="apply">Apply</button>
+            <button type="button" data-action="cancel" title="Close without saving changes">Cancel</button>
+            <button type="button" data-action="reset" title="Reset all settings to defaults (keeps this panel open)">Reset</button>
+            <button type="button" data-action="apply" title="Save changes and apply immediately">Apply</button>
           </div>
         </form>
       </div>
@@ -127,10 +128,12 @@ export function openSettingsOverlay({ onClose }){
   function close(){ modal.close('manual'); if(onClose) onClose() }
   root.addEventListener('click', e=>{ if(e.target===root) close() })
   const cancelBtn = form.querySelector('[data-action="cancel"]')
+  const resetBtn = form.querySelector('[data-action="reset"]')
   const applyBtn = form.querySelector('[data-action="apply"]')
 
   cancelBtn.addEventListener('click', ()=> close())
   applyBtn.addEventListener('click', ()=> applyChanges())
+  resetBtn.addEventListener('click', ()=> doReset())
 
   root.addEventListener('keydown', e=>{
     if(e.key === 'Escape'){
@@ -165,6 +168,48 @@ export function openSettingsOverlay({ onClose }){
   const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')),0,1000)
   const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')),1.0,10.0)
   saveSettings({ partFraction, anchorMode, edgeAnchoringMode, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, maxTrimAttempts, charsPerToken })
+    markSaved()
+  }
+  function populateFormFromSettings(s){
+    // Layout
+    const pf = form.querySelector('input[name="partFraction"]')
+    if(pf) pf.value = (s.partFraction != null ? Number(s.partFraction).toFixed(2) : '0.60')
+    const am = form.querySelector('select[name="anchorMode"]')
+    if(am) am.value = s.anchorMode || 'bottom'
+    const eam = form.querySelector('select[name="edgeAnchoringMode"]')
+    if(eam) eam.value = s.edgeAnchoringMode || 'adaptive'
+    // Spacing
+    const setNum = (name, v)=>{ const el=form.querySelector(`input[name="${name}"]`); if(el && v!=null) el.value = String(v) }
+    setNum('partPadding', s.partPadding)
+    setNum('gapOuterPx', s.gapOuterPx)
+    setNum('gapMetaPx', s.gapMetaPx)
+    setNum('gapIntraPx', s.gapIntraPx)
+    setNum('gapBetweenPx', s.gapBetweenPx)
+    // Visibility
+    const fm = form.querySelector('select[name="fadeMode"]')
+    if(fm) fm.value = s.fadeMode || 'binary'
+    setNum('fadeHiddenOpacity', s.fadeHiddenOpacity)
+    setNum('fadeInMs', s.fadeInMs ?? (s.fadeTransitionMs != null ? s.fadeTransitionMs : 120))
+    setNum('fadeOutMs', s.fadeOutMs ?? (s.fadeTransitionMs != null ? s.fadeTransitionMs : 120))
+    // Scroll
+    setNum('scrollAnimMs', s.scrollAnimMs)
+    const sad = form.querySelector('select[name="scrollAnimDynamic"]')
+    if(sad) sad.value = String(!!s.scrollAnimDynamic)
+    setNum('scrollAnimMinMs', s.scrollAnimMinMs)
+    setNum('scrollAnimMaxMs', s.scrollAnimMaxMs)
+    const sae = form.querySelector('select[name="scrollAnimEasing"]')
+    if(sae) sae.value = s.scrollAnimEasing || 'easeOutQuad'
+    // Context
+    setNum('userRequestAllowance', s.userRequestAllowance)
+    setNum('maxTrimAttempts', s.maxTrimAttempts)
+    const cpt = form.querySelector('input[name="charsPerToken"]')
+    if(cpt && s.charsPerToken != null) cpt.value = String(s.charsPerToken)
+  }
+  function doReset(){
+    resetSettings()
+    const fresh = getSettings()
+    populateFormFromSettings(fresh)
+    updatePfHint()
     markSaved()
   }
   function clampPF(v){ if(isNaN(v)) v = existing.partFraction || 0.6; return Math.min(1.00, Math.max(0.10, v)) }

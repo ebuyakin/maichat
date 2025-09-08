@@ -38,6 +38,8 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
 
   renderCurrentView()
   renderStatus()
+  // Start focused at the last (newest) part on first load
+  try { ctx.activeParts && ctx.activeParts.last && ctx.activeParts.last() } catch{}
   applyActivePart()
 
   if(!pendingMessageMeta.topicId) pendingMessageMeta.topicId = store.rootTopicId
