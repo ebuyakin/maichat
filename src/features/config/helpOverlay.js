@@ -14,6 +14,7 @@ export function openHelpOverlay({ onClose, modeManager }){
           <div class="help-title">Global</div>
           <div class="help-k">F1</div><div class="help-d">Open Help</div>
           <div class="help-k">Ctrl+.</div><div class="help-d">Toggle Menu</div>
+          <div class="help-k">Ctrl+Shift+H</div><div class="help-d">Open Tutorial</div>
           <div class="help-k">Enter</div><div class="help-d">Switch to next mode</div>
           <div class="help-k">Esc</div><div class="help-d">Switch to previous mode</div>
           <div class="help-k">Ctrl+I</div><div class="help-d">Switch to Input Mode</div>

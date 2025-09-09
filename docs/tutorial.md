@@ -1,22 +1,22 @@
-# MaiChat Tutorial (Draft)
+# MaiChat Tutorial
 
 
-Audience: new users who want to get productive fast. Keep it short, skimmable, and keyboard-first.
+Audience: new users who want to get productive fast. 
 
 ## What is MaiChat
 MaiChat is a keyboard-centric client for working with multiple LLMs in a single, unified UI. It organizes conversations into a topic tree, supports a CLI-like filtering language, and gives you precise control over the context sent to a model.
 
 Core ideas:
-- Modes: Input, View, Command — each zone maps to a screen area and a set of keys.
+- User interacts with the app in 3 different modes: Input, View, Command — each mode maps to a screen area and a set of keys.
 - Tree-structured topics for every message, editable anytime.
-- CLI filters for slicing history by topic, model, date, errors, and content.
+- CLI filters for slicing history by topic, model, date, rating, color coding, errors, and content.
 - Context management: choose exactly what the model sees.
 
 ## Quickstart (60 seconds)
 1) You start in Input Mode with the cursor in the message box (press F1 anytime for shortcuts). Type your request.
-2) Ctrl+M to pick a model; Ctrl+T to pick a topic for this message.
+2) Use previously set topic and model or use Ctrl+M to pick a model; Ctrl+T to pick a topic for this message.
 3) Press Enter to send. The reply appears at the end of the history.
-4) Press Esc to switch to View Mode and browse. Use j/k to move between message parts, g/G to jump to first/last, Shift+O to jump to the context boundary, and Shift+R to cycle reading position.
+4) Press Esc to switch to View Mode and browse. Use j/k to move between message parts, g/G to jump to first/last, Shift+O to jump to the context boundary, and Shift+R to cycle the reading position.
 5) Press Enter to switch back to Input Mode and continue typing.
 
 ## Modes and where to look
@@ -28,11 +28,11 @@ Switching:
 - Enter/Esc cycle modes contextually; Ctrl+V/Ctrl+I/Ctrl+D jump directly to View/Input/Command.
 
 Startup behavior:
-- On open/reload, MaiChat starts in Input Mode and the history is focused on the last (newest) message part.
+- On open/reload, MaiChat starts in Input Mode and focuses the last (newest) message part in history.
 
 ## Keyboard essentials
 - Global: F1 (Help), Ctrl+. (Menu), Ctrl+E (Topic Editor), Ctrl+Shift+M (Model Editor), Ctrl+Shift+D (Daily Stats), Ctrl+, (Settings), Ctrl+K (API Keys).
-- View Mode navigation: j/k next/prev part; g/G first/last; Shift+O jump to context boundary; Shift+R cycle reading position.
+- View Mode navigation: j/k next/prev part; g/G first/last; Shift+O jump to context boundary; Shift+R cycle the reading position.
 - View Mode actions: 1/2/3 set star rating; Space clear star rating; a toggle color code; e edit & resend (error row); d delete (error row); Ctrl+T change topic of active message.
 - Input Mode: Enter send; Esc back to View; Ctrl+U clear to start; Ctrl+W delete word left; Ctrl+M model selector; Ctrl+T pick topic for next message.
 - Command Mode: Enter apply and switch to View; Esc clear input; Ctrl+P/Ctrl+N prev/next command; Ctrl+U clear to start; Ctrl+W delete word left.
@@ -48,12 +48,15 @@ Tip: Mouse/touchpad interactions respect modes; focusing a control will switch t
 ## Command language (CLI filters)
 Use the top bar (Command Mode) to filter history. Filters are terse and quoted where needed.
 
-Basic filters (correct syntax):
+Basic filters:
 - Topic: t'work' — topic match (supports paths, wildcards, descendants via …)
-- Date: d2025-09-08 — exact calendar day; or d<7d for relative ages (h/d/w/mo/y)
-- Model: m'gpt-4o-mini' — filter by model; wildcards allowed; bare m uses current model
 - Content: c'error budget' — substring search; '*' is a wildcard
-- Errors: e — show only rows where assistant response errored
+- Model: m'gpt-4o-mini' — filter by model; wildcards allowed; bare m uses current model
+- Date: d2025-09-08 — exact calendar day; or d<7d for relative ages (h/d/w/mo/y)
+ - Recent count: r30 — last 30 pairs by absolute recency (also r1, r10, r50).
+ - Stars: s3 or s>=2 — star rating equals 3, or rating at least 2 (0..3)
+ - Flagged: b — only pairs marked with the blue (square) flag, g - grey (round) flag.
+- Errors: e — show only rows where assistant response errored.
 
 Operators and grouping:
 - AND: space adjacency or & (r20 s>=2 ≡ r20 & s>=2)
@@ -68,18 +71,28 @@ Topic patterns (case-insensitive):
 - Wildcards: t'*Learning', t'Machine*', t'*Neural*', combinations like t"*AI*..."
 - Bare t uses the currently selected topic from the input bar
 
+Model patterns (case-insensitive):
+- Exact ID: m'gpt-4o', m'claude-3.5'
+- Wildcards: m'gpt*', m'*mini*', combinations like (m'gpt-4*' | m'claude*')
+- Bare m uses the currently selected model from the input bar
+
 Date forms:
-- Absolute: d2025-09-08, d>=2025-01-01
-- Relative ages: d<24h, d<=7d, d<2w, d<6mo, d<1y (unit defaults to days if omitted)
+- Absolute: d2025-09-08 (exact local calendar day), d>=2025-01-01
+- Relative ages: d<24h, d<=7d, d<2w, d<6mo, d<1y
+- Omitted unit defaults to days: d<3 ≡ d<3d, d>=14 ≡ d>=14d
+- Closed interval (absolute, inclusive): d>=2025-09-01 & d<=2025-09-09
+- Closed interval (relative age): d>=3d & d<=14d (between 3 and 14 days ago, inclusive)
+- Half-open ranges: d>=2025-01-01 & d<2025-02-01; d<30d & d>=7d
 
 Examples you can paste:
-- r30 & s>=2 — recent and at least 2 stars
+- r30 & s>=2 — last 30 pairs and at least 2 stars
 - (b | s3) & t'Research...' — flagged or 3★ under Research
 - (m'gpt-4*' | m'claude*') & t'Coding...' — compare models for Coding
 - t'AI...' & d<7d & !e — recent AI threads excluding errors
 - c'bug' & c'fix' & t'Code' — both words appear (use two c'…') in Code
 
-Tip: Press F1 for the Help overlay. For the full language, see docs/cli_filtering_language.md.
+Tip: Press F1 for the Help overlay. It includes the full key list and a compact CLI cheatsheet.
+Tip: Most interactive elements show tooltips; overlays include inline hints for their controls.
 
 ## Context management: boundaries and reading
 MaiChat splits long exchanges into parts for precise navigation and context selection.
@@ -141,19 +154,4 @@ Tips:
 - “Mouse focus feels off”: the app switches modes when needed; try keyboard-first if unsure.
 - “Can’t find a message”: use Command Mode to filter by topic (t'…'), model (m'…'), date (d…), or content (c'…').
 
-## Shipping and where to surface this
-Recommended approach:
-- Keep this document in docs/tutorial.md for maintenance.
-- Add a standalone static page public/tutorial.html for end users (simple HTML, links to the same content).
-- Add a Menu item “Tutorial” that opens tutorial.html in a new tab (no app state changes).
-- Optionally, add a compact in-app “Quickstart” overlay with just the Quickstart + Keyboard sections.
-
-Rationale:
-- Static page is easy to open and read on any device; no coupling to app runtime.
-- Keeping content in Markdown makes updates easy and reviewable.
-- The in-app quickstart remains small and unobtrusive; full tutorial lives outside the app shell.
-
-## Next steps
-1) Approve this outline and copy.
-2) I’ll generate public/tutorial.html with terminal-like aesthetics and wire a Menu → Tutorial action.
-3) (Optional) Add a “Quickstart” overlay for first-run hinting.
+ 

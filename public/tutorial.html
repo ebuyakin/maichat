@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MaiChat Tutorial</title>
+  <meta name="description" content="Getting started guide for MaiChat: keyboard-centric multi-model AI chat with topics and CLI filters." />
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0b0c0e;
+      --fg: #e6e8eb;
+      --muted: #9aa4ad;
+      --accent: #66b2ff;
+      --border: #2a2f36;
+      --code-bg: #14171a;
+      --kbd-bg: #1c2127;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --fg: #111418;
+        --muted: #4b5563;
+        --accent: #0b73f0;
+        --border: #e5e7eb;
+        --code-bg: #f5f7fa;
+        --kbd-bg: #eef2f7;
+      }
+    }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); }
+    body { font: 16px/1.65 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji; }
+    .container { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+    header { margin-bottom: 16px; }
+    h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; }
+    .subtitle { color: var(--muted); margin: 0 0 24px; }
+    h2 { margin-top: 28px; padding-top: 4px; border-top: 1px solid var(--border); font-size: 1.35rem; }
+    h3 { margin-top: 20px; font-size: 1.05rem; }
+    p { margin: 12px 0; }
+    ul { margin: 8px 0 16px 20px; }
+    li { margin: 6px 0; }
+    code { background: var(--code-bg); padding: 0 0.35em; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace; font-size: 0.95em; }
+    kbd { background: var(--kbd-bg); border: 1px solid var(--border); padding: 0 0.35em; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace; font-size: 0.9em; }
+    .tip { border-left: 3px solid var(--accent); padding: 8px 12px; background: color-mix(in oklab, var(--accent) 10%, transparent); border-radius: 0 6px 6px 0; }
+    .small { color: var(--muted); font-size: 0.95em; }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9em; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>MaiChat Tutorial</h1>
+      <p class="subtitle">Audience: new users who want to get productive fast.</p>
+    </header>
+
+    <section>
+      <h2>What is MaiChat</h2>
+      <p>MaiChat is a keyboard-centric client for working with multiple LLMs in a single, unified UI. It organizes conversations into a topic tree, supports a CLI-like filtering language, and gives you precise control over the context sent to a model.</p>
+      <p>Core ideas:</p>
+      <ul>
+        <li>User interacts with the app in 3 different modes: Input, View, Command — each mode maps to a screen area and a set of keys.</li>
+        <li>Tree-structured topics for every message, editable anytime.</li>
+        <li>CLI filters for slicing history by topic, model, date, rating, color coding, errors, and content.</li>
+        <li>Context management: choose exactly what the model sees.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Quickstart (60 seconds)</h2>
+      <ol>
+        <li>You start in Input Mode with the cursor in the message box (<kbd>F1</kbd> anytime for shortcuts). Type your request.</li>
+  <li>Use previously set topic and model or use <kbd>Ctrl</kbd>+<kbd>M</kbd> to pick a model; <kbd>Ctrl</kbd>+<kbd>T</kbd> to pick a topic for this message.</li>
+        <li>Press <kbd>Enter</kbd> to send. The reply appears at the end of the history.</li>
+        <li>Press <kbd>Esc</kbd> to switch to View Mode and browse. Use <kbd>j</kbd>/<kbd>k</kbd> to move between message parts, <kbd>g</kbd>/<kbd>G</kbd> to jump to first/last, <kbd>Shift</kbd>+<kbd>O</kbd> to jump to the context boundary, and <kbd>Shift</kbd>+<kbd>R</kbd> to cycle the reading position.</li>
+        <li>Press <kbd>Enter</kbd> to switch back to Input Mode and continue typing.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Modes and where to look</h2>
+      <ul>
+        <li><strong>View Mode</strong> (middle zone): browsing history, rating/editing messages, jumping within the conversation.</li>
+        <li><strong>Input Mode</strong> (bottom zone): composing a new message.</li>
+        <li><strong>Command Mode</strong> (top zone): typing CLI filters and commands.</li>
+      </ul>
+      <p><strong>Switching:</strong><br />
+        <kbd>Enter</kbd>/<kbd>Esc</kbd> cycle modes contextually; <kbd>Ctrl</kbd>+<kbd>V</kbd>/<kbd>I</kbd>/<kbd>D</kbd> jump directly to View/Input/Command.
+      </p>
+      <p><strong>Startup behavior:</strong><br />
+        On open/reload, MaiChat starts in Input Mode and focuses the last (newest) message part in history.
+      </p>
+    </section>
+
+    <section>
+      <h2>Keyboard essentials</h2>
+      <ul>
+        <li><strong>Global:</strong> <kbd>F1</kbd> (Help), <kbd>Ctrl</kbd>+<kbd>.</kbd> (Menu), <kbd>Ctrl</kbd>+<kbd>E</kbd> (Topic Editor), <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> (Model Editor), <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> (Daily Stats), <kbd>Ctrl</kbd>+<kbd>,</kbd> (Settings), <kbd>Ctrl</kbd>+<kbd>K</kbd> (API Keys).</li>
+        <li><strong>View Mode navigation:</strong> <kbd>j</kbd>/<kbd>k</kbd> next/prev part; <kbd>g</kbd>/<kbd>G</kbd> first/last; <kbd>Shift</kbd>+<kbd>O</kbd> jump to context boundary; <kbd>Shift</kbd>+<kbd>R</kbd> cycle the reading position.</li>
+        <li><strong>View Mode actions:</strong> <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> set star rating; <kbd>Space</kbd> clear star rating; <kbd>a</kbd> toggle color code; <kbd>e</kbd> edit &amp; resend (error row); <kbd>d</kbd> delete (error row); <kbd>Ctrl</kbd>+<kbd>T</kbd> change topic of active message.</li>
+        <li><strong>Input Mode:</strong> <kbd>Enter</kbd> send; <kbd>Esc</kbd> back to View; <kbd>Ctrl</kbd>+<kbd>U</kbd> clear to start; <kbd>Ctrl</kbd>+<kbd>W</kbd> delete word left; <kbd>Ctrl</kbd>+<kbd>M</kbd> model selector; <kbd>Ctrl</kbd>+<kbd>T</kbd> pick topic for next message.</li>
+        <li><strong>Command Mode:</strong> <kbd>Enter</kbd> apply and switch to View; <kbd>Esc</kbd> clear input; <kbd>Ctrl</kbd>+<kbd>P</kbd>/<kbd>N</kbd> prev/next command; <kbd>Ctrl</kbd>+<kbd>U</kbd> clear to start; <kbd>Ctrl</kbd>+<kbd>W</kbd> delete word left.</li>
+      </ul>
+      <p class="tip"><strong>Tip:</strong> Mouse/touchpad interactions respect modes; focusing a control will switch to the correct mode to avoid conflicts.</p>
+    </section>
+
+    <section>
+      <h2>Topics and the topic tree</h2>
+      <ul>
+        <li>Every message belongs to exactly one topic node in a hierarchical tree.</li>
+        <li>You can reassign the topic of any message later (View Mode: <kbd>Ctrl</kbd>+<kbd>T</kbd>).</li>
+        <li>Use the Topic Editor (<kbd>Ctrl</kbd>+<kbd>E</kbd>) to create and organize topics.</li>
+        <li><strong>Strategy:</strong> start with a few broad topics (e.g., Work/Personal/Research). Split further as conversations grow.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Command language (CLI filters)</h2>
+      <p>Use the top bar (Command Mode) to filter history. Filters are terse and quoted where needed.</p>
+      <h3>Basic filters</h3>
+      <ul>
+        <li><strong>Topic:</strong> <code>t'work'</code> — topic match (supports paths, wildcards, descendants via …)</li>
+        <li><strong>Content:</strong> <code>c'error budget'</code> — substring search; <code>*</code> is a wildcard</li>
+        <li><strong>Model:</strong> <code>m'gpt-4o-mini'</code> — filter by model; wildcards allowed; bare <code>m</code> uses current model</li>
+        <li><strong>Date:</strong> <code>d2025-09-08</code> — exact calendar day; or <code>d&lt;7d</code> for relative ages (h/d/w/mo/y)</li>
+        <li><strong>Recent count:</strong> <code>r30</code> — last 30 pairs by absolute recency (also <code>r1</code>, <code>r10</code>, <code>r50</code>).</li>
+        <li><strong>Stars:</strong> <code>s3</code> or <code>s&gt;=2</code> — star rating equals 3, or rating at least 2 (0..3)</li>
+        <li><strong>Flagged:</strong> <code>b</code> — only pairs marked with the blue (square) flag, <code>g</code> - grey (round) flag.</li>
+        <li><strong>Errors:</strong> <code>e</code> — show only rows where assistant response errored.</li>
+      </ul>
+
+      <h3>Operators and grouping</h3>
+      <ul>
+        <li><strong>AND:</strong> space adjacency or <code>&amp;</code> (<code>r20 s&gt;=2</code> ≡ <code>r20 &amp; s&gt;=2</code>)</li>
+        <li><strong>OR:</strong> <code>|</code> or <code>+</code> (<code>m'gpt*' | m'claude*'</code>)</li>
+        <li><strong>NOT:</strong> <code>!</code> (exclude) (<code>!t'Archive...'</code> or <code>!s0</code>)</li>
+        <li><strong>Parentheses:</strong> <code>( ... )</code> to control order</li>
+        <li><strong>Precedence:</strong> <code>()</code> &gt; <code>!</code> &gt; <code>&amp;</code> (and adjacency) &gt; <code>|</code> and <code>+</code></li>
+      </ul>
+
+      <h3>Topic patterns (case-insensitive)</h3>
+      <ul>
+        <li>Exact name or path: <code>t'AI'</code>, <code>t'AI &gt; Transformers &gt; GPT'</code></li>
+        <li>Descendants: <code>t'AI...'</code> (AI and all children)</li>
+        <li>Wildcards: <code>t'*Learning'</code>, <code>t'Machine*'</code>, <code>t'*Neural*'</code>, combinations like <code>t"*AI*..."</code></li>
+        <li>Bare <code>t</code> uses the currently selected topic from the input bar</li>
+      </ul>
+
+      <h3>Model patterns (case-insensitive)</h3>
+      <ul>
+        <li>Exact ID: <code>m'gpt-4o'</code>, <code>m'claude-3.5'</code></li>
+        <li>Wildcards: <code>m'gpt*'</code>, <code>m'*mini*'</code>, combinations like <code>(m'gpt-4*' | m'claude*')</code></li>
+        <li>Bare <code>m</code> uses the currently selected model from the input bar</li>
+      </ul>
+
+      <h3>Date forms</h3>
+      <ul>
+        <li>Absolute: <code>d2025-09-08</code> (exact local calendar day), <code>d&gt;=2025-01-01</code></li>
+        <li>Relative ages: <code>d&lt;24h</code>, <code>d&lt;=7d</code>, <code>d&lt;2w</code>, <code>d&lt;6mo</code>, <code>d&lt;1y</code></li>
+        <li>Omitted unit defaults to days: <code>d&lt;3</code> ≡ <code>d&lt;3d</code>, <code>d&gt;=14</code> ≡ <code>d&gt;=14d</code></li>
+        <li>Closed interval (absolute, inclusive): <code>d&gt;=2025-09-01 &amp; d&lt;=2025-09-09</code></li>
+        <li>Closed interval (relative age): <code>d&gt;=3d &amp; d&lt;=14d</code> (between 3 and 14 days ago, inclusive)</li>
+        <li>Half-open ranges: <code>d&gt;=2025-01-01 &amp; d&lt;2025-02-01</code>; <code>d&lt;30d &amp; d&gt;=7d</code></li>
+      </ul>
+
+      <h3>Examples you can paste</h3>
+      <ul>
+        <li><code>r30 &amp; s&gt;=2</code> — last 30 pairs and at least 2 stars</li>
+        <li><code>(b | s3) &amp; t'Research...'</code> — flagged or 3★ under Research</li>
+        <li><code>(m'gpt-4*' | m'claude*') &amp; t'Coding...'</code> — compare models for Coding</li>
+        <li><code>t'AI...' &amp; d&lt;7d &amp; !e</code> — recent AI threads excluding errors</li>
+        <li><code>c'bug' &amp; c'fix' &amp; t'Code'</code> — both words appear (use two <code>c'…'</code>) in Code</li>
+      </ul>
+
+      <p class="tip"><strong>Tip:</strong> Press <kbd>F1</kbd> for the Help overlay. It includes the full key list and a compact CLI cheatsheet.<br />
+      <strong>Tip:</strong> Most interactive elements show tooltips; overlays include inline hints for their controls.</p>
+    </section>
+
+    <section>
+      <h2>Context management: boundaries and reading</h2>
+      <p>MaiChat splits long exchanges into parts for precise navigation and context selection.</p>
+      <ul>
+        <li><kbd>Shift</kbd>+<kbd>O</kbd> (View Mode): jump to the current context boundary.</li>
+        <li><kbd>Shift</kbd>+<kbd>R</kbd> (View Mode): cycle reading position modes.</li>
+      </ul>
+      <p>This helps you see which parts of the conversation will be sent to the model and quickly adjust your focus.</p>
+
+      <h3>Message counter (top-right)</h3>
+      <ul>
+        <li>Format <code>X/Y</code> — Predicted included / Visible pairs. X is what would go into the next request; Y is what’s currently visible after filtering.</li>
+        <li>Prefix <code>(-) </code> — The newest message is hidden by your current filter.</li>
+        <li>Trim indicator: <code>[S-T]/Y</code> — S pairs sent after trimming, T pairs trimmed out (when the initial prediction didn’t fit the model limit). Can combine with the <code>(-) </code> prefix.</li>
+        <li>Tooltip shows extra details: predicted tokens, whether URA-model is active, and how many pairs were trimmed on the last send.</li>
+      </ul>
+
+      <h3>Off‑context visualization (model‑dependent)</h3>
+      <ul>
+        <li>Parts beyond the current context boundary are dimmed and show an “off” badge in the meta line.</li>
+        <li>The boundary is computed from model limits (max context) and settings (e.g., chars‑per‑token, user request allowance). Switching models can change how many pairs are “in” vs “off”.</li>
+        <li>Use <kbd>Shift</kbd>+<kbd>O</kbd> to jump to the first in‑context pair.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>New message workflow</h2>
+      <ol>
+        <li>Pick/create a topic if needed (<kbd>Ctrl</kbd>+<kbd>T</kbd> in Input Mode).</li>
+        <li>Choose a model (<kbd>Ctrl</kbd>+<kbd>M</kbd>) and check settings if relevant (<kbd>Ctrl</kbd>+<kbd>,</kbd>).</li>
+        <li>Compose and send (<kbd>Enter</kbd>). Edit-and-resend is available for error rows (<kbd>e</kbd> in View Mode).</li>
+        <li>When a new reply arrives, you’ll be at the end of history; use <kbd>j</kbd>/<kbd>k</kbd> to move across parts, <kbd>g</kbd>/<kbd>G</kbd> to jump to start/end; star rate if helpful (<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>, <kbd>Space</kbd> clears the rating).</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Settings and tools</h2>
+      <ul>
+        <li><strong>Settings</strong> (<kbd>Ctrl</kbd>+<kbd>,</kbd>): general app preferences.</li>
+        <li><strong>Topic Editor</strong> (<kbd>Ctrl</kbd>+<kbd>E</kbd>): manage the topic hierarchy.</li>
+        <li><strong>Model Editor</strong> (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>): curate models, TPM/RPM, etc.</li>
+        <li><strong>API Keys</strong> (<kbd>Ctrl</kbd>+<kbd>K</kbd>): manage keys.</li>
+        <li><strong>Daily Stats</strong> (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>): daily breakdown of message stats.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Model Editor and usage limits</h2>
+      <p>Open the Model Editor (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>) to manage your model catalog and limits.</p>
+      <p><strong>What you can edit per model:</strong></p>
+      <ul>
+        <li><strong>Enabled:</strong> include/exclude a model from the selector (<kbd>Ctrl</kbd>+<kbd>M</kbd>). Disabling the active model auto-switches to the next enabled one.</li>
+        <li><strong>Context Window (tokens):</strong> max context size for that model (from provider docs). This drives the context boundary and trimming.</li>
+        <li><strong>TPM / RPM / TPD:</strong> tokens per minute, requests per minute, tokens per day. Set these to match your subscription/plan. They’re recorded for budgeting/diagnostics and future rate limiting.</li>
+      </ul>
+      <p><strong>Add custom models:</strong> use the Add row to define an ID and numeric limits. Base models can be disabled but not deleted; custom models can be removed.</p>
+      <p><strong>How limits affect context:</strong></p>
+      <ul>
+        <li>The boundary is computed per active model: predicted history tokens + reserved new‑request tokens (URA) must fit the model’s context window. If not, MaiChat trims oldest included pairs iteratively.</li>
+        <li>Switching models can expand or shrink what’s “in‑context” (dim/off markers update accordingly).</li>
+      </ul>
+      <p><strong>Related Settings</strong> (<kbd>Ctrl</kbd>+<kbd>,</kbd>):</p>
+      <ul>
+        <li><strong>userRequestAllowance (URA):</strong> total new‑message allowance (user prompt + expected assistant response). Default 600. Increase for longer prompts/replies; decrease to include more history.</li>
+        <li><strong>charsPerToken (CPT):</strong> estimation factor (default 4). Higher CPT estimates fewer tokens per char → includes more history.</li>
+        <li><strong>maxTrimAttempts (NTA):</strong> number of iterative trims before giving up.</li>
+      </ul>
+      <p><strong>Tips:</strong></p>
+      <ul>
+        <li>Use the message counter to spot trimming: <code>[S-T]/Y</code> means S pairs sent after trimming T pairs; <code>(-) </code> prefix means the newest pair is hidden by your filter.</li>
+        <li>For deep context, pick a model with a larger context window or lower URA. For fewer trims, refine your filter (Command Mode) to include only relevant pairs.</li>
+        <li>Optional: append <code>?reqdbg=1</code> to the URL to open the Request Debug overlay and inspect predicted tokens, attempts, and included pairs.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Troubleshooting</h2>
+      <ul>
+        <li><strong>“Keys don’t respond”:</strong> ensure you’re in the right mode. <kbd>Enter</kbd>/<kbd>Esc</kbd> to cycle, or <kbd>Ctrl</kbd>+<kbd>V</kbd>/<kbd>I</kbd>/<kbd>D</kbd> to jump.</li>
+        <li><strong>“Mouse focus feels off”:</strong> the app switches modes when needed; try keyboard-first if unsure.</li>
+        <li><strong>“Can’t find a message”:</strong> use Command Mode to filter by topic (<code>t'…'</code>), model (<code>m'…'</code>), date (<code>d…</code>), or content (<code>c'…'</code>).</li>
+      </ul>
+    </section>
+
+    <p class="footer">Last updated: 2025-09-09 · <a href="/">Back to MaiChat</a></p>
+  </main>
+</body>
+</html>

@@ -46,7 +46,7 @@ M10. UX polish (message formatting (.md), performance, flickering, smoothing, tr
     10.1 Mouse/touchpad vs keyboard navigation (controle of the app mode when touchpad is used) [x]
     10.2 Meta part focus avoidance in mouse/touchpad actions [x]
     10.3 Help [x]
-    10.4 Tutorial [ ]
+    10.4 Tutorial [x]
     10.5 Initialization (topic tree, model tree, message history) [ ]
 
 - Release.

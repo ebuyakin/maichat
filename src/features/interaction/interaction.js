@@ -201,6 +201,8 @@ export function createInteraction({
       const prev=modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prev) } })
     } else if(action==='api-keys'){
       const prev=modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prev) } })
+    } else if(action==='tutorial'){
+      try { window.open('/tutorial.html', '_blank', 'noopener'); } catch { window.location.href = '/tutorial.html' }
     } else if(action==='help'){
       openHelpOverlay({ modeManager, onClose:()=>{} })
     }
@@ -236,6 +238,7 @@ export function createInteraction({
   else if(e.shiftKey && k==='d'){ e.preventDefault(); openDailyStatsOverlay({ store, activeParts, historyRuntime, modeManager }) }
   else if(k==='d' && !e.shiftKey){ e.preventDefault(); modeManager.set('command') }
     else if(k==='v'){ e.preventDefault(); modeManager.set('view') }
+  else if(e.shiftKey && k==='h'){ e.preventDefault(); try { window.open('/tutorial.html', '_blank', 'noopener'); } catch { window.location.href = '/tutorial.html' } }
     else if(k==='t'){
       if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openQuickTopicPicker({ prevMode }) }
     }
