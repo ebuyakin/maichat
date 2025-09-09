@@ -8,8 +8,6 @@ import { createHistoryRuntime } from './features/history/historyRuntime.js'
 import { getSettings, subscribeSettings } from './core/settings/index.js'
 import { invalidatePartitionCacheOnResize } from './features/history/partitioner.js'
 import { exposeSeedingHelpers } from './store/demoSeeding.js'
-import { createRequestDebugOverlay } from './instrumentation/requestDebugOverlay.js'
-import { createHudRuntime } from './instrumentation/hudRuntime.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
@@ -101,9 +99,36 @@ const commandErrEl = document.getElementById('commandError')
 const inputField = document.getElementById('inputField')
 const sendBtn = document.getElementById('sendBtn')
 
-// Debug overlays
-const requestDebug = createRequestDebugOverlay({ historyRuntime })
-const hudRuntime = createHudRuntime({ store, activeParts, scrollController: __runtime.scrollController, historyPaneEl, historyRuntime, modeManager })
+// Debug overlays (dev-only, unified activation via ?hud=...)
+let requestDebug = { enable: ()=>{}, toggle: ()=>{}, isEnabled: ()=>false, setPayload: ()=>{} }
+let hudRuntime = { enable: ()=>{}, toggle: ()=>{}, isEnabled: ()=>false }
+// Always expose stubs so console calls won't throw even if dev gating prevents activation
+try { window.__hud = { runtime: hudRuntime, req: requestDebug } } catch {}
+try {
+  const isDev = (typeof import.meta !== 'undefined' && import.meta?.env && import.meta.env.DEV === true) || /^(localhost|127\.|0\.0\.0\.0)/.test(window.location.hostname)
+  console.log('[MaiChat] dev detect:', { isDev, host: window.location.hostname })
+  if (isDev) {
+    const usp = new URLSearchParams(window.location.search)
+    const hudParam = (usp.get('hud')||'').replace(/\s+/g,'').trim()
+    const wantReq = /(^|,)(req|request)(,|$)/i.test(hudParam) || /(^|,)(all)(,|$)/i.test(hudParam)
+    const wantRuntime = /(^|,)(runtime|rt)(,|$)/i.test(hudParam) || /(^|,)(all)(,|$)/i.test(hudParam)
+  console.log('[MaiChat] HUD param:', hudParam || '(none)')
+  if (wantReq) {
+      const mod = await import('./instrumentation/requestDebugOverlay.js')
+      requestDebug = mod.createRequestDebugOverlay({ historyRuntime })
+      requestDebug.enable(true)
+    }
+    if (wantRuntime) {
+      const mod2 = await import('./instrumentation/hudRuntime.js')
+      hudRuntime = mod2.createHudRuntime({ store, activeParts, scrollController: __runtime.scrollController, historyPaneEl, historyRuntime, modeManager })
+      hudRuntime.enable(true)
+    }
+  // Expose console toggles in dev
+  window.__hud = { runtime: hudRuntime, req: requestDebug }
+  }
+} catch (e) {
+  console.warn('[MaiChat] HUD setup skipped', e)
+}
 
 // Interaction layer (Step 6 extraction)
 console.log('[MaiChat] createInteraction start')

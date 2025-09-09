@@ -113,12 +113,6 @@ export function createRequestDebugOverlay({ historyRuntime }){
 	function enable(v){ requestDebugEnabled = !!v; render() }
 	function setPayload(p){ lastSentRequest = p; render() }
 
-	// Init from URL parameter
-	try {
-		const usp = new URLSearchParams(window.location.search)
-		if(usp.get('reqdbg') === '1'){ enable(true) }
-	} catch{}
-
 	return { render, toggle, enable, setPayload, isEnabled: ()=> requestDebugEnabled }
 }
 

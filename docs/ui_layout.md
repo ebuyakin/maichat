@@ -96,7 +96,7 @@ Layout & Spacing:
 Active Part Styling:
 * Single `.part.active` at a time.
 * 1px border using `--focus-ring`, subtle tinted background `rgba(40,80,120,0.12)`.
-* Internal horizontal padding (default 8px) adjustable (Settings overlay; apply to commit, no live preview).
+* Internal horizontal padding (default 15px) adjustable (Settings overlay; apply to commit, no live preview).
 * Gap between parts (default 6px) adjustable.
 * Uniform part padding (all sides) adjustable (Settings overlay; implemented via inner wrapper `.part-inner` so left text gutter remains fixed).
 * Granular vertical gaps adjustable (Settings overlay):
@@ -105,7 +105,7 @@ Active Part Styling:
   - Intra-role Gap (user→user, assistant→assistant) – `gapIntraPx`
   - Between Messages Gap (pair→pair) – `gapBetweenPx`
 * Settings overlay (Ctrl+,) manages rare adjustments (fraction, reading position, padding, gap, zone heights) applied only after selecting "Apply" (no live preview).
-* Settings overlay (Ctrl+,) manages rare adjustments (fraction, reading position, uniform part padding, four gap families, zone heights) applied only after selecting "Apply" (no live preview). Spacing updates inject a runtime `<style>` block; anchor for active part is re-applied post-update to maintain reading position.
+* Spacing updates inject a runtime `<style>` block; anchor for active part is re-applied post-update to maintain reading position.
 * Meta row visible but NEVER focusable (excluded from navigation sequence).
 
 Rules (normative):
@@ -113,10 +113,11 @@ Rules (normative):
 2. Mode switches do not recolor zones.
 3. Exactly one active part visualized via focus ring (no thick outlines). 
 4. Metadata line background stays transparent; never inherits user part blue.
-5. Scrolling is instantaneous (no smooth animation) for positional predictability.
-6. Only middle zone scrolls; document overflow hidden.
-7. Overlays share `--bg-alt` background and regular-weight text.
-8. Inputs: prompt input is borderless (background `--bg-alt`); command input uses minimal 1px neutral border.
+5. Scrolling may be animated (default on) but must settle deterministically at the anchor; micro-corrections within a small dead-band are suppressed.
+6. No horizontal scrolling at any viewport width; layout must wrap or truncate content to avoid horizontal overflow. The history pane hides horizontal overflow.
+7. Only middle zone scrolls; document overflow hidden.
+8. Overlays share `--bg-alt` background and regular-weight text.
+9. Inputs: prompt input is borderless (background `--bg-alt`); command input uses minimal 1px neutral border.
 
 Open Styling TBD:
 * Refine user part background blue for contrast.
@@ -126,7 +127,7 @@ Open Styling TBD:
 ## 7. Navigation (Implemented / Planned)
 Implemented / Planned (M5 focus):
 * `j` / `k` (primary) and `ArrowDown` / `ArrowUp` (secondary) move active part.
-* `g` / `G`: First / last part (anchored to user-selected reading position via spacer logic).
+* `g` / `G`: First / last part (anchored to user-selected reading position; clamped at edges).
 * `n`: First part of last message (clears new-message badge; re-anchors even if already there).
 * `Enter` / `Esc`: Mode cycle as defined above.
 * `Ctrl+i` / `Ctrl+d` / `Ctrl+v`: Direct mode activation.
@@ -143,11 +144,11 @@ Planned (not yet implemented):
 Extension Interference:
 Browser extensions (e.g. Vimium) may capture plain `j`/`k`. Users should exclude the app origin. Arrow keys are a fallback, not a first-class replacement. (Note: `Ctrl+K` is now bound to the API Keys overlay.)
 
-Anchoring & Scrolling: Active part positioned at user-selected reading position (Bottom default; also Center / Top). Spacer elements above/below maintain alignment at edges; no smooth scroll animation.
+Anchoring & Scrolling: Active part positioned at the user-selected reading position. See `docs/ui_view_reading_behaviour.md` for modes, defaults, and formulas. Alignment at edges uses outer‑gap padding and clamping; no spacer elements are introduced.
 New Message Badge: Top bar right corner; appears when reply arrives and user navigated away or reply filtered out; cleared by `n`, `G`, or badge activation.
 Edge Anchoring Mode:
-* Adaptive (default): If anchor would create large blank region (content shorter than viewport or out-of-bounds anchor), clamp scroll and suppress spacer so content starts at top (or ends naturally) for better space use.
-* Strict: Always enforce anchor via spacer even if large void results.
+* Adaptive (default): If strict placement would exceed natural bounds (e.g., content shorter than viewport), clamp to the nearest valid scroll so content starts at top or ends naturally while preserving anchor intent.
+* Strict: Always attempt to place the focused part at the exact chosen anchor coordinates within the possible scroll range.
 
 Decision Clarifications (M5):
 * Active restore A1: After partition changes (resize or fraction change) we attempt to keep user near same textual spot approximately (same pair, nearest line) rather than precise hash mapping.
@@ -188,7 +189,7 @@ Placement & Styling:
 
 ## 11. Core Interaction Features (M5 Focus)
 1. Deterministic partitioning (viewport fraction → whole-line parts) with persistent active part across re-renders.
-2. Anchored navigation (Bottom default; Top/Center optional) with spacer-based stabilization and calm edges.
+2. Anchored navigation (see `docs/ui_view_reading_behaviour.md` for modes/defaults) with clamp-based stabilization (outer-gap padding) and calm edges.
 3. Meta row non-focusable; all metadata actions target pair from any part.
 4. Keyboard metadata control (star cycle, numeric stars, include toggle) immediate visual feedback.
 5. Topic reassignment via picker from any active part.
@@ -214,7 +215,7 @@ Placement & Styling:
 * Active part state external to DOM for deterministic re-render.
 * Partition engine: off-screen measurement + caching; stable IDs when text/settings unchanged; major resize (≥10% height) triggers recompute & active remap.
 * Meta rows excluded from parts array.
-* Anchoring: compute desired alignment + spacer heights; calm edges (no jitter on boundary navigation).
+* Anchoring: compute desired alignment and apply clamped scroll; calm edges (no jitter on boundary navigation).
 * Settings overlay (Ctrl+,) manages rare adjustments (fraction, reading position, padding, gap, zone heights) applied only on Apply (no live preview).
 * Edge anchoring mode persisted (adaptive|strict); re-anchoring logic re-runs on change without forcing repartition.
 * Tests: partition determinism, resize threshold behavior, new message indicator accumulation, active mapping after repartition.

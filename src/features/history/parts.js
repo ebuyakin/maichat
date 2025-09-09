@@ -32,17 +32,35 @@ export class ActivePartController {
 			if(idx !== -1) this.activeIndex = idx
 		}
 		if(this.activeIndex >= this.parts.length) this.activeIndex = this.parts.length? this.parts.length-1:0
-		if(this.parts[this.activeIndex]?.role==='meta') this.next()
+		// Ensure we never leave selection on a meta part after reassigning parts
+		if(this.parts[this.activeIndex]?.role==='meta'){
+			const original = this.activeIndex
+			this.prev()
+			if(this.parts[this.activeIndex]?.role==='meta'){
+				this.activeIndex = original
+				this.next()
+			}
+		}
 	}
-	setActiveById(id){ const idx = this.parts.findIndex(p=>p.id===id); if(idx!==-1){ this.activeIndex=idx } }
+	setActiveById(id){
+		const idx = this.parts.findIndex(p=>p.id===id)
+		if(idx===-1) return
+		if(this.parts[idx]?.role !== 'meta'){ this.activeIndex = idx; return }
+		// If target is meta, prefer nearest non-meta neighbor (backward, then forward)
+		for(let i=idx-1; i>=0; i--){ if(this.parts[i].role !== 'meta'){ this.activeIndex=i; return } }
+		for(let i=idx+1; i<this.parts.length; i++){ if(this.parts[i].role !== 'meta'){ this.activeIndex=i; return } }
+		// Fallback: leave current active as-is when no non-meta exists
+	}
 	active(){ return this.parts[this.activeIndex] }
 	first(){ if(this.parts.length){ this.activeIndex=0; if(this.parts[this.activeIndex]?.role==='meta') this.next() } }
 	last(){ if(this.parts.length){ this.activeIndex=this.parts.length-1; if(this.parts[this.activeIndex]?.role==='meta') this.prev() } }
 	next(){
-		while(this.activeIndex < this.parts.length-1){
-			this.activeIndex++
-			if(this.parts[this.activeIndex].role !== 'meta') break
+		// Advance only if there is a subsequent non-meta part; otherwise keep position
+		const cur = this.activeIndex
+		for(let i=cur+1; i<this.parts.length; i++){
+			if(this.parts[i].role !== 'meta'){ this.activeIndex = i; return }
 		}
+		// no-op if only meta remains ahead
 	}
 	prev(){
 		while(this.activeIndex > 0){
