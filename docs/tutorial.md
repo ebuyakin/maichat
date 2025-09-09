@@ -13,6 +13,7 @@ Core ideas:
 - Context management: choose exactly what the model sees.
 
 ## Quickstart (60 seconds)
+0) First run: set your API key(s). Press Ctrl+K or open the menu (Ctrl+.) → API Keys. Keys are stored locally in your browser.
 1) You start in Input Mode with the cursor in the message box (press F1 anytime for shortcuts). Type your request.
 2) Use previously set topic and model or use Ctrl+M to pick a model; Ctrl+T to pick a topic for this message.
 3) Press Enter to send. The reply appears at the end of the history.
@@ -153,5 +154,6 @@ Tips:
 - “Keys don’t respond”: ensure you’re in the right mode. Enter/Esc to cycle, or Ctrl+V/I/D to jump.
 - “Mouse focus feels off”: the app switches modes when needed; try keyboard-first if unsure.
 - “Can’t find a message”: use Command Mode to filter by topic (t'…'), model (m'…'), date (d…), or content (c'…').
+ - “API key missing / auth error”: open API Keys (Ctrl+K) and set the provider key (e.g., OpenAI). Then resend.
 
  

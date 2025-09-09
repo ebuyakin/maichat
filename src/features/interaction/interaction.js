@@ -153,6 +153,7 @@ export function createInteraction({
             lifecycle.handleNewAssistantReply(id)
           } catch(ex){
             let errMsg = (ex && ex.message)? ex.message : 'error';
+            if(errMsg==='missing_api_key') errMsg='API key missing (Ctrl+. → API Keys or Ctrl+K)';
             store.updatePair(id, { assistantText:'', lifecycleState:'error', errorMessage: errMsg });
             lifecycle.completeSend();
             updateSendDisabled();
