@@ -348,7 +348,7 @@ input:focus, button:focus, .overlay-panel input[type=text]:focus { border-color:
 .topic-picker-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:flex-start; justify-content:center; padding-top:14vh; z-index:1300; }
 .topic-picker { background:var(--bg-alt); border:1px solid #222; border-radius:6px; width:360px; max-height:60vh; display:flex; flex-direction:column; font:var(--size-base)/1.4 var(--font-ui); }
 .topic-picker .tp-search { background:#0c0c0c; border:1px solid #333; color:#eee; padding:6px 8px; margin:8px; border-radius:4px; font:var(--size-base)/1.4 var(--font-ui); }
-.topic-picker .tp-tree { overflow:auto; padding:4px 0 8px; }
+.topic-picker .tp-tree { overflow:auto; padding:4px 0 8px; padding-left:10px; }
 .topic-picker .tp-row { padding:4px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:8px; }
 .topic-picker .tp-row.active { background:#1e3a5a; color:#fff; }
 .tp-counts { opacity:.55; font-size:11px; }
@@ -358,7 +358,7 @@ input:focus, button:focus, .overlay-panel input[type=text]:focus { border-color:
 .topic-editor { background:var(--bg-alt); border:1px solid #262626; border-radius:8px; width:560px; max-height:70vh; display:flex; flex-direction:column; font:var(--size-base)/1.45 var(--font-ui); box-shadow:0 4px 24px rgba(0,0,0,0.5); }
 .topic-editor .te-header { padding:8px 12px; font-weight:400; border-bottom:1px solid #222; letter-spacing:.2px; color:var(--text); font-size:var(--size-base); background:var(--bg-alt); }
 .topic-editor .te-search { background:#0c0c0c; border:1px solid #333; color:#eee; padding:6px 10px; margin:8px 10px 4px; border-radius:4px; font:13px var(--font-ui); }
-.topic-editor .te-tree { flex:1; overflow:auto; padding:6px 0 6px; }
+.topic-editor .te-tree { flex:1; overflow:auto; padding:6px 0 6px; padding-left:10px; }
 .topic-editor .te-row { padding:3px 12px 3px 12px; cursor:default; white-space:nowrap; font:var(--size-base)/1.45 var(--font-ui); display:flex; align-items:center; gap:6px; font-weight:400; }
 .topic-editor .te-row.active { background:#1e3a5a; color:#fff; }
 .topic-editor .te-row.marked { background:var(--marked-bg); color:#d2f2e0; }

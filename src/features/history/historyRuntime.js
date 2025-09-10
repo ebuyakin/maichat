@@ -45,11 +45,19 @@ export function createHistoryRuntime(ctx){
   })
   function applySpacingStyles(settings){
     if(!settings) return
-    const { partPadding=4, gapOuterPx=6, gapMetaPx=6, gapIntraPx=6, gapBetweenPx=10, fadeInMs=120, fadeOutMs=120, fadeTransitionMs=120 } = settings
+    const { partPadding=4, gapOuterPx=20, gapMetaPx=6, gapIntraPx=6, gapBetweenPx=10, fadeInMs=120, fadeOutMs=120, fadeTransitionMs=120 } = settings
     const baseFadeMs = Math.max(fadeInMs||0, fadeOutMs||0, fadeTransitionMs||0)
     let styleEl = document.getElementById('runtimeSpacing')
     if(!styleEl){ styleEl = document.createElement('style'); styleEl.id='runtimeSpacing'; document.head.appendChild(styleEl) }
-    styleEl.textContent = `#historyPane{padding-top:${gapOuterPx}px; padding-bottom:${gapOuterPx}px;}
+  styleEl.textContent = `#historyPane{padding-top:${gapOuterPx}px; padding-bottom:${gapOuterPx}px;}
+  /* Edge overlays: gradient within outer gap (G) pinned to the scroller edges */
+  #historyPane::before, #historyPane::after{ content:''; position:sticky; left:0; right:0; pointer-events:none; z-index:2; display:block; }
+  /* Sticky overlays: position at pane edges by offsetting by -G into the padding zone.
+    If you need to preserve a visible border/hairline, use calc(-G + 1px). */
+
+  #historyPane::before{position:sticky; top:-${gapOuterPx}px; height:${gapOuterPx}px; background:linear-gradient(to bottom, var(--bg) 0%, var(--bg) 5%, rgba(0,0,0,0) 100%); }
+  #historyPane::after{ bottom:-${gapOuterPx}px; height:${gapOuterPx}px; background:linear-gradient(to top, var(--bg) 0%, var(--bg) 5%, rgba(0,0,0,0) 100%); }
+  g
     .history{gap:0;}
     .gap{width:100%; flex:none;}
     .gap-between{height:${gapBetweenPx}px;}
@@ -90,7 +98,7 @@ export function createHistoryRuntime(ctx){
   updateFadeVisibility({ initial: true })
   applyOutOfContextStyling()
     updateMessageCount(boundary.included.length, pairs.length)
-    requestAnimationFrame(()=>{ scrollController.remeasure(); applyActivePart() })
+  requestAnimationFrame(()=>{ scrollController.remeasure(); applyActivePart() })
     lifecycle.updateNewReplyBadgeVisibility()
   }
   function renderCurrentView(opts={}){
@@ -125,7 +133,8 @@ export function createHistoryRuntime(ctx){
     const el = document.querySelector(`[data-part-id="${act.id}"]`)
     if(el){
       el.classList.add('active')
-      scrollController.apply(activeParts.activeIndex, true)
+  // Highlight only; caller triggers one-shot alignment when needed
+  scrollController.setActiveIndex(activeParts.activeIndex)
       updateFadeVisibility()
     }
   }
@@ -134,6 +143,7 @@ export function createHistoryRuntime(ctx){
     const settings = getSettings()
     const G = settings.gapOuterPx || 0
     const fadeMode = settings.fadeMode || 'binary'
+  const TOL = 1 // px tolerance near fade boundary: within <=1px of edge is considered safe (no dim)
     const hiddenOp = typeof settings.fadeHiddenOpacity === 'number' ? settings.fadeHiddenOpacity : 0
     const fadeInMs = settings.fadeInMs != null ? settings.fadeInMs : (settings.fadeTransitionMs || 120)
     const fadeOutMs = settings.fadeOutMs != null ? settings.fadeOutMs : (settings.fadeTransitionMs || 120)
@@ -152,17 +162,26 @@ export function createHistoryRuntime(ctx){
       const relBottom = bottom - S
       let op = 1
       if(fadeMode === 'gradient'){
+        // Apply tolerance: do not dim within <=TOL px of the boundary
+        const effZone = Math.max(0, fadeZone - TOL)
         let topFade = 1
-        if(relTop < fadeZone){ topFade = Math.max(0, relTop / fadeZone) }
+        if(effZone > 0){
+          if(relTop < effZone){ topFade = Math.max(0, relTop / effZone) }
+          else { topFade = 1 }
+        }
         let bottomFade = 1
         const distFromBottom = H - relBottom
-        if(distFromBottom < fadeZone){ bottomFade = Math.max(0, distFromBottom / fadeZone) }
+        if(effZone > 0){
+          if(distFromBottom < effZone){ bottomFade = Math.max(0, distFromBottom / effZone) }
+          else { bottomFade = 1 }
+        }
         op = Math.min(topFade, bottomFade)
         if(op < 0) op = 0
         if(op > 1) op = 1
       } else {
-        const topIntrudes = relTop < fadeZone
-        const bottomIntrudes = (H - relBottom) < fadeZone
+        const effZone = Math.max(0, fadeZone - TOL)
+        const topIntrudes = relTop < effZone
+        const bottomIntrudes = (H - relBottom) < effZone
         if(topIntrudes || bottomIntrudes) op = hiddenOp
       }
       if(isActive) op = 1
@@ -210,5 +229,6 @@ export function createHistoryRuntime(ctx){
     })
   }
   function jumpToBoundary(){ if(!lastContextIncludedIds || lastContextIncludedIds.size === 0) return; const idx = activeParts.parts.findIndex(pt=> lastContextIncludedIds.has(pt.pairId)); if(idx >= 0){ activeParts.activeIndex = idx; applyActivePart() } }
+  try { lifecycle.bindApplyActivePart && lifecycle.bindApplyActivePart(applyActivePart) } catch {}
   return { layoutHistoryPane, applySpacingStyles, renderHistory, renderCurrentView, applyActivePart, updateFadeVisibility, updateMessageCount, applyOutOfContextStyling, jumpToBoundary, renderStatus, setSendDebug, setContextStats, getContextStats: ()=> lastContextStats, getPredictedCount: ()=> lastPredictedCount, getTrimmedCount: ()=> lastTrimmedCount, getIncludedIds: ()=> new Set(lastContextIncludedIds) }
 }

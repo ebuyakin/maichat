@@ -11,7 +11,7 @@ Purpose: Concise, accurate map of the current codebase, with a bridge from `dev-
 
 1. Message history (rendering, partitioning, focus, scrolling, spacing)
 - Where: `src/features/history/`
-- Files: `historyRuntime.js` (render/layout), `historyView.js` (DOM build), `scrollControllerV3.js` (anchor-based scroll), `parts.js` (active part), `partitioner.js` (text→parts), `newMessageLifecycle.js` (post-send focus rules).
+- Files: `historyRuntime.js` (render/layout), `historyView.js` (DOM build), `scrollControllerV3.js` (stateless one-shot scroll API), `parts.js` (active part), `partitioner.js` (text→parts), `newMessageLifecycle.js` (post-send focus rules & reply alignment).
 
 2. Topic management system
 - Where: `src/features/topics/` (+ state in `src/core/store`)
@@ -52,7 +52,7 @@ Cross-cutting enablers
   - `src/core/context/` — token estimator and boundary manager (for predicted inclusion).
 
 - Features (user-facing capabilities)
-  - History: `src/features/history/*` — render and layout of message parts; anchor‑based scrolling; partitioning; active‑part control; post‑send focus rules.
+  - History: `src/features/history/*` — render and layout of message parts; stateless one‑shot scrolling; partitioning; active‑part control; post‑send focus rules.
   - Interaction: `src/features/interaction/*` — mode FSM and mode‑aware key routing; bindings for navigation, stars/flags, topic/model actions, send, and overlay invocation.
     - `pointerModeSwitcher.js` — capture-phase mouse/touch mode switching based on `[data-mode]` zones; excluded while a modal is active. Keyboard routing unaffected.
   - Command: `src/features/command/*` — filter DSL pipeline (lexer → parser → evaluator); pure computation of visible message IDs.
@@ -83,7 +83,7 @@ Cross-cutting enablers
 
 - History runtime (features/history)
   - Input: state + visible IDs + settings.
-  - Output: DOM for parts; active part control; scroll anchoring via scrollControllerV3.
+  - Output: DOM for parts; active part control; one‑shot align/ensureVisible via scrollControllerV3.
 
 - Compose pipeline (features/compose)
   - Input: pending message + predicted context (boundary manager).
@@ -97,7 +97,7 @@ Cross-cutting enablers
 
 - Startup: runtimeSetup → bootstrap (providers, persistence, catalog, seed, render, layout).
 - Filtering: Enter in COMMAND → lexer/parser/evaluator → visible IDs → history render.
-- Navigation: j/k/arrows move active part; anchoring honors reading position; only middle pane scrolls.
+- Navigation: j/k/arrows move active part; default Ensure‑Visible; optional Reading Mode centers on j/k; only middle pane scrolls.
 - Send: Enter in INPUT → compose pipeline attempts → store update → focus rules via newMessageLifecycle.
 - Settings: Apply in settings overlay injects style updates; history re-measures and re-anchors without jitter.
 
@@ -108,6 +108,8 @@ Cross-cutting enablers
   - Mouse clicks on meta do not change selection; interactive controls inside meta remain functional without altering the active part.
 - Dead-band validation avoids visible “second-scroll” corrections.
 - Deterministic rendering from store state; pure filtering.
+ - Stateless scroll: no persistent scroll policies; one-shot align/ensureVisible calls own the scroll once, then release.
+ - Visual edges: CSS overlays on `#historyPane` fade content within the fixed outer gap so content never touches pane borders.
 
 ## Testing
 

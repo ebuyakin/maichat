@@ -37,7 +37,7 @@ export function openApiKeysOverlay({ onClose, modeManager }){
         <button data-action="cancel" class="btn">Close</button>
         <button data-action="save" class="btn">Save</button>
       </div>
-      <div class="keys-footnote">Only OpenAI is supported today; other providers will be enabled in a future release.</div>
+  <div class="keys-footnote">Only OpenAI is supported today; other providers will be enabled in a future release. Shortcuts: Enter — save changes; Esc — close the window.</div>
     </div>`
   backdrop.appendChild(panel)
   document.body.appendChild(backdrop)

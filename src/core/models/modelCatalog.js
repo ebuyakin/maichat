@@ -38,9 +38,15 @@ function normalize(state){
     }
   }
   if(!state.activeModel || !state.models[state.activeModel]?.enabled){
-    // prefer first enabled base model, else any enabled custom
-    const first = BASE_MODELS.find(m=> state.models[m.id]?.enabled) || Object.keys(state.models).map(id=>({id})).find(x=> state.models[x.id]?.enabled)
-    if(first) state.activeModel = first.id
+    // Prefer modern defaults if available
+    const preferred = ['gpt-4o-mini', 'gpt-4o']
+    const pref = preferred.find(id => state.models[id]?.enabled)
+    if(pref) state.activeModel = pref
+    else {
+      // else first enabled base model, else any enabled custom
+      const first = BASE_MODELS.find(m=> state.models[m.id]?.enabled) || Object.keys(state.models).map(id=>({id})).find(x=> state.models[x.id]?.enabled)
+      if(first) state.activeModel = first.id
+    }
   }
   return state
 }

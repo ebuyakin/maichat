@@ -25,7 +25,7 @@ export function initRuntime() {
   const boundaryMgr = createBoundaryManager()
 
   // Pending message metadata (topic + model) initially set after catalog load; fallback model default.
-  const pendingMessageMeta = { topicId: null, model: getActiveModel() || 'gpt-4o' }
+  const pendingMessageMeta = { topicId: null, model: getActiveModel() || 'gpt-4o-mini' }
 
   // Lifecycle handles send state & new reply focus heuristics.
   const lifecycle = createNewMessageLifecycle({
@@ -33,7 +33,8 @@ export function initRuntime() {
     activeParts,
     commandInput: null, // assigned later by interaction module
     renderHistory: ()=> {},
-    applyActivePart: ()=> {}
+  applyActivePart: ()=> {},
+  alignTo: (id, pos, anim)=> scrollController.alignTo && scrollController.alignTo(id, pos, anim)
   })
 
   const ctx = {

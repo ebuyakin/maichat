@@ -2,7 +2,7 @@
 // NOTE: Imports updated to new feature/ and core paths.
 import { parse } from '../command/parser.js'
 import { evaluate } from '../command/evaluator.js'
-import { getSettings, saveSettings } from '../../core/settings/index.js'
+import { getSettings } from '../../core/settings/index.js'
 import { createKeyRouter } from './keyRouter.js'
 // Topics moved (Phase 6.4)
 import { createTopicPicker } from '../topics/topicPicker.js'
@@ -28,6 +28,8 @@ export function createInteraction({
 }){
   const { store, activeParts, lifecycle, boundaryMgr, pendingMessageMeta } = ctx
   const modeManager = window.__modeManager
+  // Reading Mode toggle (centers on j/k when active)
+  let readingMode = false
   let currentTopicId = store.rootTopicId
   let commandHistory = []
   let commandHistoryPos = -1
@@ -44,11 +46,48 @@ export function createInteraction({
     window.__lastKey = e.key
     if(e.key==='Enter'){ modeManager.set('input'); return true }
     if(e.key==='Escape'){ modeManager.set('command'); return true }
-    if(e.key==='j' || e.key==='ArrowDown'){ activeParts.next(); historyRuntime.applyActivePart(); return true }
-    if(e.key==='k' || e.key==='ArrowUp'){ activeParts.prev(); historyRuntime.applyActivePart(); return true }
-    if(e.key==='g'){ activeParts.first(); historyRuntime.applyActivePart(); return true }
-    if(e.key==='G'){ activeParts.last(); historyRuntime.applyActivePart(); return true }
-    if(e.key==='R'){ cycleAnchorMode(); return true }
+    if(e.key==='r' && !e.ctrlKey && !e.metaKey && !e.altKey){
+      readingMode = !readingMode
+      hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(readingMode)
+      // When turning ON, immediately center the currently focused part
+      if(readingMode){
+        try { const act = activeParts.active(); if(act && ctx.scrollController && ctx.scrollController.alignTo){ ctx.scrollController.alignTo(act.id, 'center', false) } } catch{}
+      }
+      return true
+    }
+  if(e.key==='j' || e.key==='ArrowDown'){
+      activeParts.next();
+      historyRuntime.applyActivePart();
+      const act = activeParts.active(); if(act){
+        if(readingMode && ctx.scrollController.alignTo){ ctx.scrollController.alignTo(act.id, 'center', false) }
+        else if(ctx.scrollController.ensureVisible){ ctx.scrollController.ensureVisible(act.id, false) }
+      }
+      return true
+    }
+  if(e.key==='k' || e.key==='ArrowUp'){
+      activeParts.prev();
+      historyRuntime.applyActivePart();
+      const act = activeParts.active(); if(act){
+        if(readingMode && ctx.scrollController.alignTo){ ctx.scrollController.alignTo(act.id, 'center', false) }
+        else if(ctx.scrollController.ensureVisible){ ctx.scrollController.ensureVisible(act.id, false) }
+      }
+      return true
+    }
+  if(e.key==='g'){
+      activeParts.first();
+      historyRuntime.applyActivePart();
+      const act = activeParts.active(); if(act){ if(ctx.scrollController.ensureVisible){ ctx.scrollController.ensureVisible(act.id, false) } }
+      readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
+      return true
+    }
+  if(e.key==='G'){
+      activeParts.last();
+      historyRuntime.applyActivePart();
+      const act = activeParts.active(); if(act){ if(ctx.scrollController.ensureVisible){ ctx.scrollController.ensureVisible(act.id, false) } }
+      readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
+      return true
+    }
+    
     if(e.key==='O' && e.shiftKey){ historyRuntime.jumpToBoundary(); return true }
     if(e.key==='*'){ cycleStar(); return true }
     if(e.key==='a'){ toggleFlag(); return true }
@@ -86,6 +125,8 @@ export function createInteraction({
         historyRuntime.renderCurrentView()
         activeParts.last(); historyRuntime.applyActivePart()
         lastAppliedFilter=''
+        // Spec: exit Reading Mode on filter clear
+        readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
         pushCommandHistory(q); commandHistoryPos=-1; modeManager.set('view'); return true
       }
       try {
@@ -100,12 +141,21 @@ export function createInteraction({
         commandErrEl.textContent=''
         modeManager.set('view')
         if(!changed && prevActiveId){ activeParts.setActiveById(prevActiveId); historyRuntime.applyActivePart() }
-        if(changed){ lastAppliedFilter=q; pushCommandHistory(q); commandHistoryPos=-1 }
+        if(changed){
+          lastAppliedFilter=q; pushCommandHistory(q); commandHistoryPos=-1
+          // Spec: exit Reading Mode on filter change
+          readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
+        }
   } catch(ex){ const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'; const friendly = (/^Unexpected token:/i.test(raw) || /^Unexpected trailing input/i.test(raw)) ? 'Incorrect command' : `Incorrect command: ${raw}`; commandErrEl.textContent = friendly }
       return true
     }
     if(e.key==='Escape'){
-      if(commandInput.value){ commandInput.value=''; lifecycle.setFilterQuery(''); lastAppliedFilter=''; historyRuntime.renderCurrentView(); activeParts.last(); historyRuntime.applyActivePart(); commandErrEl.textContent='' }
+      if(commandInput.value){
+        commandInput.value=''; lifecycle.setFilterQuery(''); lastAppliedFilter='';
+        historyRuntime.renderCurrentView(); activeParts.last(); historyRuntime.applyActivePart(); commandErrEl.textContent=''
+        // Spec: exit Reading Mode on filter clear
+        readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
+      }
       return true
     }
   }
@@ -126,7 +176,7 @@ export function createInteraction({
         boundaryMgr.applySettings(getSettings());
         const preBoundary = boundaryMgr.getBoundary();
         const beforeIncludedIds = new Set(preBoundary.included.map(p=>p.id));
-        lifecycle.beginSend();
+  lifecycle.beginSend(); readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
         let id;
         if(editingId){
           // Re-ask behavior: remove old error pair and create a new pair at end with same meta
@@ -137,6 +187,7 @@ export function createInteraction({
         } else {
           id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' })
         }
+        
         ;(async()=>{
           try {
             const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean);
@@ -171,8 +222,26 @@ export function createInteraction({
           }
         })();
         inputField.value='';
-        historyRuntime.renderCurrentView({ preserveActive:true });
-        activeParts.last(); historyRuntime.applyActivePart();
+  historyRuntime.renderCurrentView({ preserveActive:true });
+        // Focus the new pair's last user part explicitly (meta remains non-focusable)
+        try {
+          const pane = document.getElementById('historyPane')
+          const userEls = pane ? pane.querySelectorAll(`.part[data-pair-id="${id}"][data-role="user"]`) : null
+          const lastUserEl = userEls && userEls.length ? userEls[userEls.length-1] : null
+          if(lastUserEl){
+            const lastUserId = lastUserEl.getAttribute('data-part-id')
+            if(lastUserId){ activeParts.setActiveById(lastUserId) }
+          } else {
+            activeParts.last()
+          }
+        } catch { activeParts.last() }
+        historyRuntime.applyActivePart();
+  // One-shot: bottom-align the new meta row as visual cue (spec)
+  // Ensure fresh metrics: remeasure immediately before aligning.
+  if(id && ctx.scrollController && ctx.scrollController.alignTo){
+    try { if(ctx.scrollController.remeasure) ctx.scrollController.remeasure() } catch {}
+    ctx.scrollController.alignTo(`${id}:meta`, 'bottom', false)
+  }
         updateSendDisabled()
       }
       return true
@@ -209,11 +278,11 @@ export function createInteraction({
     }
   }
   document.addEventListener('click', e=>{ const btn = menuBtn(); const m = menuEl(); if(!btn||!m) return; if(e.target===btn){ e.stopPropagation(); toggleMenu(); return } if(m.contains(e.target)){ const li = e.target.closest('li[data-action]'); if(li) activateMenuItem(li); return } if(!btn.contains(e.target)) closeMenu() })
-  function renderPendingMeta(){ const pm = document.getElementById('pendingModel'); const pt = document.getElementById('pendingTopic'); if(pm){ pm.textContent = pendingMessageMeta.model || getActiveModel() || 'gpt-4o'; if(!pm.textContent) pm.textContent='gpt-4o'; pm.title = `Model: ${pendingMessageMeta.model || getActiveModel() || 'gpt-4o'} (Ctrl+M select (Input mode) · Ctrl+Shift+M manage (any mode))` } if(pt){ const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId); if(topic){ const path = formatTopicPath(topic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { const rootTopic = store.topics.get(store.rootTopicId); if(rootTopic){ const path = formatTopicPath(rootTopic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { pt.textContent='Select Topic'; pt.title='No topic found (Ctrl+T)' } } } }
+  function renderPendingMeta(){ const pm = document.getElementById('pendingModel'); const pt = document.getElementById('pendingTopic'); if(pm){ pm.textContent = pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'; if(!pm.textContent) pm.textContent='gpt-4o-mini'; pm.title = `Model: ${pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'} (Ctrl+M select (Input mode) · Ctrl+Shift+M manage (any mode))` } if(pt){ const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId); if(topic){ const path = formatTopicPath(topic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { const rootTopic = store.topics.get(store.rootTopicId); if(rootTopic){ const path = formatTopicPath(rootTopic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { pt.textContent='Select Topic'; pt.title='No topic found (Ctrl+T)' } } } }
   function formatTopicPath(id){ const parts = store.getTopicPath(id); if(parts[0]==='Root') parts.shift(); return parts.join(' > ') }
   function middleTruncate(str,max){ if(str.length<=max) return str; const keep=max-3; const head=Math.ceil(keep/2); const tail=Math.floor(keep/2); return str.slice(0,head)+'…'+str.slice(str.length-tail) }
   function updateSendDisabled(){ if(!sendBtn) return; const empty = inputField.value.trim().length===0; const zeroIncluded = (historyRuntime.getContextStats() && historyRuntime.getContextStats().includedCount===0); sendBtn.disabled = empty || lifecycle.isPending() || zeroIncluded; if(lifecycle.isPending()){ if(!sendBtn.__animTimer){ sendBtn.innerHTML='<span class="lbl">AI is thinking</span><span class="dots"><span>.</span><span>.</span><span>.</span></span>'; sendBtn.__animPhase=0; const applyPhase=()=>{ const dotsWrap = sendBtn.querySelector('.dots'); if(!dotsWrap) return; const spans = dotsWrap.querySelectorAll('span'); spans.forEach((sp,i)=>{ sp.style.opacity = (i < sendBtn.__animPhase) ? '1':'0' }) }; applyPhase(); sendBtn.__animTimer = setInterval(()=>{ if(!lifecycle.isPending()) return; sendBtn.__animPhase = (sendBtn.__animPhase + 1) % 4; applyPhase() }, 500) } sendBtn.classList.add('pending') } else { if(sendBtn.__animTimer){ clearInterval(sendBtn.__animTimer); sendBtn.__animTimer=null } sendBtn.textContent='Send'; sendBtn.classList.remove('pending'); if(zeroIncluded){ sendBtn.title='Cannot send: no pairs included in context (token budget exhausted)'; } else { sendBtn.title='Send' } } }
-  function cycleAnchorMode(){ const settings = getSettings(); const order = ['bottom','center','top']; const idx = order.indexOf(settings.anchorMode || 'bottom'); const next = order[(idx+1)%order.length]; saveSettings({ anchorMode: next }); historyRuntime.applyActivePart(); console.log('Anchor mode ->', next) }
+  
   modeManager.onChange((m)=>{ historyRuntime.renderStatus(); if(m==='view'){ commandInput.blur(); inputField.blur() } else if(m==='input'){ inputField.focus() } else if(m==='command'){ commandModeEntryActivePartId = activeParts.active() ? activeParts.active().id : null; commandInput.focus() } })
   const keyRouter = createKeyRouter({ modeManager, handlers:{ view:viewHandler, command:commandHandler, input:inputHandler } }); keyRouter.attach()
   document.addEventListener('click', e=>{
@@ -228,8 +297,14 @@ export function createInteraction({
       // Non-interactive click on meta: do nothing selection-wise
       return
     }
-    activeParts.setActiveById(partEl.getAttribute('data-part-id'))
+  activeParts.setActiveById(partEl.getAttribute('data-part-id'))
     historyRuntime.applyActivePart()
+    // If Reading Mode is ON, center-align the newly focused part on click as well
+    try {
+      if(readingMode && ctx.scrollController && ctx.scrollController.alignTo){
+        const act = activeParts.active(); if(act) ctx.scrollController.alignTo(act.id, 'center', false)
+      }
+    } catch {}
   })
   window.addEventListener('keydown', e=>{
     if(!e.ctrlKey) return;
@@ -258,7 +333,23 @@ export function createInteraction({
   // Removed global error actions for clarity; use VIEW-only e/d on focused row
   })
   window.addEventListener('keydown', e=>{ if(e.key==='F1'){ e.preventDefault(); openHelpOverlay({ modeManager, onClose:()=>{} }) } })
-  if(sendBtn){ sendBtn.addEventListener('click', ()=>{ if(modeManager.mode!=='input') modeManager.set('input'); const text = inputField.value.trim(); if(!text) return; if(lifecycle.isPending()) return; lifecycle.beginSend(); const topicId = pendingMessageMeta.topicId || currentTopicId; const model = pendingMessageMeta.model || 'gpt'; const editingId = window.__editingPairId; let id; if(editingId){ const old = store.pairs.get(editingId); if(old){ store.removePair(editingId) } id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' }); window.__editingPairId=null } else { id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' }) } try{ localStorage.setItem('maichat_pending_topic', topicId) }catch{} ;(async()=>{ try { const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean); const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt); const { content } = await executeSend({ store, model, userText:text, signal: undefined, visiblePairs: chrono, onDebugPayload:(payload)=>{ requestDebug.setPayload(payload) } }); store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }); lifecycle.handleNewAssistantReply(id) } catch(ex){ let errMsg = (ex && ex.message) ? ex.message : 'error'; if(errMsg==='missing_api_key') errMsg='API key missing (Ctrl+.) -> API Keys'; store.updatePair(id, { assistantText:'', lifecycleState:'error', errorMessage: errMsg }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }) } finally { updateSendDisabled() } })(); inputField.value=''; historyRuntime.renderCurrentView({ preserveActive:true }); activeParts.last(); historyRuntime.applyActivePart(); updateSendDisabled() }); inputField.addEventListener('input', updateSendDisabled) }
+  if(sendBtn){ sendBtn.addEventListener('click', ()=>{ if(modeManager.mode!=='input') modeManager.set('input'); const text = inputField.value.trim(); if(!text) return; if(lifecycle.isPending()) return; lifecycle.beginSend(); const topicId = pendingMessageMeta.topicId || currentTopicId; const model = pendingMessageMeta.model || 'gpt'; const editingId = window.__editingPairId; let id; if(editingId){ const old = store.pairs.get(editingId); if(old){ store.removePair(editingId) } id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' }); window.__editingPairId=null } else { id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' }) } try{ localStorage.setItem('maichat_pending_topic', topicId) }catch{} ;(async()=>{ try { const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean); const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt); const { content } = await executeSend({ store, model, userText:text, signal: undefined, visiblePairs: chrono, onDebugPayload:(payload)=>{ requestDebug.setPayload(payload) } }); store.updatePair(id, { assistantText: content, lifecycleState:'complete', errorMessage:undefined }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }); lifecycle.handleNewAssistantReply(id) } catch(ex){ let errMsg = (ex && ex.message) ? ex.message : 'error'; if(errMsg==='missing_api_key') errMsg='API key missing (Ctrl+.) -> API Keys'; store.updatePair(id, { assistantText:'', lifecycleState:'error', errorMessage: errMsg }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }) } finally { updateSendDisabled() } })(); inputField.value=''; historyRuntime.renderCurrentView({ preserveActive:true }); try { const pane = document.getElementById('historyPane'); const userEls = pane ? pane.querySelectorAll(`.part[data-pair-id="${id}"][data-role="user"]`) : null; const lastUserEl = userEls && userEls.length ? userEls[userEls.length-1] : null; if(lastUserEl){ const lastUserId = lastUserEl.getAttribute('data-part-id'); if(lastUserId){ activeParts.setActiveById(lastUserId) } } else { activeParts.last() } } catch { activeParts.last() } historyRuntime.applyActivePart(); updateSendDisabled() }); inputField.addEventListener('input', updateSendDisabled) }
+  if(sendBtn){
+    // Also bottom-align meta after send via button (in addition to legacy policy anchor)
+    sendBtn.addEventListener('click', ()=>{
+      readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
+      try{
+        const lastPair = activeParts.parts.length ? store.pairs.get(activeParts.parts[activeParts.parts.length-1].pairId) : null
+        const id = lastPair ? lastPair.id : null
+        if(id && ctx.scrollController && ctx.scrollController.alignTo){
+          try { if(ctx.scrollController.remeasure) ctx.scrollController.remeasure() } catch {}
+          ctx.scrollController.alignTo(`${id}:meta`, 'bottom', false)
+        }
+      } catch {}
+    })
+  }
+  // No persistent policy to clear on scroll in stateless model
+  // No policy clearing needed on typing in stateless model
   // Helpers for error edit/delete actions
   function isErrorPair(pairId){ const p = store.pairs.get(pairId); return !!p && p.lifecycleState==='error' }
   function handleEditIfErrorActive(){
@@ -304,5 +395,5 @@ export function createInteraction({
       // No target available (likely empty list). Keep mode; nothing to focus.
     }
   }
-  return { keyRouter, updateSendDisabled, renderPendingMeta, cycleAnchorMode, openQuickTopicPicker, prepareEditResend, deletePairWithFocus, isErrorPair }
+  return { keyRouter, updateSendDisabled, renderPendingMeta, openQuickTopicPicker, prepareEditResend, deletePairWithFocus, isErrorPair }
 }

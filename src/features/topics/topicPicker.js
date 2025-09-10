@@ -35,7 +35,7 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
         }
       }
     }
-    function dfs(id, depth){
+  function dfs(id, depth){
       const t = store.topics.get(id); if(!t) return
       const m = match(t)
       let include = m
@@ -48,7 +48,11 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
       flat.push({ topic:t, depth })
       const isExp = expanded.has(id) || forceExpand.has(id)
       if(isExp){
-        for(const cid of (store.children.get(id)||[])) dfs(cid, depth+1)
+        const kids = Array.from((store.children.get(id)||[])).sort((a,b)=>{
+          const ta = store.topics.get(a), tb = store.topics.get(b)
+          return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
+        })
+        for(const cid of kids) dfs(cid, depth+1)
       }
     }
     const descCache = new Map()
@@ -59,7 +63,11 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
       for(const cid of (store.children.get(id)||[])) if(descendantHasMatch(cid)){ descCache.set(id,true); return true }
       descCache.set(id,false); return false
     }
-    for(const rid of (store.children.get(rootId)||[])) dfs(rid,0)
+    const kids = Array.from((store.children.get(rootId)||[])).sort((a,b)=>{
+      const ta = store.topics.get(a), tb = store.topics.get(b)
+      return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
+    })
+    for(const rid of kids) dfs(rid,0)
   }
   function render(){
     buildFlat(); if(activeIndex >= flat.length) activeIndex = flat.length? flat.length-1:0

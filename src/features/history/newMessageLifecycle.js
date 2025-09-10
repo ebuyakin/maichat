@@ -1,10 +1,12 @@
 // newMessageLifecycle moved from ui/newMessageLifecycle.js
 import { escapeHtml } from '../../shared/util.js'
-export function createNewMessageLifecycle({ store, activeParts, commandInput, renderHistory, applyActivePart }){
+export function createNewMessageLifecycle({ store, activeParts, commandInput, renderHistory, applyActivePart, alignTo }){
 	let pendingSend = false
 	let lastReplyPairId = null
 	let activeFilterQuery = ''
 	const hasDocument = typeof document !== 'undefined'
+	// Late-bindable highlight function (wired by historyRuntime after it’s created)
+	let _applyActivePart = typeof applyActivePart === 'function' ? applyActivePart : ()=>{}
 	function setFilterQuery(q){ activeFilterQuery = q }
 	function getFilterQuery(){ return activeFilterQuery }
 	function isPending(){ return pendingSend }
@@ -21,7 +23,7 @@ export function createNewMessageLifecycle({ store, activeParts, commandInput, re
 		if(!isPairVisibleInCurrentFilter(pairId)) return
 		if(typeof window === 'undefined' || typeof document === 'undefined') return
 		const raf = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame : (fn)=> setTimeout(fn,0)
-		raf(()=>{
+			raf(()=>{
 			try {
 				const pane = document.getElementById('historyPane'); if(!pane) return
 				const input = document.getElementById('inputField')
@@ -42,14 +44,34 @@ export function createNewMessageLifecycle({ store, activeParts, commandInput, re
 				const modeMgr = window.__modeManager
 				const MODES = window.__MODES
 				const currentMode = modeMgr ? modeMgr.mode || modeMgr.current : null
-				const shouldSwitch = (currentMode === 'input') && inputEmpty && (!fits || multiPart)
+				// Spec: only switch to VIEW when reply does NOT fit the viewport (not merely when partitioned)
+				const shouldSwitch = (currentMode === 'input') && inputEmpty && (!fits)
 				if(window.__focusDebug){
 					console.log('[focus-debug-reply]', { replyHeight, logicalReplyHeight, paneH, clippedTop, fits, multiPart, inputEmpty, mode: currentMode, shouldSwitch, parts: replyParts.length, paneScrollH: pane.scrollHeight, paneClientH: pane.clientHeight })
 				}
-				if(shouldSwitch && modeMgr && MODES){
+		    if(shouldSwitch && modeMgr && MODES){
 					if(typeof modeMgr.set === 'function') modeMgr.set(MODES.VIEW)
-					const firstAssistant = activeParts.parts.find(p=> p.pairId===pairId && p.role==='assistant')
-					if(firstAssistant){ activeParts.setActiveById(firstAssistant.id); applyActivePart() }
+					// Focus first assistant part and align it to top via policy (no animation)
+					const firstId = first.getAttribute('data-part-id')
+					if(firstId){ activeParts.setActiveById(firstId) }
+	    // One-shot alignment per spec
+	    if(firstId && alignTo){ alignTo(firstId, 'top', false) }
+					if(firstId){
+						_applyActivePart()
+						const raf3 = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame : (fn)=> setTimeout(fn,0)
+						raf3(()=> _applyActivePart())
+					}
+				} else if(currentMode === 'input' && inputEmpty && fits) {
+					// Remain in INPUT; focus first assistant; align last assistant to bottom via policy (no animation)
+					const firstId = first.getAttribute('data-part-id')
+					const lastId = last.getAttribute('data-part-id')
+					if(firstId){ activeParts.setActiveById(firstId) }
+	    if(lastId && alignTo){ alignTo(lastId, 'bottom', false) }
+					if(firstId){
+						_applyActivePart()
+						const raf3 = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame : (fn)=> setTimeout(fn,0)
+						raf3(()=> _applyActivePart())
+					}
 				}
 			} catch(err){ if(window.__focusDebug) console.log('[focus-debug-error]', err) }
 		})
@@ -62,7 +84,8 @@ export function createNewMessageLifecycle({ store, activeParts, commandInput, re
 	function jumpToNewReply(){ return false }
 	function updateNewReplyBadgeVisibility(){}
 	function getBadgeState(){ return { visible:false, dim:false, targetPairId:null } }
-	return { beginSend, completeSend, isPending, handleNewAssistantReply, updateNewReplyBadgeVisibility, jumpToNewReply, setFilterQuery, getFilterQuery, getBadgeState, userAtLogicalEnd }
+	function bindApplyActivePart(fn){ if(typeof fn==='function') _applyActivePart = fn }
+	return { beginSend, completeSend, isPending, handleNewAssistantReply, updateNewReplyBadgeVisibility, jumpToNewReply, setFilterQuery, getFilterQuery, getBadgeState, userAtLogicalEnd, bindApplyActivePart }
 }
 export function shouldAutoSwitchToView({ mode, replyHeight, paneHeight, inputEmpty }){
 	return mode === 'input' && inputEmpty && replyHeight > paneHeight

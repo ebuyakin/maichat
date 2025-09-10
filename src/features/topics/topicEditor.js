@@ -56,7 +56,7 @@ export function openTopicEditor({ store, onSelect, onClose }) {
         }
       }
     }
-    function dfs(id, depth) {
+  function dfs(id, depth) {
       const t = store.topics.get(id); if(!t) return
       const m = match(t)
       let include = m
@@ -71,7 +71,11 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       flat.push({ topic: t, depth })
       const isExpanded = expanded.has(id) || forceExpand.has(id)
       if (isExpanded) {
-        for (const cid of (store.children.get(id)||[])) dfs(cid, depth+1)
+        const kids = Array.from((store.children.get(id)||[])).sort((a,b)=>{
+          const ta = store.topics.get(a), tb = store.topics.get(b)
+          return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
+        })
+        for (const cid of kids) dfs(cid, depth+1)
       }
     }
     const cacheDescMatch = new Map()
@@ -84,9 +88,18 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       }
       cacheDescMatch.set(id,false); return false
     }
-    for (const rid of (store.children.get(null)||[])) {
+    // Order top-level roots deterministically by createdAt then name
+    const roots = Array.from((store.children.get(null)||[])).sort((a,b)=>{
+      const ta = store.topics.get(a), tb = store.topics.get(b)
+      return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
+    })
+    for (const rid of roots) {
       if (rid === rootId) {
-        for (const cid of (store.children.get(rootId)||[])) dfs(cid, 0)
+        const kids = Array.from((store.children.get(rootId)||[])).sort((a,b)=>{
+          const ta = store.topics.get(a), tb = store.topics.get(b)
+          return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
+        })
+        for (const cid of kids) dfs(cid, 0)
       } else {
         dfs(rid,0)
       }

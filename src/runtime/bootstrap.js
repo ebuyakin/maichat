@@ -6,7 +6,7 @@
 import { registerProvider } from '../infrastructure/provider/adapter.js'
 import { createOpenAIAdapter } from '../infrastructure/provider/openaiAdapter.js'
 import { ensureCatalogLoaded } from '../core/models/modelCatalog.js'
-import { seedDemoPairs } from '../store/demoSeeding.js'
+import { runInitialSeeding, shouldRunInitialSeeding } from './initialSeeding.js'
 import { getSettings } from '../core/settings/index.js'
 import { getApiKey } from '../infrastructure/api/keys.js'
 import { openApiKeysOverlay } from '../features/config/apiKeysOverlay.js'
@@ -34,17 +34,43 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
     if(savedPending && store.topics.has(savedPending)) pendingMessageMeta.topicId = savedPending
   } catch{}
 
-  if(store.getAllPairs().length === 0) {
-    seedDemoPairs(store)
-  }
+  // One-time onboarding seeding (replaces demo seeding)
+  try { if(shouldRunInitialSeeding(store)) runInitialSeeding({ store }) } catch {}
 
   renderCurrentView()
   renderStatus()
   // Start focused at the last (newest) part on first load
   try { ctx.activeParts && ctx.activeParts.last && ctx.activeParts.last() } catch{}
   applyActivePart()
+  // One-shot alignment on open: bottom-align last assistant if present; else bottom-align last meta
+  try {
+    const sc = ctx.scrollController
+    const ap = ctx.activeParts
+    if(sc && ap && Array.isArray(ap.parts) && ap.parts.length){
+      requestAnimationFrame(()=>{
+        // Prefer the last assistant part for alignment
+        let lastAssistant = null
+        for(let i=ap.parts.length-1; i>=0; i--){
+          const p = ap.parts[i]
+          if(p && p.role === 'assistant'){ lastAssistant = p; break }
+        }
+        if(lastAssistant && sc.alignTo){ sc.alignTo(lastAssistant.id, 'bottom', false) }
+        else {
+          const tail = ap.parts[ap.parts.length-1]
+          const lastPairId = tail && tail.pairId
+          if(lastPairId && sc.alignTo){ sc.alignTo(`${lastPairId}:meta`, 'bottom', false) }
+        }
+      })
+    }
+  } catch {}
 
-  if(!pendingMessageMeta.topicId) pendingMessageMeta.topicId = store.rootTopicId
+  if(!pendingMessageMeta.topicId){
+    // Prefer 'General talk' if present on first load; else root
+    try {
+      const match = Array.from(store.topics.values()).find(t=> t.parentId===store.rootTopicId && t.name==='General talk')
+      pendingMessageMeta.topicId = match ? match.id : store.rootTopicId
+    } catch { pendingMessageMeta.topicId = store.rootTopicId }
+  }
   try { localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) } catch{}
 
   interaction.renderPendingMeta()

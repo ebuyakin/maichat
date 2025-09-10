@@ -5,10 +5,18 @@ export function createScrollController({ container, getParts }){
 	let anim = null
 	let animationEnabled = true
 	let pendingValidate = false
+	let suppressOnce = false
+	// Owns-scroll flag: true while controller is driving scrollTop (animation or discrete)
+	let programmaticScrollActive = false
 	const ADJUST_THRESHOLD = 2
 	let currentActiveIndex = 0
 	let appliedScrollTop = 0
 	let visibleWindow = { first:0, last:0 }
+	// Stateless model: no persistent policy anchors; all actions are one-shot
+	function findIndexById(partId){
+		if(!metrics) return -1
+		return metrics.parts.findIndex(p=> p.id === partId)
+	}
 	function measure(){
 		const settings = getSettings()
 		const edgeGap = settings.gapOuterPx || 0
@@ -37,10 +45,10 @@ export function createScrollController({ container, getParts }){
 		}
 		metrics = { parts, paneH, edgeGap, totalContentH }
 	}
-	function anchorScrollTop(k){
+	function anchorScrollTop(k, positionOverride){
 		if(!metrics) return 0
 		const settings = getSettings()
-		const mode = settings.anchorMode || 'bottom'
+		const mode = positionOverride || settings.anchorMode || 'bottom'
 		const { parts, paneH } = metrics
 		if(k < 0 || k >= parts.length) return 0
 		const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
@@ -50,9 +58,12 @@ export function createScrollController({ container, getParts }){
 		if(mode === 'top'){
 			S = part.start
 		} else if(mode === 'bottom'){
-			S = (part.start + part.h) - (paneH - padBottom) + padTop
+			// Align bottom edge of part to inner bottom (H - padBottom)
+			// Using part.start measured from inner top, we must add padTop to convert to visual offsetTop
+			S = (part.start + padTop + part.h) - (paneH - padBottom)
 		} else {
-			S = part.start + padTop + part.h/2 - (paneH/2)
+			// Center relative to the pane; convert to visual by adding padTop
+			S = (part.start + padTop) + part.h/2 - (paneH/2)
 		}
 		const raw = Number.isFinite(S)? S : 0
 		let S2 = Math.round(raw)
@@ -96,34 +107,18 @@ export function createScrollController({ container, getParts }){
 		}
 		scheduleValidate()
 	}
+	function setActiveIndex(activeIndex){
+		if(!metrics) measure()
+		const k = Math.max(0, Math.min(activeIndex, metrics.parts.length-1))
+		currentActiveIndex = k
+	}
 	function validate(){
 		pendingValidate = false
 		if(!metrics) return
-		const prevActive = currentActiveIndex
-		const before = container.scrollTop
 		measure()
-		const target = anchorScrollTop(prevActive)
-		const diff = target - container.scrollTop
-		if(Math.abs(diff) > ADJUST_THRESHOLD){ container.scrollTop = target }
+		// Stateless validate: remeasure and refresh visibility window only; do not move scroll
 		appliedScrollTop = container.scrollTop
-		if(getSettings().anchorMode === 'center'){
-			const part = metrics.parts[prevActive]
-			if(part){
-				const paneMid = metrics.paneH / 2
-				const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
-				const currentOffset = part.start - container.scrollTop
-				const visualTop = currentOffset + padTop
-				const partMidVis = visualTop + part.h/2
-				const delta = partMidVis - paneMid
-				if(Math.abs(delta) > ADJUST_THRESHOLD){
-					const corrected = Math.max(0, Math.round(container.scrollTop + delta))
-					if(Math.abs(corrected - container.scrollTop) > ADJUST_THRESHOLD){
-						container.scrollTop = corrected
-						appliedScrollTop = container.scrollTop
-					}
-				}
-			}
-		}
+		if(suppressOnce){ suppressOnce = false }
 		visibleWindow = computeVisibleWindow()
 	}
 	function scheduleValidate(){
@@ -137,10 +132,10 @@ export function createScrollController({ container, getParts }){
 	function scrollTo(target, animate){
 		cancelAnimation()
 		target = Math.max(0, Math.round(target))
-		if(!animate){ container.scrollTop = target; return }
+		if(!animate){ setScrollTopProgrammatic(target); return }
 		const start = container.scrollTop
 		const dist = target - start
-		if(Math.abs(dist) < 2){ container.scrollTop = target; return }
+		if(Math.abs(dist) < 2){ setScrollTopProgrammatic(target); return }
 		const s = getSettings()
 		let base = Math.max(0, s.scrollAnimMs || 0)
 		if(s.scrollAnimDynamic){
@@ -161,12 +156,27 @@ export function createScrollController({ container, getParts }){
 		}
 		function step(now){
 			const p = Math.min(1, (now - t0)/dur)
+			programmaticScrollActive = true
 			container.scrollTop = start + dist * ease(p)
-			if(p < 1){ anim = requestAnimationFrame(step) } else { anim = null }
+			if(p < 1){
+				anim = requestAnimationFrame(step)
+			} else {
+				anim = null
+				// Release ownership at the end of the animation frame
+				requestAnimationFrame(()=>{ programmaticScrollActive = false })
+			}
 		}
+		// Mark ownership before starting animation
+		programmaticScrollActive = true
 		anim = requestAnimationFrame(step)
 	}
 	function cancelAnimation(){ if(anim){ cancelAnimationFrame(anim); anim=null } }
+	function setScrollTopProgrammatic(v){
+		programmaticScrollActive = true
+		container.scrollTop = Math.max(0, Math.round(v))
+		// Release on next frame boundary to cover the async scroll event dispatch
+		requestAnimationFrame(()=>{ programmaticScrollActive = false })
+	}
 	function debugInfo(){
 		if(!metrics) return null
 		const { parts, paneH } = metrics
@@ -187,23 +197,58 @@ export function createScrollController({ container, getParts }){
 		}
 		let firstTopPx = tops.length? tops[0] : null
 		let visualGap = null
-		const settings2 = getSettings()
-		if(settings2.anchorMode === 'top' && firstTopPx != null){
+		// Compute visual gap from top padding
+		if(firstTopPx != null){
 			const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
 			visualGap = firstTopPx - padTop
 		}
 		const anchorMeta = anchorScrollTop._last || {}
-		let gapBelow = null
-		if(getSettings().anchorMode === 'bottom'){
-			const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
-			const part = parts[currentActiveIndex]
-			if(part){
-				gapBelow = paneH - (part.start + part.h + padTop - container.scrollTop)
-				gapBelow = Math.round(gapBelow)
-			}
-		}
-		return { mode:(getSettings().anchorMode||'bottom'), paneH, currentFirst:vis.first, activeIndex:currentActiveIndex, shouldVisibleCount:(vis.last-vis.first+1), firstTopPx, visualGap, visibleIndices, tops, heights, scrollTop: container.scrollTop, rawAnchor: anchorMeta.raw, maxScroll: anchorMeta.maxScroll, gapBelow, animationEnabled }
+		return { paneH, currentFirst:vis.first, activeIndex:currentActiveIndex, shouldVisibleCount:(vis.last-vis.first+1), firstTopPx, visualGap, visibleIndices, tops, heights, scrollTop: container.scrollTop, rawAnchor: anchorMeta.raw, maxScroll: anchorMeta.maxScroll, animationEnabled }
 	}
 	function setAnimationEnabled(v){ animationEnabled = !!v }
-	return { remeasure: measure, apply, debugInfo, setAnimationEnabled }
+	function suppressNextValidate(){ suppressOnce = true }
+	function isProgrammaticScroll(){ return !!programmaticScrollActive }
+
+	// No persistent policy or periodic enforcement in stateless model
+
+		// Stateless alignment API
+		function alignTo(partId, position='bottom', animate=false){
+			if(!metrics) measure()
+			if(!metrics || metrics.parts.length===0) return
+			const idx = typeof partId === 'number' ? partId : findIndexById(partId)
+			if(idx < 0 || idx >= metrics.parts.length) return
+			const target = anchorScrollTop(idx, position)
+			if(Math.abs(container.scrollTop - target) > ADJUST_THRESHOLD){
+				scrollTo(target, !!animate && animationEnabled)
+			}
+			scheduleValidate()
+		}
+		function ensureVisible(partId, animate=false){
+			if(!metrics) measure()
+			if(!metrics || metrics.parts.length===0) return
+			const idx = typeof partId === 'number' ? partId : findIndexById(partId)
+			if(idx < 0 || idx >= metrics.parts.length) return
+			const S = container.scrollTop
+			const paneH = metrics.paneH
+			const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
+			const padBottom = parseFloat(getComputedStyle(container).paddingBottom)||0
+			const part = metrics.parts[idx]
+			const top = part.start
+			const bottom = top + part.h
+			// Usable viewport excludes outer gaps (top/bottom padding)
+			const viewTop = S
+			const viewBottom = S + paneH - padTop - padBottom
+			let target = null
+			if(top < viewTop - 1){
+				target = anchorScrollTop(idx, 'top')
+			} else if(bottom > viewBottom + 1){
+				target = anchorScrollTop(idx, 'bottom')
+			}
+			if(target != null && Math.abs(container.scrollTop - target) > ADJUST_THRESHOLD){
+				scrollTo(target, !!animate && animationEnabled)
+			}
+			scheduleValidate()
+		}
+
+		return { remeasure: measure, apply, setActiveIndex, debugInfo, setAnimationEnabled, suppressNextValidate, isProgrammaticScroll, alignTo, ensureVisible }
 }

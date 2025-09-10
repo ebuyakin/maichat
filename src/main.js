@@ -7,7 +7,6 @@ import { bindHistoryErrorActions } from './features/history/historyView.js'
 import { createHistoryRuntime } from './features/history/historyRuntime.js'
 import { getSettings, subscribeSettings } from './core/settings/index.js'
 import { invalidatePartitionCacheOnResize } from './features/history/partitioner.js'
-import { exposeSeedingHelpers } from './store/demoSeeding.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
@@ -180,8 +179,6 @@ bootstrap({ ctx: __runtime, historyRuntime, interaction, loadingEl })
   })
 console.log('[MaiChat] bootstrap invoked')
 
-// Seeding helpers
-exposeSeedingHelpers(store, ()=> renderCurrentView(), activeParts, ()=> applyActivePart())
 console.log('[MaiChat] boot complete')
 
 // Pointer-mode switching (mouse/touch): switch app mode before pointer focus lands (excludes overlays)

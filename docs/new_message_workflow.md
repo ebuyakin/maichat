@@ -73,7 +73,7 @@ Notes:
   - After send, the new user part is focused (INPUT mode retained).
   - When assistant reply renders, measure its full rendered height (top of first assistant part to bottom of last assistant part of that reply).
   - If current mode is INPUT, input box is empty, and the reply height exceeds the viewport (cannot fully fit): switch to VIEW mode and focus the first assistant part of the new reply.
-  - If the reply fully fits: remain in INPUT mode; focus stays in input (user can continue drafting next prompt).
+  - If the reply fully fits: remain in INPUT mode; focus stays in input (user can continue drafting next prompt). The history pane is scrolled so that all assistant parts of the reply are fully visible.
   - If user changed to VIEW or COMMAND while waiting (not in INPUT at arrival): do not alter mode or focus.
   - Future options (not implemented): user preference to always/never switch; partial-height threshold tuning.
 
