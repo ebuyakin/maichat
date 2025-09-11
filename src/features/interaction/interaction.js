@@ -87,8 +87,17 @@ export function createInteraction({
       readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
       return true
     }
-    
-    if(e.key==='O' && e.shiftKey){ historyRuntime.jumpToBoundary(); return true }
+    // Jump to first in-context (included) pair and center it (one-shot, does not toggle Reading Mode)
+    if((e.key==='O' && e.shiftKey) || e.key==='o'){
+      historyRuntime.jumpToBoundary();
+      try {
+        const act = activeParts.active();
+        if(act && ctx.scrollController && ctx.scrollController.alignTo){
+          ctx.scrollController.alignTo(act.id, 'center', false)
+        }
+      } catch {}
+      return true
+    }
     if(e.key==='*'){ cycleStar(); return true }
     if(e.key==='a'){ toggleFlag(); return true }
     if(e.key==='1'){ setStarRating(1); return true }

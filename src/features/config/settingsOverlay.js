@@ -12,32 +12,16 @@ export function openSettingsOverlay({ onClose }){
     <div class="overlay-panel settings-panel compact">
       <header>Settings</header>
       <div class="settings-tabs" role="tablist">
-  ${['layout','spacing','visibility','scroll','context'].map((t,i)=>`<button type="button" class="tab-btn${i===0?' active':''}" data-tab="${t}" role="tab" aria-selected="${i===0}" aria-controls="tab-${t}">${t}</button>`).join('')}
+  ${['spacing','visibility','scroll','context'].map((t,i)=>`<button type="button" class="tab-btn${i===0?' active':''}" data-tab="${t}" role="tab" aria-selected="${i===0}" aria-controls="tab-${t}">${t}</button>`).join('')}
       </div>
       <div class="settings-body">
         <form id="settingsForm" autocomplete="off">
-          <div class="tab-section" data-tab-section="layout" id="tab-layout">
-            <fieldset class="spacing-fieldset layout-fieldset">
-              <legend>Layout</legend>
+          <div class="tab-section" data-tab-section="spacing" id="tab-spacing">
+            <fieldset class="spacing-fieldset">
+              <legend>Spacing</legend>
               <label><span>Part Fraction <span class="pf-hint" style="opacity:.7;font-size:12px;color:var(--text-dim);"></span></span>
                 <input name="partFraction" type="number" step="0.10" min="0.10" max="1.00" value="${existing.partFraction}" />
               </label>
-              <label>Anchor Mode
-                <select name="anchorMode">
-                  ${['bottom','center','top'].map(m=>`<option value="${m}" ${m===existing.anchorMode?'selected':''}>${m}</option>`).join('')}
-                </select>
-              </label>
-              <label>Edge Anchoring Mode
-                <select name="edgeAnchoringMode">
-                  ${['adaptive','strict'].map(m=>`<option value="${m}" ${m===existing.edgeAnchoringMode?'selected':''}>${m}</option>`).join('')}
-                </select>
-              </label>
-            </fieldset>
-            <div class="tab-hint" data-tab-hint="layout">Shift+1..4 switch tabs • h/l or [ ] cycle • j/k move • +/- adjust • Enter save • Esc close</div>
-          </div>
-          <div class="tab-section" data-tab-section="spacing" id="tab-spacing" hidden>
-            <fieldset class="spacing-fieldset">
-              <legend>Spacing</legend>
               <label>Part Padding (px)
                 <input name="partPadding" type="number" step="1" min="0" max="48" value="${existing.partPadding}" />
               </label>
@@ -54,6 +38,7 @@ export function openSettingsOverlay({ onClose }){
                 <input name="gapBetweenPx" type="number" step="1" min="0" max="48" value="${existing.gapBetweenPx}" />
               </label>
             </fieldset>
+            <div class="tab-hint" data-tab-hint="spacing">Shift+1..4 switch tabs • h/l or [ ] cycle • j/k move • +/- adjust • Enter save • Esc close</div>
           </div>
           <div class="tab-section" data-tab-section="visibility" id="tab-visibility" hidden>
             <fieldset class="spacing-fieldset visibility-fieldset">
@@ -153,8 +138,7 @@ export function openSettingsOverlay({ onClose }){
     const gapMetaPx = clampRange(parseInt(fd.get('gapMetaPx')),0,48)
     const gapIntraPx = clampRange(parseInt(fd.get('gapIntraPx')),0,48)
     const gapBetweenPx = clampRange(parseInt(fd.get('gapBetweenPx')),0,48)
-    const anchorMode = fd.get('anchorMode')
-    const edgeAnchoringMode = fd.get('edgeAnchoringMode')
+  // anchorMode / edgeAnchoringMode removed
     const fadeMode = fd.get('fadeMode') || 'binary'
   const fadeHiddenOpacity = clampFloat(parseFloat(fd.get('fadeHiddenOpacity')),0,1)
   const fadeInMs = clampRange(parseInt(fd.get('fadeInMs')),0,5000)
@@ -167,17 +151,14 @@ export function openSettingsOverlay({ onClose }){
   const userRequestAllowance = clampRange(parseInt(fd.get('userRequestAllowance')),0,500000)
   const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')),0,1000)
   const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')),1.0,10.0)
-  saveSettings({ partFraction, anchorMode, edgeAnchoringMode, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, maxTrimAttempts, charsPerToken })
+  saveSettings({ partFraction, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, maxTrimAttempts, charsPerToken })
     markSaved()
   }
   function populateFormFromSettings(s){
     // Layout
     const pf = form.querySelector('input[name="partFraction"]')
     if(pf) pf.value = (s.partFraction != null ? Number(s.partFraction).toFixed(2) : '0.60')
-    const am = form.querySelector('select[name="anchorMode"]')
-    if(am) am.value = s.anchorMode || 'bottom'
-    const eam = form.querySelector('select[name="edgeAnchoringMode"]')
-    if(eam) eam.value = s.edgeAnchoringMode || 'adaptive'
+  // anchorMode / edgeAnchoringMode removed; nothing to populate
     // Spacing
     const setNum = (name, v)=>{ const el=form.querySelector(`input[name="${name}"]`); if(el && v!=null) el.value = String(v) }
     setNum('partPadding', s.partPadding)
@@ -378,4 +359,44 @@ export function openSettingsOverlay({ onClose }){
       if(e.key===']' || (e.key==='l' && !e.metaKey && !e.altKey && !e.ctrlKey)) { e.preventDefault(); cycleTab(1) }
     }
   })
+
+  // Constant-size panel: measure tallest tab then lock height (with 70vh cap) so switching tabs doesn't resize.
+  ;(function establishConstantHeight(){
+    try {
+      const sections = Array.from(panel.querySelectorAll('.tab-section'))
+      if(!sections.length) return
+      const active = sections.find(s=> !s.hidden)
+      const activeName = active ? active.getAttribute('data-tab-section') : null
+      let maxH = 0
+      // Temporarily measure each tab in isolation for accurate outer height (header + tabs + buttons included)
+      sections.forEach(sec=>{
+        sections.forEach(s=> s.hidden = (s!==sec))
+        // Let height auto for measurement
+        panel.style.height = 'auto'
+        const h = panel.offsetHeight
+        if(h > maxH) maxH = h
+      })
+      // Restore original active tab visibility
+      sections.forEach(sec=> sec.hidden = (sec.getAttribute('data-tab-section') !== activeName))
+      // Reactivate hint display (hidden states changed during measurement)
+      if(activeName){
+          panel.querySelectorAll('.tab-hint').forEach(h=>{ h.style.display = (h.getAttribute('data-tab-hint')===activeName)?'block':'none' })
+        }
+      const cap = Math.floor(window.innerHeight * 0.70)
+      const finalH = Math.min(maxH, cap)
+      panel.dataset.maxMeasuredHeight = String(maxH)
+      panel.style.height = finalH + 'px'
+      panel.classList.add('fixed-height')
+      const body = panel.querySelector('.settings-body')
+      if(body){ body.style.overflow = (maxH > cap) ? 'auto' : 'hidden' }
+      // On resize, keep constant measured height but re-clamp to current 70vh
+      window.addEventListener('resize', ()=>{
+        const stored = parseInt(panel.dataset.maxMeasuredHeight,10) || maxH
+        const capNow = Math.floor(window.innerHeight * 0.70)
+        const hNow = Math.min(stored, capNow)
+        panel.style.height = hNow + 'px'
+        if(body){ body.style.overflow = (stored > capNow) ? 'auto' : 'hidden' }
+      })
+    } catch {}
+  })()
 }

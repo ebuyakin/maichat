@@ -61,7 +61,8 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | ArrowUp | Previous part | Secondary fallback |
 | g | Jump to first part | Single press |
 | G | Jump to last part | Shift+g |
-| Shift+R | Cycle reading position (Top / Center / Bottom) | Implements anchorMode cycle; see `docs/ui_view_reading_behaviour.md` |
+| o / Shift+O | Jump to first in‑context pair (boundary) and center it | One-shot center (does not enable Reading Mode) |
+| Shift+R | Cycle reading position (Top / Center / Bottom) | Stateless one‑shot placement mode cycle (legacy anchorMode removed) |
 | n | Jump to FIRST part of last message | Clears new-message badge; re-anchors even if already there |
 | e | Re-ask focused error message | Copies text to input; on Send, old error pair is deleted and a new message is created at the end (uses current context) |
 | d | Delete focused error message | Removes the error pair; focus moves to previous part |

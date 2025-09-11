@@ -44,7 +44,8 @@ describe('scroll jitter harness', ()=>{
     global.requestAnimationFrame = (fn)=> setTimeout(()=>fn(Date.now()), 0)
     global.cancelAnimationFrame = (id)=> clearTimeout(id)
     document.body.innerHTML = ''
-    saveSettings({ anchorMode:'bottom', gapOuterPx:20 })
+  // Legacy anchorMode removed; only gapOuterPx retained
+  saveSettings({ gapOuterPx:20 })
   })
 
   it('suppresses correction for ≤2px drift (dead-band)', async ()=>{

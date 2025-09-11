@@ -42,9 +42,12 @@ function buildHistory({ parts, G, height }){
 }
 
 // Extract metrics from scroll controller for active index.
-function compute(controller, container, k){
+// Compute debug info after explicitly aligning a part id to a location.
+function computeAlign(controller, container, k, location){
   controller.remeasure()
-  controller.apply(k, false)
+  const partEl = container.querySelectorAll('.part')[k]
+  const id = partEl.getAttribute('data-part-id')
+  controller.alignTo(id, location, false)
   return controller.debugInfo()
 }
 
@@ -73,13 +76,15 @@ describe('scroll anchoring geometry', ()=>{
     document.body.innerHTML = '' 
   })
 
-  it('aligns active part correctly in top, bottom, and center modes', ()=>{
+  it('aligns active part correctly in bottom and center modes (explicit one-shots)', ()=>{
     const G = 20
     const H_total = 400
     // Create parts with varied heights
     const partHeights = [40, 80, 120, 60]
     const container = buildHistory({ parts: partHeights, G, height: H_total })
     const controller = createScrollController({ container })
+    // Ensure controller sees matching outer gap setting (legacy anchorMode removed)
+    saveSettings({ gapOuterPx: G })
 
     partHeights.forEach((h, k)=>{
       const partEl = container.querySelectorAll('.part')[k]
@@ -87,14 +92,12 @@ describe('scroll anchoring geometry', ()=>{
   // Bottom mode
   let dbg
   const maxScroll = Math.max(0, container.scrollHeight - H_total)
-      saveSettings({ anchorMode: 'bottom', gapOuterPx: G })
-      dbg = compute(controller, container, k)
+  dbg = computeAlign(controller, container, k, 'bottom')
   const bottomRaw = expectedBottom(start_part_k, h, H_total, G)
   const bottomExpected = Math.min(Math.max(0, Math.round(bottomRaw)), maxScroll)
   expect(dbg.scrollTop).toBe(bottomExpected)
-      // Center mode
-      saveSettings({ anchorMode: 'center', gapOuterPx: G })
-      dbg = compute(controller, container, k)
+  // Center alignment
+  dbg = computeAlign(controller, container, k, 'center')
   const centerRaw = expectedCenter(start_part_k, h, H_total)
   const centerExpected = Math.min(Math.max(0, Math.round(centerRaw)), maxScroll)
   expect(dbg.scrollTop).toBe(centerExpected)
@@ -108,8 +111,11 @@ describe('scroll anchoring geometry', ()=>{
     const container = buildHistory({ parts: partHeights, G, height: H_total })
     const controller = createScrollController({ container })
     const k = 3
-    saveSettings({ anchorMode: 'bottom', gapOuterPx: G })
-    const dbg = compute(controller, container, k)
+  saveSettings({ gapOuterPx: G })
+  const partEl = container.querySelectorAll('.part')[k]
+  const id = partEl.getAttribute('data-part-id')
+  controller.alignTo(id, 'bottom', false)
+  const dbg = controller.debugInfo()
     // Should clamp to maxScroll
   const maxScroll = Math.max(0, container.scrollHeight - H_total)
   expect(dbg.scrollTop).toBe(maxScroll)

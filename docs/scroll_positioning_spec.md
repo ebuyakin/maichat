@@ -133,7 +133,7 @@ To make content visually vanish before the top/bottom borders without changing s
    - Ensure aligned targets remain fully visible at the overlays’ transparent edge.
 
 7) Settings/UI cleanup
-   - Remove controller usage of legacy anchorMode; mark as deprecated in settings UI (or hide).
+   - Remove legacy anchorMode / edgeAnchoringMode (controller is purely stateless; all placement is explicit one‑shot or Ensure‑Visible).
    - Confirm partFraction, padding and gaps, and fade settings remain effective.
 
 8) Docs and instrumentation
@@ -144,13 +144,12 @@ To make content visually vanish before the top/bottom borders without changing s
    - Add unit tests for ensureVisible and alignTo clamping.
    - Run full unit suite after steps 1–4; overlay is CSS‑only, so verify with manual QA checklist.
 
-## Existing settings (unchanged) and their interaction
+## Existing settings (post‑legacy cleanup) and their interaction
 Layout & spacing:
 - partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx — affect measurements and visual spacing only. Outer gap is pane padding and stays fixed.
 
 Reading & anchoring:
-- The controller no longer uses legacy anchorMode; behavior is driven by one‑shot actions and Ensure‑Visible. The UI option can be hidden or marked deprecated without affecting runtime.
-- edgeAnchoringMode — unchanged; all one‑shots clamp to [0, maxScroll].
+- Legacy anchorMode / edgeAnchoringMode removed. All alignments originate from explicit one‑shot alignTo calls or Ensure‑Visible logic; results clamp to [0, maxScroll].
 
 Fading & visibility:
 - fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, fadeTransitionMs — control per‑part opacity transitions. Aligned targets are placed outside the fade zone; a ≤1 px tolerance avoids boundary flicker.
@@ -176,7 +175,7 @@ Unrelated to scrolling:
 - docs/ARCHITECTURE.md — describe stateless controller and CSS edge overlays.
 
 ## Open questions / follow‑ups
-– Settings UI: hide or mark legacy `anchorMode` as deprecated (behavior is stateless).
+– (Done) Legacy anchorMode / edgeAnchoringMode removed (stateless behavior documented above).
 – Tests: add unit coverage for startup open/reload alignment and ensureVisible clamping (optional).
 – Performance: validate large histories maintain smooth scroll with overlays and fades.
 

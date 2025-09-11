@@ -47,8 +47,8 @@ export function createScrollController({ container, getParts }){
 	}
 	function anchorScrollTop(k, positionOverride){
 		if(!metrics) return 0
-		const settings = getSettings()
-		const mode = positionOverride || settings.anchorMode || 'bottom'
+		// anchorMode removed: callers must pass positionOverride explicitly; default fallback 'bottom'
+		const mode = positionOverride || 'bottom'
 		const { parts, paneH } = metrics
 		if(k < 0 || k >= parts.length) return 0
 		const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
