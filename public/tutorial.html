@@ -73,7 +73,7 @@
         <li>You start in Input Mode with the cursor in the message box (<kbd>F1</kbd> anytime for shortcuts). Type your request.</li>
         <li>Use previously set topic and model or use <kbd>Ctrl</kbd>+<kbd>M</kbd> to pick a model; <kbd>Ctrl</kbd>+<kbd>T</kbd> to pick a topic for this message.</li>
         <li>Press <kbd>Enter</kbd> to send. The reply appears at the end of the history.</li>
-        <li>Press <kbd>Esc</kbd> to switch to View Mode and browse. Use <kbd>j</kbd>/<kbd>k</kbd> to move between message parts, <kbd>g</kbd>/<kbd>G</kbd> to jump to first/last, <kbd>Shift</kbd>+<kbd>O</kbd> to jump to the context boundary, and <kbd>Shift</kbd>+<kbd>R</kbd> to cycle the reading position.</li>
+  <li>Press <kbd>Esc</kbd> to switch to View Mode and browse. Use <kbd>j</kbd>/<kbd>k</kbd> to move between message parts, <kbd>g</kbd>/<kbd>G</kbd> to jump to first/last, <kbd>o</kbd> (or <kbd>Shift</kbd>+<kbd>O</kbd>) to jump to the context boundary, and <kbd>r</kbd> to toggle Reading Mode (centers navigation when on).</li>
         <li>Press <kbd>Enter</kbd> to switch back to Input Mode and continue typing.</li>
       </ol>
     </section>
@@ -97,7 +97,7 @@
       <h2>Keyboard essentials</h2>
       <ul>
         <li><strong>Global:</strong> <kbd>F1</kbd> (Help), <kbd>Ctrl</kbd>+<kbd>.</kbd> (Menu), <kbd>Ctrl</kbd>+<kbd>E</kbd> (Topic Editor), <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> (Model Editor), <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> (Daily Stats), <kbd>Ctrl</kbd>+<kbd>,</kbd> (Settings), <kbd>Ctrl</kbd>+<kbd>K</kbd> (API Keys).</li>
-        <li><strong>View Mode navigation:</strong> <kbd>j</kbd>/<kbd>k</kbd> next/prev part; <kbd>g</kbd>/<kbd>G</kbd> first/last; <kbd>Shift</kbd>+<kbd>O</kbd> jump to context boundary; <kbd>Shift</kbd>+<kbd>R</kbd> cycle the reading position.</li>
+  <li><strong>View Mode navigation:</strong> <kbd>j</kbd>/<kbd>k</kbd> next/prev part; <kbd>g</kbd>/<kbd>G</kbd> first/last; <kbd>o</kbd> / <kbd>Shift</kbd>+<kbd>O</kbd> jump to context boundary; <kbd>r</kbd> toggle Reading Mode (center on j/k).</li>
         <li><strong>View Mode actions:</strong> <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> set star rating; <kbd>Space</kbd> clear star rating; <kbd>a</kbd> toggle color code; <kbd>e</kbd> edit &amp; resend (error row); <kbd>d</kbd> delete (error row); <kbd>Ctrl</kbd>+<kbd>T</kbd> change topic of active message.</li>
         <li><strong>Input Mode:</strong> <kbd>Enter</kbd> send; <kbd>Esc</kbd> back to View; <kbd>Ctrl</kbd>+<kbd>U</kbd> clear to start; <kbd>Ctrl</kbd>+<kbd>W</kbd> delete word left; <kbd>Ctrl</kbd>+<kbd>M</kbd> model selector; <kbd>Ctrl</kbd>+<kbd>T</kbd> pick topic for next message.</li>
         <li><strong>Command Mode:</strong> <kbd>Enter</kbd> apply and switch to View; <kbd>Esc</kbd> clear input; <kbd>Ctrl</kbd>+<kbd>P</kbd>/<kbd>N</kbd> prev/next command; <kbd>Ctrl</kbd>+<kbd>U</kbd> clear to start; <kbd>Ctrl</kbd>+<kbd>W</kbd> delete word left.</li>
@@ -178,12 +178,12 @@
     </section>
 
     <section>
-      <h2>Context management: boundaries and reading</h2>
+      <h2>Context management: boundary &amp; Reading Mode</h2>
       <p>MaiChat splits long exchanges into parts for precise navigation and context selection.</p>
       <ul>
-        <li><kbd>Shift</kbd>+<kbd>O</kbd> (View Mode): jump to the current context boundary.</li>
-        <li><kbd>Shift</kbd>+<kbd>R</kbd> (View Mode): cycle reading position modes.</li>
+        <li><kbd>o</kbd> / <kbd>Shift</kbd>+<kbd>O</kbd> (View Mode): jump to the current context boundary (first in‑context pair) and center it.</li>
       </ul>
+      <p><strong>Reading Mode</strong> (toggle with <kbd>r</kbd>) is independent of the boundary; when enabled, each <kbd>j</kbd>/<kbd>k</kbd> navigation recenters the active part for sustained focus. Use it when reading long replies; turn it off to keep minimal scroll movement.</p>
       <p>This helps you see which parts of the conversation will be sent to the model and quickly adjust your focus.</p>
 
       <h3>Message counter (top-right)</h3>
@@ -198,7 +198,7 @@
       <ul>
         <li>Parts beyond the current context boundary are dimmed and show an “off” badge in the meta line.</li>
         <li>The boundary is computed from model limits (max context) and settings (e.g., chars‑per‑token, user request allowance). Switching models can change how many pairs are “in” vs “off”.</li>
-        <li>Use <kbd>Shift</kbd>+<kbd>O</kbd> to jump to the first in‑context pair.</li>
+  <li>Use <kbd>o</kbd> / <kbd>Shift</kbd>+<kbd>O</kbd> to jump to the first in‑context pair.</li>
       </ul>
     </section>
 
@@ -262,7 +262,7 @@
       </ul>
     </section>
 
-    <p class="footer">Last updated: 2025-09-09 · <a href="/">Back to MaiChat</a></p>
+  <p class="footer">Last updated: 2025-09-11 · <a href="/">Back to MaiChat</a></p>
   </main>
 </body>
 </html>

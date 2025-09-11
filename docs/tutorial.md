@@ -17,7 +17,7 @@ Core ideas:
 1) You start in Input Mode with the cursor in the message box (press F1 anytime for shortcuts). Type your request.
 2) Use previously set topic and model or use Ctrl+M to pick a model; Ctrl+T to pick a topic for this message.
 3) Press Enter to send. The reply appears at the end of the history.
-4) Press Esc to switch to View Mode and browse. Use j/k to move between message parts, g/G to jump to first/last, Shift+O to jump to the context boundary, and Shift+R to cycle the reading position.
+4) Press Esc to switch to View Mode and browse. Use j/k to move between message parts, g/G to jump to first/last, o (or Shift+O) to jump to the context boundary, and r to toggle Reading Mode (centers navigation when on).
 5) Press Enter to switch back to Input Mode and continue typing.
 
 ## Modes and where to look
@@ -33,7 +33,7 @@ Startup behavior:
 
 ## Keyboard essentials
 - Global: F1 (Help), Ctrl+. (Menu), Ctrl+E (Topic Editor), Ctrl+Shift+M (Model Editor), Ctrl+Shift+D (Daily Stats), Ctrl+, (Settings), Ctrl+K (API Keys).
-- View Mode navigation: j/k next/prev part; g/G first/last; Shift+O jump to context boundary; Shift+R cycle the reading position.
+- View Mode navigation: j/k next/prev part; g/G first/last; o / Shift+O jump to context boundary; r toggle Reading Mode (center on j/k).
 - View Mode actions: 1/2/3 set star rating; Space clear star rating; a toggle color code; e edit & resend (error row); d delete (error row); Ctrl+T change topic of active message.
 - Input Mode: Enter send; Esc back to View; Ctrl+U clear to start; Ctrl+W delete word left; Ctrl+M model selector; Ctrl+T pick topic for next message.
 - Command Mode: Enter apply and switch to View; Esc clear input; Ctrl+P/Ctrl+N prev/next command; Ctrl+U clear to start; Ctrl+W delete word left.
@@ -95,12 +95,11 @@ Examples you can paste:
 Tip: Press F1 for the Help overlay. It includes the full key list and a compact CLI cheatsheet.
 Tip: Most interactive elements show tooltips; overlays include inline hints for their controls.
 
-## Context management: boundaries and reading
+## Context management: boundary & Reading Mode
 MaiChat splits long exchanges into parts for precise navigation and context selection.
-- Shift+O (View Mode): jump to the current context boundary.
-- Shift+R (View Mode): cycle reading position modes.
+- o / Shift+O (View Mode): jump to the current context boundary (first in‑context pair) and center it.
 
-This helps you see which parts of the conversation will be sent to the model and quickly adjust your focus.
+Reading Mode (toggled with r) is independent of the boundary; when enabled, each j/k navigation recenters the active part for sustained focus. Use it when reading long replies; turn it off to keep minimal scroll movement.
 
 Message counter (top-right):
 - Format X/Y — Predicted included / Visible pairs. X is what would go into the next request; Y is what’s currently visible after filtering.
@@ -111,7 +110,7 @@ Message counter (top-right):
 Off‑context visualization (model‑dependent):
 - Parts beyond the current context boundary are dimmed and show an “off” badge in the meta line.
 - The boundary is computed from model limits (max context) and settings (e.g., chars‑per‑token, user request allowance). Switching models can change how many pairs are “in” vs “off”.
-- Use Shift+O to jump to the first in‑context pair.
+- Use o / Shift+O to jump to the first in‑context pair.
 
 ## New message workflow
 1) Pick/create a topic if needed (Ctrl+T in Input Mode).

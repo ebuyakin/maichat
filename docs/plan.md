@@ -49,12 +49,12 @@ M10. UX polish (message formatting (.md), performance, flickering, smoothing, tr
     10.4 Tutorial [x]
     10.5 Initialization (topic tree, model tree, message history) [x]
 M11. Pre-release polishing
-    11.1 Prominence of the waiting state [ ]
-    11.2 Colors adjustment of the off-context messages [ ]
-    11.3 Settings overlay - design update and wiring testing [ ]
-    11.4 Scrolling settings default choice, spacing defaults [ ]
-    11.5 Help update (reading regime correction) [ ]
-    11.6 Tutorial update (reading regime explanation, other key bindings changed recently) [ ]
+    11.1 Prominence of the waiting state [x]
+    11.2 Colors adjustment of the off-context messages [x]
+    11.3 Settings overlay - design update and wiring testing [x]
+    11.4 Scrolling settings default choice, spacing defaults [x]
+    11.5 Help update (reading regime correction) [x]
+    11.6 Tutorial update (reading regime explanation, other key bindings changed recently) [x]
 
 - Release.
 

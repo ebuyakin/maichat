@@ -43,8 +43,8 @@ export function openHelpOverlay({ onClose, modeManager }){
           <div class="help-k">k / ArrowUp</div><div class="help-d">Move to previous message part</div>
           <div class="help-k">g</div><div class="help-d">Move to first message part</div>
           <div class="help-k">G</div><div class="help-d">Move to last message part</div>
-          <div class="help-k">Shift+O</div><div class="help-d">Jump to context boundary</div>
-          <div class="help-k">Shift+R</div><div class="help-d">Cycle reading position</div>
+          <div class="help-k">o / Shift+O</div><div class="help-d">Jump to context boundary</div>
+          <div class="help-k">r</div><div class="help-d">Toggle Reading Mode</div>
           <div class="help-k">1 / 2 / 3</div><div class="help-d">Set star rating of the message</div>
           <div class="help-k">Space</div><div class="help-d">Clear star rating</div>
           <div class="help-k">a</div><div class="help-d">Toggle color code</div>
