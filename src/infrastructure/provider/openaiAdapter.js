@@ -14,6 +14,13 @@ export function createOpenAIAdapter(){
       tSerializeStart = now()
       const body = { model, messages: messages.map(m=> ({ role:m.role, content:m.content })) }
       const payloadStr = JSON.stringify(body)
+      try {
+        // Expose last outbound payload (excluding auth headers) for debug HUD.
+        // Overwrites each request; minimal memory footprint.
+        if (typeof window !== 'undefined') {
+          window.__maichatLastRequest = { at: Date.now(), model, json: payloadStr }
+        }
+      } catch {}
       tSerializeEnd = now()
       let resp
       try {

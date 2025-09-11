@@ -88,9 +88,18 @@ export function createRequestDebugOverlay({ historyRuntime }){
 			if(txt.length>20) lines.push('      ...')
 		})
 		try {
-			const raw = { model, messages }
+			// Prefer actual last sent JSON captured at adapter level (includes system message).
+			let jsonStr = null
+			if (typeof window !== 'undefined' && window.__maichatLastRequest && window.__maichatLastRequest.json) {
+				jsonStr = window.__maichatLastRequest.json
+			} else {
+				// Fallback: reconstruct (may miss system if added later in pipeline).
+				jsonStr = JSON.stringify({ model, messages }, null, 2)
+			}
 			lines.push('RAW REQUEST JSON:')
-			lines.push(JSON.stringify(raw, null, 2))
+			// Pretty print if we have compact json; attempt parse.
+			try { const parsed = JSON.parse(jsonStr); jsonStr = JSON.stringify(parsed, null, 2) } catch{}
+			lines.push(jsonStr)
 		} catch{}
 		if(!pane.__hasCopy){
 			const btn = document.createElement('button')
