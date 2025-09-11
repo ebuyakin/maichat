@@ -20,7 +20,7 @@ export function openApiKeysOverlay({ onClose, modeManager }){
   panel.innerHTML = `
     <header>API Keys</header>
     <div class="keys-body" >
-      <p class="keys-note">Enter your OpenAI API key to start using MaiChat. Your key is saved only in this browser (localStorage). You can remove it anytime by clearing browser data.</p>
+      <p class="keys-note">Enter your OpenAI API key to start using MaiChat. Your key is stored only in this browser (localStorage). <a href="https://platform.openai.com/account/api-keys" target="_blank" rel="noopener" class="ext-link">Get / manage your OpenAI API key</a>. You can remove it anytime by clearing browser data.</p>
       <label class="key-field">
         <span>OpenAI Key</span>
         <input class="std-input" type="password" data-key="openai" placeholder="sk-..." value="${existing.openai?escapeHtml(existing.openai):''}" />
@@ -33,11 +33,11 @@ export function openApiKeysOverlay({ onClose, modeManager }){
         <span>OpenRouter Key (coming soon)</span>
         <input class="std-input" type="password" data-key="openrouter" placeholder="disabled" value="" disabled />
       </label>
-      <div class="keys-buttons">
+    <div class="keys-buttons">
         <button data-action="cancel" class="btn">Close</button>
         <button data-action="save" class="btn">Save</button>
       </div>
-  <div class="keys-footnote">Only OpenAI is supported today; other providers will be enabled in a future release. Shortcuts: Enter — save changes; Esc — close the window.</div>
+  <div class="keys-footnote">Only OpenAI is supported today; other providers will be enabled later. Shortcuts: Enter — save; Esc — close.</div>
     </div>`
   backdrop.appendChild(panel)
   document.body.appendChild(backdrop)

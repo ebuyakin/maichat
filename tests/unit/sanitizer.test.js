@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeAssistantText, _isIdempotent } from '../../src/features/interaction/sanitizeAssistant.js'
+import { sanitizeAssistantText, _isIdempotent, _mergeSoftWrapsStrategy2 } from '../../src/features/interaction/sanitizeAssistant.js'
 
 describe('sanitizeAssistantText (Phase 1)', ()=>{
   it('removes heading lines >= ###', ()=>{
@@ -31,5 +31,18 @@ describe('sanitizeAssistantText (Phase 1)', ()=>{
     const out = sanitizeAssistantText(input)
     // Would otherwise become empty -> fallback to original
     expect(out).toBe(input)
+  })
+  it('merges soft-wrapped mid sentence newline (phase 1.1)', ()=>{
+    const input = 'cocido madrileño (a\nmeat and vegetable stew) and churros'
+    const out = sanitizeAssistantText(input)
+    expect(out).toBe('cocido madrileño (a meat and vegetable stew) and churros')
+  })
+  it('does not merge after period (sentence boundary)', ()=>{
+    const merged = _mergeSoftWrapsStrategy2('This is the end.\nNext sentence starts here')
+    expect(merged).toBe('This is the end.\nNext sentence starts here')
+  })
+  it('does not merge before numbered list', ()=>{
+    const merged = _mergeSoftWrapsStrategy2('Intro line\n1. Step one')
+    expect(merged).toBe('Intro line\n1. Step one')
   })
 })
