@@ -281,7 +281,40 @@ export function createInteraction({
   function renderPendingMeta(){ const pm = document.getElementById('pendingModel'); const pt = document.getElementById('pendingTopic'); if(pm){ pm.textContent = pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'; if(!pm.textContent) pm.textContent='gpt-4o-mini'; pm.title = `Model: ${pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'} (Ctrl+M select (Input mode) · Ctrl+Shift+M manage (any mode))` } if(pt){ const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId); if(topic){ const path = formatTopicPath(topic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { const rootTopic = store.topics.get(store.rootTopicId); if(rootTopic){ const path = formatTopicPath(rootTopic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { pt.textContent='Select Topic'; pt.title='No topic found (Ctrl+T)' } } } }
   function formatTopicPath(id){ const parts = store.getTopicPath(id); if(parts[0]==='Root') parts.shift(); return parts.join(' > ') }
   function middleTruncate(str,max){ if(str.length<=max) return str; const keep=max-3; const head=Math.ceil(keep/2); const tail=Math.floor(keep/2); return str.slice(0,head)+'…'+str.slice(str.length-tail) }
-  function updateSendDisabled(){ if(!sendBtn) return; const empty = inputField.value.trim().length===0; const zeroIncluded = (historyRuntime.getContextStats() && historyRuntime.getContextStats().includedCount===0); sendBtn.disabled = empty || lifecycle.isPending() || zeroIncluded; if(lifecycle.isPending()){ if(!sendBtn.__animTimer){ sendBtn.innerHTML='<span class="lbl">AI is thinking</span><span class="dots"><span>.</span><span>.</span><span>.</span></span>'; sendBtn.__animPhase=0; const applyPhase=()=>{ const dotsWrap = sendBtn.querySelector('.dots'); if(!dotsWrap) return; const spans = dotsWrap.querySelectorAll('span'); spans.forEach((sp,i)=>{ sp.style.opacity = (i < sendBtn.__animPhase) ? '1':'0' }) }; applyPhase(); sendBtn.__animTimer = setInterval(()=>{ if(!lifecycle.isPending()) return; sendBtn.__animPhase = (sendBtn.__animPhase + 1) % 4; applyPhase() }, 500) } sendBtn.classList.add('pending') } else { if(sendBtn.__animTimer){ clearInterval(sendBtn.__animTimer); sendBtn.__animTimer=null } sendBtn.textContent='Send'; sendBtn.classList.remove('pending'); if(zeroIncluded){ sendBtn.title='Cannot send: no pairs included in context (token budget exhausted)'; } else { sendBtn.title='Send' } } }
+  function updateSendDisabled(){
+    if(!sendBtn) return;
+    const empty = inputField.value.trim().length===0;
+    const zeroIncluded = (historyRuntime.getContextStats() && historyRuntime.getContextStats().includedCount===0);
+    const pending = lifecycle.isPending();
+    sendBtn.disabled = empty || pending || zeroIncluded;
+    if(pending){
+      // Replace dot animation with timer (mm:ss)
+      if(sendBtn.__animTimer){ clearInterval(sendBtn.__animTimer); sendBtn.__animTimer=null }
+      if(!sendBtn.__pendingTimer){
+        sendBtn.__pendingStart = Date.now();
+        const renderTimer = ()=>{
+          if(!lifecycle.isPending()){ return }
+          const elapsed = Date.now() - (sendBtn.__pendingStart||Date.now());
+          const mm = Math.floor(elapsed/60000);
+          const ss = Math.floor((elapsed%60000)/1000);
+          const label = `AI is thinking: ${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+          // Include a hidden widest-case placeholder (59:59) to keep width constant
+          sendBtn.innerHTML = `<span class=\"lbl\" data-base=\"AI is thinking: 59:59\">${label}</span>`;
+        };
+        renderTimer();
+        sendBtn.__pendingTimer = setInterval(()=>{ if(!lifecycle.isPending()){ return } renderTimer() }, 1000);
+      }
+      sendBtn.classList.add('pending');
+      sendBtn.title = 'Request in progress…';
+    } else {
+      if(sendBtn.__pendingTimer){ clearInterval(sendBtn.__pendingTimer); sendBtn.__pendingTimer=null }
+      if(sendBtn.__animTimer){ clearInterval(sendBtn.__animTimer); sendBtn.__animTimer=null }
+      sendBtn.textContent='Send';
+      sendBtn.classList.remove('pending');
+      if(zeroIncluded){ sendBtn.title='Cannot send: no pairs included in context (token budget exhausted)'; }
+      else { sendBtn.title='Send'; }
+    }
+  }
   
   modeManager.onChange((m)=>{ historyRuntime.renderStatus(); if(m==='view'){ commandInput.blur(); inputField.blur() } else if(m==='input'){ inputField.focus() } else if(m==='command'){ commandModeEntryActivePartId = activeParts.active() ? activeParts.active().id : null; commandInput.focus() } })
   const keyRouter = createKeyRouter({ modeManager, handlers:{ view:viewHandler, command:commandHandler, input:inputHandler } }); keyRouter.attach()
