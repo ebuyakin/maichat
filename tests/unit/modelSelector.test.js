@@ -1,11 +1,10 @@
 /* @vitest-environment jsdom */
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest'
 
-// Absolute paths so mocks match SUT imports
-const ROOT = '/Users/eugenebuyakin/Dev/mai-chat'
-const SELECTOR_PATH = `${ROOT}/src/features/config/modelSelector.js`
+// Repo-root absolute paths so mocks match SUT imports regardless of machine path
+const SELECTOR_PATH = '/src/features/config/modelSelector.js'
 
-vi.mock('/Users/eugenebuyakin/Dev/mai-chat/src/core/models/modelCatalog.js', () => {
+vi.mock('/src/core/models/modelCatalog.js', () => {
   const models = [
     { id: 'alpha', enabled: true },
     { id: 'beta', enabled: true },
@@ -102,8 +101,8 @@ describe('Model Selector overlay', () => {
   })
 
   it('selecting a model updates active model immediately (setActiveModel called)', async () => {
-    const { openModelSelector } = await import(SELECTOR_PATH)
-    const catalog = await import('/Users/eugenebuyakin/Dev/mai-chat/src/core/models/modelCatalog.js')
+  const { openModelSelector } = await import(SELECTOR_PATH)
+  const catalog = await import('/src/core/models/modelCatalog.js')
     openModelSelector({ onSelect, onClose })
     await flush()
 

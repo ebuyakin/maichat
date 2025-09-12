@@ -1,12 +1,11 @@
 /* @vitest-environment jsdom */
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest'
 
-const ROOT = '/Users/eugenebuyakin/Dev/mai-chat'
-const EDITOR_PATH = `${ROOT}/src/features/config/modelEditor.js`
+const EDITOR_PATH = '/src/features/config/modelEditor.js'
 
 let listStub, toggleStub, getActiveStub, setActiveStub
 
-vi.mock('/Users/eugenebuyakin/Dev/mai-chat/src/core/models/modelCatalog.js', () => {
+vi.mock('/src/core/models/modelCatalog.js', () => {
   const store = {
     models: [
       { id: 'alpha', enabled: true, contextWindow: 8000, tpm: 200000, rpm: 3000, tpd: 1000000 },
