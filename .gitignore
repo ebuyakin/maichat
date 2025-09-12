@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.github/copilot-instructions.md
+# Private prompts (do not publish)
+.github/prompts/
