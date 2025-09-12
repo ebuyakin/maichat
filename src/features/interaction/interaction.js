@@ -42,6 +42,8 @@ export function createInteraction({
   let commandModeEntryActivePartId = null
   let hudEnabled = false
   let maskDebug = true
+  const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) ? import.meta.env.BASE_URL : '/'
+  const tutorialUrl = (BASE.endsWith('/') ? BASE : (BASE + '/')) + 'tutorial.html'
   const viewHandler = (e)=>{
     if(window.modalIsActive && window.modalIsActive()) return false
     window.__lastKey = e.key
@@ -283,7 +285,7 @@ export function createInteraction({
     } else if(action==='api-keys'){
       const prev=modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prev) } })
     } else if(action==='tutorial'){
-      try { window.open('/tutorial.html', '_blank', 'noopener'); } catch { window.location.href = '/tutorial.html' }
+      try { window.open(tutorialUrl, '_blank', 'noopener'); } catch { window.location.href = tutorialUrl }
     } else if(action==='help'){
       openHelpOverlay({ modeManager, onClose:()=>{} })
     }
@@ -358,7 +360,7 @@ export function createInteraction({
   else if(e.shiftKey && k==='d'){ e.preventDefault(); openDailyStatsOverlay({ store, activeParts, historyRuntime, modeManager }) }
   else if(k==='d' && !e.shiftKey){ e.preventDefault(); modeManager.set('command') }
     else if(k==='v'){ e.preventDefault(); modeManager.set('view') }
-  else if(e.shiftKey && k==='h'){ e.preventDefault(); try { window.open('/tutorial.html', '_blank', 'noopener'); } catch { window.location.href = '/tutorial.html' } }
+  else if(e.shiftKey && k==='h'){ e.preventDefault(); try { window.open(tutorialUrl, '_blank', 'noopener'); } catch { window.location.href = tutorialUrl } }
     else if(k==='t'){
       if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openQuickTopicPicker({ prevMode }) }
     }
