@@ -1,6 +1,10 @@
 # Focus Management Strategy
 
-Status: Introduced Phase 5 (Topic Management MVP).
+Status / Scope / Out of scope / See also
+- Status: Introduced Phase 5 (Topic Management MVP); Active.
+- Scope: Focus rules for overlays and main panes; prevention of global side-effects; restoration.
+- Out of scope: Scroll math, reading behaviour, and lifecycle alignment.
+- See also: ARCHITECTURE.md (Glossary), ui_layout.md, keyboard_reference.md.
 
 ## Goals
 - Predictable, keyboard-first interaction without accidental background actions.

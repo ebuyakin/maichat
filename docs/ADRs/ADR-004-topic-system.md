@@ -4,6 +4,10 @@ Date: 2025-08-23
 Status: Proposed
 Decision: Pending (will move to Accepted after Phase 5 implementation)
 
+See also
+- Topic system living spec: `../topic_system.md`
+- Architecture map: `../ARCHITECTURE.md`
+
 ## Context
 A hierarchical topic system is central to organizing conversation MessagePairs. We require keyboard-first management without introducing persistent side panels, consistent with minimalist UI principles.
 

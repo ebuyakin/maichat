@@ -1,5 +1,8 @@
 # Topic Management System
 
+Status: Living spec (paired with ADR-004)
+See also: `ADRs/ADR-004-topic-system.md`, `ARCHITECTURE.md`
+
 ## 1. Purpose and Usage
 
 ### Information Organization

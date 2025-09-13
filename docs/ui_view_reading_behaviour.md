@@ -4,12 +4,12 @@ Purpose: Single, authoritative specification for how the history view looks and 
 
 Scope: History pane (middle zone) visual layout and reading behaviour; includes keyboard navigation semantics relevant to reading. Out of scope: request composition, model limits, context budgeting, provider details.
 
-Sources unified: ui_padding.md (primary), ui_scrolling_and_fading.md, ui_layout_spacing.md, message_history_navigation.md. Where sources disagree, ui_padding.md is considered authoritative; discrepancies are explicitly flagged.
-
-## 1. Terminology
+## 1. Terminology and definitions
 
 - _History Pane_: The middle zone of the main screen that displays the history of the conversations. The only scrollable area that renders the message history list.
 - _Pane Viewport_: The visible region of the _History Pane_ (its scrollable view). Its height is __paneHeight__; its vertical position is determined by __scrollTop__. It displays the fragment of the _History Pane_ from __scrollTop__ to __scrollTop + paneHeight__ position.
+- _Usable Band_: The vertical region inside the viewport excluding the outer gaps: [__scrollTop__ + __gapOuterPx__, __scrollTop__ + __paneHeight__ − __gapOuterPx__]. Also referred to as usable height.
+
 - _Message Pair_ ("pair"): A user request and its assistant reply (when received) with a metadata row between them in the UI.
 - _Message Part_ ("part"): An atomic, contiguous fragment of a message’s text sized by the partitioning algorithm (whole rendered lines). A long message splits into multiple parts; a short message is one part. Applicable to both _User Part_ and _Assistant Part_.
 - _User Part_: A part belonging to the user's request. One user request renders as 1..N user parts depending on partitioning.
@@ -18,14 +18,16 @@ Sources unified: ui_padding.md (primary), ui_scrolling_and_fading.md, ui_layout_
 - _Pair composition_: A complete _Message Pair_ contains, at minimum, one _User Part_, the _Meta Row_, and one _Assistant Part_ (three UI elements). Before a reply arrives, a pair contains, at minimum, one _User Part_ and the _Meta Row_. Both roles may produce multiple parts.
 
 - _Focused Part_: The part that gets focus at a given time. Navigation targets parts. Focused part is visually highlighted with the blue border. The _History Pane_ always has one and exactly one focused part (the only exception is when the message history is empty due to CLI filtering). Focused part is sometimes referred to as “active part” in the docs or in the code (be careful, don't confuse it with 'active mode').
-- _Reading Position_ (Anchor Mode): Vertical alignment target for the _Focused Part_ — Top, Center, or Bottom. Related parameters: anchorMode, edgeAnchoringMode.
+- _Anchored part_: the part that is used to calculated the scrolling position (__scrollTop__). The desired scrolling position can be described as to anchor a part to the bottom, or to achror the part to the top, or to anchor the part at the center. _Anchored part_ is not necessarily the _focused part_. These are independent concepts. 
+
+- _Typewriter Regime_ (reading regime): Optional, user‑toggled behaviour where each j/k step centers the focused part. It is not a UI Mode (distinct from VIEW/INPUT/COMMAND).
 - _Outer Gap_ (__gapOuterPx__): Structural top and bottom padding of the _History Pane_; defines the fade zones and the visual quiet zone at edges. Related parameters: __gapOuterPx__.
+
 - _Internal Gaps_: Structural gaps rendered as explicit elements (configurable parameters):
   - __gapBetweenPx__: between messages (assistant tail → next user head)
   - __gapMetaPx__: around meta (last user part → meta, meta → first assistant part)
   - __gapIntraPx__: between consecutive parts of the same role
 - _Part Padding_ (__partPadding__): Inner padding for user and assistant parts (symmetric) ensuring left-edge text alignment. Related parameters: __partPadding__.
-- _Usable Band_: The vertical region inside the viewport excluding the outer gaps: [__scrollTop__ + __gapOuterPx__, __scrollTop__ + __paneHeight__ − __gapOuterPx__]. Related parameters: __gapOuterPx__.
 
 ## 2. Configuration Parameters
 
@@ -61,13 +63,8 @@ Canonical, tunable knobs for the UI behaviour. Concepts are defined in Terminolo
   - Used in: Partitioning (__targetPartHeightPx__)
   - Constraints: Clamp to [0.10..1.00]
 
-- __anchorMode__ (enum: Top | Center | Bottom)
-  - Default: center
-  - Used in: Anchoring & Scrolling target computation
-
-- __edgeAnchoringMode__ (enum: adaptive | strict)
-  - Default: adaptive
-  - Used in: Edge Anchoring behaviour near content bounds
+Legacy parameters removed:
+- anchorMode, edgeAnchoringMode — removed in favour of stateless one‑shot AlignTo and Ensure‑Visible plus optional Typewriter Regime.
 
 - __deadBandPx__ (number, px)
   - Default: 2
@@ -123,6 +120,7 @@ Definitions:
 - __maxLines__ = floor((__targetPartHeightPx__ − __partPaddingVertical__) / __lineHeight__), clamped to ≥ 1;
 
 Algorithm outline:
+
 1) Normalize new lines; split into paragraph candidates on blank-line boundaries.
 2) Measure rendered line counts (cache-sensitive to width/font metrics).
 3) Greedy packing: add candidates until adding the next would exceed __maxLines__.
@@ -143,23 +141,22 @@ Measurement:
   - __focusedIndex__ — index of the currently focused part.
   - __focusedPartStart__ — alias for __partTop[focusedIndex]__.
 
-Anchor target (raw __targetScrollTop__ before clamping):
-- Top mode:    __targetScrollTop__ = __partTop[focusedIndex]__ − __gapOuterPx__
-- Bottom mode: __targetScrollTop__ = __partBottom[focusedIndex]__ − (__paneHeight__ − __gapOuterPx__)
-- Center mode: __targetScrollTop__ = __partTop[focusedIndex]__ + __partHeight[focusedIndex]__/2 − __paneHeight__/2
+Anchoring primitives:
+- Ensure‑Visible: minimal movement to keep the focused part fully within the usable band.
+- AlignTo('top'|'bottom'|'center'): one‑shot placement used by lifecycle jumps and by the Typewriter Regime.
+
+NB! Anchoring may be applied to any part, not only to the focused part. E.g. when the new user request sent the scrolling anchors meta part to the bottom, while user part retains focus.
 
 Clamping:
 - __scrollTopFinal__ = clamp(round(__targetScrollTop__), 0, __maxScroll__)
 - __maxScroll__ — maximum __scrollTop__ value for the history pane.
 
-- Deterministic anchor: __targetScrollTop__ is a pure function of measured geometry and mode.
+- Deterministic anchor: when AlignTo is used, target is a pure function of measured geometry and target location.
 - Dead-band tolerance: If |__targetScrollTop__ − __currentScrollTop__| ≤ __deadBandPx__ after a scroll/animation, do not perform a corrective scroll.
 - Idempotence: Re-applying anchor for the same (mode, focused selection) does not visibly move the viewport (difference ≤ 1px or within dead-band).
 
-Invariants:
-- Top mode: the _Focused Part’s_ top aligns with the top of the _Usable Band_; the visual gap above equals __gapOuterPx__.
-- Center mode: the _Focused Part_ midpoint aligns to viewport midpoint within ±__deadBandPx__.
-- Bottom mode: the _Focused Part’s_ bottom aligns with the bottom of the _Usable Band_; the visual gap below equals __gapOuterPx__ within ±__deadBandPx__.
+Typewriter Regime invariant:
+- While ON, each j/k centers the focused part within ±dead‑band; otherwise default navigation uses Ensure‑Visible only.
 
 Edge constraints:
 - When enforcing an anchor would exceed natural bounds (e.g., very short content), the viewport clamps to the nearest valid scroll position while preserving visual consistency.
@@ -169,6 +166,7 @@ Edge constraints:
 Goal: De-emphasize intruding fragments within outer gap zones; never fade the active part.
 
 Usable band and intrusions:
+
 - _Usable Band_ (content coordinates): [__scrollTop__ + __gapOuterPx__, __scrollTop__ + __paneHeight__ − __gapOuterPx__].
 - For part i with bounds [__partTop[i]__, __partBottom[i]__):
   - Top intrusion height = (__scrollTop__ + __gapOuterPx__) − __partTop[i]__ if __partTop[i]__ < __scrollTop__ + __gapOuterPx__ < __partBottom[i]__, else 0.
@@ -185,8 +183,8 @@ Core rules:
 - Single focus: one focused part; attempts to move beyond list edges are no-ops.
 - j / ArrowDown → next part; k / ArrowUp → previous part.
 - g → first part; G → last part.
-- _Meta Row_ is never focusable or part of navigation; mouse clicks on meta do not change selection.
-- After any navigation action, the _Focused Part_ is positioned according to the current _anchor mode_, subject to edge constraints and dead-band.
+- _Meta Row_ (a.k.a. _Meta part_) is never focusable or part of navigation; mouse clicks on meta do not change selection.
+- After any navigation action, the _Focused Part_ is positioned by default using Ensure‑Visible; when the Typewriter Regime is ON, j/k recenters the focused part.
 
 Filtering, resizing, and list rebuilds:
 - Applying a filter rebuilds the list to matching pairs; the last visible part becomes focused at the current anchor.
@@ -198,13 +196,8 @@ New reply and end-of-list jumps:
 - ‘n’ jumps to the FIRST part of the LAST message (assistant reply if present; otherwise last user message). It is a jump-and-anchor action even if already at the end.
 - ‘G’ jumps to the LAST part of the LAST message.
 
-## 8. Edge Anchoring Mode
-
-Two behaviours define how anchors apply near content edges:
-- Adaptive: If strict placement would produce large empty space (content smaller than viewport or beyond natural bounds), clamp the scroll and let content settle naturally while maintaining anchor invariants as closely as possible.
-- Strict: Always attempt to place the focused part at the exact chosen anchor coordinates, within possible scroll range.
-
-Result: With very short histories, _adaptive_ behaviour shows content naturally (no artificial spacers), whereas _strict_ enforces explicit alignment.
+## 8. Edge behaviour
+Clamping & calm edges are handled by the scroll controller. No persistent edge anchoring policy remains; behaviour follows Ensure‑Visible or the specific AlignTo one‑shot with clamping.
 
 ## 9. Behavioural Acceptance Criteria
 
@@ -217,7 +210,4 @@ Result: With very short histories, _adaptive_ behaviour shows content naturally 
 7) Resizing rules honoured: <10% keeps partitions; ≥10% recomputes and remaps the focused selection to the same text range.
 8) ‘g’, ‘G’, ‘n’ jump logic honoured; edges are calm (no jitter when stepping past ends).
 
- 
-
 ---
-End of specification.

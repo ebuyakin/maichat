@@ -1,8 +1,5 @@
 # New Message Send & Response Workflow (Draft for Review)
 
-Last updated: 2025-09-01 (post overflow-only trimming, model catalog v2, URA prediction integration)
-Status: PARTIALLY IMPLEMENTED – WYSIWYG, URA‑aware prediction, overflow-only trimming, telemetry, bracket counter. Pending: rpm/tdp quota logic, proactive AUT > URA adjustment, enhanced error taxonomy, user-facing trim summaries, optional cancel.
-
 ## 1. Core Principle (WYSIWYG Context)
 "What You See Is What You Send": The context sent to the LLM consists of exactly the *currently visible* message pairs in the history pane **after** the active filter is applied, in the on‑screen order (top → bottom), plus the *new user request* being sent. No hidden / filtered out / partially excluded content is added implicitly. Visual partitioning (multiple rendered parts of one logical message) collapses back to a single user or assistant message in the API payload.
 
@@ -70,12 +67,16 @@ Notes:
 8. On 200 OK success: append assistantText with provider content; lifecycleState = `complete`; busy state cleared.
 9. Update HUD / internal stats (optional dev view) and scroll anchoring logic as usual.
 10. Scroll / focus policy (Refined):
-  - After send, the new user part is focused (INPUT mode retained).
-  - When assistant reply renders, measure its full rendered height (top of first assistant part to bottom of last assistant part of that reply).
-  - If current mode is INPUT, input box is empty, and the reply height exceeds the viewport (cannot fully fit): switch to VIEW mode and focus the first assistant part of the new reply.
-  - If the reply fully fits: remain in INPUT mode; focus stays in input (user can continue drafting next prompt). The history pane is scrolled so that all assistant parts of the reply are fully visible.
-  - If user changed to VIEW or COMMAND while waiting (not in INPUT at arrival): do not alter mode or focus.
-  - Future options (not implemented): user preference to always/never switch; partial-height threshold tuning.
+  - After send, the new user part is focused (INPUT mode retained), meta part is anchored to the bottom.
+
+  - When assistant reply renders, measure its height using the Usable Band model (see scroll_positioning_spec.md):
+    - `usableHeight = paneHeight − 2·outerGap`.
+    - `replyHeight = lastAssistantRect.bottom − firstAssistantRect.top`.
+
+  - If current mode is INPUT, input box is empty, and the reply does NOT fully fit the Usable Band (`ReplyHeight > usableHeight`): switch to VIEW mode and focus the first assistant part of the new reply; top‑align it.
+
+  - If the reply fully fits the Usable Band (`ReplyHeight ≤ usableHeight`): INPUT mode remains the active mode. The first assistant part gets focus (becomes focused part). The last assistant part is anchored to the bottom (≤1–2 px tolerance).
+  - If user changed to VIEW or COMMAND while waiting (not in INPUT at arrival): do not alter the focus or anchoring/scrolling.
 
 ## 5. Branch Scenarios
 ### 5.1 Provider Error (4xx/5xx JSON)
@@ -86,9 +87,6 @@ Notes:
 
 ### 5.2 Network Error / Timeout
 Similar to provider error but classification `[network]`.
-
-### 5.3 User Abort
-Not implemented in M6 (no abort path). Esc retains its existing mode behavior only.
 
 ### 5.4 Re-ask (Error Pair; No Branching)
 1. Available for pairs in state: `error`.
@@ -115,10 +113,9 @@ Visible list may hide the sending pair; it will only reappear if filter later in
   b. If `assistantText.trim() !== ''` emit `{ role:'assistant', content:assistantText }`.
 4. Append New Outgoing: Add the new user prompt as the final message `{ role:'user', content:newUserText }`.
 5. (Optional Future) If `composeSystemPrelude()` returns a system/style message, prepend it (not yet implemented).
-6. (Planned) Context Snapshot: On *error only* capture `{ includedPairIds, outgoingUserText }` for retry/debug display. Not yet implemented; current debug HUD derives info live.
-7. Excluded / OOC Pairs: Never serialized into the provider request; presence is purely visual (styling + boundary navigation aid).
-8. Trimming Non‑Recompute: We do not recompute X during trimming; the loop operates on the initial predicted INCLUDED set minus oldest removals.
-9. Metadata Exclusion: Topic, star, colorFlag, and other metadata are not injected into message contents.
+6. Excluded / OOC Pairs: Never serialized into the provider request; presence is purely visual (styling + boundary navigation aid).
+7. Trimming Non‑Recompute: We do not recompute X during trimming; the loop operates on the initial predicted INCLUDED set minus oldest removals.
+8. Metadata Exclusion: Topic, star, colorFlag, and other metadata are not injected into message contents.
 
 ### 6.9 Prediction Boundary Update Policy
 The prediction boundary (INCLUDED vs EXCLUDED pairs) is intentionally *stable* during ordinary typing to honor zero‑cost keystrokes. It is recomputed only when underlying inputs that can change the maximal includable suffix change.
@@ -238,7 +235,7 @@ Derived convenience: `sentCount = predictedMessageCount - trimmedCount`.
 
 ### 7.8 Status
 Implemented: effectiveMaxContext=min(cw,tpm); URA reserve in prediction & boundary; overflow-only trimming loop; bracket counter `[X-T]/Y`; telemetry (HUD PARAMETERS / TRIMMING / ERROR groups); resizable HUD.
-Pending: rpm/tdp live quota modeling; proactive adjustment when `AUT` encroaches on URA; richer tooltip & user-facing trim summaries; enhanced error taxonomy (distinguish rate limits vs network vs context exhaustion); abort-on-filter-change policy.
+Open questions & future specs (tracked in plan.md): rpm/tdp live quota modeling; proactive adjustment when `AUT` encroaches on URA; richer tooltip & user-facing trim summaries; enhanced error taxonomy (distinguish rate limits vs network vs context exhaustion); abort-on-filter-change policy.
 
 ## 8. UI Elements (Initial M6 Slice)
 | Element | Behavior |

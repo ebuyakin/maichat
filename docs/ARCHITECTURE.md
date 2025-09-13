@@ -3,6 +3,11 @@
 Date: 2025-09-05
 Purpose: Concise, accurate map of the current codebase, with a bridge from `dev-notes.md` to concrete layers and modules.
 
+See also
+- ADR-000 Architecture Overview: `ADRs/ADR-000-architecture.md`
+- Topic System Spec: `topic_system.md` (pairs with ADR-004)
+- Topic System ADR: `ADRs/ADR-004-topic-system.md`
+
 ## Bridge: dev-notes components → code
 
 0. Modal system & mode management
@@ -97,7 +102,7 @@ Cross-cutting enablers
 
 - Startup: runtimeSetup → bootstrap (providers, persistence, catalog, seed, render, layout).
 - Filtering: Enter in COMMAND → lexer/parser/evaluator → visible IDs → history render.
-- Navigation: j/k/arrows move active part; default Ensure‑Visible; optional Reading Mode centers on j/k; only middle pane scrolls.
+- Navigation: j/k/arrows move active part; default Ensure‑Visible; optional Typewriter Regime centers on j/k; only middle pane scrolls.
 - Send: Enter in INPUT → compose pipeline attempts → store update → focus rules via newMessageLifecycle.
 - Settings: Apply in settings overlay injects style updates; history re-measures and re-anchors without jitter.
 
@@ -108,7 +113,7 @@ Cross-cutting enablers
   - Mouse clicks on meta do not change selection; interactive controls inside meta remain functional without altering the active part.
 - Dead-band validation avoids visible “second-scroll” corrections.
 - Deterministic rendering from store state; pure filtering.
- - Stateless scroll: no persistent scroll policies; one-shot align/ensureVisible calls own the scroll once, then release.
+- Stateless scroll: no persistent scroll policies; one-shot align/ensureVisible calls own the scroll once, then release.
  - Visual edges: CSS overlays on `#historyPane` fade content within the fixed outer gap so content never touches pane borders.
 
 ## Testing
@@ -118,4 +123,11 @@ Cross-cutting enablers
 ## Start here
 
 - Read: `src/runtime/runtimeSetup.js`, `src/features/history/historyRuntime.js`, `src/features/interaction/interaction.js`, `src/features/command/*`.
-- UX rationale: `docs/ui_layout.md`, `docs/keyboard_reference.md`, `docs/message_history_navigation.md`.
+- UX rationale: `docs/ui_layout.md`, `docs/keyboard_reference.md`.
+
+## Glossary (canonical terms)
+- Pair, Part, Meta Row, Focused Part
+- Outer Gap (gapOuterPx), Usable Band, Internal Gaps (gapMetaPx, gapIntraPx, gapBetweenPx)
+- Ensure‑Visible, AlignTo('top'|'bottom'|'center')
+- Typewriter Regime (reading regime): optional j/k centering while reading; not a UI Mode
+- Context Boundary (first included pair), Included/Off (context), Trimming, URA, CPT

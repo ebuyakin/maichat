@@ -36,9 +36,21 @@ M10. UX polish and Help [x]
 
 M20-0 Documentation cleaning.
     The purpose of the documentation cleaning is to identify discrepancies between different documents. There are documents describing overlapping requirements/specs. Those docs need to be identified, aligned or consolidated. Second purpose is to align terminology and notation, that evolved in the course of development and is not consistent in various documents.
+    Acceptance:
+    - All active docs use “Typewriter Regime” (no "Reading Mode" in non-legacy files)
+    - Each core spec has Status, Scope, and See also blocks
+    - ADR cross-links exist: `docs/ARCHITECTURE.md` ↔ `docs/ADRs/ADR-000-architecture.md`, `docs/topic_system.md` ↔ `docs/ADRs/ADR-004-topic-system.md`
+    - `docs/TEMP_conflicts_review.md` closed or reduced to a short index of resolved items
+    - Tutorial remains user-facing and self-contained (no dev-doc links)
 
 M20-1 Architecture review, code health check. Highest priority!
-    The purpose is to assess the current architecture in a fashion similar to what we did in the past (see #legacy_docs/architecture_review_for_transition.md as an example). The we need to assess if current architecture is suitable/optimum for the roadmap. The idea is to understand whether the roadmap 'fits' the architecture of the app.
+    The purpose is to assess the current architecture similar to past reviews (see `docs/legacy_docs/architecture_review_for_transition.md` for style). We need to assess if current architecture is suitable/optimum for the roadmap. The idea is to understand whether the roadmap 'fits' the architecture of the app.
+    Acceptance:
+    - Produce a short review doc (2–3 pages) under `docs/` summarizing: strengths, risks, and fit vs roadmap M21–M28
+    - At least 3 actionable refactors with owners and acceptance tests identified (or explicitly deferred)
+    - Green test suite on main; add CI job skeleton for tests (optional if local-only)
+    - Update `docs/ARCHITECTURE.md` with any structural deltas discovered
+    References: `docs/ARCHITECTURE.md`, `docs/ADRs/ADR-000-architecture.md`
 
 M21. System message customization for different topics. Request parameters (system, length, temperature) [ ]
     The idea is relatively simple. We don't need per-message customization, we need per-topic customization of the API-calls. Ie. for each topic there can be an individual system message (that can be customized by the user) and the separate set of request parameters (like temperature or length of the response). All shall be managed via Topic Editor interface (which needs to be extended), not via main window interface.
@@ -62,3 +74,6 @@ M27. Large history virtualization [ ]
 
 M28. Large history archiving and restoration [ ]
     Think, it's related to M26. Maybe we need to join them. In general, M26-M28 is mostly under-the-hood work, I'm relying on your opinion how to do it.
+
+---
+

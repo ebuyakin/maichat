@@ -4,6 +4,9 @@ Date: 2025-08-22 (last reviewed 2025-09-05)
 Status: Accepted
 Decision: Keep a simple, vanilla JS architecture with a filterable history and keyboard-first UI; avoid heavy frameworks; isolate persistence behind an adapter.
 
+See also
+- Living architecture map: `../ARCHITECTURE.md`
+
 ## Context
 MaiChat is a client-only (browser) application for managing multi-model AI chat histories with hierarchical topics and a powerful filtering CLI. Goals: keyboard-first UX, fast filtering, local-first storage, modular provider integration.
 

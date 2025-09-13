@@ -1,6 +1,10 @@
 # Plain Text Output Policy & Markdown Suppression Spec
 
-Status: Phase 1 + 1.1 Implemented (System instruction + sanitizer + soft-wrap merge)
+Status / Scope / Out of scope / See also
+- Status: Phase 1 + 1.1 Implemented (System instruction + sanitizer + soft‑wrap merge).
+- Scope: System instruction, sanitizer rules, and token budget integration.
+- Out of scope: Scroll/reading semantics, layout tokens, provider transport specifics.
+- See also: ARCHITECTURE.md (Glossary), new_message_workflow.md (send pipeline), ui_view_reading_behaviour.md (partitioning policy).
 Last updated: 2025-09-11
 Scope: Isolated specification for enforcing plain-text assistant replies (no Markdown formatting) via a fixed system message + planned lightweight sanitizer.
 
@@ -169,12 +173,13 @@ Met:
 - Numbered lists preserved; idempotent; safety fallback works.
 - Tests cover removal, preservation, and soft-wrap merging scenarios.
 
-## 12. Open Questions
+## 12. Open questions & future specs
 - Should we also strip italic markers? (Defer until observed noise.)
 - Should we detect & unwrap single backtick inline code? (Pending usage feedback.)
 - Need raw/original preservation? (Add only if sanitizer modifications cause user confusion.)
 
-## 13. Future Extensions
+## 13. Deferred / future enhancements
+Planning note: Any step-like activities are tracked in `plan.md`.
 - Few-shot system examples to reinforce style for weaker models.
 - Logit bias (negative) on formatting tokens (requires token IDs – deferred).
 - Adaptive sanitizer (only apply if leakage frequency > threshold).

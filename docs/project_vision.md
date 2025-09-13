@@ -32,7 +32,7 @@ MaiChat is a **client-side AI interaction platform** that transforms how users e
 
 **Keyboard-First Navigation**: Complete control through vim-like commands without mouse dependency.
 
-**WYSIWYG Context Management**: Transparent filtering system where the displayed conversation exactly matches what gets sent to AI models.
+**WYSIWYG Context Management**: Transparent filtering system where the displayed (visible) conversation exactly matches what gets sent to AI models.
 
 **Multi-Model Flexibility**: Dynamic switching between AI providers (OpenAI, Anthropic, etc.) within a unified conversation stream.
 
@@ -46,7 +46,7 @@ MaiChat is a **client-side AI interaction platform** that transforms how users e
 - **CLI-Based Context Management**: Command-line filtering system for precise message selection
 - **Three-Mode Interface**: Modal interaction system mapping to functional UI areas
 - **Hierarchical Topic Management**: Tree-based topic organization with keyboard navigation
-- **Intelligent Context Construction**: Relevance-based prompt assembly instead of chronological history
+- **Intelligent Context Construction**: Chronological, visible (WYSIWYG) context today; relevance‑based selection is a future roadmap item.
 
 ### Modal System
 
@@ -68,9 +68,9 @@ MaiChat implements a **three-mode interface** that maps directly to the applicat
 - **Purpose**: Context management and conversation filtering
 - **Focus**: Top CLI area (filter command input with immediate activation)
 - **Key Operations**: Type filter commands (e.g., `model:gpt-4 recent:10 starred:2+`)
-- **Transitions**: Enter → execute and return to Command Mode, Escape → cancel and return to View Mode
+- **Transitions**: Enter → apply filter and switch to View Mode; Escape → clear filter (if any) and remain in Command Mode
 
-**Navigation Flow**: `INPUT ←→ VIEW ←→ COMMAND` creates an intuitive cycle where each mode owns its corresponding UI area and Escape always advances to the next mode in the workflow.
+**Navigation Flow**: `VIEW --Enter--> INPUT --Esc--> VIEW --Esc--> COMMAND --Enter--> VIEW`. Direct overrides: Ctrl+I (INPUT), Ctrl+V (VIEW), Ctrl+D (COMMAND).
 
 ## 3. Target Users
 
@@ -95,9 +95,9 @@ MaiChat implements a **three-mode interface** that maps directly to the applicat
 
 ### Technical Architecture
 
-**Pure Client-Side Implementation**: HTML/CSS/JavaScript only - no backend, no build tools, no server infrastructure.
+**Pure Client-Side Implementation**: HTML/CSS/JavaScript only — no backend server. Built and served with Vite for modular development.
 
-**Data Persistence**: localStorage for conversation history and user preferences.
+**Data Persistence**: IndexedDB for conversation history (via adapter) and local storage for lightweight preferences.
 
 **API Integration**: Direct browser fetch() calls to AI provider endpoints.
 
@@ -124,7 +124,7 @@ MaiChat implements a **three-mode interface** that maps directly to the applicat
 
 ### Operational Benefits
 
-**Simplicity**: Single HTML file that works immediately in any modern browser.
+**Simplicity**: Pure client app that runs in any modern browser; built with Vite for local development and bundling.
 
 **Security**: No server vulnerabilities or attack surfaces.
 

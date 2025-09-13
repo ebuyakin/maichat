@@ -1,6 +1,10 @@
 # Keyboard Reference
 
-Status: v0.11 (living document)
+Status / Scope / Out of scope / See also
+- Status: v0.11 (living document)
+- Scope: Canonical source for all key bindings, per‑mode behavior, overlays, reserved combinations.
+- Out of scope: Scroll math and behavior details (see scroll_positioning_spec.md); full UI layout rationale (see ui_layout.md).
+- See also: ARCHITECTURE.md (Glossary), ui_view_reading_behaviour.md, scroll_positioning_spec.md.
 
 Canonical source for all key bindings, per-mode behavior, overlays, and reserved combinations. Updated alongside implementation.
 
@@ -61,8 +65,8 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | ArrowUp | Previous part | Secondary fallback |
 | g | Jump to first part | Single press |
 | G | Jump to last part | Shift+g |
-| o / Shift+O | Jump to first in‑context pair (boundary) and center it | One-shot center (does not enable Reading Mode) |
-| Shift+R | Cycle reading position (Top / Center / Bottom) | Stateless one‑shot placement mode cycle (legacy anchorMode removed) |
+| o / Shift+O | Jump to first in‑context pair (boundary) and center it | One-shot center (does not enable the Typewriter Regime) |
+| r | Toggle Typewriter Regime | Centers on each j/k; exits on g/G, send/reply, filter change |
 | n | Jump to FIRST part of last message | Clears new-message badge; re-anchors even if already there |
 | e | Re-ask focused error message | Copies text to input; on Send, old error pair is deleted and a new message is created at the end (uses current context) |
 | d | Delete focused error message | Removes the error pair; focus moves to previous part |
@@ -134,7 +138,7 @@ Notes:
 
 ## 8. Navigation Semantics
 - Active Part: exactly one part is active; movement changes only index.
-- Auto-Scroll & Anchoring: Active part aligns to the user-selected reading position; see `docs/ui_view_reading_behaviour.md` for modes, defaults, and formulas. Uses outer‑gap padding + scroll clamping (no spacer elements). Meta row is never focusable.
+- Auto-Scroll & Anchoring: Default Ensure‑Visible; optional Typewriter Regime centers the focused part on j/k. Uses outer‑gap padding + scroll clamping (no spacer elements). Meta row is never focusable.
 - Pair Association: Star / include act on the entire pair.
 - Meta Row: Visible but skipped in navigation; edits apply based on active part's pair. Mouse clicks on meta do not change selection.
 - 'n' vs 'G': 'n' = first part of last message; 'G' = last part of last message.
