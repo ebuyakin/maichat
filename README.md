@@ -49,15 +49,27 @@ npm run test:watch
 - `docs/` – design docs, specs, and ADRs
 - `tests/` – unit tests (Vitest)
 
-## Key docs
-- Vision: `docs/project_vision.md`
-- Architecture: `docs/ARCHITECTURE.md`
-- Tutorial: `docs/tutorial.md`
-- UI layout/reading: `docs/ui_layout.md`, `docs/ui_view_reading_behaviour.md`
-- Topic system: `docs/topic_system.md`
-- CLI filtering language: `docs/cli_filtering_language.md`
-- Keyboard reference: `docs/keyboard_reference.md`
-- ADRs: `docs/ADRs/`
+## Documentation map
+
+Core
+- Project vision: `docs/project_vision.md`
+- Architecture (current runtime/UI layers, data model): `docs/ARCHITECTURE.md`
+- Tutorial (end‑user): `docs/tutorial.md`
+- CLI filtering language (spec): `docs/cli_filtering_language.md`
+- Keyboard reference (authoritative key map): `docs/keyboard_reference.md`
+- Topic system (concepts and operations): `docs/topic_system.md`
+- ADRs (decisions archive): `docs/ADRs/`
+
+UI (scoped, non‑overlapping)
+- UI layout (structure only: zones, tokens, alignment; no behavior): `docs/ui_layout.md`
+- History reading behaviour (navigation semantics, fade rules, high‑level partitioning policy): `docs/ui_view_reading_behaviour.md`
+- Scroll positioning spec (alignTo/ensureVisible math, one‑shot rules): `docs/scroll_positioning_spec.md`
+- Focus management (modal isolation, traps, restore rules): `docs/focus_management.md`
+- Plain‑text rendering policy (system instruction + sanitizer): `docs/plain_text_policy.md`
+- New message workflow (send/reply lifecycle: focus targets and when to call alignTo): `docs/new_message_workflow.md`
+
+Legacy (historical context; superseded)
+- `docs/legacy_docs/` — older notes, drafts, and diagrams retained for reference.
 
 ## Notes
 - Private prompts and internal assistant notes are ignored via `.gitignore` (`.github/prompts/`, `.github/copilot-instructions.md`).
