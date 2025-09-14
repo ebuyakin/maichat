@@ -5,6 +5,8 @@ import { invalidatePartitionCacheOnResize } from './partitioner.js'
 import { parse } from '../command/parser.js'
 import { evaluate } from '../command/evaluator.js'
 import { getActiveModel } from '../../core/models/modelCatalog.js'
+import { applySpacingStyles as applySpacingStylesHelper } from './spacingStyles.js'
+import { applyFadeVisibility } from './fadeVisibility.js'
 export function createHistoryRuntime(ctx){
   const { store, activeParts, historyView, scrollController, boundaryMgr, lifecycle, pendingMessageMeta } = ctx
   const historyPaneEl = document.getElementById('historyPane')
@@ -44,40 +46,7 @@ export function createHistoryRuntime(ctx){
     }
   })
   function applySpacingStyles(settings){
-    if(!settings) return
-    const { partPadding=4, gapOuterPx=20, gapMetaPx=6, gapIntraPx=6, gapBetweenPx=10, fadeInMs=120, fadeOutMs=120, fadeTransitionMs=120 } = settings
-    const baseFadeMs = Math.max(fadeInMs||0, fadeOutMs||0, fadeTransitionMs||0)
-    let styleEl = document.getElementById('runtimeSpacing')
-    if(!styleEl){ styleEl = document.createElement('style'); styleEl.id='runtimeSpacing'; document.head.appendChild(styleEl) }
-  styleEl.textContent = `#historyPane{padding-top:${gapOuterPx}px; padding-bottom:${gapOuterPx}px;}
-  /* Edge overlays: gradient within outer gap (G) pinned to the scroller edges */
-  #historyPane::before, #historyPane::after{ content:''; position:sticky; left:0; right:0; pointer-events:none; z-index:2; display:block; }
-  /* Sticky overlays: position at pane edges by offsetting by -G into the padding zone.
-    If you need to preserve a visible border/hairline, use calc(-G + 1px). */
-
-  #historyPane::before{position:sticky; top:-${gapOuterPx}px; height:${gapOuterPx}px; background:linear-gradient(to bottom, var(--bg) 0%, var(--bg) 5%, rgba(0,0,0,0) 100%); }
-  #historyPane::after{ bottom:-${gapOuterPx}px; height:${gapOuterPx}px; background:linear-gradient(to top, var(--bg) 0%, var(--bg) 5%, rgba(0,0,0,0) 100%); }
-  g
-    .history{gap:0;}
-    .gap{width:100%; flex:none;}
-    .gap-between{height:${gapBetweenPx}px;}
-    .gap-meta{height:${gapMetaPx}px;}
-    .gap-intra{height:${gapIntraPx}px;}
-    .part{margin:0;box-shadow:none;background:transparent;opacity:1;transition:opacity ${baseFadeMs}ms linear;}
-    .part.user .part-inner, .part.assistant .part-inner{padding:${partPadding}px;}
-    .part.meta .part-inner{padding:0 ${partPadding}px; display:flex; flex-direction:row; align-items:center; gap:12px; min-height:1.6em; width:100%; box-sizing:border-box;}
-    .part.meta .badge.model{color:#aaa;}
-    .part.meta{white-space:nowrap;}
-    .part.meta .meta-left{display:flex; gap:10px; align-items:center; white-space:nowrap;}
-    .part.meta .meta-right{display:flex; gap:10px; align-items:center; margin-left:auto; white-space:nowrap;}
-    .part.meta .badge{white-space:nowrap;}
-    .part.user .part-inner{background:#0d2233; border-radius:3px; position:relative;}
-    .part.assistant .part-inner{background:transparent;}
-    .part.meta .part-inner{background:transparent; position:relative;}
-    .part.assistant .part-inner, .part.meta .part-inner{position:relative;}
-    .part.active .part-inner::after{content:''; position:absolute; top:1px; left:1px; right:1px; bottom:1px; border:1px solid var(--focus-ring); border-radius:3px; pointer-events:none;}
-    .part.active.assistant .part-inner{background:rgba(40,80,120,0.10);} 
-    .part.active{box-shadow:none; background:transparent;}`
+    applySpacingStylesHelper(settings)
   }
   function renderHistory(pairs){
     pairs = [...pairs].sort((a,b)=> a.createdAt - b.createdAt)
@@ -141,60 +110,10 @@ export function createHistoryRuntime(ctx){
   function updateFadeVisibility(opts={}){
     const initial = !!opts.initial
     const settings = getSettings()
-    const G = settings.gapOuterPx || 0
-    const fadeMode = settings.fadeMode || 'binary'
-  const TOL = 1 // px tolerance near fade boundary: within <=1px of edge is considered safe (no dim)
-    const hiddenOp = typeof settings.fadeHiddenOpacity === 'number' ? settings.fadeHiddenOpacity : 0
-    const fadeInMs = settings.fadeInMs != null ? settings.fadeInMs : (settings.fadeTransitionMs || 120)
-    const fadeOutMs = settings.fadeOutMs != null ? settings.fadeOutMs : (settings.fadeTransitionMs || 120)
     const pane = historyPaneEl
     if(!pane) return
-    const S = pane.scrollTop
-    const H = pane.clientHeight
-    const fadeZone = G
     const parts = pane.querySelectorAll('#history > .part')
-  parts.forEach(p=>{
-      const top = p.offsetTop
-      const h = p.offsetHeight
-      const bottom = top + h
-      const isActive = p.classList.contains('active')
-      const relTop = top - S
-      const relBottom = bottom - S
-      let op = 1
-      if(fadeMode === 'gradient'){
-        // Apply tolerance: do not dim within <=TOL px of the boundary
-        const effZone = Math.max(0, fadeZone - TOL)
-        let topFade = 1
-        if(effZone > 0){
-          if(relTop < effZone){ topFade = Math.max(0, relTop / effZone) }
-          else { topFade = 1 }
-        }
-        let bottomFade = 1
-        const distFromBottom = H - relBottom
-        if(effZone > 0){
-          if(distFromBottom < effZone){ bottomFade = Math.max(0, distFromBottom / effZone) }
-          else { bottomFade = 1 }
-        }
-        op = Math.min(topFade, bottomFade)
-        if(op < 0) op = 0
-        if(op > 1) op = 1
-      } else {
-        const effZone = Math.max(0, fadeZone - TOL)
-        const topIntrudes = relTop < effZone
-        const bottomIntrudes = (H - relBottom) < effZone
-        if(topIntrudes || bottomIntrudes) op = hiddenOp
-      }
-      if(isActive) op = 1
-      const prev = p.__lastOpacity != null ? p.__lastOpacity : parseFloat(p.style.opacity||'1')
-      if(prev !== op){
-        const dirIn = op > prev
-        const dur = initial ? 0 : (dirIn ? fadeInMs : fadeOutMs)
-        if(p.__lastFadeDur !== dur){ p.style.transitionDuration = dur + 'ms'; p.__lastFadeDur = dur }
-        p.style.opacity = String(op)
-        p.__lastOpacity = op
-      }
-      p.style.pointerEvents = op === 0 ? 'none' : ''
-    })
+    applyFadeVisibility({ paneEl: pane, parts, settings, initial })
   }
   historyPaneEl.addEventListener('scroll', ()=> updateFadeVisibility())
   function renderStatus(){ const modeEl = document.getElementById('modeIndicator'); if(modeEl) modeEl.textContent = `[${window.__modeManager.mode.toUpperCase()}]` }

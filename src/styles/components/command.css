@@ -1,0 +1,11 @@
+#statusRight > * { box-sizing:border-box; }
+#statusRight .mc, #statusRight .menu-btn { flex:0 0 auto; }
+#messageCount.mc { font:11px var(--font-mono); background:transparent; padding:6px 10px; border:1px solid #2a2a2a; border-radius:4px; color:#9ab; letter-spacing:.5px; display:flex; align-items:center; height:34px; }
+.menu-btn { background:transparent; border:1px solid #2a2a2a; color:#ddd; padding:6px 10px; cursor:pointer; border-radius:4px; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; height:34px; }
+.menu-btn:focus, .menu-btn:hover { border-color:#3a3a3a; color:#fff; }
+.app-menu { position:absolute; top:100%; right:0; background:var(--bg-alt); border:1px solid #222; box-shadow:0 4px 18px rgba(0,0,0,0.5); padding:4px 0; border-radius:6px; min-width:200px; z-index:900; }
+.app-menu ul { list-style:none; margin:0; padding:0; }
+.app-menu li { display:flex; justify-content:space-between; gap:12px; padding:6px 14px; cursor:pointer; font:12px/1.4 var(--font-ui); color:var(--text); }
+.app-menu li:hover, .app-menu li.active { background:#1e3a5a; }
+.app-menu li .hint { color:#788; font-size:11px; letter-spacing:.5px; }
+#commandError { color: var(--danger); font-size: 12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:50vw; flex:1 1 auto; }

@@ -1,0 +1,33 @@
+.history { display:flex; flex-direction:column; gap:0; }
+.pair { padding:2px 0 0; border-bottom:none; text-align:left; }
+.part { white-space:pre-wrap; font:var(--size-base)/1.5 var(--font-ui); }
+.part.user { background: #0d2233; }
+.part.assistant { background: transparent; }
+.part.meta { background: transparent; color:var(--text); font-size:var(--size-base); display:flex; align-items:center; padding:2px 0 2px 0; justify-content:space-between; gap:8px; font-weight:400; }
+.part.meta .meta-left { display:flex; gap:10px; align-items:center; }
+.part.meta .meta-right { display:flex; gap:10px; align-items:center; margin-left:auto; }
+.badge { font-size:11px; color:var(--text); font-weight:400; }
+.badge.new-reply { background:#1e3a5a; padding:2px 8px; border:1px solid #2c4d73; border-radius:14px; cursor:pointer; }
+.badge.new-reply.dim { opacity:.5; }
+.badge.topic { max-width:560px; overflow:hidden; text-overflow:ellipsis; }
+.badge.timestamp { color:#aaa; font-weight:400; }
+.badge.include { background:transparent; border:none; text-transform:none; font-size:11px; letter-spacing:.3px; padding:0 2px; }
+.badge.flag { display:inline-block; width:10px; height:10px; position:relative; top:1px; }
+.badge.flag[data-flag='b'] { background:#1f4d99; border:1px solid #1f4d99; }
+.badge.flag[data-flag='g'] { background:transparent; border:1px solid #666; border-radius:50%; }
+.badge.offctx { background:transparent; border:none; color:#ff9fb2; text-transform:none; font-size:11px; letter-spacing:.3px; }
+.badge.model { background:transparent; border:none; color:var(--text-dim); }
+.badge.state { background:transparent; border:none; color:var(--text-dim); min-width:18px; text-align:center; border-radius:0; padding:0 2px; }
+.badge.state[data-state=sending] { animation:pulse 1.2s ease-in-out infinite; }
+.badge.state.error { color:var(--text-dim); }
+@keyframes pulse { 0%{opacity:.3;} 50%{opacity:1;} 100%{opacity:.3;} }
+.err-actions { display:inline-flex; gap:6px; }
+.part.meta .err-actions .btn-ghost { font-size:11px; padding:3px 8px; line-height:1.2; }
+.part.ooc .part-inner { opacity:1; color: var(--text-offctx); }
+.part.ooc.active .part-inner { color: var(--text-offctx); }
+
+/* Scrollbar minimal */
+#historyPane::-webkit-scrollbar { width:8px; }
+#historyPane::-webkit-scrollbar-track { background: var(--bg); }
+#historyPane::-webkit-scrollbar-thumb { background: var(--border); }
+#historyPane::-webkit-scrollbar-thumb:hover { background: var(--border-active); }

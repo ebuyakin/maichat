@@ -1,0 +1,17 @@
+#inputBar .row { display:flex; align-items:center; gap:12px; }
+#inputBar .row.second { justify-content:space-between; margin-top:2px; }
+#inputBar input { flex:1; background:var(--bg-alt); border:none; color:var(--text); padding:10px 0 10px 0; font:var(--size-base)/1.5 var(--font-ui); border-radius:4px; }
+#sendBtn { background:var(--bg-alt); color:var(--text); border:1px solid #2a2a2a; padding:6px 20px; cursor:pointer; font-size:var(--size-base); border-radius:4px; font-weight:400; min-width:134px; display:inline-flex; justify-content:flex-end; align-items:center; font-family:var(--font-ui); letter-spacing:.3px; position:relative; }
+#sendBtn:disabled { opacity:.5; cursor:default; }
+#sendBtn.pending { opacity:1 !important; justify-content:flex-start; background: var(--focus-ring); border-color: var(--focus-ring); color:#fff; font-weight:400; text-align:left; padding-left:12px; }
+#sendBtn.pending .lbl { font-family: var(--font-ui); letter-spacing:.3px; text-align:left; }
+#sendBtn.pending .lbl { position:relative; display:inline-block; }
+#sendBtn.pending .lbl::after { content: attr(data-base); visibility:hidden; pointer-events:none; white-space:nowrap; display:block; height:0; overflow:hidden; }
+#sendBtn .lbl { display:inline-block; }
+#sendBtn .dots { display:inline-flex; width:18px; margin-left:6px; justify-content:flex-start; }
+#sendBtn .dots span { width:4px; text-align:center; opacity:0; transition:opacity .25s linear; }
+.mode-label { font-size:11px; color:var(--text-dim); font-weight:400; letter-spacing:.5px; width:70px; display:inline-flex; justify-content:flex-start; align-items:center; background:transparent; height:34px; }
+.input-meta-left { display:flex; gap:10px; align-items:center; }
+#pendingModel, #pendingTopic { font-size:12px; color:var(--text); padding:4px 8px; border:1px solid #2a2a2a; border-radius:4px; background:transparent; display:inline-flex; align-items:center; height:34px; box-sizing:border-box; }
+#pendingModel { width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; justify-content:flex-start; }
+#pendingTopic { max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

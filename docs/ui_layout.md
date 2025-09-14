@@ -65,7 +65,7 @@ No folding/collapsing: The history behaves like an immutable paper roll—parts 
 ```
 
 ## 6. Visual Design & Tokens (Implemented)
-Authoritative token set (`:root` in `style.css`):
+Authoritative token set (`:root` in `src/styles/variables.css`):
 ```
 --bg: #0c0c0c;          /* primary middle zone */
 --bg-alt: #242424;      /* top/bottom bars & overlays */

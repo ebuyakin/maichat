@@ -57,8 +57,10 @@ M21. System message customization for different topics. Request parameters (syst
 
 M22. Multiple providers (+Claude+Gemini) [ ]
 
-M23. Filtering language extension o command - filtering by context boundary o3, o5 [ ]
+M23. Filtering language extension.
+    - o command - filtering by context boundary o3, o5 [ ]
     The idea is slightly different, but also simple. oN filters all in-context messages + N latest off-context messages. The user will be able to see what's in, what's out (without long history), plain o - just in-context.
+    - commands introduction. So far CLI filter (filter input box, command zone) has been used for literally filtering the message history. It shall be extended to input commands (operations over message history). General format shall be colon commmand parameters (vim like). E.g. :export json - export the filtered message history as json file. Or :changetopic - command to bulk change of the assigned topic for all filtered message.
 
 M24. Message formatting (markdown parsing, LaTeX parsing, code snippets) [ ]
     This needs a separate discussion, what is possible and how difficult it is to implement. I suspect this is the biggest task as the ergonomic presentation of the content is one of the pillars of the app, so we need to make it really well and make sure all content (e.g. equations) is presented beautifully and reliably. Again, first task is to evaluate how this will be done architecturally and how will it affect other components of the app.

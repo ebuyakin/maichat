@@ -1,0 +1,10 @@
+html, body { margin:0; padding:0; height:100%; overscroll-behavior:none; }
+body { min-height:100vh; overflow:hidden; font-family: var(--font-ui); font-size: var(--size-base); line-height: 1.45; color: var(--text); background: var(--bg); }
+#app { height:100vh; width:100%; position:relative; }
+
+/* Reduce selection flash */
+::selection { background: #25527a; }
+
+/* Global focus handling */
+*:focus { outline:none; }
+input:focus, button:focus { border-color: var(--accent); }

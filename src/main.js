@@ -1,4 +1,4 @@
-import './style.css'
+import './styles/index.css'
 // Boot diagnostics injected (temporary) to investigate blank page issue.
 console.log('[MaiChat] boot script loaded (pre-imports)')
 import { initRuntime } from './runtime/runtimeSetup.js'
