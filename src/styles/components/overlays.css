@@ -22,11 +22,27 @@
 
 /* Topic Editor */
 .topic-editor-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.46); display:flex; align-items:flex-start; justify-content:center; padding-top:10vh; z-index:1400; }
-.topic-editor { background:var(--bg-alt); border:1px solid #262626; border-radius:8px; width:560px; max-height:70vh; display:flex; flex-direction:column; font:var(--size-base)/1.45 var(--font-ui); box-shadow:0 4px 24px rgba(0,0,0,0.5); }
-.topic-editor .te-header { padding:8px 12px; font-weight:400; border-bottom:1px solid #222; letter-spacing:.2px; color:var(--text); font-size:var(--size-base); background:var(--bg-alt); }
-.topic-editor .te-search { background:#0c0c0c; border:1px solid #333; color:#eee; padding:6px 10px; margin:8px 10px 4px; border-radius:4px; font:13px var(--font-ui); }
-.topic-editor .te-tree { flex:1; overflow:auto; padding:6px 0 6px; padding-left:10px; }
+.topic-editor { background:var(--bg-alt); border:1px solid #262626; border-radius:8px; width:880px; max-width:92vw; max-height:74vh; display:flex; flex-direction:column; font:var(--size-base)/1.45 var(--font-ui); box-shadow:0 4px 24px rgba(0,0,0,0.5); padding:5px; }
+.topic-editor .te-header { padding:8px 12px; font-weight:400; border-bottom:1px solid #222; letter-spacing:.2px; color:var(--text-dim); font-size:var(--size-base); background:var(--bg-alt); }
+.topic-editor .te-search { background:#0c0c0c; border:1px solid #333; color:#eee; padding:6px 10px; margin:0 0 8px 0; border-radius:4px; font:var(--size-base)/1.4 var(--font-ui); width:100%; box-sizing:border-box; margin-left:5px; margin-right:5px; width:calc(100% - 10px); }
+.topic-editor .te-body { display:grid; grid-template-columns: 1fr 1.1fr; gap:0; min-height:360px; }
+.topic-editor .te-left { display:flex; flex-direction:column; border-right:1px solid #222; padding:8px 0 8px 8px; }
+.topic-editor .te-tree { flex:1; overflow:auto; padding-right:8px; padding-left:5px; }
+.topic-editor .te-details { display:flex; flex-direction:column; padding:12px 14px; gap:10px; }
+.topic-editor .te-path { color:var(--text-dim); font-size:var(--size-base); letter-spacing:.2px; padding:2px 0 6px; }
+.topic-editor .te-field { display:flex; flex-direction:column; gap:6px; }
+.topic-editor .te-field label { color:var(--text-dim); font-size:var(--size-base); letter-spacing:.25px; }
+.topic-editor .te-textarea { background:#060606; border:1px solid #333; color:#eee; padding:8px 10px; border-radius:4px; resize:vertical; min-height:96px; max-height:240px; font:var(--size-base)/1.45 var(--font-ui); }
+.topic-editor .te-actions { display:flex; gap:8px; margin-top:5px; }
+.topic-editor .te-btn { background:var(--btn-bg); color:var(--text); border:1px solid var(--btn-border); padding:9px 13px; border-radius:4px; cursor:pointer; font:12px var(--font-ui); transition:background .15s, border-color .15s; }
+.topic-editor .te-btn:hover, .topic-editor .te-btn:focus { background:var(--btn-bg-hover); border-color:#444; }
+.topic-editor .te-primary-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+.topic-editor .te-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px 12px; }
+.topic-editor .te-input { background:#060606; border:1px solid #333; color:#eee; padding:6px 8px; border-radius:4px; font:var(--size-base)/1.4 var(--font-ui); }
+.topic-editor .te-hint { color:var(--text-dim); font-size:var(--size-base); letter-spacing:.2px; }
+.topic-editor .te-status { margin-top:auto; padding-top:6px; color:var(--text-dim); font-size:var(--size-base); display:flex; justify-content:space-between; align-items:center; border-top:1px solid #222; min-height:1.45em; white-space:nowrap; }
 .topic-editor .te-row { padding:3px 12px 3px 12px; cursor:default; white-space:nowrap; font:var(--size-base)/1.45 var(--font-ui); display:flex; align-items:center; gap:6px; font-weight:400; }
+.topic-editor .te-marker { display:inline-block; width:1.25em; text-align:center; font-size:16px; line-height:1; }
 .topic-editor .te-row.active { background:#1e3a5a; color:#fff; }
 .topic-editor .te-row.marked { background:var(--marked-bg); color:#d2f2e0; }
 .topic-editor .te-row.active.marked { background:#195a82; }

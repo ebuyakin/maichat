@@ -24,9 +24,16 @@ export function openTopicEditor({ store, onSelect, onClose }) {
 
   const backdrop = document.createElement('div')
   backdrop.className = 'topic-editor-backdrop'
-  backdrop.innerHTML = `\n    <div class="topic-editor">\n      <div class="te-header">Topic Editor – Shift+J focus tree · Esc (tree→search / search→close) · j/k nav · h/l collapse/expand · n child · N top-level · r rename · d delete · m mark · p paste</div>\n      <input type="text" class="te-search" placeholder="Search (name / path substring)"/>\n      <div class="te-tree" role="tree" tabindex="0"></div>\n      <div class="te-warning" aria-live="polite"></div>\n    </div>`
+  backdrop.innerHTML = `\n    <div class="topic-editor">\n      <div class="te-header">\n        <div><strong>Topic Editor</strong></div>\n        <div>Ctrl+J - focus on topic tree;</div>\n        <div>j/k - move down/up the tree, h/l - collapse/expand, n - new child topic, N - new root topic</div>\n        <div>r - rename topic, d - delete topic, m - mark topic, p - paste topic.</div>\n        <div style="margin-top:4px;">Edit focused tree parameters: Ctrl+E - system message, Ctrl+T - temperature, Ctrl+O - max response length.</div>\n        <div>Ctrl+S - Save changes, Esc - Cancel+Close.</div>\n      </div>\n      <div class="te-body">\n        <div class="te-left">\n          <input type="text" class="te-search" placeholder="Search (name / path substring)"/>\n          <div class="te-tree" role="tree" tabindex="0"></div>\n        </div>\n        <div class="te-details" data-pane="details">\n          <div class="te-path"></div>\n          <div class="te-field">\n            <label>System message</label>\n            <textarea class="te-textarea" spellcheck="false" placeholder="You are MaiChat Assistant for this topic. Be concise and ask clarifying questions when needed."></textarea>\n            <div class="te-actions">\n              <button class="te-btn" data-act="reset">Reset to template (Ctrl+R)</button>\n              <button class="te-btn" data-act="insert-path">Insert topic path (Ctrl+I)</button>\n            </div>\n          </div>\n          <div class="te-grid">\n            <div class="te-field">\n              <label>Temperature (0–2)</label>\n              <input type="number" step="0.1" min="0" max="2" class="te-input" data-field="temperature"/>\n              <div class="te-hint">Higher = more creative.</div>\n            </div>\n            <div class="te-field">\n              <label>Max output tokens</label>\n              <input type="number" min="1" class="te-input" data-field="maxTokens"/>\n              <div class="te-hint">Leave empty for default output size.</div>\n            </div>\n          </div>\n          <div class="te-primary-actions">\n            <button class="te-btn te-save" data-act="save">Save (Ctrl+S)</button>\n            <button class="te-btn te-cancel" data-act="cancel">Cancel (Esc)</button>\n          </div>\n          <div class="te-status"><span class="te-dirty" hidden>Unsaved changes</span><span class="te-saved"></span></div>\n        </div>\n      </div>\n      <div class="te-warning" aria-live="polite"></div>\n    </div>`
   const searchInput = backdrop.querySelector('.te-search')
   const treeEl = backdrop.querySelector('.te-tree')
+  const detailsEl = backdrop.querySelector('.te-details')
+  const pathEl = backdrop.querySelector('.te-path')
+  const sysTextarea = backdrop.querySelector('.te-textarea')
+  const tempInput = backdrop.querySelector('input[data-field="temperature"]')
+  const maxTokInput = backdrop.querySelector('input[data-field="maxTokens"]')
+  const dirtyEl = backdrop.querySelector('.te-dirty')
+  const savedEl = backdrop.querySelector('.te-saved')
   const warningEl = backdrop.querySelector('.te-warning')
 
   function showWarning(msg) {
@@ -109,11 +116,47 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     buildFlat()
     if (activeIndex >= flat.length) activeIndex = flat.length? flat.length-1:0
     treeEl.innerHTML = flat.map((row,i)=> renderRow(row, i===activeIndex)).join('') + (editing && editing.mode==='create' ? renderCreateRow(): '')
+    renderDetails()
     if (editing && editing.inputEl) {
       const el = treeEl.querySelector('input.te-edit')
       if (el) { editing.inputEl = el; setTimeout(()=>el.focus(),0) }
     }
   }
+  let isDirty = false
+  let suppressBlurSave = false
+  function setDirty(v){ isDirty = !!v; if(dirtyEl){ dirtyEl.hidden = !isDirty } }
+  function currentTopic() { return flat[activeIndex]?.topic || null }
+  function renderDetails(){
+    const t = currentTopic()
+    if(!t){ detailsEl.setAttribute('aria-disabled','true'); sysTextarea.value=''; tempInput.value=''; maxTokInput.value=''; pathEl.textContent=''; return }
+    detailsEl.removeAttribute('aria-disabled')
+  const path = topicPathNames(t.id)
+  const name = t.name || ''
+  pathEl.textContent = `Edit topic details: ${name}`
+    sysTextarea.value = typeof t.systemMessage==='string' ? t.systemMessage : ''
+  const rp = t.requestParams || {}
+  tempInput.value = (typeof rp.temperature==='number') ? String(rp.temperature) : '0.7'
+    maxTokInput.value = (typeof rp.maxOutputTokens==='number') ? String(rp.maxOutputTokens) : ''
+    setDirty(false); savedEl.textContent=''
+  }
+  function saveDetails(){ const t=currentTopic(); if(!t) return; const patch={}
+    const sm = sysTextarea.value
+    patch.systemMessage = sm
+    const rp = Object.assign({}, t.requestParams||{})
+    const tempVal = parseFloat(tempInput.value)
+    if(!Number.isNaN(tempVal)) rp.temperature = Math.max(0, Math.min(2, tempVal)); else delete rp.temperature
+    const tokVal = parseInt(maxTokInput.value,10)
+    if(Number.isFinite(tokVal) && tokVal>0) rp.maxOutputTokens = tokVal; else delete rp.maxOutputTokens
+    patch.requestParams = rp
+    store.updateTopic(t.id, patch)
+    setDirty(false); savedEl.textContent = 'Saved '
+    try{ setTimeout(()=>{ savedEl.textContent='' }, 1400) }catch{}
+  }
+  function cancelDetails(){ const t=currentTopic(); if(!t) return; suppressBlurSave = true; renderDetails(); setTimeout(()=>{ suppressBlurSave = false }, 0) }
+  function resetTemplate(){ const t=currentTopic(); if(!t) return; sysTextarea.value = 'You are MaiChat Assistant for this topic. Be concise and ask clarifying questions when needed.'; setDirty(true) }
+  function insertPath(){ const t=currentTopic(); if(!t) return; const ins = topicPathNames(t.id); const el = sysTextarea; const start = el.selectionStart||0; const end = el.selectionEnd||0; const v = el.value; el.value = v.slice(0,start) + ins + v.slice(end); setDirty(true) }
+  function focusTemp(){ try{ tempInput?.focus() }catch{} }
+  function focusMaxTok(){ try{ maxTokInput?.focus() }catch{} }
   function renderRow({ topic, depth }, active) {
     const hasChildren = (store.children.get(topic.id)||[]).size > 0
     const isExpanded = expanded.has(topic.id)
@@ -122,9 +165,9 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     const marked = isMarked ? '▶ ' : ''
     const cls = `te-row${active?' active':''}${isMarked?' marked':''}`
     if (editing && editing.mode==='rename' && editing.topicId===topic.id) {
-      return `<div class="${cls}" data-id="${topic.id}" style="padding-left:${depth*16}px">${marker} ${marked}<input class="te-edit" type="text" value="${escapeHtml(topic.name)}" /></div>`
+      return `<div class="${cls}" data-id="${topic.id}" style="padding-left:${depth*16}px"><span class="te-marker">${marker}</span> ${marked}<input class="te-edit" type="text" value="${escapeHtml(topic.name)}" /></div>`
     }
-    return `<div class="${cls}" data-id="${topic.id}" style="padding-left:${depth*16}px">${marker} ${marked}${escapeHtml(topic.name)} <span class="te-counts">(${topic.directCount||0}/${topic.totalCount||0})</span></div>`
+    return `<div class="${cls}" data-id="${topic.id}" style="padding-left:${depth*16}px"><span class="te-marker">${marker}</span> ${marked}${escapeHtml(topic.name)} <span class="te-counts">(${topic.directCount||0}/${topic.totalCount||0})</span></div>`
   }
   function renderCreateRow() {
     let depth
@@ -267,8 +310,9 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       if(e.key==='n' || e.key==='N' || e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); deleteConfirmId=null; showWarning('Cancelled'); return }
     }
     if(!inTreeFocus){
+      // Only allow pane toggle into the tree; all other keys should type in inputs/textarea
       if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); teardown(); return }
-      if(e.key==='J' && e.shiftKey){ e.preventDefault(); inTreeFocus=true; treeEl.focus(); return }
+      if(e.ctrlKey && (e.key==='j' || e.key==='J')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); inTreeFocus=true; treeEl.focus(); return }
       return
     }
     switch(e.key){
@@ -302,6 +346,36 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   }
   searchInput.addEventListener('input', ()=>{ filter = searchInput.value.trim(); buildFlat(); activeIndex = 0; render() })
   backdrop.addEventListener('keydown', onKey)
+  backdrop.addEventListener('keydown', (e)=>{ 
+    const inDetails = detailsEl.contains(e.target)
+  if(e.ctrlKey && (e.key==='e'||e.key==='E')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); detailsEl.querySelector('.te-textarea')?.focus(); inTreeFocus=false; return }
+  if(e.ctrlKey && (e.key==='t'||e.key==='T')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); focusTemp(); inTreeFocus=false; return }
+  if(e.ctrlKey && (e.key==='o'||e.key==='O')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); focusMaxTok(); inTreeFocus=false; return }
+  if(e.ctrlKey && (e.key==='s'||e.key==='S')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); saveDetails(); return }
+  if(e.ctrlKey && (e.key==='r'||e.key==='R')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); resetTemplate(); return }
+  if(e.ctrlKey && (e.key==='i'||e.key==='I')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); insertPath(); return }
+    if(inDetails && e.key==='Escape'){
+      if(isDirty){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); cancelDetails(); return }
+    }
+  }, true)
+  // Keep inTreeFocus synced with actual focus target
+  backdrop.addEventListener('focusin', (e)=>{ inTreeFocus = treeEl.contains(e.target) }, true)
+  sysTextarea.addEventListener('input', ()=> setDirty(true))
+  tempInput.addEventListener('input', ()=> setDirty(true))
+  maxTokInput.addEventListener('input', ()=> setDirty(true))
+  sysTextarea.addEventListener('blur', ()=>{ if(isDirty && !suppressBlurSave) saveDetails() })
+  tempInput.addEventListener('blur', ()=>{ if(isDirty && !suppressBlurSave) saveDetails() })
+  maxTokInput.addEventListener('blur', ()=>{ if(isDirty && !suppressBlurSave) saveDetails() })
+  detailsEl.addEventListener('click', (e)=>{ 
+    const act = e.target.getAttribute && e.target.getAttribute('data-act'); 
+    if(act==='reset'){ resetTemplate() } 
+    else if(act==='insert-path'){ insertPath() } 
+    else if(act==='save'){ saveDetails() } 
+    else if(act==='cancel'){ 
+      if(isDirty){ cancelDetails() } 
+      else { teardown() }
+    } 
+  })
   document.body.appendChild(backdrop)
   searchInput.focus()
   buildFlat(); render()

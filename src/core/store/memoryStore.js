@@ -6,13 +6,35 @@ export class MemoryStore { constructor(){ this.pairs=new Map(); this.topics=new 
   on(e,f){ return this.emitter.on(e,f) }
   addTopic(name,parentId, createdAt){ const id=crypto.randomUUID(); const topic=createTopic({ id,name,parentId, createdAt: createdAt||Date.now() }); topic.directCount=0; topic.totalCount=0; this.topics.set(id,topic); if(!this.children.has(parentId)) this.children.set(parentId,new Set()); this.children.get(parentId).add(id); this.emitter.emit('topic:add', topic); return id }
   renameTopic(id,newName){ const t=this.topics.get(id); if(!t) return false; t.name=newName; this.emitter.emit('topic:update', t); return true }
+  updateTopic(id, patch){ const t=this.topics.get(id); if(!t) return false; const beforeParent = t.parentId; Object.assign(t, patch); this.emitter.emit('topic:update', t); if(patch.parentId && patch.parentId!==beforeParent){ // keep children map in sync if parentId changed via patch
+      const oldSet=this.children.get(beforeParent); if(oldSet) oldSet.delete(id);
+      if(!this.children.has(patch.parentId)) this.children.set(patch.parentId,new Set()); this.children.get(patch.parentId).add(id);
+      this.emitter.emit('topic:move', { id, from: beforeParent, to: patch.parentId })
+    }
+    return true }
   deleteTopic(id){ if(id===this.rootTopicId) return false; if(this.children.get(id)?.size) return false; for(const p of this.pairs.values()) if(p.topicId===id) return false; const topic=this.topics.get(id); if(!topic) return false; const parentId=topic.parentId; const existed=this.topics.delete(id); if(existed){ const set=this.children.get(parentId); if(set) set.delete(id); this.children.delete(id); this.emitter.emit('topic:delete', id); this.recalculateTopicCounts() } return !!existed }
   addMessagePair({ topicId, model, userText, assistantText }){ const id=crypto.randomUUID(); const pair=createMessagePair({ id, topicId, model, userText, assistantText }); this.pairs.set(id,pair); this.emitter.emit('pair:add', pair); this._incrementCountsForTopic(topicId); return id }
   updatePair(id,patch){ const existing=this.pairs.get(id); if(!existing) return false; const oldTopicId=existing.topicId; Object.assign(existing, patch); this.emitter.emit('pair:update', existing); if(patch.topicId && patch.topicId!==oldTopicId){ this._decrementCountsForTopic(oldTopicId); this._incrementCountsForTopic(existing.topicId) } return true }
   removePair(id){ const pair=this.pairs.get(id); if(!pair) return false; this.pairs.delete(id); this._decrementCountsForTopic(pair.topicId); this.emitter.emit('pair:delete', id); return true }
   getAllPairs(){ return Array.from(this.pairs.values()) }
   getAllTopics(){ return Array.from(this.topics.values()) }
-  _importTopic(topic){ if(!this.topics.has(topic.id)){ if(typeof topic.directCount!=='number') topic.directCount=0; if(typeof topic.totalCount!=='number') topic.totalCount=0; this.topics.set(topic.id, topic); if(!this.children.has(topic.parentId)) this.children.set(topic.parentId,new Set()); this.children.get(topic.parentId).add(topic.id); this.emitter.emit('topic:add', topic) } }
+  _importTopic(topic){
+    if(!this.topics.has(topic.id)){
+      if(typeof topic.directCount!=='number') topic.directCount=0;
+      if(typeof topic.totalCount!=='number') topic.totalCount=0;
+      // Backfill new fields for legacy topics
+      if(typeof topic.systemMessage !== 'string') topic.systemMessage = 'You are MaiChat Assistant for this topic. Be concise and ask clarifying questions when needed.'
+      if(typeof topic.requestParams !== 'object' || !topic.requestParams) topic.requestParams = {}
+      if(typeof topic.requestParams.temperature === 'number'){ topic.requestParams.temperature = Math.max(0, Math.min(2, topic.requestParams.temperature)) }
+      if(typeof topic.requestParams.maxOutputTokens === 'number'){
+        const v = Math.floor(topic.requestParams.maxOutputTokens); topic.requestParams.maxOutputTokens = v>0 ? v : undefined
+      }
+      this.topics.set(topic.id, topic);
+      if(!this.children.has(topic.parentId)) this.children.set(topic.parentId,new Set());
+      this.children.get(topic.parentId).add(topic.id);
+      this.emitter.emit('topic:add', topic)
+    }
+  }
   _importPair(pair){ if(!this.pairs.has(pair.id)){ this.pairs.set(pair.id, pair); this.emitter.emit('pair:add', pair) } }
   moveTopic(topicId,newParentId){ if(topicId===this.rootTopicId) return false; const topic=this.topics.get(topicId); if(!topic) return false; if(newParentId && this._isDescendant(newParentId, topicId)) return false; const oldParent=topic.parentId; if(oldParent===newParentId) return true; const oldSet=this.children.get(oldParent); if(oldSet) oldSet.delete(topicId); if(!this.children.has(newParentId)) this.children.set(newParentId,new Set()); this.children.get(newParentId).add(topicId); topic.parentId=newParentId; this.emitter.emit('topic:move', { id:topicId, from:oldParent, to:newParentId }); this.recalculateTopicCounts(); return true }
   _isDescendant(maybeChildId, ancestorId){ let cur=this.topics.get(maybeChildId); while(cur){ if(cur.id===ancestorId) return true; cur=cur.parentId ? this.topics.get(cur.parentId) : null } return false }

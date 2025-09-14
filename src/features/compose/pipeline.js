@@ -5,9 +5,7 @@ import { estimateTokens, getModelBudget, estimatePairTokens } from '../../core/c
 import { getSettings } from '../../core/settings/index.js'
 import { getApiKey } from '../../infrastructure/api/keys.js'
 
-// System instruction enforcing strict plain-text output (hardened wording).
-// Minimal inline constant (release-freeze). Adjust wording only—logic unchanged.
-const SYSTEM_INSTRUCTION = 'STRICT FORMAT POLICY: Output ONLY plain text. NEVER use Markdown or any formatting characters (#, *, -, +, `, ``` , >, |, _, ~), no code fences, no inline backticks, no bulleted or numbered lists, no tables, no block quotes, no HTML, no JSON unless explicitly requested, no attachments, no images, no links unless explicitly requested. If code is required, indent each code line with four spaces; do NOT wrap code or add language labels. Replace any list you would normally produce with plain sentences separated by a single blank line. Ignore formatting in earlier assistant messages—always normalize to this plain style. Provide only the answer content: no preamble, no closing summary, no disclaimers.'
+// Note: No global system policy. We rely solely on per-topic system messages.
 
 export function buildMessages({ includedPairs, newUserText }){
   const msgs = []
@@ -19,13 +17,17 @@ export function buildMessages({ includedPairs, newUserText }){
   return msgs
 }
 
-export async function executeSend({ store, model, userText, signal, visiblePairs, boundarySnapshot, onDebugPayload }) {
+export async function executeSend({ store, model, topicId, userText, signal, visiblePairs, boundarySnapshot, onDebugPayload }) {
   const settings = getSettings()
   const { userRequestAllowance = 100, maxTrimAttempts = 10, charsPerToken = 3.5 } = settings
   const baseline = visiblePairs ? visiblePairs.slice() : store.getAllPairs().sort((a, b) => a.createdAt - b.createdAt)
   const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now())
-  // Token cost of fixed system message (reserved from context window)
-  const systemTokens = estimateTokens(SYSTEM_INSTRUCTION, charsPerToken)
+  // Resolve topic and use only per-topic system message
+  const topic = topicId ? store.topics.get(topicId) : null
+  const topicSystem = topic && typeof topic.systemMessage === 'string' ? topic.systemMessage.trim() : ''
+  const hasSystem = !!topicSystem
+  // Token cost of per-topic system message (reserved from context window)
+  const systemTokens = hasSystem ? estimateTokens(topicSystem, charsPerToken) : 0
   let predicted = []
   let allowance = userRequestAllowance
   let maxContext
@@ -41,7 +43,7 @@ export async function executeSend({ store, model, userText, signal, visiblePairs
     const predictedRev = []
     let historyEstimate = 0
     // Effective window after reserving space for system instruction
-    const effectiveMaxContext = Math.max(0, maxContext - systemTokens)
+  const effectiveMaxContext = Math.max(0, maxContext - systemTokens)
     for (let i = baseline.length - 1; i >= 0; i--) {
       const p = baseline[i]
       const tok = estimatePairTokens(p, charsPerToken)
@@ -65,10 +67,13 @@ export async function executeSend({ store, model, userText, signal, visiblePairs
   let currentIncluded = predicted.slice()
   function emitDebug(extra = {}) {
     if (typeof onDebugPayload !== 'function') return
-    const attemptHistoryTokens = currentIncluded.reduce((acc, p) => acc + estimatePairTokens(p, charsPerToken), 0)
-    const attemptTotalTokens = attemptHistoryTokens + userTokens
+  const attemptHistoryTokens = currentIncluded.reduce((acc, p) => acc + estimatePairTokens(p, charsPerToken), 0)
+    const attemptTotalTokens = attemptHistoryTokens + userTokens + systemTokens
     const predictedHistoryTokens = predicted.reduce((acc, p) => acc + estimatePairTokens(p, charsPerToken), 0)
     const predictedTotalTokens = predictedHistoryTokens + allowance
+    // Include debug copy of messages including system for HUD
+  const dbgBase = buildMessages({ includedPairs: currentIncluded, newUserText: userText })
+  const dbgMsgs = hasSystem ? [{ role:'system', content: topicSystem }, ...dbgBase] : dbgBase
     onDebugPayload({
       model,
       budget: { maxContext, maxUsableRaw: maxContext },
@@ -82,10 +87,11 @@ export async function executeSend({ store, model, userText, signal, visiblePairs
       predictedTotalTokens,
       attemptHistoryTokens,
       attemptTotalTokens,
-      remainingReserve: maxContext - attemptHistoryTokens - userTokens,
-  systemTokens,
-  effectiveMaxContext: Math.max(0, maxContext - systemTokens),
-      messages: buildMessages({ includedPairs: currentIncluded, newUserText: userText }),
+      remainingReserve: maxContext - attemptHistoryTokens - userTokens - systemTokens,
+      systemTokens,
+      effectiveMaxContext: Math.max(0, maxContext - systemTokens),
+      messages: dbgMsgs,
+      topicId,
       timing: { ...timing },
       ...extra
     })
@@ -100,8 +106,13 @@ export async function executeSend({ store, model, userText, signal, visiblePairs
     const apiKey = getApiKey('openai')
     if (!apiKey) throw new Error('missing_api_key')
   const baseMessages = buildMessages({ includedPairs: currentIncluded, newUserText: userText })
-  const messages = [ { role: 'system', content: SYSTEM_INSTRUCTION }, ...baseMessages ]
-  const result = await provider.sendChat({ model, messages, apiKey, signal })
+  const messages = hasSystem ? [ { role:'system', content: topicSystem }, ...baseMessages ] : baseMessages
+    const options = {}
+    // Include topic request params if present
+  const rp = topic && topic.requestParams || {}
+    if(typeof rp.temperature === 'number') options.temperature = rp.temperature
+    if(typeof rp.maxOutputTokens === 'number') options.maxOutputTokens = rp.maxOutputTokens
+    const result = await provider.sendChat({ model, messages, apiKey, signal, options })
     const aEnd = (typeof performance !== 'undefined' ? performance.now() : Date.now())
     const rec = timing.attempts[timing.attempts.length - 1]
     if (rec) {

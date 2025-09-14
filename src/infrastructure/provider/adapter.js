@@ -15,6 +15,7 @@
  * @property {ChatMessage[]} messages
  * @property {AbortSignal} [signal]
  * @property {string} apiKey
+ * @property {{ temperature?: number, maxOutputTokens?: number }} [options]
  */
 
 /**

@@ -51,6 +51,20 @@ export function createRequestDebugOverlay({ historyRuntime }){
 		const lines = []
 		lines.push(`MODEL: ${model}`)
 		lines.push(`PARAMETERS: URA=${uraVal} CPT=${cpt} NTA=${nta} ML=${ml}`)
+		// Try to surface provider-specific options (temperature, max_tokens) if available in captured JSON
+		try {
+			let parsed = null
+			if (typeof window !== 'undefined' && window.__maichatLastRequest && window.__maichatLastRequest.json) {
+				try { parsed = JSON.parse(window.__maichatLastRequest.json) } catch {}
+			}
+			if (parsed && typeof parsed === 'object') {
+				const temp = parsed.temperature
+				const maxTok = parsed.max_tokens
+				if (temp != null || maxTok != null) {
+					lines.push(`OPENAI OPTIONS:${temp!=null?` temperature=${temp}`:''}${maxTok!=null?` max_tokens=${maxTok}`:''}`)
+				}
+			}
+		} catch {}
 		lines.push(`PREDICTED_HISTORY_CONTEXT: n_of_messages=${predictedMessageCount} n_of_tokens=${predictedHistoryTokens!=null?predictedHistoryTokens:'-'}`)
 		lines.push(`ACTUAL:`)
 		lines.push(`  tokens_in_new_user_request=${AUT!=null?AUT:'-'}`)
@@ -87,6 +101,23 @@ export function createRequestDebugOverlay({ historyRuntime }){
 			txt.slice(0,20).forEach(l=> lines.push('      '+l))
 			if(txt.length>20) lines.push('      ...')
 		})
+		// Highlight system message presence from captured JSON as a sanity check
+		try {
+			let sysPreview = null
+			if (typeof window !== 'undefined' && window.__maichatLastRequest && window.__maichatLastRequest.json) {
+				const parsed = JSON.parse(window.__maichatLastRequest.json)
+				if (Array.isArray(parsed?.messages)){
+					const sys = parsed.messages.find(m=> m && m.role === 'system')
+					if (sys && typeof sys.content === 'string') {
+						sysPreview = sys.content.split(/\n/).slice(0,5).join('\n')
+					}
+				}
+			}
+			if (sysPreview){
+				lines.push('SYSTEM MESSAGE (preview):')
+				lines.push('  '+sysPreview.split(/\n/).join('\n  '))
+			}
+		} catch {}
 		try {
 			// Prefer actual last sent JSON captured at adapter level (includes system message).
 			let jsonStr = null
@@ -106,7 +137,15 @@ export function createRequestDebugOverlay({ historyRuntime }){
 			btn.textContent = 'Copy JSON'
 			btn.style.position='absolute'; btn.style.top='4px'; btn.style.right='6px'; btn.style.font='10px var(--font-ui)'; btn.style.padding='2px 6px'; btn.style.background='#123a55'; btn.style.border='1px solid #25506f'; btn.style.color='#cce'; btn.style.cursor='pointer'; btn.style.borderRadius='4px'
 			btn.addEventListener('click', ()=>{
-				try { navigator.clipboard.writeText(JSON.stringify({ model, messages }, null, 2)) } catch{}
+				try {
+					let clip = null
+					if (typeof window !== 'undefined' && window.__maichatLastRequest && window.__maichatLastRequest.json) {
+						clip = window.__maichatLastRequest.json
+					} else {
+						clip = JSON.stringify({ model, messages }, null, 2)
+					}
+					navigator.clipboard.writeText(clip)
+				} catch{}
 				btn.textContent = 'Copied'
 				setTimeout(()=>{ btn.textContent='Copy JSON' }, 1400)
 			})

@@ -24,7 +24,7 @@ Status / Scope / Out of scope / See also
 | Action | Behavior |
 |--------|----------|
 | Open overlay | Primary text input (search box) receives focus. |
-| Shift+J | Moves focus context from search input to tree/list pane (Topic overlays). |
+| Ctrl+J | Moves focus context from search input to tree/list pane (Topic overlays). |
 | Esc (inside tree) | Returns focus to search input (overlay remains). |
 | Esc (inside search input) | Closes overlay, restores previous focus (mode and cursor preserved). |
 | Inline edit (rename/new) | Focus moves to inline input; Esc cancels; Enter commits; returns to prior tree/search focus context. |

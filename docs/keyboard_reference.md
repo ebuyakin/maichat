@@ -104,7 +104,7 @@ Hidden root: the conceptual root node is not displayed; top-level rows are its c
 | Key | Context | Action |
 |-----|---------|--------|
 | (typing) | Search field | Filter topics by name or any ancestor path substring |
-| Shift+J | Search field | Move focus into tree |
+| Ctrl+J | Search field | Move focus into tree |
 | Esc | Search field | Close picker |
 | Esc | Tree | Return focus to search (second Esc closes) |
 | j / k | Tree | Move down / up |
@@ -118,7 +118,7 @@ Hidden root; operations occur on visible hierarchy.
 | Key | Layer | Action |
 |-----|-------|--------|
 | (typing) | Search | Filter by name/path substring (forces ancestor expansion for matches) |
-| Shift+J | Search | Focus tree |
+| Ctrl+J | Search | Focus tree |
 | Esc | Search | Close editor |
 | Esc | Tree | Return to search (Esc again closes) |
 | j / k | Tree | Move down / up |
@@ -132,17 +132,16 @@ Hidden root; operations occur on visible hierarchy.
 | p | Tree | Paste marked topic as child of active (re-parent) |
 | Enter | Tree | Select topic (apply callback & close) |
 
+Details pane shortcuts (overlay-local):
+| Key | Context | Action |
+|-----|---------|--------|
+| Ctrl+E | Anywhere in overlay | Focus System message |
+| Ctrl+T | Anywhere in overlay | Focus Temperature field |
+| Ctrl+O | Anywhere in overlay | Focus Max output tokens |
+
 Notes:
-- Marked + Paste updates counts and prevents cycles; root cannot be marked.
-- Top-level creation (N) ensures consistent indentation (depth 0).
 
 ## 8. Navigation Semantics
-- Active Part: exactly one part is active; movement changes only index.
-- Auto-Scroll & Anchoring: Default Ensure‑Visible; optional Typewriter Regime centers the focused part on j/k. Uses outer‑gap padding + scroll clamping (no spacer elements). Meta row is never focusable.
-- Pair Association: Star / include act on the entire pair.
-- Meta Row: Visible but skipped in navigation; edits apply based on active part's pair. Mouse clicks on meta do not change selection.
-- 'n' vs 'G': 'n' = first part of last message; 'G' = last part of last message.
-- New reply auto-focus only if user remained at end (no navigation since send); otherwise badge appears.
 
 Pointer interactions (mouse/touch): Clicking in a UI zone automatically switches to that zone’s mode (command/view/input) before the target receives focus. Overlays are excluded. Keyboard behavior unchanged.
 
@@ -187,18 +186,5 @@ Vim-style navigation (j/k) may be intercepted by browser extensions (e.g. Vimium
 5. Fallbacks (arrows) never overshadow primary Vim-style keys.
 
 ## 13. Change Log
-- v0.11: Added Ctrl+K (API Keys overlay), unified API Keys overlay keyboard navigation, persistent command history navigation (Ctrl+P/Ctrl+N), refined Enter behavior in COMMAND (restore selection if filter unchanged), documentation updates.
-- v0.12: Error handling: VIEW-only `e` (Re-ask focused error) and `d` (Delete error). Removed global Ctrl+Shift+D/Y.
-- v0.10: Unified modal mode restoration via `openModal` helper (Topic Picker, Topic Editor, Model Selector, Model Editor, Settings, API Keys, Help); full key swallowing on close to prevent mode drift.
-- v0.9: Model selector limited to INPUT mode; model editor (Ctrl+Shift+M) available in all modes (j/k move, Space toggle, Enter/Esc close); Enter removed as toggle.
-- v0.8: Settings overlay unified keyboard model (j/k navigation, +/- numeric adjust with large Shift step, Space cycles selects, Enter apply w/out close, Esc cancel, persistent 'Saved' label until dirty).
-- v0.7: Implemented Shift+R anchor cycle; dev reseed helper (Ctrl+Shift+S) for partition testing; forced smaller part size for testing.
-- v0.6: New message behavior (single pending send), 'n' key (first part of last message), Enter blocked during pending, badge logic.
-- v0.5: Settings overlay (Ctrl+,); meta row declared non-focusable; anchoring model (Bottom/Center/Top) + Shift+R cycle; clarified navigation semantics.
-- v0.4: Hidden root topic; hierarchical quick picker; Topic Editor adds top-level creation (N) and updated help; path-based search & display.
-- v0.3: Topic Editor focus model (Shift+J tree focus; Esc layering); mark/paste m/p; delete confirm; global key router modal suppression.
-- v0.2: Topic (Ctrl+T) & model (Ctrl+M) selectors; replaced gg with g; numeric star keys (1/2/3) + Space clear.
-- v0.1: Initial extraction from `ui_layout.md`; mode cycle, direct shortcuts, initial sets.
 
----
 Edits welcome; propose changes via spec discussion before implementation.

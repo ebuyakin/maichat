@@ -12,7 +12,7 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
   for(const id of (store.children.get(rootId)||[])) expanded.add(id)
   const rootEl = document.createElement('div')
   rootEl.className = 'topic-picker-backdrop'
-  rootEl.innerHTML = `<div class="topic-picker"><input type="text" class="tp-search" placeholder="Search (Shift+J to tree)"/><div class="tp-tree" role="tree" tabindex="0"></div></div>`
+  rootEl.innerHTML = `<div class="topic-picker"><input type="text" class="tp-search" placeholder="Search (Ctrl+J to tree)"/><div class="tp-tree" role="tree" tabindex="0"></div></div>`
   const searchInput = rootEl.querySelector('.tp-search')
   const treeEl = rootEl.querySelector('.tp-tree')
   function escapeHtml(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) }
@@ -100,7 +100,7 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
   function onKey(e){
     if(!inTreeFocus){
       if(e.key==='Escape'){ swallow(e); teardown(); onCancel && onCancel(); return }
-      if(e.key==='J' && e.shiftKey){ swallow(e); inTreeFocus=true; treeEl.focus(); return }
+  if(e.ctrlKey && (e.key==='j' || e.key==='J')){ swallow(e); inTreeFocus=true; treeEl.focus(); return }
       return
     }
     switch(e.key){
