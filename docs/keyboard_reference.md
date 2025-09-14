@@ -67,7 +67,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | G | Jump to last part | Shift+g |
 | o / Shift+O | Jump to first in‑context pair (boundary) and center it | One-shot center (does not enable the Typewriter Regime) |
 | r | Toggle Typewriter Regime | Centers on each j/k; exits on g/G, send/reply, filter change |
-| n | Jump to FIRST part of last message | Clears new-message badge; re-anchors even if already there |
+| n | Jump to FIRST part of last message | Focuses first part; bottom-anchors end (last assistant or meta); clears badge |
 | e | Re-ask focused error message | Copies text to input; on Send, old error pair is deleted and a new message is created at the end (uses current context) |
 | d | Delete focused error message | Removes the error pair; focus moves to previous part |
 | * | Cycle star (0→1→2→3→0) | Affects active pair |
@@ -91,8 +91,8 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 ## 5. COMMAND Mode Keys
 | Key | Action | Notes |
 |-----|--------|-------|
-| Enter | Apply filter then go to VIEW | If filter unchanged, prior active part restored (no jump); if changed or cleared, jump to last part |
-| Escape | Clear filter (if any), stay COMMAND | Restores full history |
+| Enter | Apply current filter (including empty) → VIEW | Rebuilds history; keep focused if still present else focus last; bottom-anchor focused |
+| Escape | Clear filter input (no apply) | No rebuild; stays COMMAND; same as Ctrl‑U |
 | Ctrl+P | Previous command in history | Persistent (survives reload, max 100) |
 | Ctrl+N | Next command in history | Clears to empty at end |
 | Ctrl+v / Ctrl+i / Ctrl+d | Direct mode switch | |
@@ -187,4 +187,4 @@ Vim-style navigation (j/k) may be intercepted by browser extensions (e.g. Vimium
 
 ## 13. Change Log
 
-Edits welcome; propose changes via spec discussion before implementation.
+See also: scroll_positioning_spec.md (Core flows §4, §5–§9). Edits welcome; propose changes via spec discussion before implementation.

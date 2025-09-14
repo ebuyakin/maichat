@@ -187,14 +187,23 @@ Core rules:
 - After any navigation action, the _Focused Part_ is positioned by default using Ensure‑Visible; when the Typewriter Regime is ON, j/k recenters the focused part.
 
 Filtering, resizing, and list rebuilds:
-- Applying a filter rebuilds the list to matching pairs; the last visible part becomes focused at the current anchor.
-- Clearing a filter restores the full list and re-anchors naturally at the end.
+- Filter (COMMAND mode):
+  - Enter (apply): applies the current filter value (including empty to clear any previously applied filter) and rebuilds the history; switches to VIEW.
+    - Focus: if the previously focused part still exists in the filtered set (including the equivalent part when partitioning changed within the same pair and role), keep it; otherwise focus the last part (if any).
+    - Anchor: one-shot bottom-align the focused part (clamped). If the result is empty, no anchor is applied.
+  - Escape (clear input only): clears the filter input but does NOT apply it; history is NOT rebuilt; remains in COMMAND. Equivalent to Ctrl-U or deleting the text.
+  - Consistency: The filter is applied — and the history is rebuilt — only on Enter in COMMAND.
 - Resize < partitionRecomputeThreshold of viewport height: retain partitions and focused part; maintain anchor within dead-band.
 - Resize ≥ partitionRecomputeThreshold: recompute partitions; map the previous focused selection to the part covering the same text range (or nearest within its pair) and re-anchor.
+  
+See: scroll_positioning_spec.md (Core flows §4) for precise anchoring rules.
 
 New reply and end-of-list jumps:
-- ‘n’ jumps to the FIRST part of the LAST message (assistant reply if present; otherwise last user message). It is a jump-and-anchor action even if already at the end.
-- ‘G’ jumps to the LAST part of the LAST message.
+- ‘n’ jumps to the FIRST part of the LAST message (assistant reply if present; otherwise last user message). Focus remains on that first part; end-of-list is bottom-anchored (last assistant or meta) as a one-shot.
+- ‘G’ focuses the LAST part; Ensure-Visible applies (bottom-align if not fully visible).
+
+Boundary jump:
+- ‘o’ / ‘Shift+O’ jumps to the first in-context pair (boundary), focuses its first part, and performs a one-shot center alignment. Does not change Typewriter Regime state.
 
 ## 8. Edge behaviour
 Clamping & calm edges are handled by the scroll controller. No persistent edge anchoring policy remains; behaviour follows Ensure‑Visible or the specific AlignTo one‑shot with clamping.

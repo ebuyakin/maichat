@@ -120,6 +120,7 @@ export function createInteraction({
     if(e.ctrlKey && (e.key==='n' || e.key==='N')){ historyNext(); return true }
     if(e.key==='Enter'){
       const q = commandInput.value.trim()
+      // Handle debug/utility commands first
       if(q === ':hud' || q === ':hud on'){ hudEnabled=true; hudRuntime.enable(true); commandInput.value=''; commandErrEl.textContent=''; return true }
       if(q === ':hud off'){ hudEnabled=false; hudRuntime.enable(false); commandInput.value=''; commandErrEl.textContent=''; return true }
       if(q === ':maskdebug' || q === ':maskdebug on'){ maskDebug=true; commandInput.value=''; commandErrEl.textContent=''; historyRuntime.applySpacingStyles(getSettings()); historyRuntime.updateFadeVisibility(); return true }
@@ -128,46 +129,105 @@ export function createInteraction({
       if(q === ':anim on' || q === ':noanim off'){ ctx.scrollController.setAnimationEnabled(true); commandInput.value=''; commandErrEl.textContent=''; return true }
       if(q === ':scrolllog on'){ window.__scrollLog=true; commandInput.value=''; commandErrEl.textContent=''; return true }
       if(q === ':scrolllog off'){ window.__scrollLog=false; commandInput.value=''; commandErrEl.textContent=''; return true }
-      historyRuntime.updateFadeVisibility()
-      const prevFilter = lastAppliedFilter
-      const prevActiveId = commandModeEntryActivePartId || (activeParts.active() && activeParts.active().id)
+
+      // Apply filter (including empty) and rebuild view. Preserve focus if possible; else fallback.
+  // Preserve focus based on snapshot taken on entering COMMAND mode only
+  const prevActiveId = commandModeEntryActivePartId
       lifecycle.setFilterQuery(q)
-      if(!q){
-        commandErrEl.textContent=''
-        historyRuntime.renderCurrentView()
-        activeParts.last(); historyRuntime.applyActivePart()
-        lastAppliedFilter=''
-        // Spec: exit Reading Mode on filter clear
-        readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
-        pushCommandHistory(q); commandHistoryPos=-1; modeManager.set('view'); return true
-      }
       try {
-  const ast = parse(q)
-  const basePairs = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
-  const currentBareTopicId = pendingMessageMeta.topicId || currentTopicId
-  const currentBareModel = pendingMessageMeta.model || getActiveModel()
-  const res = evaluate(ast, basePairs, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
-        const changed = q !== prevFilter
-        lifecycle.setFilterQuery(q)
-        historyRuntime.renderHistory(res)
-        commandErrEl.textContent=''
-        modeManager.set('view')
-        if(!changed && prevActiveId){ activeParts.setActiveById(prevActiveId); historyRuntime.applyActivePart() }
-        if(changed){
-          lastAppliedFilter=q; pushCommandHistory(q); commandHistoryPos=-1
-          // Spec: exit Reading Mode on filter change
-          readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
+        let pairs
+        if(q){
+          const ast = parse(q)
+          const basePairs = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
+          const currentBareTopicId = pendingMessageMeta.topicId || currentTopicId
+          const currentBareModel = pendingMessageMeta.model || getActiveModel()
+          pairs = evaluate(ast, basePairs, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
+        } else {
+          pairs = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
         }
-  } catch(ex){ const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'; const friendly = (/^Unexpected token:/i.test(raw) || /^Unexpected trailing input/i.test(raw)) ? 'Incorrect command' : `Incorrect command: ${raw}`; commandErrEl.textContent = friendly }
+        historyRuntime.renderHistory(pairs)
+        commandErrEl.textContent=''
+
+        // If nothing to show, leave focus empty and viewport unchanged.
+        if(!activeParts.parts.length){
+          lastAppliedFilter = q
+          // Turn off Reading Mode on apply (idempotent)
+          readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
+          pushCommandHistory(q); commandHistoryPos=-1
+          modeManager.set('view')
+          return true
+        }
+
+        // Try to preserve previous focused part if still present.
+        let preserved = false
+        if(prevActiveId){
+          const before = activeParts.active() && activeParts.active().id
+          activeParts.setActiveById(prevActiveId)
+          const now = activeParts.active() && activeParts.active().id
+          preserved = !!now && now === prevActiveId
+          // If setActiveById couldn't match exactly, don't treat as preserved.
+          if(!preserved && before && now === before){ preserved = false }
+        }
+
+        // Compute fallback focus and anchor when not preserved.
+        let anchorTargetId = null
+        if(!preserved){
+          try{
+            const lastPair = pairs && pairs.length ? pairs[pairs.length-1] : null
+            if(lastPair){
+              const lastId = lastPair.id
+              // Find parts for this pair in current view
+              const partsForPair = activeParts.parts.filter(p=> p.pairId === lastId)
+              const assistants = partsForPair.filter(p=> p.role==='assistant')
+              if(assistants.length){
+                const focusPart = assistants[assistants.length-1]
+                activeParts.setActiveById(focusPart.id)
+                anchorTargetId = focusPart.id // anchor to the focused assistant part
+              } else {
+                const users = partsForPair.filter(p=> p.role==='user')
+                if(users.length){
+                  const focusPart = users[users.length-1]
+                  activeParts.setActiveById(focusPart.id)
+                  anchorTargetId = `${lastId}:meta` // anchor bottom to meta, not the focused user
+                } else {
+                  // Extremely rare: no user/assistant (shouldn't happen). Fallback to last non-meta in entire list
+                  let idx = activeParts.parts.length-1
+                  while(idx>=0 && activeParts.parts[idx].role==='meta') idx--
+                  if(idx>=0){ activeParts.activeIndex = idx }
+                  anchorTargetId = `${lastId}:meta`
+                }
+              }
+            }
+          } catch{}
+        }
+
+        // Apply visual active highlight
+        historyRuntime.applyActivePart()
+
+        // Ensure fresh metrics then one-shot bottom align
+        try { if(ctx.scrollController && ctx.scrollController.remeasure) ctx.scrollController.remeasure() } catch {}
+        try {
+          const act = activeParts.active()
+          const targetId = anchorTargetId || (act && act.id)
+          if(targetId && ctx.scrollController && ctx.scrollController.alignTo){
+            ctx.scrollController.alignTo(targetId, 'bottom', false)
+          }
+        } catch {}
+
+        // Turn off Reading Mode on apply (idempotent) and switch to VIEW
+        readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
+        lastAppliedFilter = q; pushCommandHistory(q); commandHistoryPos=-1
+        modeManager.set('view')
+      } catch(ex){
+        const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'
+        const friendly = (/^Unexpected token:/i.test(raw) || /^Unexpected trailing input/i.test(raw)) ? 'Incorrect command' : `Incorrect command: ${raw}`
+        commandErrEl.textContent = friendly
+      }
       return true
     }
     if(e.key==='Escape'){
-      if(commandInput.value){
-        commandInput.value=''; lifecycle.setFilterQuery(''); lastAppliedFilter='';
-        historyRuntime.renderCurrentView(); activeParts.last(); historyRuntime.applyActivePart(); commandErrEl.textContent=''
-        // Spec: exit Reading Mode on filter clear
-        readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
-      }
+      // Clear input only; do not rebuild, do not change mode, do not change Reading Mode
+      if(commandInput.value){ commandInput.value=''; return true }
       return true
     }
   }

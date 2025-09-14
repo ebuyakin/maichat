@@ -41,23 +41,21 @@ Reply height measurement (fit criterion):
    - If focused is fully visible: no scroll.
    - If it’s below the viewport: bottom‑align focused.
    - If it’s above the viewport: top‑align focused.
-   - Typewriter Regime toggles on r (opt‑in reading regime).
-   - While Typewriter Regime is ON: on j/k, center‑align the focused part (alignTo(...,'center')).
-   - Ends automatically on g/G, new message sent/arrived, or filter change. Outside the regime, navigation uses Ensure‑Visible only.
+   
 
 ## Core flows
 
-Open/reload:
+1. Open/reload:
    - If the last message has an assistant: alignTo(last assistant,'bottom').
    - If the last message has no assistant (only user): alignTo(meta,'bottom'). Meta is not focused; it is the position target to ensure it’s visible as the last row.
 
-After send:
+2. After send (new message request):
    - Mode: remain INPUT
    - Focus: last user part of the new pair
    - Position: one‑shot alignTo(meta,'bottom'); meta is a visual position target only, not focused
-   - Typewriter Regime: turns OFF
+   
 
-Reply arrival:
+3. Reply arrival:
    - If user is still in INPUT and the reply does NOT fully fit the Usable Band (`ReplyHeight > usableHeight`):
        - Mode: switch to VIEW
        - Focus: first assistant part of the new reply
@@ -69,7 +67,30 @@ Reply arrival:
     - If user left INPUT while waiting (currently in VIEW/COMMAND):
        - Mode and focus are preserved; no automatic changes are applied.
 
-VIEW navigation (j/k):
+4. Filter (COMMAND mode): apply vs clear
+    - Enter (apply): Pressing Enter in COMMAND applies the current filter value (including empty to clear any previously applied filter) and rebuilds the history. Mode switches to VIEW.
+       - Focus after rebuild:
+          - If the previously focused part still exists in the filtered set (including the equivalent part when partitioning changed within the same pair and role), keep that part focused.
+          - Otherwise, focus the last part of the filtered set (if any). If the result is empty, there is no focused part.
+       - Anchored position: After focus is chosen (preserved or last), perform a one‑shot bottom anchor: alignTo(focused,'bottom') with clamping to [0, maxScroll]. If the filtered set is empty, no anchor is applied.
+    - Escape (clear input only): Pressing Escape in COMMAND clears the filter input but does NOT apply it. History is NOT rebuilt and the mode remains COMMAND. This is equivalent to Ctrl‑U or deleting the text with Backspace.
+    - Consistency: The filter is applied — and the history is rebuilt — only on Enter in COMMAND.
+
+5. Boundary jump (o / Shift+O):
+   - Action: Jump to the first in‑context pair (boundary) and select its first part.
+   - Position: one‑shot center on the focused part: alignTo(focused,'center').
+   - Mode: unchanged.
+
+6. Jump to newest (n):
+   - Action: Jump to the FIRST part of the LAST message (assistant reply if present; otherwise the last user message). Clears the new‑message badge.
+   - Focus: first part of the last message.
+   - Position: one‑shot bottom anchor of the end‑of‑list visual target:
+       - If the last message has assistant parts: alignTo(last assistant,'bottom').
+       - Else (no assistant yet): alignTo(meta,'bottom').
+     Focus remains on the first part (anchor target may differ from focused).
+   - Mode: unchanged.
+
+7. Regular VIEW navigation (j/k):
    - Default (Ensure‑Visible): after each j/k (and mouse click), make the focused part fully visible with the least movement.
        - Symbols: S = historyPane.scrollTop, H = historyPane.clientHeight, G = outerGap (pane padding, same top/bottom), T = offsetTop(focusedPart), h = offsetHeight(focusedPart). Tolerance tol = 1 px. Ignore |S' − S| ≤ 2 px. Clamp S' to [0, maxScroll].
        - Fully visible means: the focused part’s top edge (T) is not above the inner top edge (S + G), and its bottom edge (T + h) is not below the inner bottom edge (S + H − G), within tol.
@@ -78,9 +99,16 @@ VIEW navigation (j/k):
           - If the top edge is above the inner top edge: S' = T − G (top‑align once).
           - Else if the bottom edge is below the inner bottom edge: S' = T + h − (H − G) (bottom‑align once).
        - No centering in default VIEW.
-    
-   - Typewriter Regime ON (toggled by r): center‑align on every j/k
-   - g/G: jump to first/last via Ensure‑Visible and exit the regime
+   
+8. g / G (go to first / last):
+   - Action: g focuses the first part; G focuses the last part.
+   - Position: Apply Ensure‑Visible to the focused part (minimal movement). In practice:
+       - g will top‑align the first part if it’s not fully visible; otherwise no scroll.
+       - G will bottom‑align the last part if it’s not fully visible; otherwise no scroll.
+
+9. Typewriter (Reading) Regime
+   - Toggle: Press r to toggle ON/OFF. While ON, j/k center‑align the focused part (alignTo(...,'center')).
+   - OFF triggers: Typewriter Regime turns OFF on g or G, sending a new message, reply arrival, or when a filter is applied (Enter in COMMAND).
 
 ## Meta visibility and fade
    - Top‑align sets targetTop = outerGap.
