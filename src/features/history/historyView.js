@@ -1,6 +1,5 @@
 // historyView moved from ui/history/historyView.js
 import { escapeHtml } from '../../shared/util.js'
-import { getSettings } from '../../core/settings/index.js'
 
 export function createHistoryView({ store, onActivePartRendered }){
 	const container = document.getElementById('history')
@@ -14,22 +13,13 @@ export function createHistoryView({ store, onActivePartRendered }){
 				const prev = parts[i-1]
 				const gapType = classifyGap(prev, cur)
 				if(gapType){
-					const h = gapHeightFor(gapType)
-					tokens.push(`<div class="gap gap-${gapType}" data-gap-type="${gapType}" style="height:${h}px"></div>`)
+					tokens.push(`<div class="gap gap-${gapType}" data-gap-type="${gapType}"></div>`)
 				}
 			}
 			tokens.push(partHtml(cur))
 		}
 		container.innerHTML = tokens.join('')
 		if(onActivePartRendered) onActivePartRendered()
-	}
-
-	function gapHeightFor(type){
-		const s = getSettings()
-		if(type==='between') return s.gapBetweenPx||0
-		if(type==='meta') return s.gapMetaPx||0
-		if(type==='intra') return s.gapIntraPx||0
-		return 0
 	}
 	function classifyGap(prev, cur){
 		if(prev.pairId !== cur.pairId) return 'between'

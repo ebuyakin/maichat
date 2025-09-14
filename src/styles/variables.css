@@ -21,4 +21,12 @@
   --topbar-h: 60px;
   --bottombar-h: 96px;
   --gutter: 16px;
+
+  /* Spacing/fade defaults (overridden at runtime by JS via :root) */
+  --gap-outer: 20px;      /* top/bottom padding inside history pane */
+  --gap-meta: 6px;        /* gap between user->meta and meta->assistant */
+  --gap-intra: 6px;       /* gap between consecutive parts of same role */
+  --gap-between: 10px;    /* gap between message pairs */
+  --part-padding: 4px;    /* inner padding of .part-inner */
+  --fade-transition-ms: 120ms; /* default transition for opacity */
 }

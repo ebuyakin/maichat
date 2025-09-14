@@ -1,2 +1,2 @@
-// DEPRECATED SHIM: moved to core/store/indexes.js (will be removed Phase 8)
-export * from '../core/store/indexes.js'
+// Deprecated: import from 'src/core/store/indexes.js' instead.
+throw new Error("Deprecated module: use 'src/core/store/indexes.js' instead of 'src/store/indexes.js'")

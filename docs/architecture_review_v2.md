@@ -173,9 +173,9 @@ Fit vs Roadmap (M21–M28)
 - Status: Planned. This step should precede CSS variables (next item) to make the switch safer and contained.
 
 4) CSS variables for spacing/fade/animation
-- Define CSS vars in a single stylesheet; `settings` writes vars to `:root`; history runtime reads computed values (still subscribes for changes).
+- Define CSS vars in a single stylesheet; `settings` writes vars to `:root`; history runtime subscribes for changes. Gap elements use CSS classes (no inline heights).
 - Acceptance: All spacing/fade tests pass; switching settings updates visuals without JS-generated `<style>` duplication.
- - Status: Planned, after item 3. Replace the internals of spacing application with a small `applySpacingCssVars(settings)` helper; keep fade logic in JS.
+ - Status: Done for spacing. JS now sets `--gap-*`, `--part-padding`, and `--fade-transition-ms`; fade computation remains in JS.
 
 5) Remove duplicate legacy `src/store/*` files (with IndexedDB adapter inversion)
 - Do NOT delete the adapter prematurely. Current state: `core/store/indexedDbAdapter.js` re-exports from `../../store/indexedDbAdapter.js` (real impl lives under `src/store`).
@@ -184,7 +184,7 @@ Fit vs Roadmap (M21–M28)
 	- Step B (update imports): grep for `src/store/indexedDbAdapter` and switch callers to `core/store/indexedDbAdapter` only. Leave the shim until grep shows zero references to `src/store/indexedDbAdapter`.
 	- Step C (verify & remove): run tests and a quick boot to confirm persistence still works with existing IndexedDB data, then delete `src/store/*` remnants.
 - Acceptance: no imports from `src/store/*` (including the adapter); app boots with existing data intact; unit tests green.
-
+- Status: Done. IndexedDB adapter lives under `core/store/adapters/indexedDb.js` with public export from `core/store/indexedDbAdapter.js`. All imports updated; tests green. The legacy `src/store/` folder can be removed safely.
 Out of scope for this section (feature work; see roadmap `docs/plan.md`)
 - M23: Command router and selection-based operations (feature implementation).
 - M24: Formatter pipeline (markdown/LaTeX/code) with sanitizer (feature implementation).

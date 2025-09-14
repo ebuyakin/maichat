@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { createStore } from '../../src/store/memoryStore.js'
-import { createIndexedDbAdapter } from '../../src/store/indexedDbAdapter.js'
+import { createStore } from '../../src/core/store/memoryStore.js'
+import { createIndexedDbAdapter } from '../../src/core/store/indexedDbAdapter.js'
 import { attachContentPersistence } from '../../src/core/persistence/contentPersistence.js'
 
 // NOTE: IndexedDB not available in Vitest node env by default; this test will be a placeholder until jsdom or polyfill.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { createStore } from '../../src/store/memoryStore.js'
-import { attachIndexes } from '../../src/store/indexes.js'
+import { createStore } from '../../src/core/store/memoryStore.js'
+import { attachIndexes } from '../../src/core/store/indexes.js'
 
 describe('indexes', () => {
   it('builds and updates indexes', () => {

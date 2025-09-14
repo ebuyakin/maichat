@@ -90,6 +90,7 @@ Layout & Spacing:
 * History pane vertical bounds computed dynamically (JS `layoutHistoryPane`) from actual bar heights to avoid clipping first/last messages.
 * Send button moved to second row right; first row remains pure input field.
 * No horizontal separators between message pairs; visual separation via spacing only.
+* Spacing tokens are CSS variables: `--gap-outer`, `--gap-meta`, `--gap-intra`, `--gap-between`, and `--part-padding`. JS writes them to `:root` via settings.
 
 Active Part Styling:
 * Single `.part.active` at a time.
@@ -103,7 +104,7 @@ Active Part Styling:
   - Intra-role Gap (user→user, assistant→assistant) – `gapIntraPx`
   - Between Messages Gap (pair→pair) – `gapBetweenPx`
 * Settings overlay (Ctrl+,) manages rare adjustments (fraction, reading position, padding, gap, zone heights) applied only after selecting "Apply" (no live preview).
-* Spacing updates inject a runtime `<style>` block; anchor for active part is re-applied post-update to maintain reading position.
+* Spacing updates are applied via CSS variables on `:root` (no injected `<style>`). Anchor for active part is re-applied post-update to maintain reading position.
 * Meta row visible but NEVER focusable (excluded from navigation sequence).
 
 Rules (normative):
