@@ -241,8 +241,8 @@ export function openModelEditor({ onClose, store }){
     }
   })
   // Sync is intentionally passive (non-focusable, no click handler) until implemented
-  // Single window keydown capture listener; stale instances ignore via token guard
-  window.addEventListener('keydown', keyHandler, true)
+  // Attach to backdrop (capture) so keys are local to overlay and work under central blocker
+  backdrop.addEventListener('keydown', keyHandler, true)
   const modal = openModal({
     modeManager: window.__modeManager,
     root: backdrop,
@@ -481,7 +481,7 @@ export function openModelEditor({ onClose, store }){
   render()
   function close(){
     // Cleanup listener and clear token ownership
-  window.removeEventListener('keydown', keyHandler, true)
+  try{ backdrop.removeEventListener('keydown', keyHandler, true) }catch{}
     if (ACTIVE_EDITOR_TOKEN === TOKEN) ACTIVE_EDITOR_TOKEN = null
     // beforeClose provided to modal will call onClose once
     modal.close('manual')

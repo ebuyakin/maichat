@@ -1,6 +1,6 @@
 # Scroll Positioning Spec — One‑Shot Actions, Ensure‑Visible, Typewriter Regime
 
-Date: 2025-09-09
+Date: 2025-09-15
 Owner: History/Scrolling
 
 ## Purpose
@@ -109,6 +109,13 @@ Reply height measurement (fit criterion):
 9. Typewriter (Reading) Regime
    - Toggle: Press r to toggle ON/OFF. While ON, j/k center‑align the focused part (alignTo(...,'center')).
    - OFF triggers: Typewriter Regime turns OFF on g or G, sending a new message, reply arrival, or when a filter is applied (Enter in COMMAND).
+
+10. Settings/Model-driven rebuild
+   - Trigger: A settings or model overlay change classified by the selective re-render policy as requiring a history rebuild.
+   - Focus: Preserve the previously focused part if it still exists; otherwise fall back to the last part (existing behavior in runtime).
+   - Position: After the rebuild completes and measurements are up to date, perform a one-shot bottom anchor on the focused part: alignTo(focused,'bottom'). This ensures the focused item is visible and respects outer gaps.
+   - Mode: Unchanged.
+   - Scope isolation: This bottom-align is specific to settings/model rebuilds and does not alter other flows defined above (open/reload, send, reply, filter, navigation, typewriter).
 
 ## Meta visibility and fade
    - Top‑align sets targetTop = outerGap.

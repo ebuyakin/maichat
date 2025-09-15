@@ -1,5 +1,6 @@
 // topicPicker.js moved from ui/topicPicker.js (Phase 6.4 Topics)
 import { openModal } from '../../shared/openModal.js'
+import { getSettings, saveSettings } from '../../core/settings/index.js'
 
 export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
   let filter = ''
@@ -22,6 +23,20 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
     while(cur){ parts.push(cur.name); cur = cur.parentId ? store.topics.get(cur.parentId) : null }
     const full = parts.reverse(); if(full[0]==='Root') full.shift(); return full.join(' > ')
   }
+  let orderMode = getSettings().topicOrderMode || 'manual' // 'manual' | 'recent'
+
+  function compareTopics(aId, bId){
+    const ta = store.topics.get(aId), tb = store.topics.get(bId)
+    if(orderMode === 'recent'){
+      const d = (tb?.lastActiveAt||0) - (ta?.lastActiveAt||0)
+      if(d) return d
+    } else {
+      const d = (ta?.sortIndex||0) - (tb?.sortIndex||0)
+      if(d) return d
+    }
+    return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
+  }
+
   function buildFlat(){
     flat = []
     const lower = filter.toLowerCase()
@@ -48,10 +63,7 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
       flat.push({ topic:t, depth })
       const isExp = expanded.has(id) || forceExpand.has(id)
       if(isExp){
-        const kids = Array.from((store.children.get(id)||[])).sort((a,b)=>{
-          const ta = store.topics.get(a), tb = store.topics.get(b)
-          return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
-        })
+        const kids = Array.from((store.children.get(id)||[])).sort(compareTopics)
         for(const cid of kids) dfs(cid, depth+1)
       }
     }
@@ -63,10 +75,7 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
       for(const cid of (store.children.get(id)||[])) if(descendantHasMatch(cid)){ descCache.set(id,true); return true }
       descCache.set(id,false); return false
     }
-    const kids = Array.from((store.children.get(rootId)||[])).sort((a,b)=>{
-      const ta = store.topics.get(a), tb = store.topics.get(b)
-      return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
-    })
+  const kids = Array.from((store.children.get(rootId)||[])).sort(compareTopics)
     for(const rid of kids) dfs(rid,0)
   }
   function render(){
@@ -98,6 +107,12 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }){
   }
   function swallow(e){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation() }
   function onKey(e){
+    // Toggle order: accept plain 'o' (lower/upper) and Ctrl+O when tree-focused
+    if(inTreeFocus && !e.metaKey && !e.altKey){
+      if((!e.ctrlKey && (e.key==='o' || e.key==='O')) || (e.ctrlKey && (e.key==='o' || e.key==='O'))){
+        swallow(e); orderMode = orderMode==='manual' ? 'recent' : 'manual'; saveSettings({ topicOrderMode: orderMode }); render(); return
+      }
+    }
     if(!inTreeFocus){
       if(e.key==='Escape'){ swallow(e); teardown(); onCancel && onCancel(); return }
   if(e.ctrlKey && (e.key==='j' || e.key==='J')){ swallow(e); inTreeFocus=true; treeEl.focus(); return }

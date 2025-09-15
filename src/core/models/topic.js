@@ -1,12 +1,17 @@
 // Moved from src/models/topic.js (Phase 5 core move)
 const DEFAULT_SYSTEM_MESSAGE = 'You are MaiChat Assistant for this topic. Be concise and ask clarifying questions when needed.'
 
-export function createTopic({ id, name, parentId = null, createdAt = Date.now(), systemMessage = DEFAULT_SYSTEM_MESSAGE, requestParams } = {}) {
+export function createTopic({ id, name, parentId = null, createdAt = Date.now(), systemMessage = DEFAULT_SYSTEM_MESSAGE, requestParams, sortIndex, lastActiveAt } = {}) {
+	const now = Date.now()
 	return {
 		id,
 		name,
 		parentId,
 		createdAt,
+		// Manual ordering index (local to parent). Default to creation time for stable initial ordering.
+		sortIndex: typeof sortIndex === 'number' ? sortIndex : createdAt || now,
+		// Most recent activity across subtree. 0 means no activity yet.
+		lastActiveAt: typeof lastActiveAt === 'number' ? lastActiveAt : 0,
 		systemMessage,
 		requestParams: normalizeRequestParams(requestParams)
 	}

@@ -6,6 +6,7 @@ import { createModeManager, MODES } from './features/interaction/modes.js'
 import { bindHistoryErrorActions } from './features/history/historyView.js'
 import { createHistoryRuntime } from './features/history/historyRuntime.js'
 import { getSettings, subscribeSettings } from './core/settings/index.js'
+import { decideRenderAction } from './runtime/renderPolicy.js'
 import { invalidatePartitionCacheOnResize } from './features/history/partitioner.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
@@ -150,20 +151,42 @@ bindHistoryErrorActions(document.getElementById('history'), {
   }
 })
 // Preload settings
-getSettings()
-let __lastPF = getSettings().partFraction
-let __lastPadding = getSettings().partPadding
-subscribeSettings((s)=>{ 
-  // Detect partFraction change to invalidate partition cache even if computed maxLines coincidentally unchanged
-  if(s.partFraction !== __lastPF){
-    __lastPF = s.partFraction
-    invalidatePartitionCacheOnResize()
+const __initialSettings = getSettings()
+let __prevSettings = { ...__initialSettings }
+let __lastPF = __prevSettings.partFraction
+let __lastPadding = __prevSettings.partPadding
+subscribeSettings((s)=>{
+  const action = decideRenderAction(__prevSettings, s)
+  // Maintain previous snapshot for next diff
+  __prevSettings = { ...s }
+  // Partition cache invalidation for line budget changes
+  if(s.partFraction !== __lastPF){ __lastPF = s.partFraction; invalidatePartitionCacheOnResize() }
+  if(s.partPadding !== __lastPadding){ __lastPadding = s.partPadding; invalidatePartitionCacheOnResize() }
+  if(action === 'rebuild'){
+    applySpacingStyles(s)
+    layoutHistoryPane()
+    // Rebuild while preserving active
+    renderCurrentView({ preserveActive:true })
+    // After rebuild completes and parts are measured, bottom-align the focused part once
+    try {
+      const act = __runtime.activeParts && __runtime.activeParts.active && __runtime.activeParts.active()
+      const id = act && act.id
+      if(id){
+        // Wait for remeasure in renderHistory's rAF, then align
+        requestAnimationFrame(()=>{
+          requestAnimationFrame(()=>{
+            __runtime.scrollController && __runtime.scrollController.alignTo(id, 'bottom', false)
+          })
+        })
+      }
+    } catch {}
+  } else if(action === 'restyle'){
+    applySpacingStyles(s)
+    layoutHistoryPane()
+    // Note: no history rebuild; fade/visibility will update on scroll or next render
+  } else {
+    // no-op for view; still allow other subscribers to react
   }
-  if(s.partPadding !== __lastPadding){
-    __lastPadding = s.partPadding
-    invalidatePartitionCacheOnResize()
-  }
-  applySpacingStyles(s); layoutHistoryPane(); renderCurrentView({ preserveActive:true }) 
 })
 function renderTopics(){ /* hidden for now */ }
 

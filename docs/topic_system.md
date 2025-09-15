@@ -123,6 +123,53 @@ Editing shortcuts are disabled in Selection Mode to reduce accidental structural
 - Virtualization threshold: if topic count ≥ 500, only render visible expanded rows + small overscan (Editor only).
 - Path and search indexes may be cached; cache invalidated on rename or move.
 
+### Ordering Modes and Aggregates (New)
+
+We support two sibling-ordering modes for both Topic Editor (Ctrl+E) and Topic Quick Picker (Ctrl+T). Ordering is always applied within a parent’s immediate children; it does not change the tree structure.
+
+Modes
+- Manual (default):
+	- Comparator: sortIndex ascending, then createdAt ascending, then name ascending (localeCompare, case-insensitive).
+	- semantics: Users control order explicitly among siblings via Editor-only commands (see Keyboard Reference). Picker respects this order read-only.
+	- persistence: sortIndex is stored on each topic; indices are local to a parent. Reorders renumber minimal affected range to keep indices reasonably dense (gaps allowed for stability).
+
+- Recent by activity:
+	- Comparator: lastActiveAt descending, then createdAt ascending, then name ascending.
+	- semantics: Siblings with more recent message activity (on self or any descendant) float to the top. No manual reordering in this mode.
+	- persistence: lastActiveAt is a maintained aggregate on topics (see below). Not user-editable.
+
+Scope
+- Ordering is evaluated per parent only. Moving a topic to a different parent will place it according to the chosen mode of the current view.
+- The hidden root’s direct children are ordered using the same rules.
+
+Toggle & UX
+- Both overlays expose a one-key toggle: O (capital letter O) switches Manual ↔ Recent.
+- The current ordering mode is shown in the overlay header (e.g., “Order: Manual (O)”).
+- The last-used mode persists in Settings and is restored on next open.
+
+Aggregates
+- directCount (existing): number of pairs assigned directly to the topic.
+- totalCount (existing): descendant-inclusive count. Propagates upward O(depth) on add/remove/reassign/move.
+- lastActiveAt (new): the most recent createdAt of any pair assigned to this topic or its descendants.
+	- Updates on pair create/delete/reassign, and on topic move (re-parent) with O(depth) upward propagation.
+	- Exposed for sorting; not displayed by default.
+
+Post-load Rebuilds
+- After initial content import from persistence, the store MUST run:
+	1) recalculateTopicCounts() to recompute direct/total counts,
+	2) rebuildLastActiveAt() to compute lastActiveAt from all pairs.
+- These rebuilds ensure consistent aggregates after a hard reload, fixing the observed “counts reset until a new message arrives” symptom.
+
+Backward Compatibility
+- Existing topics without sortIndex/lastActiveAt are valid; defaults:
+	- sortIndex: synthesized from current order (createdAt asc, name asc) on first reorder.
+	- lastActiveAt: computed during the post-load rebuild.
+- Persisted topic objects accept additional fields without schema migration; unknown fields are ignored by older versions.
+
+Performance Notes
+- Ordering in overlays must not scan subtrees per render. Maintain lastActiveAt and counts incrementally in the store; overlays only read these fields and sort current siblings.
+- Propagation for counts and lastActiveAt is O(depth) per edit and bounded by typical topic depth (<10). Acceptable at interactive rates.
+
 ### Topic System Integration Points
 
 The topic system appears in three key locations within the MaiChat interface:

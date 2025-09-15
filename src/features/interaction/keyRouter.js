@@ -4,7 +4,7 @@ export class KeyRouter {
   attach(){ window.addEventListener('keydown', this.bound, false) }
   detach(){ window.removeEventListener('keydown', this.bound, false) }
   _onKey(e){
-    if(document.querySelector('.topic-editor-backdrop, .topic-picker-backdrop, #settingsOverlayRoot, .overlay-backdrop.centered, .app-menu:not([hidden])')) return
+  if(window.modalIsActive && window.modalIsActive()) return
     const tag = e.target && e.target.tagName
     if(tag==='INPUT' || tag==='TEXTAREA'){
       const mode = this.modeManager.mode

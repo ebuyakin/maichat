@@ -112,6 +112,7 @@ Hidden root: the conceptual root node is not displayed; top-level rows are its c
  | a | Toggle color flag (blue↔grey) | Updates flag badge |
 | l / ArrowRight | Tree | Expand or go to first child |
 | Enter | Tree | Select highlighted topic (applies & closes) |
+| O | Anywhere | Toggle ordering mode: Manual ↔ Recent (persists) |
 
 ## 7. Topic Editor (Ctrl+E)
 Hidden root; operations occur on visible hierarchy.
@@ -131,6 +132,9 @@ Hidden root; operations occur on visible hierarchy.
 | m | Tree | Mark topic for move |
 | p | Tree | Paste marked topic as child of active (re-parent) |
 | Enter | Tree | Select topic (apply callback & close) |
+| O | Anywhere | Toggle ordering mode: Manual ↔ Recent (persists) |
+| Shift+J | Tree (Manual mode) | Move topic down among siblings |
+| Shift+K | Tree (Manual mode) | Move topic up among siblings |
 
 Details pane shortcuts (overlay-local):
 | Key | Context | Action |

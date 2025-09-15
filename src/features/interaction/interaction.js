@@ -327,11 +327,73 @@ export function createInteraction({
   function openQuickTopicPicker({ prevMode }){ const openMode = prevMode || modeManager.mode; createTopicPicker({ store, modeManager, onSelect:(topicId)=>{ if(openMode==='input'){ pendingMessageMeta.topicId=topicId; renderPendingMeta(); try{ localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) }catch{} } else if(openMode==='view'){ const act = activeParts.active(); if(act){ const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id,{ topicId }); historyRuntime.renderCurrentView({ preserveActive:true }); activeParts.setActiveById(act.id); historyRuntime.applyActivePart() } } } if(prevMode) modeManager.set(prevMode) }, onCancel:()=>{ if(prevMode) modeManager.set(prevMode) } }) }
   const menuBtn = ()=> document.getElementById('appMenuBtn')
   const menuEl = ()=> document.getElementById('appMenu')
-  let menuTrap = null
-  let menuKeyHandlerBound = false
-  function toggleMenu(force){ const btn = menuBtn(); const m = menuEl(); if(!btn||!m) return; let show = force; if(show==null) show = m.hasAttribute('hidden'); if(show){ m.removeAttribute('hidden'); btn.setAttribute('aria-expanded','true'); document.body.setAttribute('data-menu-open','1'); m.querySelectorAll('li.active').forEach(li=> li.classList.remove('active')); const first = m.querySelector('li'); if(first) first.classList.add('active'); menuTrap = window.createFocusTrap && window.createFocusTrap(m, ()=> first); if(!menuKeyHandlerBound){ window.addEventListener('keydown', menuGlobalKeyHandler, true); menuKeyHandlerBound=true } } else { m.setAttribute('hidden',''); document.body.removeAttribute('data-menu-open'); btn.setAttribute('aria-expanded','false'); if(menuTrap){ menuTrap.release(); menuTrap=null } } }
-  function menuGlobalKeyHandler(e){ const m = menuEl(); if(!m || m.hasAttribute('hidden')) return; const nav=['j','k','ArrowDown','ArrowUp','Enter','Escape']; if(nav.includes(e.key)){ e.preventDefault(); e.stopImmediatePropagation(); const items = Array.from(m.querySelectorAll('li')); let idx = items.findIndex(li=> li.classList.contains('active')); if(idx<0 && items.length){ idx=0; items[0].classList.add('active') } if(e.key==='Escape'){ toggleMenu(false); return } if(e.key==='j' || e.key==='ArrowDown'){ if(items.length){ idx=(idx+1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active') } return } if(e.key==='k' || e.key==='ArrowUp'){ if(items.length){ idx=(idx-1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active') } return } if(e.key==='Enter'){ const act=items[idx]||items[0]; if(act) activateMenuItem(act); return } } }
-  function closeMenu(){ toggleMenu(false) }
+  let menuModal = null
+  function toggleMenu(force){
+    const btn = menuBtn(); const m = menuEl(); if(!btn||!m) return
+    let show = force; if(show==null) show = m.hasAttribute('hidden')
+    if(show){
+      // Wrap existing menu in a modal backdrop container (non-centered)
+      const backdrop = document.createElement('div')
+      backdrop.className = 'overlay-backdrop' // not centered; acts as modal root
+      // Ensure menu is visible inside the backdrop; preserve DOM structure
+      m.removeAttribute('hidden')
+      backdrop.appendChild(m)
+      document.body.appendChild(backdrop)
+      btn.setAttribute('aria-expanded','true')
+      document.body.setAttribute('data-menu-open','1')
+      // Init selection
+      m.querySelectorAll('li.active').forEach(li=> li.classList.remove('active'))
+      const first = m.querySelector('li'); if(first) first.classList.add('active')
+      // Local key handler on backdrop (capture) so it's isolated
+      function onKey(e){
+        const nav=['j','k','ArrowDown','ArrowUp','Enter','Escape']
+        if(!nav.includes(e.key)) return
+        e.preventDefault(); e.stopImmediatePropagation()
+        const items = Array.from(m.querySelectorAll('li'))
+        let idx = items.findIndex(li=> li.classList.contains('active'))
+        if(idx<0 && items.length){ idx=0; items[0].classList.add('active') }
+        if(e.key==='Escape'){ closeMenu(); return }
+        if(e.key==='j' || e.key==='ArrowDown'){
+          if(items.length){ idx=(idx+1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active') }
+          return
+        }
+        if(e.key==='k' || e.key==='ArrowUp'){
+          if(items.length){ idx=(idx-1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active') }
+          return
+        }
+        if(e.key==='Enter'){
+          const act=items[idx]||items[0]; if(act) activateMenuItem(act)
+          return
+        }
+      }
+      backdrop.addEventListener('keydown', onKey, true)
+      menuModal = openModal({ modeManager, root: backdrop, closeKeys:[], restoreMode:true, preferredFocus: ()=> first || m })
+      // Click handling within menu
+      backdrop.addEventListener('click', (e)=>{
+        if(m.contains(e.target)){
+          const li = e.target.closest('li[data-action]')
+          if(li){ e.stopPropagation(); activateMenuItem(li) }
+          return
+        }
+        // Click outside menu closes it
+        closeMenu()
+      })
+    } else {
+      closeMenu()
+    }
+  }
+  function closeMenu(){
+    const btn = menuBtn(); const m = menuEl(); if(!btn||!m) return
+    if(menuModal){ try{ menuModal.close('manual') }catch{} menuModal=null }
+    // Restore menu element back to its original container and hide
+    const statusRight = document.getElementById('statusRight')
+    if(statusRight && !m.parentElement?.isSameNode(statusRight)){
+      statusRight.appendChild(m)
+    }
+    m.setAttribute('hidden','')
+    document.body.removeAttribute('data-menu-open')
+    btn.setAttribute('aria-expanded','false')
+  }
   function activateMenuItem(li){ if(!li) return; const act = li.getAttribute('data-action'); closeMenu(); runMenuAction(act) }
   function runMenuAction(action){
     if(action==='topic-editor'){
@@ -350,7 +412,7 @@ export function createInteraction({
       openHelpOverlay({ modeManager, onClose:()=>{} })
     }
   }
-  document.addEventListener('click', e=>{ const btn = menuBtn(); const m = menuEl(); if(!btn||!m) return; if(e.target===btn){ e.stopPropagation(); toggleMenu(); return } if(m.contains(e.target)){ const li = e.target.closest('li[data-action]'); if(li) activateMenuItem(li); return } if(!btn.contains(e.target)) closeMenu() })
+  document.addEventListener('click', e=>{ const btn = menuBtn(); const m = menuEl(); if(!btn||!m) return; if(e.target===btn){ e.stopPropagation(); toggleMenu(); return } })
   function renderPendingMeta(){ const pm = document.getElementById('pendingModel'); const pt = document.getElementById('pendingTopic'); if(pm){ pm.textContent = pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'; if(!pm.textContent) pm.textContent='gpt-4o-mini'; pm.title = `Model: ${pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'} (Ctrl+M select (Input mode) · Ctrl+Shift+M manage (any mode))` } if(pt){ const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId); if(topic){ const path = formatTopicPath(topic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { const rootTopic = store.topics.get(store.rootTopicId); if(rootTopic){ const path = formatTopicPath(rootTopic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { pt.textContent='Select Topic'; pt.title='No topic found (Ctrl+T)' } } } }
   function formatTopicPath(id){ const parts = store.getTopicPath(id); if(parts[0]==='Root') parts.shift(); return parts.join(' > ') }
   function middleTruncate(str,max){ if(str.length<=max) return str; const keep=max-3; const head=Math.ceil(keep/2); const tail=Math.floor(keep/2); return str.slice(0,head)+'…'+str.slice(str.length-tail) }

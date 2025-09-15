@@ -39,6 +39,24 @@ Re-parent implemented with mark (`M`) and place (`P` / `Shift+P`) semantics to a
 - Overlay state machine separated from rendering for testability.
 - Future Enhancement: internal index for fast descendant retrieval when counts/search added.
 
+### Ordering Modes and Aggregates (Accepted Direction)
+- Provide two sibling ordering modes across Topic Editor and Topic Quick Picker:
+	1) Manual: sortIndex asc, then createdAt asc, then name asc (ci). Editor supports explicit up/down reordering; Picker is read-only.
+	2) Recent-by-activity: lastActiveAt desc, then createdAt asc, then name asc. No manual reordering here.
+
+- Aggregates maintained in store:
+	- directCount, totalCount (existing): recomputed upward on add/remove/reassign/move.
+	- lastActiveAt (new): most recent pair.createdAt across the topic subtree; propagated upward O(depth) on changes and re-parent.
+
+- Post-load rebuilds:
+	- After initial import, invoke recalculateTopicCounts() and rebuildLastActiveAt() to ensure consistent aggregates (fixes counts appearing as zero until a new message is added after hard reload).
+
+- Persistence & Back-compat:
+	- Topics persist sortIndex and lastActiveAt, but absence is tolerated; defaults computed as needed. Underlying adapter stores whole objects; schema evolution is additive.
+
+- Performance rationale:
+	- Overlays sort only immediate children using already-maintained fields; no per-render subtree traversal. Cost per edit is O(depth) propagation; typical depths are shallow.
+
 ## Testing Strategy
 - Unit: create, rename, delete (blocked + allowed), move (cycle prevention), path builder.
 - Integration: overlay key sequences performing combined operations, persistence roundtrip.

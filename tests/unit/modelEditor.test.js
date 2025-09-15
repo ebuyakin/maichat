@@ -58,8 +58,9 @@ describe('Model Editor overlay', () => {
     // initially active index uses default 0 then render picks active model, but simple check: some active exists
     expect(active).toBeTruthy()
 
-    // Move down
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true }))
+  // Move down
+  const root = document.querySelector('.overlay-backdrop.centered')
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true }))
     await flush()
     active = document.querySelector('.model-editor li.active')
     expect(active).toBeTruthy()
@@ -67,7 +68,7 @@ describe('Model Editor overlay', () => {
     // Toggle with space
   const currentId = active?.getAttribute('data-id')
   const beforeToggleClass = active.querySelector('.me-col-toggle')?.className
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
     await flush()
   const after = document.querySelector(`.model-editor li[data-id="${currentId}"] .me-col-toggle`)
   expect(after).toBeTruthy()
@@ -80,8 +81,9 @@ describe('Model Editor overlay', () => {
     openModelEditor({ onClose })
     await flush()
 
-  // Esc closes (dispatch on window; handler is window capture)
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+  // Esc closes (dispatch on backdrop root; handler is root capture)
+  const root = document.querySelector('.overlay-backdrop.centered')
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
   await flush(); await flush(); await flush()
   expect(onClose).toHaveBeenCalled()
   })

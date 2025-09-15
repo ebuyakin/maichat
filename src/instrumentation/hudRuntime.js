@@ -3,9 +3,11 @@
 // hudRuntime.js (Step 5) Extracted HUD monitoring logic from main.js. No behavior changes intended.
 
 import { getSettings } from '../core/settings/index.js'
+import { registerModalExemptRoot } from '../shared/openModal.js'
 
 export function createHudRuntime({ store, activeParts, scrollController, historyPaneEl, historyRuntime, modeManager }){
 	const hudEl = document.getElementById('hud') || (()=>{ const el = document.createElement('div'); el.id='hud'; document.body.appendChild(el); return el })()
+	try{ if(!hudEl.__exempt){ hudEl.__exempt = registerModalExemptRoot(hudEl) } }catch{}
 	let hudEnabled = false
 	const hudState = { layout:true, visibility:true, partition:true, meta:true }
 

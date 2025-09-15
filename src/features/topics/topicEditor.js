@@ -1,5 +1,6 @@
 // topicEditor.js moved from ui/topicEditor.js (Phase 6.4 Topics)
 import { openModal } from '../../shared/openModal.js'
+import { getSettings, saveSettings } from '../../core/settings/index.js'
 
 export function openTopicEditor({ store, onSelect, onClose }) {
   let filter = ''
@@ -11,6 +12,7 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   let warningTimeout = null
   let deleteConfirmId = null
   let inTreeFocus = false
+  let orderMode = getSettings().topicOrderMode || 'manual' // 'manual' | 'recent'
   const previousActive = document.activeElement
 
   const rootId = store.rootTopicId
@@ -24,10 +26,11 @@ export function openTopicEditor({ store, onSelect, onClose }) {
 
   const backdrop = document.createElement('div')
   backdrop.className = 'topic-editor-backdrop'
-  backdrop.innerHTML = `\n    <div class="topic-editor">\n      <div class="te-header">\n        <div><strong>Topic Editor</strong></div>\n        <div>Ctrl+J - focus on topic tree;</div>\n        <div>j/k - move down/up the tree, h/l - collapse/expand, n - new child topic, N - new root topic</div>\n        <div>r - rename topic, d - delete topic, m - mark topic, p - paste topic.</div>\n        <div style="margin-top:4px;">Edit focused tree parameters: Ctrl+E - system message, Ctrl+T - temperature, Ctrl+O - max response length.</div>\n        <div>Ctrl+S - Save changes, Esc - Cancel+Close.</div>\n      </div>\n      <div class="te-body">\n        <div class="te-left">\n          <input type="text" class="te-search" placeholder="Search (name / path substring)"/>\n          <div class="te-tree" role="tree" tabindex="0"></div>\n        </div>\n        <div class="te-details" data-pane="details">\n          <div class="te-path"></div>\n          <div class="te-field">\n            <label>System message</label>\n            <textarea class="te-textarea" spellcheck="false" placeholder="You are MaiChat Assistant for this topic. Be concise and ask clarifying questions when needed."></textarea>\n            <div class="te-actions">\n              <button class="te-btn" data-act="reset">Reset to template (Ctrl+R)</button>\n              <button class="te-btn" data-act="insert-path">Insert topic path (Ctrl+I)</button>\n            </div>\n          </div>\n          <div class="te-grid">\n            <div class="te-field">\n              <label>Temperature (0–2)</label>\n              <input type="number" step="0.1" min="0" max="2" class="te-input" data-field="temperature"/>\n              <div class="te-hint">Higher = more creative.</div>\n            </div>\n            <div class="te-field">\n              <label>Max output tokens</label>\n              <input type="number" min="1" class="te-input" data-field="maxTokens"/>\n              <div class="te-hint">Leave empty for default output size.</div>\n            </div>\n          </div>\n          <div class="te-primary-actions">\n            <button class="te-btn te-save" data-act="save">Save (Ctrl+S)</button>\n            <button class="te-btn te-cancel" data-act="cancel">Cancel (Esc)</button>\n          </div>\n          <div class="te-status"><span class="te-dirty" hidden>Unsaved changes</span><span class="te-saved"></span></div>\n        </div>\n      </div>\n      <div class="te-warning" aria-live="polite"></div>\n    </div>`
+  backdrop.innerHTML = `\n    <div class="topic-editor">\n      <div class="te-header">\n        <div><strong>Topic Editor</strong></div>\n        <div style="margin-top:14px;">Ctrl+J - focus on topic tree;</div>\n        <div>j/k - move down/up the tree, h/l - collapse/expand, n - new child topic, N - new root topic</div>\n        <div>r - rename topic, d - delete topic, m - mark topic, p - paste topic.</div>\n        <div style="margin-top:4px;">Edit focused topic parameters: Ctrl+E - system message, Ctrl+T - temperature, Ctrl+L - max response length.</div>\n        <div>Ctrl+S - Save changes, Esc - Cancel+Close.</div>\n      </div>\n      <div class="te-body">\n        <div class="te-left">\n          <input type="text" class="te-search" placeholder="Search (name / path substring)"/>\n          <div class="te-tree" role="tree" tabindex="0"></div>\n          <div class="te-hints" aria-live="polite"></div>\n        </div>\n        <div class="te-details" data-pane="details">\n          <div class="te-path"></div>\n          <div class="te-field">\n            <label>System message</label>\n            <textarea class="te-textarea" spellcheck="false" placeholder="You are MaiChat Assistant for this topic. Be concise and ask clarifying questions when needed."></textarea>\n            <div class="te-actions">\n              <button class="te-btn" data-act="reset">Reset to template (Ctrl+R)</button>\n              <button class="te-btn" data-act="insert-path">Insert topic path (Ctrl+I)</button>\n            </div>\n          </div>\n          <div class="te-grid">\n            <div class="te-field">\n              <label>Temperature (0–2)</label>\n              <input type="number" step="0.1" min="0" max="2" class="te-input" data-field="temperature"/>\n              <div class="te-hint">Higher = more creative.</div>\n            </div>\n            <div class="te-field">\n              <label>Max output tokens</label>\n              <input type="number" min="1" class="te-input" data-field="maxTokens"/>\n              <div class="te-hint">Leave empty for default output size.</div>\n            </div>\n          </div>\n          <div class="te-primary-actions">\n            <button class="te-btn te-save" data-act="save">Save (Ctrl+S)</button>\n            <button class="te-btn te-cancel" data-act="cancel">Cancel (Esc)</button>\n          </div>\n          <div class="te-status"><span class="te-dirty" hidden>Unsaved changes</span><span class="te-saved"></span></div>\n        </div>\n      </div>\n      <div class="te-warning" aria-live="polite"></div>\n    </div>`
   const searchInput = backdrop.querySelector('.te-search')
   const treeEl = backdrop.querySelector('.te-tree')
   const detailsEl = backdrop.querySelector('.te-details')
+  const hintsEl = backdrop.querySelector('.te-hints')
   const pathEl = backdrop.querySelector('.te-path')
   const sysTextarea = backdrop.querySelector('.te-textarea')
   const tempInput = backdrop.querySelector('input[data-field="temperature"]')
@@ -63,7 +66,18 @@ export function openTopicEditor({ store, onSelect, onClose }) {
         }
       }
     }
-  function dfs(id, depth) {
+    function compareTopics(aId, bId){
+      const ta = store.topics.get(aId), tb = store.topics.get(bId)
+      if(orderMode==='recent'){
+        const d=(tb?.lastActiveAt||0) - (ta?.lastActiveAt||0)
+        if(d) return d
+      } else {
+        const d=(ta?.sortIndex||0) - (tb?.sortIndex||0)
+        if(d) return d
+      }
+      return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
+    }
+    function dfs(id, depth) {
       const t = store.topics.get(id); if(!t) return
       const m = match(t)
       let include = m
@@ -78,10 +92,7 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       flat.push({ topic: t, depth })
       const isExpanded = expanded.has(id) || forceExpand.has(id)
       if (isExpanded) {
-        const kids = Array.from((store.children.get(id)||[])).sort((a,b)=>{
-          const ta = store.topics.get(a), tb = store.topics.get(b)
-          return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
-        })
+        const kids = Array.from((store.children.get(id)||[])).sort(compareTopics)
         for (const cid of kids) dfs(cid, depth+1)
       }
     }
@@ -95,17 +106,10 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       }
       cacheDescMatch.set(id,false); return false
     }
-    // Order top-level roots deterministically by createdAt then name
-    const roots = Array.from((store.children.get(null)||[])).sort((a,b)=>{
-      const ta = store.topics.get(a), tb = store.topics.get(b)
-      return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
-    })
+    const roots = Array.from((store.children.get(null)||[])).sort(compareTopics)
     for (const rid of roots) {
-      if (rid === rootId) {
-        const kids = Array.from((store.children.get(rootId)||[])).sort((a,b)=>{
-          const ta = store.topics.get(a), tb = store.topics.get(b)
-          return (ta?.createdAt||0) - (tb?.createdAt||0) || (ta?.name||'').localeCompare(tb?.name||'')
-        })
+      if (rid === store.rootTopicId) {
+        const kids = Array.from((store.children.get(store.rootTopicId)||[])).sort(compareTopics)
         for (const cid of kids) dfs(cid, 0)
       } else {
         dfs(rid,0)
@@ -117,6 +121,20 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     if (activeIndex >= flat.length) activeIndex = flat.length? flat.length-1:0
     treeEl.innerHTML = flat.map((row,i)=> renderRow(row, i===activeIndex)).join('') + (editing && editing.mode==='create' ? renderCreateRow(): '')
     renderDetails()
+    // Update order hints (three-line wording)
+    if(hintsEl){
+      if(orderMode==='recent'){
+        const l1 = 'Topic tree is sorted chronologically'
+        const l2 = '(most recently used topics on top)'
+        const l3 = 'o / Ctrl+O - change sorting to logical view'
+        hintsEl.innerHTML = `<div class="te-hint">${l1}</div><div class="te-hint">${l2}</div><div class="te-hint">${l3}</div>`
+      } else {
+        const l1 = 'Topic tree is sorted logically'
+        const l2 = '(Ctrl+U / Ctrl+D - move topics up/down)'
+        const l3 = 'o / Ctrl+O - change sorting to chronological view'
+        hintsEl.innerHTML = `<div class="te-hint">${l1}</div><div class="te-hint">${l2}</div><div class="te-hint">${l3}</div>`
+      }
+    }
     if (editing && editing.inputEl) {
       const el = treeEl.querySelector('input.te-edit')
       if (el) { editing.inputEl = el; setTimeout(()=>el.focus(),0) }
@@ -315,11 +333,27 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       if(e.ctrlKey && (e.key==='j' || e.key==='J')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); inTreeFocus=true; treeEl.focus(); return }
       return
     }
+    // Tree-focused bindings
+    // Toggle order with plain 'o' as well (no modifiers) when in tree
+    if(!e.ctrlKey && !e.metaKey && !e.altKey){
+      if(e.key==='o' || e.key==='O'){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        orderMode = orderMode==='manual' ? 'recent' : 'manual';
+        saveSettings({ topicOrderMode: orderMode }); buildFlat(); render(); return
+      }
+    }
+    // Ctrl bindings
+    if(e.ctrlKey && !e.metaKey && !e.altKey){
+      const k = e.key
+      if(k==='o' || k==='O'){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); orderMode = orderMode==='manual' ? 'recent' : 'manual'; saveSettings({ topicOrderMode: orderMode }); buildFlat(); render(); return }
+      if(orderMode==='manual' && (k==='u' || k==='U')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); moveActiveSibling(-1); return }
+      if(orderMode==='manual' && (k==='d' || k==='D')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); moveActiveSibling(1); return }
+    }
     switch(e.key){
       case 'Escape': e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); inTreeFocus=false; searchInput.focus(); return
       case 'Enter': e.preventDefault(); selectCurrent(); return
-      case 'j': case 'ArrowDown': e.preventDefault(); activeIndex = Math.min(flat.length-1, activeIndex+1); render(); return
-      case 'k': case 'ArrowUp': e.preventDefault(); activeIndex = Math.max(0, activeIndex-1); render(); return
+      case 'j': case 'ArrowDown': e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); activeIndex = Math.min(flat.length-1, activeIndex+1); render(); return
+      case 'k': case 'ArrowUp': e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); activeIndex = Math.max(0, activeIndex-1); render(); return
       case 'h': case 'ArrowLeft': e.preventDefault(); collapseOrParent(); return
       case 'l': case 'ArrowRight': e.preventDefault(); expandOrChild(); return
       case 'n': e.preventDefault(); createChild(); return
@@ -331,18 +365,55 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       default: break
     }
   }
-  function onStoreEvent(){ render() }
-  const offAdd = store.on('topic:add', onStoreEvent)
-  const offUpd = store.on('topic:update', onStoreEvent)
-  const offDel = store.on('topic:delete', onStoreEvent)
-  const offMove = store.on('topic:move', onStoreEvent)
-  const offCounts = store.on('topic:counts', onStoreEvent)
-  const modal = openModal({ modeManager: store.modeManager || window.__modeManager, root: backdrop, closeKeys:[], restoreMode:true })
+  function moveActiveSibling(delta){
+    const row = flat[activeIndex]; if(!row) return
+    const t = row.topic
+    // Determine siblings directly from store for determinism (avoid relying on current flat render state)
+    const rawSiblings = Array.from((store.children.get(t.parentId)||new Set()))
+    const sortKey = (id)=>{
+      const x = store.topics.get(id) || {}
+      return [Number.isFinite(x.sortIndex) ? x.sortIndex : Infinity, x.createdAt||0, x.name||'']
+    }
+    rawSiblings.sort((a,b)=>{
+      const ka = sortKey(a), kb = sortKey(b)
+      if(ka[0]!==kb[0]) return ka[0]-kb[0]
+      if(ka[1]!==kb[1]) return ka[1]-kb[1]
+      return ka[2].localeCompare(kb[2])
+    })
+    const idx = rawSiblings.indexOf(t.id); if(idx<0) return
+    const to = idx + delta; if(to<0 || to>=rawSiblings.length) return
+    // Swap target with neighbor and reindex sequentially starting at 0
+    const nextOrder = rawSiblings.slice()
+    const tmp = nextOrder[idx]; nextOrder[idx] = nextOrder[to]; nextOrder[to] = tmp
+    for(let i=0;i<nextOrder.length;i++){
+      const id = nextOrder[i]
+      const topic = store.topics.get(id)
+      if(!topic || topic.sortIndex === i) continue
+      store.updateTopic(id, { sortIndex: i })
+    }
+    buildFlat();
+    const newIdx = flat.findIndex(r=>r.topic.id===t.id); if(newIdx>=0) activeIndex=newIdx
+    render()
+  }
+  // subscribe to store changes so the editor stays in sync while open
+  const offAdd = store.on && store.on('topic:add', () => render())
+  const offUpd = store.on && store.on('topic:update', () => render())
+  const offDel = store.on && store.on('topic:delete', () => { buildFlat(); render() })
+  const offMove = store.on && store.on('topic:move', () => { buildFlat(); render() })
+  const offCounts = store.on && store.on('topic:counts', () => render())
+  const offLastActive = store.on && store.on('topic:lastActive', () => render())
+  // No global swallow here; rely on central modal blocker in openModal()
   function teardown() {
-    offAdd(); offUpd(); offDel(); offMove(); offCounts()
+    try{ offAdd && offAdd() }catch{}
+    try{ offUpd && offUpd() }catch{}
+    try{ offDel && offDel() }catch{}
+    try{ offMove && offMove() }catch{}
+    try{ offCounts && offCounts() }catch{}
     backdrop.removeEventListener('keydown', onKey)
+  // nothing global to remove; central blocker detaches on modal close
     modal.close('manual')
     if (onClose) onClose()
+    try{ offLastActive && offLastActive() }catch{}
   }
   searchInput.addEventListener('input', ()=>{ filter = searchInput.value.trim(); buildFlat(); activeIndex = 0; render() })
   backdrop.addEventListener('keydown', onKey)
@@ -350,13 +421,22 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     const inDetails = detailsEl.contains(e.target)
   if(e.ctrlKey && (e.key==='e'||e.key==='E')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); detailsEl.querySelector('.te-textarea')?.focus(); inTreeFocus=false; return }
   if(e.ctrlKey && (e.key==='t'||e.key==='T')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); focusTemp(); inTreeFocus=false; return }
-  if(e.ctrlKey && (e.key==='o'||e.key==='O')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); focusMaxTok(); inTreeFocus=false; return }
+  if(e.ctrlKey && (e.key==='l'||e.key==='L')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); focusMaxTok(); inTreeFocus=false; return }
   if(e.ctrlKey && (e.key==='s'||e.key==='S')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); saveDetails(); return }
   if(e.ctrlKey && (e.key==='r'||e.key==='R')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); resetTemplate(); return }
   if(e.ctrlKey && (e.key==='i'||e.key==='I')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); insertPath(); return }
     if(inDetails && e.key==='Escape'){
       if(isDirty){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); cancelDetails(); return }
     }
+  }, true)
+  // Capture-phase safety handler to ensure reorder keys are never lost
+  backdrop.addEventListener('keydown', (e)=>{
+    const isTreeEvent = treeEl.contains(e.target)
+    if(!isTreeEvent) return
+    if(!e.ctrlKey || e.metaKey || e.altKey) return
+    const k = e.key
+    if(orderMode==='manual' && (k==='u'||k==='U')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); moveActiveSibling(-1) }
+    else if(orderMode==='manual' && (k==='d'||k==='D')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); moveActiveSibling(1) }
   }, true)
   // Keep inTreeFocus synced with actual focus target
   backdrop.addEventListener('focusin', (e)=>{ inTreeFocus = treeEl.contains(e.target) }, true)
@@ -376,6 +456,8 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       else { teardown() }
     } 
   })
+  // Create modal wrapper (focus trap + mode restore); Esc handling stays custom in this module
+  const modal = openModal({ modeManager: window.__modeManager, root: backdrop, closeKeys: [], restoreMode: true })
   document.body.appendChild(backdrop)
   searchInput.focus()
   buildFlat(); render()

@@ -12,7 +12,7 @@ See also
 
 0. Modal system & mode management
 - Where: `src/features/interaction/` + `src/shared/`
-- Files: `modes.js` (FSM), `keyRouter.js` (mode-aware dispatch), focus containment via `shared/focusTrap.js`; overlays use `shared/openModal.js`.
+- Files: `modes.js` (FSM), `keyRouter.js` (mode-aware dispatch), `shared/focusTrap.js` (containment), `shared/openModal.js` (overlays; replay-free blocker + modal API).
 
 1. Message history (rendering, partitioning, focus, scrolling, spacing)
 - Where: `src/features/history/`
@@ -41,6 +41,7 @@ Cross-cutting enablers
 - Instrumentation: `src/instrumentation/hudRuntime.js`, `src/instrumentation/requestDebugOverlay.js`
 - Shared primitives: `src/shared/openModal.js`, `src/shared/focusTrap.js`, `src/shared/util.js`
 - Styles: `src/styles/index.css` orchestrates `base.css`, `layout.css`, `components/*.css`; tokens in `src/styles/variables.css`. `components/history.css` consumes CSS vars set by `spacingStyles.js`.
+ - Render policy gate: `src/runtime/renderPolicy.js` (pure diff→action: none | restyle | rebuild); wiring in `src/main.js` settings subscriber. On rebuild, history re-renders with `{ preserveActive: true }` and then performs a one-shot bottom align to ensure the focused part is visible.
 
 ## Layered overview
 
@@ -62,7 +63,7 @@ Cross-cutting enablers
   - History: `src/features/history/*` — render and layout of message parts; stateless one‑shot scrolling; partitioning; active‑part control; post‑send focus rules.
   - Helpers: `spacingStyles.js` sets `:root` CSS vars (`--gap-outer`, `--gap-meta`, `--gap-intra`, `--gap-between`, `--part-padding`, `--fade-transition-ms`); `fadeVisibility.js` applies fade opacity.
   - Interaction: `src/features/interaction/*` — mode FSM and mode‑aware key routing; bindings for navigation, stars/flags, topic/model actions, send, and overlay invocation.
-    - `pointerModeSwitcher.js` — capture-phase mouse/touch mode switching based on `[data-mode]` zones; excluded while a modal is active. Keyboard routing unaffected.
+    - `pointerModeSwitcher.js` — capture-phase mouse/touch mode switching based on `[data-mode]` zones; excluded while a modal is active. Routing runs at window-bubble and is guarded by `modalIsActive()`.
   - Command: `src/features/command/*` — filter DSL pipeline (lexer → parser → evaluator); pure computation of visible message IDs.
   - Topics: `src/features/topics/*` — keyboard‑first topic picker and editor (CRUD/move); updates topic references in store.
   - Compose: `src/features/compose/pipeline.js` — request assembly and send attempts with bounded trimming; integrates with provider registry.
@@ -109,6 +110,11 @@ Cross-cutting enablers
 - Navigation: j/k/arrows move active part; default Ensure‑Visible; optional Typewriter Regime centers on j/k; only middle pane scrolls.
 - Send: Enter in INPUT → compose pipeline attempts → store update → focus rules via newMessageLifecycle.
 - Settings: Apply in settings overlay updates CSS variables via `spacingStyles.js`; history re-measures and re-anchors without jitter.
+  - Selective re-render policy applies to all settings/model edits:
+    - Action = none → no history work; no viewport change.
+    - Action = restyle → update CSS vars + pane layout; optionally re-measure; focus/scroll preserved.
+    - Action = rebuild → `renderCurrentView({ preserveActive: true })`, then after measurements update perform a one-shot bottom anchor on the focused part via `scrollControllerV3.alignTo(focused,'bottom')`. Mode unchanged.
+  - See `docs/scroll_positioning_spec.md` item 10 for the bottom-align semantics specific to settings/model-driven rebuilds.
 
 ## Invariants & performance
 
@@ -118,6 +124,7 @@ Cross-cutting enablers
 - Dead-band validation avoids visible “second-scroll” corrections.
 - Deterministic rendering from store state; pure filtering.
 - Stateless scroll: no persistent scroll policies; one-shot align/ensureVisible calls own the scroll once, then release.
+ - Input isolation: outside-target events are blocked at window-capture while a true modal is open; inside-modal keys are stopped before window-bubble routers. No event replay.
  - Visual edges: CSS overlays on `#historyPane` fade content within the fixed outer gap so content never touches pane borders.
  - Spacing uses CSS variables at `:root` (no inline heights on gap elements); fade timing reads `--fade-transition-ms`.
 

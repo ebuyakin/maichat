@@ -79,7 +79,7 @@ import { openModal } from '../../shared/openModal.js'
         close()
       }
     }
-  // Capture at root (capturing) so keys don't bubble to global keyRouter first
+  // Capture on modal root so keys stay local to overlay and unaffected by global blockers
   function keyHandler(e){
       const swallow = ()=>{ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation() }
       if(e.key==='Escape'){ swallow(); close(); return }
@@ -89,10 +89,10 @@ import { openModal } from '../../shared/openModal.js'
       if(e.key==='Backspace'){ swallow(); filter = filter.slice(0,-1); applyFilter(); return }
       if(e.key.length===1 && !e.metaKey && !e.ctrlKey && !e.altKey){ swallow(); filter += e.key; applyFilter(); return }
   }
-  window.addEventListener('keydown', keyHandler, true)
+  root.addEventListener('keydown', keyHandler, true)
   const originalClose = close
-  // Wrap close to cleanup window listener
-  function closeWrapped(){ window.removeEventListener('keydown', keyHandler, true); originalClose() }
+  // Wrap close to cleanup root listener
+  function closeWrapped(){ try{ root.removeEventListener('keydown', keyHandler, true) }catch{}; originalClose() }
   close = closeWrapped
     applyFilter()
   }

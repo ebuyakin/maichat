@@ -48,14 +48,15 @@ describe('Model Selector overlay', () => {
     await flush()
 
     // Type a filter that yields 1 match
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', bubbles: true, cancelable: true }))
+  const root = document.getElementById('modelSelectorRoot')
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', bubbles: true, cancelable: true }))
     await flush()
     let items = document.querySelectorAll('.model-list .model-item')
     // 'gamma' only
     expect(items.length).toBe(1)
 
     // Make it empty (no model matches 'gz')
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true, cancelable: true }))
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true, cancelable: true }))
     await flush()
     items = document.querySelectorAll('.model-list .model-item')
     expect(items.length).toBe(0)
@@ -65,9 +66,9 @@ describe('Model Selector overlay', () => {
   expect(listEl?.getAttribute('tabindex')).toBe('0')
 
     // Backspace brings results back
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }))
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }))
     await flush()
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }))
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }))
     await flush()
     items = document.querySelectorAll('.model-list .model-item')
     expect(items.length).toBeGreaterThan(1)
@@ -79,14 +80,15 @@ describe('Model Selector overlay', () => {
     await flush()
 
   // Narrow down to 'gamma' via typing one char
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', bubbles: true, cancelable: true }))
+  const root = document.getElementById('modelSelectorRoot')
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', bubbles: true, cancelable: true }))
   await flush()
   const only = document.querySelectorAll('.model-list .model-item')
   expect(only.length).toBe(1)
   expect(only[0]?.getAttribute('data-name')).toBe('gamma')
 
     // Enter selects the only match
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     await flush()
     expect(onSelect).toHaveBeenCalledWith('gamma')
     expect(document.getElementById('modelSelectorRoot')).toBeNull()
@@ -94,7 +96,8 @@ describe('Model Selector overlay', () => {
     // Reopen and Esc closes
     openModelSelector({ onSelect, onClose })
     await flush()
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+  const root2 = document.getElementById('modelSelectorRoot')
+  root2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
   await flush(); await flush()
   expect(onClose).toHaveBeenCalled()
   expect(document.getElementById('modelSelectorRoot')).toBeNull()
@@ -108,7 +111,8 @@ describe('Model Selector overlay', () => {
 
     // Type filter for 'alpha' (ensure unique match)
     for (const ch of ['a','l','p','h','a']){
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: ch, bubbles: true, cancelable: true }))
+  const root = document.getElementById('modelSelectorRoot')
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: ch, bubbles: true, cancelable: true }))
       await flush()
     }
     const only = document.querySelectorAll('.model-list .model-item')
@@ -116,7 +120,8 @@ describe('Model Selector overlay', () => {
     expect(only[0]?.getAttribute('data-name')).toBe('alpha')
 
     // Enter selects and should call setActiveModel('alpha') inside selector
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+  const root = document.getElementById('modelSelectorRoot')
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     await flush()
 
     expect(catalog.getActiveModel()).toBe('alpha')

@@ -2,6 +2,7 @@
 // Original comment: Extracted from main.js. No behavior changes.
 
 import { getSettings } from '../core/settings/index.js'
+import { registerModalExemptRoot } from '../shared/openModal.js'
 
 export function createRequestDebugOverlay({ historyRuntime }){
 	let requestDebugEnabled = false
@@ -29,6 +30,10 @@ export function createRequestDebugOverlay({ historyRuntime }){
 		pane.style.display='none'
 		pane.setAttribute('aria-live','polite')
 		document.body.appendChild(pane)
+		// Exempt this overlay from modal blocking so it remains non-modal for debugging
+		try{
+			if(!pane.__exempt){ pane.__exempt = registerModalExemptRoot(pane) }
+		}catch{}
 	}
 
 	function render(){
