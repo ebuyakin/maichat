@@ -4,6 +4,10 @@ import { parse } from '../command/parser.js'
 import { evaluate } from '../command/evaluator.js'
 import { getSettings } from '../../core/settings/index.js'
 import { createKeyRouter } from './keyRouter.js'
+import { splitFilterAndCommand } from '../command/colon/splitter.js'
+import { parseColonCommand } from '../command/colon/parser.js'
+import { createCommandRegistry } from '../command/colon/registry.js'
+import { resolveTopicFilter } from '../command/topicResolver.js'
 // Topics moved (Phase 6.4)
 import { createTopicPicker } from '../topics/topicPicker.js'
 import { openTopicEditor } from '../topics/topicEditor.js'
@@ -118,7 +122,7 @@ export function createInteraction({
   if(e.ctrlKey && (e.key==='w' || e.key==='W')){ e.preventDefault(); const el = commandInput; const pos = el.selectionStart; const left = el.value.slice(0, pos); const right = el.value.slice(el.selectionEnd); const newLeft = left.replace(/\s*[^\s]+\s*$/, ''); const delStart = newLeft.length; el.value = newLeft + right; el.setSelectionRange(delStart, delStart); return true }
     if(e.ctrlKey && (e.key==='p' || e.key==='P')){ historyPrev(); return true }
     if(e.ctrlKey && (e.key==='n' || e.key==='N')){ historyNext(); return true }
-    if(e.key==='Enter'){
+  if(e.key==='Enter'){
       const q = commandInput.value.trim()
       // Handle debug/utility commands first
       if(q === ':hud' || q === ':hud on'){ hudEnabled=true; hudRuntime.enable(true); commandInput.value=''; commandErrEl.textContent=''; return true }
@@ -129,6 +133,92 @@ export function createInteraction({
       if(q === ':anim on' || q === ':noanim off'){ ctx.scrollController.setAnimationEnabled(true); commandInput.value=''; commandErrEl.textContent=''; return true }
       if(q === ':scrolllog on'){ window.__scrollLog=true; commandInput.value=''; commandErrEl.textContent=''; return true }
       if(q === ':scrolllog off'){ window.__scrollLog=false; commandInput.value=''; commandErrEl.textContent=''; return true }
+
+      // Colon commands: <filter> :<command [args]>
+      const split = splitFilterAndCommand(q)
+      if(split && split.commandPart){
+        const filterStr = split.filterPart || ''
+        const cmdStr = split.commandPart
+        lifecycle.setFilterQuery(filterStr)
+        try{
+          // Parse filter (left) and evaluate base/final selections
+          const basePairsAll = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
+          const currentBareTopicId = pendingMessageMeta.topicId || currentTopicId
+          const currentBareModel = pendingMessageMeta.model || getActiveModel()
+          const hasO = (node)=>{ if(!node) return false; if(node.type==='FILTER' && node.kind==='o') return true; if(node.type==='NOT') return hasO(node.expr); if(node.type==='AND' || node.type==='OR') return hasO(node.left)||hasO(node.right); return false }
+          const stripO = (node)=>{ if(!node) return null; if(node.type==='FILTER' && node.kind==='o') return null; if(node.type==='NOT'){ const inner=stripO(node.expr); return inner?{type:'NOT',expr:inner}:null } if(node.type==='AND' || node.type==='OR'){ const l=stripO(node.left); const r=stripO(node.right); if(!l&&!r) return null; if(!l) return r; if(!r) return l; return { type:node.type, left:l, right:r } } return node }
+          let ast = null
+          if(filterStr){ ast = parse(filterStr) }
+          // Evaluate base set
+          let base = basePairsAll
+          if(ast){
+            if(hasO(ast)){
+              const baseAst = stripO(ast) || { type:'ALL' }
+              base = evaluate(baseAst, basePairsAll, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
+            } else {
+              base = evaluate(ast, basePairsAll, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
+            }
+          }
+          // Compute boundary on base
+          boundaryMgr.updateVisiblePairs(base)
+          boundaryMgr.setModel(currentBareModel)
+          boundaryMgr.applySettings(getSettings())
+          const boundary = boundaryMgr.getBoundary()
+          const includedIdsSet = new Set(boundary.included.map(p=> p.id))
+          const offContextOrder = base.filter(p=> !includedIdsSet.has(p.id)).map(p=> p.id)
+          // Final (apply full ast including o/oN if present) else base
+          let finalPairs = base
+          if(ast && hasO(ast)){
+            finalPairs = evaluate(ast, base, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel, includedIds: includedIdsSet, offContextOrder })
+          }
+          const baseIds = base.map(p=> p.id)
+          const finalIds = finalPairs.map(p=> p.id)
+
+          // Build environment and helpers
+          const currentTopicPath = formatTopicPath(pendingMessageMeta.topicId || currentTopicId)
+          const environment = { currentModel: currentBareModel, currentTopicId: pendingMessageMeta.topicId || currentTopicId, currentTopicPath }
+          const ui = {
+            notify: (msg)=>{ try{ window.__hud && window.__hud.notify && window.__hud.notify(msg) }catch{} },
+            info: (msg)=>{ try{ window.__hud && window.__hud.info && window.__hud.info(msg) }catch{} },
+            confirm: (msg)=> Promise.resolve(window.confirm(msg))
+          }
+          const topicResolver = async (arg, env)=>{
+            if(!arg || !String(arg).trim()) return env.currentTopicId
+            const ids = resolveTopicFilter(String(arg), { store, currentTopicId: env.currentTopicId })
+            // resolveTopicFilter returns a Set of ids
+            const arr = Array.from(ids)
+            if(arr.length===1) return arr[0]
+            if(arr.length===0) throw new Error('Topic not found')
+            throw new Error('Ambiguous topic expression; please specify a full path')
+          }
+          const registry = createCommandRegistry({
+            store,
+            selectionProvider: ()=> ({ baseIds, finalIds }),
+            environment,
+            ui,
+            utils: { topicResolver }
+          })
+          const cmd = parseColonCommand(cmdStr)
+          registry.run(cmd)
+            .then(()=>{
+              // Re-render current view with the left-side filter; preserve focus
+              historyRuntime.renderCurrentView({ preserveActive:true })
+              commandErrEl.textContent=''
+              pushCommandHistory(q); commandHistoryPos=-1
+              modeManager.set('view')
+            })
+            .catch(ex=>{
+              const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'
+              const friendly = `Command error: ${raw}`
+              commandErrEl.textContent = friendly
+            })
+        } catch(ex){
+          const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'
+          const friendly = `Command error: ${raw}`
+          commandErrEl.textContent = friendly
+        }
+        return true
+      }
 
       // Apply filter (including empty) and rebuild view. Preserve focus if possible; else fallback.
   // Preserve focus based on snapshot taken on entering COMMAND mode only
