@@ -76,7 +76,14 @@ export function createHistoryRuntime(ctx){
     let all = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
     const fq = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : ''
     if(fq){
-      try { const ast = parse(fq); all = evaluate(ast, all); if(commandErrEl){ commandErrEl.textContent=''; commandErrEl.title=''; } }
+      try {
+        const ast = parse(fq)
+        // Provide evaluation context so bare topic/model filters resolve correctly on re-render
+        const currentTopicId = (pendingMessageMeta && pendingMessageMeta.topicId) || store.rootTopicId
+        const currentModel = (pendingMessageMeta && pendingMessageMeta.model) || getActiveModel()
+        all = evaluate(ast, all, { store, currentTopicId, currentModel })
+        if(commandErrEl){ commandErrEl.textContent=''; commandErrEl.title='' }
+      }
       catch(ex){
         if(commandErrEl){
           const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'

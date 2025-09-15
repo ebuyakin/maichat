@@ -52,7 +52,7 @@ M20-1 Architecture review, code health check. Highest priority! [x]
     - Update `docs/ARCHITECTURE.md` with any structural deltas discovered
     References: `docs/ARCHITECTURE.md`, `docs/ADRs/ADR-000-architecture.md`
 
-M21. System message customization for different topics. Request parameters (system, length, temperature) [ ]
+M21. System message customization for different topics. Request parameters (system, length, temperature) [x]
     The idea is relatively simple. We don't need per-message customization, we need per-topic customization of the API-calls. Ie. for each topic there can be an individual system message (that can be customized by the user) and the separate set of request parameters (like temperature or length of the response). All shall be managed via Topic Editor interface (which needs to be extended), not via main window interface.
 
 M22. Filtering language extension.
