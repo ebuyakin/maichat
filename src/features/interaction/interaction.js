@@ -138,10 +138,49 @@ export function createInteraction({
         let pairs
         if(q){
           const ast = parse(q)
-          const basePairs = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
+          const basePairsAll = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
           const currentBareTopicId = pendingMessageMeta.topicId || currentTopicId
           const currentBareModel = pendingMessageMeta.model || getActiveModel()
-          pairs = evaluate(ast, basePairs, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
+          // Helpers to detect/strip 'o' filters
+          const hasO = (node)=>{
+            if(!node) return false
+            if(node.type==='FILTER' && node.kind==='o') return true
+            if(node.type==='NOT') return hasO(node.expr)
+            if(node.type==='AND' || node.type==='OR') return hasO(node.left) || hasO(node.right)
+            return false
+          }
+          const stripO = (node)=>{
+            if(!node) return null
+            if(node.type==='FILTER' && node.kind==='o') return null
+            if(node.type==='NOT'){
+              const inner = stripO(node.expr)
+              if(inner==null) return null
+              return { type:'NOT', expr: inner }
+            }
+            if(node.type==='AND' || node.type==='OR'){
+              const l = stripO(node.left)
+              const r = stripO(node.right)
+              if(!l && !r) return null
+              if(!l) return r
+              if(!r) return l
+              return { type: node.type, left: l, right: r }
+            }
+            return node
+          }
+          if(hasO(ast)){
+            const baseAst = stripO(ast) || { type:'ALL' }
+            const base = evaluate(baseAst, basePairsAll, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
+            // Compute boundary on base
+            boundaryMgr.updateVisiblePairs(base)
+            boundaryMgr.setModel(currentBareModel)
+            boundaryMgr.applySettings(getSettings())
+            const boundary = boundaryMgr.getBoundary()
+            const includedIds = new Set(boundary.included.map(p=> p.id))
+            const offContextOrder = base.filter(p=> !includedIds.has(p.id)).map(p=> p.id)
+            pairs = evaluate(ast, base, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel, includedIds, offContextOrder })
+          } else {
+            pairs = evaluate(ast, basePairsAll, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
+          }
         } else {
           pairs = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
         }

@@ -177,6 +177,37 @@ c'*error*timeout*'           # pairs where "error" precedes "timeout"
 (c'bug' | c'fix') & t'Code'  # debugging content in Code topic
 ```
 
+### In-context Boundary (`o` / `oN`)
+
+Purpose: Focus the view on what will be included by the current context boundary (model + settings). Optionally add a short “tail” of the newest off‑context pairs for situational awareness.
+
+Syntax:
+- `o` – keep only in‑context pairs
+- `oN` – keep in‑context pairs plus the last N off‑context pairs (N ≥ 0; `o0` ≡ `o`)
+
+Semantics (base–then–boundary):
+- First, your query is evaluated without any `o` terms to form the base set.
+- The context boundary is computed against that base (using the current/pending model and settings).
+- `o` keeps only pairs included by the boundary.
+- `oN` keeps those included pairs plus the newest N pairs that the boundary would exclude, preserving the original chronological order of the base set.
+
+Negation and composition:
+- `!o` selects only the off‑context pairs (relative to the base set).
+- `!oN` selects off‑context pairs excluding the newest N of them.
+- `o` does not change the boundary itself; it’s a projection on the base result and composes with other filters normally. Use parentheses as needed.
+
+Sending vs. display:
+- The added off‑context tail from `oN` is view‑only and does not change what the model receives. Off‑context items may be visually indicated as such in the UI.
+
+Examples:
+```
+t'AI...' & o              # show only in‑context pairs within AI topics
+(s>=2 | b) & o5           # in‑context plus 5 newest off‑context for awareness
+!o & r20                  # the last 20 that would be dropped by the boundary
+t'API' & m & o            # use bare m (current model) then project to in‑context
+(t'AI...' & o) | r3       # union with global last 3 pairs
+```
+
 ## Boolean Operators
 
 ### AND Operator (`&` and adjacency)
@@ -238,6 +269,8 @@ m'gpt-4' | m'claude'    # Messages from either model
 r30 & s>=2              # Focus on recent important content (min 2 stars)
 (b | s3)                # High-value messages (flagged or exactly 3-star)
 t'Research...' & !s0    # Non-zero-starred research content
+o                       # View exactly what the boundary includes right now
+(t'AI...' & s>=1) & o5  # AI content in context + 5 newest off‑context
 ```
 
 ### Model Analysis

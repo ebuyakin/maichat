@@ -27,6 +27,28 @@ export function evaluate(ast, pairs, opts = {}){
     const kind = f.kind
     const { op, value } = f.args
     switch(kind){
+      case 'o': {
+        // In-context filter. Requires opts.includedIds or opts.offContextOrder for oN tail.
+        // value may be a number N (from parser) meaning include all in-context + last N off-context.
+        const includedIds = opts && opts.includedIds instanceof Set ? opts.includedIds : null
+        const offOrder = Array.isArray(opts && opts.offContextOrder) ? opts.offContextOrder : []
+        if(!includedIds){
+          // Safe no-op if boundary not provided
+          return pairs
+        }
+        const inArr = pairs.filter(p=> includedIds.has(p.id))
+        if(value == null || value === '') return inArr
+        const n = Number(value)
+        if(!Number.isFinite(n) || n <= 0) return inArr
+        // Take last N off-context from provided chronological order, but keep only those still in current pairs
+        const curIds = new Set(pairs.map(p=> p.id))
+        const tailIds = offOrder.filter(id=> curIds.has(id)).slice(-n)
+        const byId = new Map(pairs.map(p=> [p.id,p]))
+        const tail = tailIds.map(id=> byId.get(id)).filter(Boolean)
+        // Merge preserving chronological order of current pairs
+        const wanted = new Set([...inArr.map(p=>p.id), ...tail.map(p=>p.id)])
+        return pairs.filter(p=> wanted.has(p.id))
+      }
       case 's': return filterStar(op, value)
       case 'r': return filterRecent(value)
       case 'b': return pairs.filter(p=>p.colorFlag === 'b')

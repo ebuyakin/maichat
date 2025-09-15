@@ -78,10 +78,24 @@ export function createHistoryRuntime(ctx){
     if(fq){
       try {
         const ast = parse(fq)
-        // Provide evaluation context so bare topic/model filters resolve correctly on re-render
         const currentTopicId = (pendingMessageMeta && pendingMessageMeta.topicId) || store.rootTopicId
         const currentModel = (pendingMessageMeta && pendingMessageMeta.model) || getActiveModel()
-        all = evaluate(ast, all, { store, currentTopicId, currentModel })
+        // Detect/strip 'o' to compute base and boundary when needed
+        const hasO = (node)=>{ if(!node) return false; if(node.type==='FILTER' && node.kind==='o') return true; if(node.type==='NOT') return hasO(node.expr); if(node.type==='AND'||node.type==='OR') return hasO(node.left)||hasO(node.right); return false }
+        const stripO = (node)=>{ if(!node) return null; if(node.type==='FILTER' && node.kind==='o') return null; if(node.type==='NOT'){ const inner=stripO(node.expr); return inner? { type:'NOT', expr: inner }: null } if(node.type==='AND'||node.type==='OR'){ const l=stripO(node.left), r=stripO(node.right); if(!l&&!r) return null; if(!l) return r; if(!r) return l; return { type:node.type, left:l, right:r } } return node }
+        if(hasO(ast)){
+          const baseAst = stripO(ast) || { type:'ALL' }
+          const base = evaluate(baseAst, all, { store, currentTopicId, currentModel })
+          boundaryMgr.updateVisiblePairs(base)
+          boundaryMgr.setModel(currentModel)
+          boundaryMgr.applySettings(getSettings())
+          const boundary = boundaryMgr.getBoundary()
+          const includedIds = new Set(boundary.included.map(p=> p.id))
+          const offContextOrder = base.filter(p=> !includedIds.has(p.id)).map(p=> p.id)
+          all = evaluate(ast, base, { store, currentTopicId, currentModel, includedIds, offContextOrder })
+        } else {
+          all = evaluate(ast, all, { store, currentTopicId, currentModel })
+        }
         if(commandErrEl){ commandErrEl.textContent=''; commandErrEl.title='' }
       }
       catch(ex){
