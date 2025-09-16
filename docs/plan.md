@@ -56,7 +56,7 @@ M21. System message customization for different topics. Request parameters (syst
     The idea is relatively simple. We don't need per-message customization, we need per-topic customization of the API-calls. Ie. for each topic there can be an individual system message (that can be customized by the user) and the separate set of request parameters (like temperature or length of the response). All shall be managed via Topic Editor interface (which needs to be extended), not via main window interface.
 
 M22. Filtering language extension.
-    - o command - filtering by context boundary o3, o5 [ ]
+    - o command - filtering by context boundary o3, o5 [x]
     The idea is slightly different, but also simple. oN filters all in-context messages + N latest off-context messages. The user will be able to see what's in, what's out (without long history), plain o - just in-context.
     - commands introduction. So far CLI filter (filter input box, command zone) has been used for literally filtering the message history. It shall be extended to input commands (operations over message history). General format shall be colon commmand parameters (vim like). E.g. :export json - export the filtered message history as json file. Or :changetopic - command to bulk change of the assigned topic for all filtered message.
 
