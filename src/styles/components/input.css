@@ -11,6 +11,8 @@
 #sendBtn .dots { display:inline-flex; width:18px; margin-left:6px; justify-content:flex-start; }
 #sendBtn .dots span { width:4px; text-align:center; opacity:0; transition:opacity .25s linear; }
 .mode-label { font-size:11px; color:var(--text-dim); font-weight:400; letter-spacing:.5px; width:70px; display:inline-flex; justify-content:flex-start; align-items:center; background:transparent; height:34px; }
+.mode-label.mode-command { color:#9ecbff; }
+.mode-label.mode-input { color:#b7f7c6; }
 .input-meta-left { display:flex; gap:10px; align-items:center; }
 #pendingModel, #pendingTopic { font-size:12px; color:var(--text); padding:4px 8px; border:1px solid #2a2a2a; border-radius:4px; background:transparent; display:inline-flex; align-items:center; height:34px; box-sizing:border-box; }
 #pendingModel { width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; justify-content:flex-start; }

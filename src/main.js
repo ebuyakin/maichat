@@ -28,7 +28,7 @@ if(!appEl){ console.error('[MaiChat] #app element missing'); }
 appEl.innerHTML = `
   <div id="topBar" class="zone" data-mode="command">
     <div id="commandWrapper">
-      <input id="commandInput" placeholder=": command / filter" autocomplete="off"
+  <input id="commandInput" placeholder="filter:command" autocomplete="off"
              spellcheck="false" autocorrect="off" autocapitalize="off"
              data-gramm="false" data-gramm_editor="false" data-lt-active="false" />
     </div>

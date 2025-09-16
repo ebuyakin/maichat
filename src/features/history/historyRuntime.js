@@ -137,7 +137,16 @@ export function createHistoryRuntime(ctx){
     applyFadeVisibility({ paneEl: pane, parts, settings, initial })
   }
   historyPaneEl.addEventListener('scroll', ()=> updateFadeVisibility())
-  function renderStatus(){ const modeEl = document.getElementById('modeIndicator'); if(modeEl) modeEl.textContent = `[${window.__modeManager.mode.toUpperCase()}]` }
+  function renderStatus(){
+    const modeEl = document.getElementById('modeIndicator')
+    if(!modeEl) return
+    const m = (window.__modeManager && window.__modeManager.mode) || 'view'
+    modeEl.textContent = `[${m.toUpperCase()}]`
+    modeEl.classList.remove('mode-view','mode-command','mode-input')
+    if(m==='command') modeEl.classList.add('mode-command')
+    else if(m==='input') modeEl.classList.add('mode-input')
+    else modeEl.classList.add('mode-view')
+  }
   function updateMessageCount(included, visible){
     const el = document.getElementById('messageCount')
     if(!el) return
