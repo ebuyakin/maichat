@@ -56,6 +56,7 @@ Examples
   - Mutating commands confirm for large selections (threshold T, e.g., 50), support --no-confirm
   - --dry-run shows counts and a small sample without mutating
   - Success toasts with counts; clear input after success
+  - Confirm overlays must use the standard overlay classes (e.g., `overlay-backdrop centered`) so `modalIsActive()` reflects their presence and global listeners early-return consistently.
 
 ## Commands (phase 1)
 

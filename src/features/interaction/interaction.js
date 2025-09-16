@@ -4,10 +4,11 @@ import { parse } from '../command/parser.js'
 import { evaluate } from '../command/evaluator.js'
 import { getSettings } from '../../core/settings/index.js'
 import { createKeyRouter } from './keyRouter.js'
-import { splitFilterAndCommand } from '../command/colon/splitter.js'
-import { parseColonCommand } from '../command/colon/parser.js'
-import { createCommandRegistry } from '../command/colon/registry.js'
+import { splitFilterAndCommand } from '../command/colon/colonCommandSplitter.js'
+import { parseColonCommand } from '../command/colon/colonCommandParser.js'
+import { createCommandRegistry } from '../command/colon/colonCommandRegistry.js'
 import { resolveTopicFilter } from '../command/topicResolver.js'
+import { openConfirmOverlay } from '../command/confirmOverlay.js'
 // Topics moved (Phase 6.4)
 import { createTopicPicker } from '../topics/topicPicker.js'
 import { openTopicEditor } from '../topics/topicEditor.js'
@@ -180,7 +181,7 @@ export function createInteraction({
           const ui = {
             notify: (msg)=>{ try{ window.__hud && window.__hud.notify && window.__hud.notify(msg) }catch{} },
             info: (msg)=>{ try{ window.__hud && window.__hud.info && window.__hud.info(msg) }catch{} },
-            confirm: (msg)=> Promise.resolve(window.confirm(msg))
+            confirm: (msg)=> openConfirmOverlay({ modeManager, message: msg, title: 'Confirm' })
           }
           const topicResolver = async (arg, env)=>{
             if(!arg || !String(arg).trim()) return env.currentTopicId
@@ -204,7 +205,9 @@ export function createInteraction({
               // Re-render current view with the left-side filter; preserve focus
               historyRuntime.renderCurrentView({ preserveActive:true })
               commandErrEl.textContent=''
-              pushCommandHistory(q); commandHistoryPos=-1
+              // Retain only the filter in the command line after execution
+              commandInput.value = filterStr
+              pushCommandHistory(`${filterStr}`); commandHistoryPos=-1
               modeManager.set('view')
             })
             .catch(ex=>{

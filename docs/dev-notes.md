@@ -13,5 +13,5 @@ e.g.
 t + r10 :export -json
 t'AI...' :tchange 
 - last command is to change the topic of all filtered messages to the current topic (selected in input box topic selector)
-
+filter:command (Enter to apply)
 

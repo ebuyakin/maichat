@@ -1,5 +1,6 @@
 #topBar { position:fixed; top:0; left:0; right:0; z-index:10; background:var(--bg-alt); padding:8px var(--gutter); display:flex; gap:8px; align-items:center; min-height:var(--topbar-h); border-bottom:1px solid var(--border); }
 #topBar input { width:100%; background:var(--bg-alt); border:1px solid var(--border); color:var(--text); padding:6px 0 6px 0; font:var(--size-base)/1.5 var(--font-ui); }
+#commandWrapper { flex: 1 1 auto; min-width: 0; }
 #statusRight { margin-left:auto; display:flex; align-items:center; gap:10px; position:relative; min-width:0; }
 #inputBar { position:fixed; left:0; right:0; bottom:0; z-index:10; background:var(--bg-alt); padding:10px var(--gutter) 14px; border-top:1px solid var(--border); display:flex; }
 #inputBar .inputBar-inner { position:relative; width:100%; display:flex; flex-direction:column; gap:6px; }
