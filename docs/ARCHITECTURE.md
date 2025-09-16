@@ -25,6 +25,7 @@ See also
 3. Command line filtering system
 - Where: `src/features/command/`
 - Files: `lexer.js`, `parser.js`, `evaluator.js` (pure pipeline producing visible IDs).
+- Colon commands: implemented as an extension of the shared input; operate on the currently filtered set (default `finalIds`, optional `--base`). See `docs/colon_commands_spec.md` for grammar and behavior.
 
 4. New message processing (request attempts)
 - Where: `src/features/compose/` (+ `src/infrastructure/provider`)
@@ -64,6 +65,7 @@ Cross-cutting enablers
   - Helpers: `spacingStyles.js` sets `:root` CSS vars (`--gap-outer`, `--gap-meta`, `--gap-intra`, `--gap-between`, `--part-padding`, `--fade-transition-ms`); `fadeVisibility.js` applies fade opacity.
   - Interaction: `src/features/interaction/*` — mode FSM and mode‑aware key routing; bindings for navigation, stars/flags, topic/model actions, send, and overlay invocation.
     - `pointerModeSwitcher.js` — capture-phase mouse/touch mode switching based on `[data-mode]` zones; excluded while a modal is active. Routing runs at window-bubble and is guarded by `modalIsActive()`.
+      - Colon commands: dispatched from Command Mode via the same input; confirmation overlays use standard modal classes; input retains only the filter after execution. See `docs/colon_commands_spec.md`.
   - Command: `src/features/command/*` — filter DSL pipeline (lexer → parser → evaluator); pure computation of visible message IDs.
   - Topics: `src/features/topics/*` — keyboard‑first topic picker and editor (CRUD/move); updates topic references in store.
   - Compose: `src/features/compose/pipeline.js` — request assembly and send attempts with bounded trimming; integrates with provider registry.
@@ -79,6 +81,7 @@ Cross-cutting enablers
 
 - Shared
   - `src/shared/openModal.js`, `src/shared/focusTrap.js`, `src/shared/util.js`.
+  - Modal detection: confirmation overlays adhere to the standard classes so `modalIsActive()` applies consistently.
 
 ## Key contracts
 

@@ -7,6 +7,8 @@ The MaiChat CLI Filtering Language is a concise, powerful query language designe
 Unit of operation: All filters operate on assistant–user pairs (a user request and its model response are treated as a single unit for filtering, display, rating, pinning, context, etc.). 
 Messages in the message history have the following metadata parameters: topic, flag (blue / grey), star rating (0-1-2-3), model, timestamp. Each of those parameters shall be subject to filtering via CLI filtering language.
 
+Note: Actions can be executed on the filtered set via colon commands using the same input: `<filter> :<command>`. See `docs/colon_commands_spec.md` for the colon command grammar and the available commands (`export`, `tchange`).
+
 ## Design Philosophy
 
 ### Core Principles
