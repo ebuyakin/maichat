@@ -28,18 +28,22 @@ export function openModelEditor({ onClose, store }){
       <div class="list"><ul tabindex="0" class="me-list"></ul></div>
     </div>
     <footer class="me-footer">
-      <span class="me-hint">j/k rows · h/l cols · Space toggle · Ctrl+N new · Enter save · Esc discard</span>
+      <span class="me-hint">j/k rows · h/l cols · Space toggle · Ctrl+N new · Ctrl+S save · Esc cancel</span>
       <div class="me-controls">
-        <div class="me-controls-left">
-          <button class="btn-ghost btn-sm" aria-disabled="true" disabled title="Not implemented yet">Sync models</button>
+        <div class="me-controls-right">
+          <button class="btn btn-sm" id="me-save-btn">Save (Ctrl+S)</button>
+          <button class="btn btn-ghost btn-sm" id="me-cancel-btn">Cancel (Escape)</button>
         </div>
-  <div class="me-controls-right"></div>
       </div>
-  </footer>`
+    </footer>`
   backdrop.appendChild(panel)
   document.body.appendChild(backdrop)
   const ul = panel.querySelector('ul')
   const listContainer = panel.querySelector('.list')
+  const saveBtn = panel.querySelector('#me-save-btn')
+  const cancelBtn = panel.querySelector('#me-cancel-btn')
+  // Helper: keep focus within overlay so key handling stays active
+  function ensureListFocus(){ try { ul.focus({ preventScroll:true }) } catch(_){} }
   // Compute actual scrollbar width and apply to CSS vars for precise alignment
   function syncScrollbarVar(){
     try{
@@ -66,6 +70,7 @@ export function openModelEditor({ onClose, store }){
   let editing = false
   let pendingNewRow = null // { enabled, id:'', contextWindow,tpm,rpm,tpd }
   let __dirty = false
+  let __applied = false // becomes true when changes are saved
 
   const COLS = ['toggle','name','contextWindow','tpm','rpm','tpd']
   const FIRST_EDITABLE_COL = 2
@@ -151,6 +156,8 @@ export function openModelEditor({ onClose, store }){
       if(firstEnabled) setActiveModel(firstEnabled.id)
     }
     render(id)
+    // Ensure focus stays inside overlay to keep key handling alive
+    try { ul.focus({ preventScroll:true }) } catch {}
   }
   render()
   syncScrollbarVar()
@@ -181,7 +188,11 @@ export function openModelEditor({ onClose, store }){
     // Toggle enabled in draft
     const id = li.dataset.id
     const cur = draftById.get(id) || origById.get(id)
-    if(cur){ draftById.set(id, { ...cur, enabled: !cur.enabled }); render(id) }
+    if(cur){
+      draftById.set(id, { ...cur, enabled: !cur.enabled })
+      render(id)
+      try { ul.focus({ preventScroll:true }) } catch {}
+    }
   })
   ul.addEventListener('change', e=>{
     const input = e.target.closest('input.me-num')
@@ -246,25 +257,34 @@ export function openModelEditor({ onClose, store }){
   const modal = openModal({
     modeManager: window.__modeManager,
     root: backdrop,
-    closeKeys: [],
+    closeKeys: ['Escape'],
     restoreMode: true,
     preferredFocus: () => ul.querySelector('li.active') || ul,
-    beforeClose: () => { onClose && onClose() }
+    // Signal whether a save occurred so caller can trigger rebuild+bottom-align
+    beforeClose: () => { onClose && onClose({ dirty: !!__applied }) }
   })
+  // Buttons wiring
+  function doSaveAndClose(){ performSave(); close() }
+  function doCancelAndClose(){ close() }
+  saveBtn?.addEventListener('click', (e)=>{ e.preventDefault(); doSaveAndClose() })
+  cancelBtn?.addEventListener('click', (e)=>{ e.preventDefault(); doCancelAndClose() })
   function keyHandler(e){
     // Ignore if not the latest active editor or panel is detached
     if (ACTIVE_EDITOR_TOKEN !== TOKEN) return
     if (!panel.isConnected) return
+    const lowerKey = (typeof e.key === 'string' ? e.key.toLowerCase() : '')
+    // Global shortcuts first
+  if(e.ctrlKey && lowerKey==='s'){ e.preventDefault(); doSaveAndClose(); return }
+  // Escape is handled by openModal closeKeys; do not handle locally to avoid leaks
     // Do not intercept when editing inside an input except Esc and special stepping
     const inputFocused = document.activeElement && document.activeElement.tagName==='INPUT' && document.activeElement.classList.contains('me-num')
     const nameEditing = document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('me-name-input')
     const isSpace = (e.key===' ' || e.key==='Spacebar' || e.code==='Space')
-  const lowerKey = (typeof e.key === 'string' ? e.key.toLowerCase() : '')
   const handledKeys = ['Escape','Enter','PageDown','PageUp','ArrowDown','ArrowUp']
     // When editing an input, intercept vim-like nav keys and treat them as navigation
     if (inputFocused || nameEditing){
-      if (e.key==='Escape' || e.key==='Enter'){
-        // Commit current input value into draft/pending to keep state consistent for dirty check
+      if (e.key==='Enter'){
+        // Commit current input value into draft/pending and remain in editor
         const ae = document.activeElement
         if (ae && ae.classList.contains('me-num')){
           const li = ae.closest('li')
@@ -280,7 +300,7 @@ export function openModelEditor({ onClose, store }){
             if(cur){ draftById.set(id, { ...cur, [field]: absVal }); __dirty = true }
           }
         }
-        if (e.key==='Enter' && nameEditing){
+        if (nameEditing){
           const inputEl = document.activeElement
           const id = (inputEl && inputEl.value || '').trim()
           if (id && !draftById.has(id) && !origById.has(id)){
@@ -304,36 +324,23 @@ export function openModelEditor({ onClose, store }){
           }
         }
         document.activeElement.blur(); editing=false; e.preventDefault();
-        if(isDirty()){
-          const kind = (e.key==='Enter') ? 'save' : 'discard'
-          confirmDialog(kind).then(ok=>{ if(ok){ if(kind==='save') performSave(); close() } })
-        } else { close() }
+        ensureListFocus()
         return
       }
       if (lowerKey==='h'){ e.preventDefault(); moveCol(-1); return }
       if (lowerKey==='l'){ e.preventDefault(); moveCol(1); return }
-      if (lowerKey==='j' || e.key==='ArrowDown'){ e.preventDefault(); document.activeElement.blur(); editing=false; selectedCol=null; move(1); return }
-      if (lowerKey==='k' || e.key==='ArrowUp'){ e.preventDefault(); document.activeElement.blur(); editing=false; selectedCol=null; move(-1); return }
-      if (e.key==='PageDown'){ e.preventDefault(); document.activeElement.blur(); editing=false; selectedCol=null; movePage(1); return }
-      if (e.key==='PageUp'){ e.preventDefault(); document.activeElement.blur(); editing=false; selectedCol=null; movePage(-1); return }
-      if (lowerKey==='g'){ e.preventDefault(); document.activeElement.blur(); editing=false; selectedCol=null; if(e.shiftKey){ activeIndex = (pendingNewRow? models.length : Math.max(0, models.length-1)); } else { activeIndex = 0 } render(models[activeIndex]?.id); ensureVisible(); return }
+      if (lowerKey==='j' || e.key==='ArrowDown'){ e.preventDefault(); document.activeElement.blur(); editing=false; selectedCol=null; move(1); ensureListFocus(); return }
+      if (lowerKey==='k' || e.key==='ArrowUp'){ e.preventDefault(); document.activeElement.blur(); editing=false; selectedCol=null; move(-1); ensureListFocus(); return }
+      if (e.key==='PageDown'){ e.preventDefault(); document.activeElement.blur(); editing=false; selectedCol=null; movePage(1); ensureListFocus(); return }
+      if (e.key==='PageUp'){ e.preventDefault(); document.activeElement.blur(); editing=false; selectedCol=null; movePage(-1); ensureListFocus(); return }
+      if (lowerKey==='g'){ e.preventDefault(); document.activeElement.blur(); editing=false; selectedCol=null; if(e.shiftKey){ activeIndex = (pendingNewRow? models.length : Math.max(0, models.length-1)); } else { activeIndex = 0 } render(models[activeIndex]?.id); ensureVisible(); ensureListFocus(); return }
       return
     }
-    if(isSpace || ['j','k','g','h','l'].includes(lowerKey) || handledKeys.includes(e.key) || (e.ctrlKey && lowerKey==='n') ){
+    if(isSpace || ['j','k','g','h','l','g'].includes(lowerKey) || handledKeys.includes(e.key) || (e.ctrlKey && lowerKey==='n') ){
       e.preventDefault()
     }
-    // Esc: if editing input -> blur; else maybe confirm discard if dirty; else close
-    if(e.key==='Escape'){
-      if(inputFocused || nameEditing){ document.activeElement.blur(); editing=false; return }
-      if(isDirty()) { confirmDialog('discard').then(ok=>{ if(ok){ close() } }); return }
-      close(); return
-    }
-    // Enter: if editing -> blur and stay in nav; else confirm save if dirty else close
-    if(e.key==='Enter'){
-      if(inputFocused || nameEditing){ document.activeElement.blur(); editing=false; return }
-      if(isDirty()){ confirmDialog('save').then(ok=>{ if(ok){ performSave(); close() } }); return }
-      close(); return
-    }
+    // Enter at overlay level: no global save/close action
+    if(e.key==='Enter'){ return }
     // Ctrl+N: start inline new row
   if(e.ctrlKey && lowerKey==='n'){
       if(!pendingNewRow){ pendingNewRow = { id:'', enabled:true, contextWindow:8192, tpm:8192, rpm:60, tpd:100000 } }
@@ -348,12 +355,12 @@ export function openModelEditor({ onClose, store }){
     // Row movement
   if(lowerKey==='j' || e.key==='ArrowDown'){ move(1); return }
   if(lowerKey==='k' || e.key==='ArrowUp'){ move(-1); return }
-  if(lowerKey==='g' && !e.shiftKey){ selectedCol=null; activeIndex = 0; render(models[0]?.id); ensureVisible(); return }
+  if(lowerKey==='g' && !e.shiftKey){ selectedCol=null; activeIndex = 0; render(models[0]?.id); ensureVisible(); ensureListFocus(); return }
   if(lowerKey==='g' && e.shiftKey){
       if (pendingNewRow){
-        activeIndex = models.length; selectedCol = 1; render(); applyCellSelection(); enterEditMode(); ensureVisible(); return
+        activeIndex = models.length; selectedCol = 1; render(); applyCellSelection(); enterEditMode(); ensureVisible(); ensureListFocus(); return
       }
-      selectedCol=null; activeIndex = (models.length-1); render(models[activeIndex]?.id); ensureVisible(); return
+      selectedCol=null; activeIndex = (models.length-1); render(models[activeIndex]?.id); ensureVisible(); ensureListFocus(); return
     }
   if(e.key==='PageDown'){ movePage(1); return }
   if(e.key==='PageUp'){ movePage(-1); return }
@@ -475,7 +482,8 @@ export function openModelEditor({ onClose, store }){
     } else {
       for(const id of stagedDeletes){ if(!isBaseModel(id)) deleteModel(id) }
     }
-  __dirty = false
+    __dirty = false
+    __applied = true
   }
   // No Save/Cancel buttons; Sync remains passive
   render()
@@ -486,25 +494,5 @@ export function openModelEditor({ onClose, store }){
     // beforeClose provided to modal will call onClose once
     modal.close('manual')
   }
-  function confirmDialog(kind){
-    // kind: 'save' | 'discard'
-    return new Promise(resolve=>{
-      const b = document.createElement('div')
-      b.className = 'overlay-backdrop centered'
-      const p = document.createElement('div')
-      p.className = 'overlay-panel compact'
-  const title = kind==='save' ? 'Confirm changes' : 'Disregard changes'
-  const body = kind==='save' ? 'Apply changes and close? [y/n]' : 'Discard changes and close? [y/n]'
-  p.innerHTML = `<header>${title}</header><div style="padding:17px 21px; font:12px var(--font-ui); color:#bbb;">${body}</div>`
-      b.appendChild(p); document.body.appendChild(b)
-      const m = openModal({ modeManager: window.__modeManager, root: b, closeKeys:['Escape'], restoreMode:false })
-      function onKey(ev){
-        const k = ev.key.toLowerCase()
-        if(k==='y'){ ev.preventDefault(); cleanup(true) }
-        else if(k==='n' || ev.key==='Escape'){ ev.preventDefault(); cleanup(false) }
-      }
-      function cleanup(val){ window.removeEventListener('keydown', onKey, true); m.close('manual'); b.remove(); resolve(val) }
-      window.addEventListener('keydown', onKey, true)
-    })
-  }
+  // confirmDialog removed: Editors now use explicit Save/Cancel per overlays.md
 }

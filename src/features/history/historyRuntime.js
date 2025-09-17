@@ -43,6 +43,14 @@ export function createHistoryRuntime(ctx){
       lastViewportH = h
       invalidatePartitionCacheOnResize()
       renderCurrentView({ preserveActive:true })
+      // After resize rebuild, keep the currently focused part on-screen (non-intrusive)
+      try {
+        const act = activeParts && activeParts.active && activeParts.active()
+        const id = act && act.id
+        if(id && scrollController && scrollController.ensureVisible){
+          requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ scrollController.ensureVisible(id, false) }) })
+        }
+      } catch {}
     }
   })
   function applySpacingStyles(settings){

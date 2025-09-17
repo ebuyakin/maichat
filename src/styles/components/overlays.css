@@ -74,3 +74,20 @@
 @media (max-height:820px){ .help-panel .help-body{ font-size: clamp(11px, 1.3vh, var(--size-base)); } }
 .help-panel .help-hint { font-size:11px; opacity:.6; letter-spacing:.4px; }
 .help-panel .help-buttons { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+
+/* Menu overlay variant: backdrop for app menu (non-centered, anchored to button) */
+.overlay-backdrop.menu-overlay {
+	align-items: flex-start;
+	justify-content: flex-start;
+	padding-top: 0; /* menu is absolutely positioned; no padding needed */
+}
+
+.overlay-backdrop.menu-overlay .app-menu {
+	position: absolute; /* will be positioned by JS via left/top */
+	top: 0;
+	left: 0;
+	z-index: 1300; /* above base content; backdrop is behind */
+	display: inline-block; /* avoid stretching to full width */
+	width: auto; /* shrink-to-fit content */
+	max-width: 320px; /* reduced per request */
+}

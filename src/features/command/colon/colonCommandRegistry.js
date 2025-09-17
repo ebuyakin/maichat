@@ -1,4 +1,5 @@
-import { saveAsJson } from './exporter.js'
+import { runExport } from '../../export/exportApi.js'
+import { downloadFile } from '../../export/exportDownload.js'
 
 export function createCommandRegistry({ store, selectionProvider, environment, ui, utils }){
 	const commands = new Map()
@@ -13,14 +14,20 @@ export function createCommandRegistry({ store, selectionProvider, environment, u
 			const useBase = !!flags.base
 			const ids = useBase ? baseIds : finalIds
 			const fmt = (args[0]||'json').toLowerCase()
-			const filename = flags.filename || autoName(environment, fmt)
-			if(fmt==='json'){
-				const data = buildJsonExport({ store, ids, environment })
-				saveAsJson(data, filename)
-				ui && ui.notify && ui.notify(`Exported ${ids.length} pairs to ${filename}`)
-				return
-			}
-			throw new Error('Unsupported format: ' + fmt)
+			const order = (flags.order||'time').toLowerCase()
+			const filename = flags.filename // if missing, exportApi will auto-name
+			const { filename: outName, mime, content } = runExport({
+				store,
+				pairIds: ids,
+				format: fmt,
+				order,
+				filename,
+				filterInput: environment?.lastFilterInput || '',
+				app: environment?.appVersion || undefined
+			})
+			downloadFile({ filename: outName, mime, content })
+			ui && ui.notify && ui.notify(`Exported ${ids.length} pairs to ${outName}`)
+			return
 		}
 	})
 
@@ -43,20 +50,7 @@ export function createCommandRegistry({ store, selectionProvider, environment, u
 		}
 	})
 
-	function autoName(env, fmt){
-		const ts = new Date().toISOString().replace(/[:T]/g,'-').slice(0,19)
-		const model = env && env.currentModel ? env.currentModel : 'any'
-		const topic = env && env.currentTopicPath ? env.currentTopicPath : 'all'
-		return `export-${topic}-${model}-${ts}.${fmt}`
-	}
-
-	function buildJsonExport({ store, ids, environment }){
-		const pairs = ids.map(id=> store.pairs.get(id)).filter(Boolean)
-		return {
-			meta: { generatedAt: new Date().toISOString(), count: pairs.length, model: environment.currentModel, topicPath: environment.currentTopicPath },
-			pairs: pairs.map(p=> ({ id:p.id, createdAt:p.createdAt, topicId:p.topicId, model:p.model, star:p.star, flagColor:p.colorFlag, userText:p.userText, assistantText:p.assistantText, lifecycleState:p.lifecycleState, errorMessage:p.errorMessage }))
-		}
-	}
+	// autoName and inline buildJsonExport removed in favor of features/export
 
 	return {
 		run: async (cmd) => {

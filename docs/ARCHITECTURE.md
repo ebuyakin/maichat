@@ -67,6 +67,7 @@ Cross-cutting enablers
     - `pointerModeSwitcher.js` — capture-phase mouse/touch mode switching based on `[data-mode]` zones; excluded while a modal is active. Routing runs at window-bubble and is guarded by `modalIsActive()`.
       - Colon commands: dispatched from Command Mode via the same input; confirmation overlays use standard modal classes; input retains only the filter after execution. See `docs/colon_commands_spec.md`.
   - Command: `src/features/command/*` — filter DSL pipeline (lexer → parser → evaluator); pure computation of visible message IDs.
+    - Export: `src/features/export/*` — file export of the current filtered selection via `:export` (JSON default, plus Markdown and Plain Text). Ordering: `time` (chronological) or `topic` (topic tree pre‑order). Serializers are pure; downloads use a small Blob helper.
   - Topics: `src/features/topics/*` — keyboard‑first topic picker and editor (CRUD/move); updates topic references in store.
   - Compose: `src/features/compose/pipeline.js` — request assembly and send attempts with bounded trimming; integrates with provider registry.
   - Config: `src/features/config/*` — settings overlay (spacing, reading position, etc.), model selector/editor, API keys, and help overlays.

@@ -223,3 +223,40 @@ Encoding and MIME
 - JSON export remains the default when no format is specified.
 - Auto filenames follow the pattern; `--filename` overrides are respected.
 - Unit tests for serializers are added; existing suite remains green.
+
+## Architecture & Naming
+
+Placement
+- Feature lives at `src/features/export/` (shallow, cross‑cutting feature).
+- `features/command` triggers export (parsing and orchestration only), but export stays independent for reuse.
+
+Naming conventions
+- Avoid generic filenames like `index.js` inside feature folders to prevent ambiguity with root‑level `index.html`, `main.js`, or other `index.js` files.
+- Choose descriptive, role‑specific names:
+  - `exportApi.js` — public facade for the feature; single entry point used by callers.
+  - `exportOrdering.js` — ordering logic (`time`|`topic`).
+  - `exportJsonSerializer.js` — JSON serialization.
+  - `exportMarkdownSerializer.js` — Markdown serialization.
+  - `exportTextSerializer.js` — Plain Text serialization.
+  - `exportDownload.js` — file download adapter (Blob + anchor trigger).
+  - `exportFormatting.js` — shared helpers (fencing, local time formatting, filename sanitization).
+
+Dependency boundaries
+- `features/command` → obtains filtered pairs; calls `exportApi.js` with `{ pairs, meta, format, order, filename }`.
+- `features/export` → pure functions; does not read UI state directly. For `topic` ordering, accept a minimal `topicIndex` input from the caller rather than importing store internals.
+- `features/topics` or `store/indexes` → provide `topicIndex` or a tree iterator; passed into `exportOrdering.js` by the caller.
+- `shared` → optional small utilities; keep coupling minimal.
+
+Public API contract (proposed)
+- `runExport({ pairs, meta, format: 'json'|'md'|'txt', order: 'time'|'topic', filename?, topicIndex? }): { filename, mime, content }`
+- `downloadFile({ filename, mime, content }): void`
+- Lower‑level building blocks (used by `runExport`):
+  - `orderPairs(pairs, { mode, topicIndex }): Pair[]`
+  - `buildJsonExport({ pairs, meta }): string`
+  - `buildMarkdownExport({ pairs, meta, localTimeFormatter }): string`
+  - `buildTextExport({ pairs, meta, localTimeFormatter }): string`
+
+Testing
+- Place tests under `tests/unit/export/`.
+- Cover: ordering correctness, fencing edge cases, meta/header correctness, error annotations, empty selection, and filename rules.
+

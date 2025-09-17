@@ -34,8 +34,8 @@ import { openModal } from '../../shared/openModal.js'
       }
       return 0
     })()
-    const modal = openModal({ modeManager: window.__modeManager, root, closeKeys:[], restoreMode:true, preferredFocus: ()=> listEl })
-    function close(){ modal.close('manual'); if(onClose) onClose() }
+  const modal = openModal({ modeManager: window.__modeManager, root, closeKeys:[], restoreMode:true, preferredFocus: ()=> listEl })
+  function close(){ modal.close('manual'); if(onClose) onClose({ dirty:false }) }
     root.addEventListener('click', e=>{ if(e.target===root) close() })
     function applyFilter(){
       const f = filter.toLowerCase()
@@ -74,9 +74,15 @@ import { openModal } from '../../shared/openModal.js'
     function selectActive(){
       const name = filtered[activeIndex]
       if(name){
-        try { setActiveModel(name) } catch(_){}
+        let dirty = false
+        try {
+          const prev = getActiveModel && getActiveModel()
+          if(prev !== name){ dirty = true }
+          setActiveModel(name)
+        } catch(_){ }
         if(onSelect) onSelect(name)
-        close()
+        modal.close('manual')
+        if(onClose) onClose({ dirty })
       }
     }
   // Capture on modal root so keys stay local to overlay and unaffected by global blockers

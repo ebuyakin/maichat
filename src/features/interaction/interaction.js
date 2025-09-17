@@ -24,6 +24,7 @@ import { getActiveModel } from '../../core/models/modelCatalog.js'
 // Compose pipeline moved (Phase 6.5) to features/compose
 import { executeSend } from '../compose/pipeline.js'
 import { sanitizeAssistantText } from './sanitizeAssistant.js'
+import { openModal } from '../../shared/openModal.js'
 
 export function createInteraction({
   ctx,
@@ -204,6 +205,14 @@ export function createInteraction({
             .then(()=>{
               // Re-render current view with the left-side filter; preserve focus
               historyRuntime.renderCurrentView({ preserveActive:true })
+              // Spec: after filter+command rebuild, bottom-align the focused part (one-shot, no animation)
+              try {
+                const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active();
+                const id = act && act.id;
+                if(id && ctx.scrollController && ctx.scrollController.alignTo){
+                  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
+                }
+              } catch {}
               commandErrEl.textContent=''
               // Retain only the filter in the command line after execution
               commandInput.value = filterStr
@@ -453,10 +462,90 @@ export function createInteraction({
     }
     if(e.key==='Escape'){ modeManager.set('view'); return true }
   }
-  function cycleStar(){ const act = activeParts.active(); if(!act) return; const pair = store.pairs.get(act.pairId); if(!pair) return; store.updatePair(pair.id, { star:(pair.star+1)%4 }); historyRuntime.renderCurrentView({ preserveActive:true }) }
-  function setStarRating(star){ const act = activeParts.active(); if(!act) return; const pair = store.pairs.get(act.pairId); if(!pair) return; if(pair.star===star) return; store.updatePair(pair.id,{ star }); historyRuntime.renderCurrentView({ preserveActive:true }) }
-  function toggleFlag(){ const act = activeParts.active(); if(!act) return; const pair = store.pairs.get(act.pairId); if(!pair) return; const next = pair.colorFlag==='b' ? 'g':'b'; store.updatePair(pair.id,{ colorFlag:next }); historyRuntime.renderCurrentView({ preserveActive:true }) }
-  function openQuickTopicPicker({ prevMode }){ const openMode = prevMode || modeManager.mode; createTopicPicker({ store, modeManager, onSelect:(topicId)=>{ if(openMode==='input'){ pendingMessageMeta.topicId=topicId; renderPendingMeta(); try{ localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) }catch{} } else if(openMode==='view'){ const act = activeParts.active(); if(act){ const pair = store.pairs.get(act.pairId); if(pair){ store.updatePair(pair.id,{ topicId }); historyRuntime.renderCurrentView({ preserveActive:true }); activeParts.setActiveById(act.id); historyRuntime.applyActivePart() } } } if(prevMode) modeManager.set(prevMode) }, onCancel:()=>{ if(prevMode) modeManager.set(prevMode) } }) }
+  function cycleStar(){
+    const act = activeParts.active(); if(!act) return;
+    const pair = store.pairs.get(act.pairId); if(!pair) return;
+    const next = (pair.star+1)%4
+    store.updatePair(pair.id, { star: next })
+    updateMetaBadgesInline(pair.id, { star: next })
+  }
+  function setStarRating(star){
+    const act = activeParts.active(); if(!act) return;
+    const pair = store.pairs.get(act.pairId); if(!pair) return;
+    if(pair.star===star) return;
+    store.updatePair(pair.id,{ star })
+    updateMetaBadgesInline(pair.id, { star })
+  }
+  function toggleFlag(){
+    const act = activeParts.active(); if(!act) return;
+    const pair = store.pairs.get(act.pairId); if(!pair) return;
+    const next = pair.colorFlag==='b' ? 'g':'b'
+    store.updatePair(pair.id,{ colorFlag:next })
+    updateMetaBadgesInline(pair.id, { colorFlag: next })
+  }
+  function openQuickTopicPicker({ prevMode }){
+    const openMode = prevMode || modeManager.mode;
+    createTopicPicker({
+      store,
+      modeManager,
+      onSelect:(topicId)=>{
+        if(openMode==='input'){
+          pendingMessageMeta.topicId=topicId; renderPendingMeta();
+          try{ localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) }catch{}
+        } else if(openMode==='view'){
+          const act = activeParts.active();
+          if(act){
+            const pair = store.pairs.get(act.pairId);
+            if(pair){
+              store.updatePair(pair.id,{ topicId })
+              // Inline update of topic badge; do not rebuild list per spec
+              updateMetaBadgesInline(pair.id, { topicId })
+              // Preserve focus styling
+              activeParts.setActiveById(act.id); historyRuntime.applyActivePart()
+            }
+          }
+        }
+        if(prevMode) modeManager.set(prevMode)
+      },
+      onCancel:()=>{ if(prevMode) modeManager.set(prevMode) }
+    })
+  }
+
+  function updateMetaBadgesInline(pairId, changes){
+    try {
+      const pane = document.getElementById('historyPane'); if(!pane) return
+      // Update badges for all meta parts of this pair (there is exactly one meta per pair in DOM)
+      const metaEl = pane.querySelector(`.part.meta[data-pair-id="${pairId}"]`)
+      if(!metaEl) return
+      const left = metaEl.querySelector('.meta-left')
+      const right = metaEl.querySelector('.meta-right')
+      if(!left || !right) return
+      // Stars
+      if(Object.prototype.hasOwnProperty.call(changes,'star')){
+        const v = Math.max(0, Math.min(3, Number(changes.star)||0))
+        const starsEl = left.querySelector('.badge.stars')
+        if(starsEl){ starsEl.textContent = '★'.repeat(v) + '☆'.repeat(Math.max(0,3-v)) }
+      }
+      // Flag
+      if(Object.prototype.hasOwnProperty.call(changes,'colorFlag')){
+        const flagEl = left.querySelector('.badge.flag')
+        if(flagEl){
+          flagEl.setAttribute('data-flag', changes.colorFlag==='b' ? 'b' : 'g')
+          flagEl.title = (changes.colorFlag==='b') ? 'Flagged (blue)' : 'Unflagged (grey)'
+        }
+      }
+      // Topic path text/title
+      if(Object.prototype.hasOwnProperty.call(changes,'topicId')){
+        const badge = left.querySelector('.badge.topic')
+        const topic = store.topics.get(changes.topicId)
+        if(badge && topic){
+          const path = formatTopicPath(topic.id)
+          badge.textContent = middleTruncate(path, 72)
+          badge.title = path
+        }
+      }
+    } catch {}
+  }
   const menuBtn = ()=> document.getElementById('appMenuBtn')
   const menuEl = ()=> document.getElementById('appMenu')
   let menuModal = null
@@ -466,16 +555,16 @@ export function createInteraction({
     if(show){
       // Wrap existing menu in a modal backdrop container (non-centered)
       const backdrop = document.createElement('div')
-      backdrop.className = 'overlay-backdrop' // not centered; acts as modal root
+      backdrop.className = 'overlay-backdrop menu-overlay' // menu-specific overlay variant
       // Ensure menu is visible inside the backdrop; preserve DOM structure
       m.removeAttribute('hidden')
       backdrop.appendChild(m)
       document.body.appendChild(backdrop)
       btn.setAttribute('aria-expanded','true')
       document.body.setAttribute('data-menu-open','1')
-      // Init selection
-      m.querySelectorAll('li.active').forEach(li=> li.classList.remove('active'))
-      const first = m.querySelector('li'); if(first) first.classList.add('active')
+  // Init selection
+  m.querySelectorAll('li.active').forEach(li=> li.classList.remove('active'))
+  const first = m.querySelector('li'); if(first) first.classList.add('active')
       // Local key handler on backdrop (capture) so it's isolated
       function onKey(e){
         const nav=['j','k','ArrowDown','ArrowUp','Enter','Escape']
@@ -498,8 +587,44 @@ export function createInteraction({
           return
         }
       }
-      backdrop.addEventListener('keydown', onKey, true)
-      menuModal = openModal({ modeManager, root: backdrop, closeKeys:[], restoreMode:true, preferredFocus: ()=> first || m })
+      // Position the menu relative to the button within the overlay
+      try {
+        // Ensure menu has measurable width (shrink-to-fit) before reading rects
+        m.style.display = 'inline-block'
+        m.style.width = 'auto'
+        const br = btn.getBoundingClientRect()
+        // After appending and setting display, get menu size
+        const mm = m.getBoundingClientRect()
+        const VW = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
+        const VH = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+        const margin = 4
+        const menuW = Math.min(mm.width || 220, 320)
+        const menuH = mm.height || 240
+        // Desired: right-align to button's right, top at button's bottom
+        let left = Math.round(br.right - menuW)
+        let top = Math.round(br.bottom + margin)
+        // Clamp to viewport
+        if(left < margin) left = margin
+        if(left + menuW > VW - margin) left = VW - menuW - margin
+        if(top + menuH > VH - margin) top = Math.max(margin, br.top - menuH - margin) // try above if doesn't fit below
+        m.style.left = left + 'px'
+        m.style.top = top + 'px'
+      } catch {}
+
+  backdrop.addEventListener('keydown', onKey, true)
+  menuModal = openModal({ modeManager, root: backdrop, closeKeys:[], restoreMode:true, preferredFocus: ()=> m })
+  // Focus menu to ensure key handling works without relying on body focus
+  try { m.setAttribute('tabindex','-1'); m.focus() } catch {}
+      // Ensure exclusive hover highlight: when hovering an item, make it the only active
+      function onHover(e){
+        const li = e.target && e.target.closest && e.target.closest('li')
+        if(!li || !m.contains(li)) return
+        const items = Array.from(m.querySelectorAll('li'))
+        items.forEach(x=> x.classList.remove('active'))
+        li.classList.add('active')
+      }
+      // Use direct delegation on the menu for reliability in tests and browsers
+      m.addEventListener('mouseover', onHover)
       // Click handling within menu
       backdrop.addEventListener('click', (e)=>{
         if(m.contains(e.target)){
@@ -522,6 +647,8 @@ export function createInteraction({
     if(statusRight && !m.parentElement?.isSameNode(statusRight)){
       statusRight.appendChild(m)
     }
+  // Clear positioning and sizing styles
+  try { m.style.left=''; m.style.top=''; m.style.position=''; m.style.display=''; m.style.width=''; } catch {}
     m.setAttribute('hidden','')
     document.body.removeAttribute('data-menu-open')
     btn.setAttribute('aria-expanded','false')
@@ -531,7 +658,28 @@ export function createInteraction({
     if(action==='topic-editor'){
       const prev=modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prev) } })
     } else if(action==='model-editor'){
-      const prev=modeManager.mode; openModelEditor({ store, onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prev) } })
+      const prev=modeManager.mode; openModelEditor({ store, onClose: ({ dirty } = {})=>{
+        // Always refresh pending meta
+        pendingMessageMeta.model = getActiveModel();
+        renderPendingMeta();
+        if(dirty){
+          // Local parity with settings subscription: render + bottom-align focused (one-shot)
+          historyRuntime.renderCurrentView({ preserveActive:true });
+          try {
+            const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active();
+            const id = act && act.id;
+            if(id && ctx.scrollController && ctx.scrollController.alignTo){
+              // schedule after rAF to ensure measurements are up to date
+              requestAnimationFrame(()=>{
+                requestAnimationFrame(()=>{
+                  ctx.scrollController.alignTo(id, 'bottom', false)
+                })
+              })
+            }
+          } catch {}
+        }
+        modeManager.set(prev)
+      } })
     } else if(action==='daily-stats'){
       openDailyStatsOverlay({ store, activeParts, historyRuntime, modeManager })
     } else if(action==='settings'){
@@ -622,8 +770,45 @@ export function createInteraction({
       if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prevMode) } }) }
     }
   else if(k==='m'){
-      if(e.shiftKey){ e.preventDefault(); const prevMode=modeManager.mode; openModelEditor({ store, onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } }) }
-      else { if(modeManager.mode!=='input') return; e.preventDefault(); const prevMode=modeManager.mode; openModelSelector({ onClose: ()=>{ pendingMessageMeta.model = getActiveModel(); renderPendingMeta(); historyRuntime.renderCurrentView({ preserveActive:true }); modeManager.set(prevMode) } }) }
+      if(e.shiftKey){
+        e.preventDefault();
+        const prevMode=modeManager.mode;
+        openModelEditor({ store, onClose: ({ dirty } = {})=>{
+          pendingMessageMeta.model = getActiveModel();
+          renderPendingMeta();
+          if(dirty){
+            historyRuntime.renderCurrentView({ preserveActive:true });
+            try {
+              const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active();
+              const id = act && act.id;
+              if(id && ctx.scrollController && ctx.scrollController.alignTo){
+                requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
+              }
+            } catch {}
+          }
+          modeManager.set(prevMode)
+        } })
+      }
+      else {
+        if(modeManager.mode!=='input') return;
+        e.preventDefault();
+        const prevMode=modeManager.mode;
+        openModelSelector({ onClose: ({ dirty } = {})=>{
+          pendingMessageMeta.model = getActiveModel();
+          renderPendingMeta();
+          if(dirty){
+            historyRuntime.renderCurrentView({ preserveActive:true });
+            try {
+              const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active();
+              const id = act && act.id;
+              if(id && ctx.scrollController && ctx.scrollController.alignTo){
+                requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
+              }
+            } catch {}
+          }
+          modeManager.set(prevMode)
+        } })
+      }
     }
     else if(k==='k'){ e.preventDefault(); const prevMode=modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prevMode) } }) }
     else if(k===','){ e.preventDefault(); const prevMode=modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
@@ -690,7 +875,18 @@ export function createInteraction({
     }
     store.removePair(pairId)
     historyRuntime.renderCurrentView({ preserveActive:true })
-    if(targetId){ activeParts.setActiveById(targetId); historyRuntime.applyActivePart() }
+    if(targetId){
+      activeParts.setActiveById(targetId)
+      historyRuntime.applyActivePart()
+      // After rebuild, keep the new focus on-screen (non-intrusive)
+      try {
+        const act = activeParts.active()
+        const id = act && act.id
+        if(id && ctx.scrollController && ctx.scrollController.ensureVisible){
+          requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.ensureVisible(id, false) }) })
+        }
+      } catch {}
+    }
     else {
       // No target available (likely empty list). Keep mode; nothing to focus.
     }
