@@ -16,6 +16,7 @@ export function openModelEditor({ onClose, store }){
   panel.style.minWidth = '720px'
   panel.innerHTML = `
     <header>Models</header>
+    <div class="me-hintbar"><span class="me-hint">j/k rows · h/l cols · Space toggle · Ctrl+N new</span></div>
     <div class="me-table">
       <div class="me-row me-head" aria-hidden="true">
   <span class="me-col me-col-toggle">Enabled</span>
@@ -28,11 +29,10 @@ export function openModelEditor({ onClose, store }){
       <div class="list"><ul tabindex="0" class="me-list"></ul></div>
     </div>
     <footer class="me-footer">
-      <span class="me-hint">j/k rows · h/l cols · Space toggle · Ctrl+N new · Ctrl+S save · Esc cancel</span>
       <div class="me-controls">
         <div class="me-controls-right">
-          <button class="btn btn-sm" id="me-save-btn">Save (Ctrl+S)</button>
-          <button class="btn btn-ghost btn-sm" id="me-cancel-btn">Cancel (Escape)</button>
+          <button class="btn btn-sm" id="me-save-btn">Apply (Ctrl+S)</button>
+          <button class="btn btn-sm" id="me-cancel-btn">Cancel+Close (Esc)</button>
         </div>
       </div>
     </footer>`
@@ -264,9 +264,9 @@ export function openModelEditor({ onClose, store }){
     beforeClose: () => { onClose && onClose({ dirty: !!__applied }) }
   })
   // Buttons wiring
-  function doSaveAndClose(){ performSave(); close() }
+  function doSave(){ performSave(); updateFooterState(); ensureListFocus() }
   function doCancelAndClose(){ close() }
-  saveBtn?.addEventListener('click', (e)=>{ e.preventDefault(); doSaveAndClose() })
+  saveBtn?.addEventListener('click', (e)=>{ e.preventDefault(); doSave() })
   cancelBtn?.addEventListener('click', (e)=>{ e.preventDefault(); doCancelAndClose() })
   function keyHandler(e){
     // Ignore if not the latest active editor or panel is detached
@@ -274,7 +274,7 @@ export function openModelEditor({ onClose, store }){
     if (!panel.isConnected) return
     const lowerKey = (typeof e.key === 'string' ? e.key.toLowerCase() : '')
     // Global shortcuts first
-  if(e.ctrlKey && lowerKey==='s'){ e.preventDefault(); doSaveAndClose(); return }
+  if(e.ctrlKey && lowerKey==='s'){ e.preventDefault(); doSave(); return }
   // Escape is handled by openModal closeKeys; do not handle locally to avoid leaks
     // Do not intercept when editing inside an input except Esc and special stepping
     const inputFocused = document.activeElement && document.activeElement.tagName==='INPUT' && document.activeElement.classList.contains('me-num')
@@ -458,7 +458,11 @@ export function openModelEditor({ onClose, store }){
     }
     return !!__dirty
   }
-  function updateFooterState(){ /* saved/dirty hint reserved for future */ }
+  function updateFooterState(){
+    const dirty = isDirty()
+    if (saveBtn) saveBtn.textContent = dirty ? 'Apply (Ctrl+S)' : 'All saved'
+    if (cancelBtn) cancelBtn.textContent = dirty ? 'Cancel+Close (Esc)' : 'Close (Esc)'
+  }
   function performSave(){
     // Apply staged adds
     for(const [id, meta] of stagedAdds){ addModel(id, meta) }
@@ -482,8 +486,16 @@ export function openModelEditor({ onClose, store }){
     } else {
       for(const id of stagedDeletes){ if(!isBaseModel(id)) deleteModel(id) }
     }
+    // Reset staged state so editor reflects a clean state post-save
+    pendingNewRow = null
+    stagedAdds.clear()
+    stagedDeletes.clear()
     __dirty = false
     __applied = true
+    // Rebuild originals/drafts from the now-updated catalog so isDirty() returns false
+    origById.clear(); draftById.clear()
+    render()
+    updateFooterState()
   }
   // No Save/Cancel buttons; Sync remains passive
   render()

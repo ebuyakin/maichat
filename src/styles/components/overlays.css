@@ -9,6 +9,13 @@
 .overlay-panel li.active { background:#1e3a5a; color:#fff; }
 .overlay-panel li dim { color:#777; }
 .overlay-panel footer { border-top:1px solid #222; padding:8px 12px; display:flex; gap:4px; }
+/* Model Editor tweaks */
+.overlay-panel.model-editor { position: relative; height:calc(70vh - 110px); }
+.overlay-panel.model-editor .me-hintbar { padding:6px 12px; color:var(--text-dim); border-bottom:1px solid #222; margin-left:0; margin-top:0; }
+.overlay-panel.model-editor .me-footer { position:absolute; right:20px; bottom:20px; padding:0; border:none; }
+.overlay-panel.model-editor .me-controls-right { display:flex; gap:8px; }
+.overlay-panel.model-editor #me-save-btn,
+.overlay-panel.model-editor #me-cancel-btn { width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .overlay-panel input[type=text] { flex:1; background:#0a0a0a; border:1px solid #333; color:#eee; padding:4px 6px; font:var(--size-base)/1.4 var(--font-ui); }
 
 /* Topic Picker */

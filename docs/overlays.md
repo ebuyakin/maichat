@@ -35,3 +35,6 @@ The buttons are placed in the bottom row of overlays in the following order from
 Enter - key is free to be used for other purposes in Editors, it does not trigger Saving or Closing of the overlay.
 
 In Topic Editor at the moment Esc is used inconsistently. It first activates the search button and if the search button is active it closes the overlay. Let's remove this inconsistency. So the desired behaviour: on open of the Topic editor the search button is active (as now) and all key commands work as they work now. Repeated activation of the search button is done with Ctrl-F (not with Esc) and Esc is reserved for Cancel+Close.
+
+# Overlays formatting:
+- fixed size. The overlays shall not mutate depending on the content or tab that is active. The size shall be fixed. And chosen in such a way as to avoid appearance of the sroll at all reasonable screen resolutions. Different overlays, however, don't have to have the same size (they can differ from each other)
