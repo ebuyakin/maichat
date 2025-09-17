@@ -1,5 +1,5 @@
 // Restored original (moved from src/ui/settingsOverlay.js) - path adjusted only.
-import { getSettings, saveSettings, resetSettings } from '../../core/settings/index.js'
+import { getSettings, saveSettings, getDefaultSettings } from '../../core/settings/index.js'
 import { openModal } from '../../shared/openModal.js'
 
 export function openSettingsOverlay({ onClose }){
@@ -38,7 +38,7 @@ export function openSettingsOverlay({ onClose }){
                 <input name="gapBetweenPx" type="number" step="1" min="0" max="48" value="${existing.gapBetweenPx}" />
               </label>
             </fieldset>
-            <div class="tab-hint" data-tab-hint="spacing">Shift+1..4 switch tabs • h/l or [ ] cycle • j/k move • +/- adjust • Enter save • Esc close</div>
+            <div class="tab-hint" data-tab-hint="spacing">Shift+1..4 switch tabs • h/l or [ ] cycle • j/k move • +/- adjust • Ctrl+S - Save & Close • Esc - Cancel & Close</div>
           </div>
           <div class="tab-section" data-tab-section="visibility" id="tab-visibility" hidden>
             <fieldset class="spacing-fieldset visibility-fieldset">
@@ -99,9 +99,9 @@ export function openSettingsOverlay({ onClose }){
             </fieldset>
           </div>
           <div class="buttons">
-            <button type="button" data-action="cancel" title="Close without saving changes">Cancel</button>
-            <button type="button" data-action="reset" title="Reset all settings to defaults (keeps this panel open)">Reset</button>
-            <button type="button" data-action="apply" title="Save changes and apply immediately">Apply</button>
+            <button type="button" data-action="reset" title="Restore defaults in the form (no save)">Reset</button>
+            <button type="button" data-action="saveclose" title="Save settings and close (Ctrl+S)">Save & Close</button>
+            <button type="button" data-action="cancelclose" title="Close without saving (Esc)">Cancel & Close</button>
           </div>
         </form>
       </div>
@@ -110,27 +110,32 @@ export function openSettingsOverlay({ onClose }){
   const panel = root.querySelector('.settings-panel')
   const form = root.querySelector('#settingsForm')
   const modal = openModal({ modeManager: window.__modeManager, root, closeKeys:[], restoreMode:true, preferredFocus: ()=> form.querySelector('input,select') })
-  function close(){ modal.close('manual'); if(onClose) onClose() }
-  root.addEventListener('click', e=>{ if(e.target===root) close() })
-  const cancelBtn = form.querySelector('[data-action="cancel"]')
+  const baseline = { ...existing }
+  let isDirty = false
+  let persistedThisSession = false
+  function updateButtons(){ /* static labels now; nothing to update */ }
+  function setDirty(v){ isDirty = !!v }
+  function close(){ modal.close('manual'); if(onClose) try{ onClose({ dirty: !!persistedThisSession }) }catch{} }
+  const cancelBtn = form.querySelector('[data-action="cancelclose"]')
   const resetBtn = form.querySelector('[data-action="reset"]')
-  const applyBtn = form.querySelector('[data-action="apply"]')
+  const saveCloseBtn = form.querySelector('[data-action="saveclose"]')
+  updateButtons()
 
   cancelBtn.addEventListener('click', ()=> close())
-  applyBtn.addEventListener('click', ()=> applyChanges())
+  saveCloseBtn.addEventListener('click', ()=> saveAndClose())
   resetBtn.addEventListener('click', ()=> doReset())
 
   root.addEventListener('keydown', e=>{
     if(e.key === 'Escape'){
       e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
       close();
-    } else if(e.key === 'Enter' && e.target && e.target.tagName !== 'TEXTAREA'){
+    } else if((e.key==='s' || e.key==='S') && (e.ctrlKey || e.metaKey)){
       e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
-      applyChanges();
+      saveAndClose();
     }
   }, true)
 
-  function applyChanges(){
+  function readFormValues(){
     const fd = new FormData(form)
     const partFraction = clampPF(parseFloat(fd.get('partFraction')))
     const partPadding = clampRange(parseInt(fd.get('partPadding')),0,48)
@@ -151,8 +156,24 @@ export function openSettingsOverlay({ onClose }){
   const userRequestAllowance = clampRange(parseInt(fd.get('userRequestAllowance')),0,500000)
   const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')),0,1000)
   const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')),1.0,10.0)
-  saveSettings({ partFraction, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, maxTrimAttempts, charsPerToken })
-    markSaved()
+    return { partFraction, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, maxTrimAttempts, charsPerToken }
+  }
+  function shallowEqual(a,b){
+    if(a===b) return true
+    if(!a||!b) return false
+    const ka=Object.keys(a), kb=Object.keys(b)
+    if(ka.length!==kb.length) return false
+    for(const k of ka){ if(a[k]!==b[k]) return false }
+    return true
+  }
+  function saveAndClose(){
+    const values = readFormValues()
+    // Only persist if changed vs baseline
+    if(!shallowEqual(values, baseline)){
+      saveSettings(values)
+      persistedThisSession = true
+    }
+    close()
   }
   function populateFormFromSettings(s){
     // Layout
@@ -187,17 +208,16 @@ export function openSettingsOverlay({ onClose }){
     if(cpt && s.charsPerToken != null) cpt.value = String(s.charsPerToken)
   }
   function doReset(){
-    resetSettings()
-    const fresh = getSettings()
-    populateFormFromSettings(fresh)
+    const defs = getDefaultSettings()
+    populateFormFromSettings(defs)
     updatePfHint()
-    markSaved()
+    setDirty(true)
   }
   function clampPF(v){ if(isNaN(v)) v = existing.partFraction || 0.6; return Math.min(1.00, Math.max(0.10, v)) }
   function clampRange(v,min,max){ if(isNaN(v)) return min; return Math.min(max, Math.max(min,v)) }
   function clampFloat(v,min,max){ if(isNaN(v)) return min; return Math.min(max, Math.max(min,v)) }
-  function markSaved(){ applyBtn.textContent = 'Saved'; applyBtn.classList.add('saved') }
-  function markDirty(){ if(applyBtn.textContent==='Saved'){ applyBtn.textContent='Apply'; applyBtn.classList.remove('saved') } }
+  function markSaved(){ setDirty(false) }
+  function markDirty(){ setDirty(true) }
   function focusables(){ return Array.from(form.querySelectorAll('input,select,button')).filter(el=> !el.disabled) }
   function moveFocus(dir){
     const list = focusables(); if(!list.length) return
@@ -264,9 +284,8 @@ export function openSettingsOverlay({ onClose }){
       }
     }
   if(isSelect && e.key===' '){ e.preventDefault(); cycleSelect(active, e.shiftKey?-1:1); markDirty(); return }
-  if(e.key==='Enter'){ e.preventDefault(); applyChanges(); return }
     if(e.key==='Escape'){ e.preventDefault(); close(); return }
-    if(['j','k','+','-','_',' ','Enter','Escape','=',].includes(e.key)) e.stopPropagation()
+    if(['j','k','+','-','_',' ','Escape','=',].includes(e.key)) e.stopPropagation()
   })
   form.querySelectorAll('input,select').forEach(el=>{
     el.addEventListener('change', ()=> markDirty())

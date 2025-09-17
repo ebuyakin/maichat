@@ -42,3 +42,4 @@ export function saveSettings(patch){ current={ ...loadSettings(), ...patch }; tr
 export function getSettings(){ return loadSettings() }
 export function subscribeSettings(fn){ listeners.add(fn); return ()=>listeners.delete(fn) }
 export function resetSettings(){ current={ ...DEFAULTS }; saveSettings({}) }
+export function getDefaultSettings(){ return { ...DEFAULTS } }

@@ -1,5 +1,5 @@
 /* Settings Panel */
-.settings-panel .settings-body { padding:8px 16px 90px; display:flex; flex-direction:column; gap:0; flex:1; overflow:hidden; position:relative; }
+.settings-panel .settings-body { padding:8px 16px 105px; display:flex; flex-direction:column; gap:0; flex:1; overflow:hidden; position:relative; }
 .settings-panel .settings-tabs { display:flex; gap:6px; padding:8px 12px 6px; border-bottom:1px solid #222; flex-wrap:wrap; }
 .settings-panel .settings-tabs .tab-btn { background:#1a1a1a; border:1px solid #2c2c2c; color:var(--text-dim); padding:4px 10px; border-radius:4px; font-size:11px; letter-spacing:.5px; cursor:pointer; }
 .settings-panel .settings-tabs .tab-btn.active { color:var(--text); border-color:#3a3a3a; background:#202020; }
@@ -22,13 +22,26 @@
 @media (max-width:520px){ .settings-panel.compact { width:92vw; } }
 .overlay-backdrop .settings-panel.compact { align-self:center; }
 .settings-panel .tab-hint { display:none; font-size:11px; color:var(--text-dim); letter-spacing:.4px; margin:6px 2px 0; line-height:1.35; width:var(--settings-fieldset-w); text-align:center; }
+.settings-panel .tab-hint[data-tab-hint="spacing"] { width: calc(var(--settings-fieldset-w) + 120px); margin-bottom: 5px; }
 .settings-panel .tab-hint[data-tab-hint="layout"] { display:block; }
 .settings-panel .pf-hint { font-weight:400; }
 .settings-panel .tab-section { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-height:320px; padding-top:6px; }
 .settings-panel .tab-section[hidden] { display:none !important; }
 .settings-panel .tab-section fieldset { margin:0 auto; }
 .settings-panel .tab-section fieldset label { align-items:flex-start; }
-.settings-panel .buttons { position:absolute; left:16px; right:16px; bottom:15px; padding:14px 0 0; margin:0; background:transparent; border-top:1px solid #222; display:flex; justify-content:flex-end; gap:10px; }
+.settings-panel .buttons { position:absolute; left:0; right:0; bottom:20px; padding:0; margin:0 auto; background:transparent; border-top:none; display:flex; justify-content:center; gap:12px; }
+.settings-panel .buttons [data-action] { 
+  width:130px; 
+  white-space:nowrap; 
+  overflow:hidden; 
+  text-overflow:ellipsis; 
+  font-size:12px; 
+  padding:6px 10px; 
+  text-align:center; 
+  display:inline-flex; 
+  align-items:center; 
+  justify-content:center; 
+}
 .settings-panel input[type=number]:focus, .settings-panel select:focus { border-color:var(--accent); }
 .settings-panel button { background:var(--btn-bg); border:1px solid var(--btn-border); color:var(--text); padding:6px 14px; border-radius:4px; cursor:pointer; font:var(--size-base); transition:background .15s, border-color .15s; }
 .settings-panel button:hover, .settings-panel button:focus { background:var(--btn-bg-hover); border-color:#444; }
