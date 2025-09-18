@@ -16,7 +16,7 @@ There are several types of overlays used in the app:
 #### 1.5. Confirmation dialog (e.g. topic change confirmation dialogue)
 - these overlays are used to confirm important commands/actions and serve as an additional measure to prevent accidental actions that may have unintended consequences. These overlays have Confirm/Cancel button. They also accept y/N as confimation/cancellation command. These dialog do not change any underlying data and do not trigger re-rendering of the message history.
 ### 1.6. Settings overlay
-- Settings overlay controls general configuration of the app. It shall have 3 buttons: 'Reset', 'Save & Close (Ctrl+S)' 'Cancel & Close (Esc)'. The first button saves the changes, closes the overlay and triggers the application of the changes (i.e. re-rendering of the messge history or other changes as the case may be). Cancel & Close - discard the changes and closes the overlay without triggering re-rendering of the main window.
+- Settings overlay controls general configuration of the app. It shall have 3 buttons: 'Reset', 'Save & Close (Ctrl+S)' 'Cancel & Close (Esc)'. The Save & Close button saves the changes, closes the overlay and triggers the application of the changes (i.e. re-rendering of the messge history or other changes as the case may be). Cancel & Close - discard the changes and closes the overlay without triggering re-rendering of the main window.
 ### 2. Non-modal overlays (Debug overlays).
 - These overlays don't block the underlying windows, don't overtake control and don't prevent any interaction of the user with the app interface elements.
 

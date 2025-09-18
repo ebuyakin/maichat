@@ -60,7 +60,7 @@ M22. Filtering language extension.
     The idea is slightly different, but also simple. oN filters all in-context messages + N latest off-context messages. The user will be able to see what's in, what's out (without long history), plain o - just in-context.
     - commands introduction. So far CLI filter (filter input box, command zone) has been used for literally filtering the message history. It shall be extended to input commands (operations over message history). General format shall be colon commmand parameters (vim like). E.g. :export json - export the filtered message history as json file. Or :changetopic - command to bulk change of the assigned topic for all filtered message.
 
-M23. History export in different formats [ ]
+M23. History export in different formats [x]
     Some simple export of the history as well-structured .json may be enough for this stage.
 
 M24. Multiple providers (+Claude+Gemini) [ ]
