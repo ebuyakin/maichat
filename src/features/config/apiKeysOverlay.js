@@ -20,14 +20,14 @@ export function openApiKeysOverlay({ onClose, modeManager }){
   panel.innerHTML = `
     <header>API Keys</header>
     <div class="keys-body" >
-      <p class="keys-note">Enter your OpenAI API key to start using MaiChat. Your key is stored only in this browser (localStorage). <a href="https://platform.openai.com/account/api-keys" target="_blank" rel="noopener" class="ext-link">Get / manage your OpenAI API key</a>. You can remove it anytime by clearing browser data.</p>
+      <p class="keys-note">Enter your API keys. Keys are stored only in this browser (localStorage). <a href="https://platform.openai.com/account/api-keys" target="_blank" rel="noopener" class="ext-link">OpenAI keys</a> · <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" class="ext-link">Anthropic keys</a>. You can remove them anytime by clearing browser data.</p>
       <label class="key-field">
         <span>OpenAI Key</span>
         <input class="std-input" type="password" data-key="openai" placeholder="sk-..." value="${existing.openai?escapeHtml(existing.openai):''}" />
       </label>
       <label class="key-field">
-        <span>Anthropic Key (coming soon)</span>
-        <input class="std-input" type="password" data-key="anthropic" placeholder="disabled" value="" disabled />
+        <span>Anthropic Key</span>
+        <input class="std-input" type="password" data-key="anthropic" placeholder="sk-ant-..." value="${existing.anthropic?escapeHtml(existing.anthropic):''}" />
       </label>
       <label class="key-field">
         <span>OpenRouter Key (coming soon)</span>
@@ -37,7 +37,7 @@ export function openApiKeysOverlay({ onClose, modeManager }){
         <button data-action="cancel" class="btn">Close</button>
         <button data-action="save" class="btn">Save</button>
       </div>
-  <div class="keys-footnote">Only OpenAI is supported today; other providers will be enabled later. Shortcuts: Enter — save; Esc — close.</div>
+  <div class="keys-footnote">OpenAI and Anthropic are supported. Shortcuts: Enter — save; Esc — close.</div>
     </div>`
   backdrop.appendChild(panel)
   document.body.appendChild(backdrop)

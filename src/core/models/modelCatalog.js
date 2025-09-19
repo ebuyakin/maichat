@@ -1,7 +1,7 @@
 // Moved from src/models/modelCatalog.js (Phase 5 core move)
 const STORAGE_KEY = 'maichat_model_catalog_v2'
 const BASE_MODELS = [
-  { id:'gpt-5', contextWindow:128000, tpm:30000, rpm:500, tpd:900000 },
+  { id:'gpt-5', provider:'openai', contextWindow:128000, tpm:30000, rpm:500, tpd:900000 },
   { id:'gpt-5-mini', contextWindow:128000, tpm:200000, rpm:500, tpd:2000000 },
   { id:'gpt-5-nano', contextWindow:128000, tpm:200000, rpm:500, tpd:2000000 },
   { id:'gpt-4.1', contextWindow:128000, tpm:30000, rpm:500, tpd:900000 },
@@ -11,20 +11,24 @@ const BASE_MODELS = [
   { id:'o4-mini', contextWindow:128000, tpm:200000, rpm:500, tpd:2000000 },
   { id:'gpt-4o', contextWindow:128000, tpm:30000, rpm:500, tpd:900000 },
   { id:'gpt-4o-mini', contextWindow:128000, tpm:200000, rpm:500, tpd:2000000 },
-  { id:'gpt-3.5-turbo', contextWindow:16000, tpm:200000, rpm:500, tpd:2000000 }
+  { id:'gpt-3.5-turbo', contextWindow:16000, tpm:200000, rpm:500, tpd:2000000 },
+  // Anthropic popular models (approximated budgets)
+  { id:'claude-3-5-sonnet-20240620', provider:'anthropic', contextWindow:200000, tpm:200000, rpm:60, tpd:2000000 },
+  { id:'claude-3-5-haiku-20241022', provider:'anthropic', contextWindow:200000, tpm:200000, rpm:60, tpd:2000000 }
 ]
 function loadState(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {} } catch { return {} } }
 function saveState(state){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)) }
 function normalize(state){
   if(!state.models) state.models = {}
   for(const bm of BASE_MODELS){
-    if(!state.models[bm.id]){ state.models[bm.id] = { enabled:true, contextWindow: bm.contextWindow, tpm: bm.tpm, rpm: bm.rpm, tpd: bm.tpd } }
+  if(!state.models[bm.id]){ state.models[bm.id] = { enabled:true, provider: bm.provider || 'openai', contextWindow: bm.contextWindow, tpm: bm.tpm, rpm: bm.rpm, tpd: bm.tpd } }
     else {
       if(typeof state.models[bm.id].contextWindow !== 'number') state.models[bm.id].contextWindow = bm.contextWindow
       if(typeof state.models[bm.id].enabled !== 'boolean') state.models[bm.id].enabled = true
       if(typeof state.models[bm.id].tpm !== 'number') state.models[bm.id].tpm = bm.tpm
       if(typeof state.models[bm.id].rpm !== 'number') state.models[bm.id].rpm = bm.rpm
       if(typeof state.models[bm.id].tpd !== 'number') state.models[bm.id].tpd = bm.tpd
+      if(typeof state.models[bm.id].provider !== 'string') state.models[bm.id].provider = bm.provider || 'openai'
     }
   }
   // Ensure any custom models (not in BASE_MODELS) have required fields
@@ -35,6 +39,7 @@ function normalize(state){
       if(typeof m.tpm !== 'number') m.tpm = 8192
       if(typeof m.rpm !== 'number') m.rpm = 60
       if(typeof m.tpd !== 'number') m.tpd = 100000
+      if(typeof m.provider !== 'string') m.provider = 'openai'
     }
   }
   if(!state.activeModel || !state.models[state.activeModel]?.enabled){
@@ -59,12 +64,12 @@ export function listModels(){
   const isBase = (id)=> !!BASE_MODELS.find(b=>b.id===id)
   return allIds
     .filter(id=> !!__state.models[id])
-    .map(id=> ({ id, contextWindow:__state.models[id].contextWindow, tpm:__state.models[id].tpm, rpm:__state.models[id].rpm, tpd:__state.models[id].tpd, enabled:__state.models[id].enabled }))
+    .map(id=> ({ id, provider: __state.models[id].provider || 'openai', contextWindow:__state.models[id].contextWindow, tpm:__state.models[id].tpm, rpm:__state.models[id].rpm, tpd:__state.models[id].tpd, enabled:__state.models[id].enabled }))
     .sort((a,b)=> (b.enabled - a.enabled) || (Number(isBase(b.id)) - Number(isBase(a.id))) || a.id.localeCompare(b.id))
 }
 export function toggleModelEnabled(id){ const m = __state.models[id]; if(!m) return; m.enabled = !m.enabled; if(!m.enabled && __state.activeModel===id){ setActiveModel(listModels().find(x=>x.enabled)?.id) } saveState(__state) }
 export function getContextWindow(id){ const m = __state.models[id]; return m ? m.contextWindow : 8192 }
-export function getModelMeta(id){ const m = __state.models[id]; if(!m) return { contextWindow:8192, tpm:8192, rpm:60, tpd:100000 }; return { ...m } }
+export function getModelMeta(id){ const m = __state.models[id]; if(!m) return { provider:'openai', contextWindow:8192, tpm:8192, rpm:60, tpd:100000 }; return { ...m, provider: m.provider || 'openai' } }
 export function ensureCatalogLoaded(){}
 
 // New: explicit enable/disable and metadata updates
@@ -90,6 +95,7 @@ export function addModel(id, meta){
   const num = (v, def)=>{ const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : def }
   const m = {
     enabled: true,
+    provider: (typeof meta?.provider === 'string' && meta.provider) ? meta.provider : 'openai',
     contextWindow: num(meta?.contextWindow, 8192),
     tpm: num(meta?.tpm, 8192),
     rpm: num(meta?.rpm, 60),

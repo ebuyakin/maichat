@@ -13,6 +13,7 @@
  * @typedef {Object} ChatRequest
  * @property {string} model
  * @property {ChatMessage[]} messages
+ * @property {string} [system]
  * @property {AbortSignal} [signal]
  * @property {string} apiKey
  * @property {{ temperature?: number, maxOutputTokens?: number }} [options]

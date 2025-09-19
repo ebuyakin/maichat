@@ -4,6 +4,7 @@ import { getProvider, ProviderError } from '../../infrastructure/provider/adapte
 import { estimateTokens, getModelBudget, estimatePairTokens } from '../../core/context/tokenEstimator.js'
 import { getSettings } from '../../core/settings/index.js'
 import { getApiKey } from '../../infrastructure/api/keys.js'
+import { getModelMeta } from '../../core/models/modelCatalog.js'
 
 // Note: No global system policy. We rely solely on per-topic system messages.
 
@@ -101,18 +102,20 @@ export async function executeSend({ store, model, topicId, userText, signal, vis
     const aStart = (typeof performance !== 'undefined' ? performance.now() : Date.now())
     timing.attempts.push({ attempt: idx + 1, start: aStart, end: null, duration: null, trimmedCount })
     emitDebug()
-    const provider = getProvider('openai')
+    const meta = getModelMeta(model) || { provider: 'openai' }
+    const provider = getProvider(meta.provider || 'openai')
     if (!provider) throw new Error('provider_not_registered')
-    const apiKey = getApiKey('openai')
+    const apiKey = getApiKey(meta.provider || 'openai')
     if (!apiKey) throw new Error('missing_api_key')
-  const baseMessages = buildMessages({ includedPairs: currentIncluded, newUserText: userText })
-  const messages = hasSystem ? [ { role:'system', content: topicSystem }, ...baseMessages ] : baseMessages
+    const baseMessages = buildMessages({ includedPairs: currentIncluded, newUserText: userText })
+    // Universal envelope: pass system separately; messages contain user/assistant only
+    const messages = baseMessages
     const options = {}
     // Include topic request params if present
   const rp = topic && topic.requestParams || {}
     if(typeof rp.temperature === 'number') options.temperature = rp.temperature
     if(typeof rp.maxOutputTokens === 'number') options.maxOutputTokens = rp.maxOutputTokens
-    const result = await provider.sendChat({ model, messages, apiKey, signal, options })
+  const result = await provider.sendChat({ model, messages, system: hasSystem ? topicSystem : undefined, apiKey, signal, options })
     const aEnd = (typeof performance !== 'undefined' ? performance.now() : Date.now())
     const rec = timing.attempts[timing.attempts.length - 1]
     if (rec) {

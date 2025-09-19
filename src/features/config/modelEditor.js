@@ -13,20 +13,22 @@ export function openModelEditor({ onClose, store }){
   backdrop.className = 'overlay-backdrop centered'
   const panel = document.createElement('div')
   panel.className = 'overlay-panel model-editor'
-  panel.style.minWidth = '720px'
+  panel.style.minWidth = '880px'
   panel.innerHTML = `
     <header>Models</header>
-    <div class="me-hintbar"><span class="me-hint">j/k rows · h/l cols · Space toggle · Ctrl+N new</span></div>
+  <div class="me-hintbar"><span class="me-hint">j/k rows · h/l cols · Space toggle · on Provider: switch · Ctrl+N new</span></div>
     <div class="me-table">
       <div class="me-row me-head" aria-hidden="true">
   <span class="me-col me-col-toggle">Enabled</span>
   <span class="me-col me-col-name">Model</span>
-  <span class="me-col me-col-cw">Context window (K)</span>
+  <span class="me-col me-col-provider">Provider</span>
+  <span class="me-col me-col-cw">CW (K)</span>
   <span class="me-col me-col-tpm">TPM (K)</span>
   <span class="me-col me-col-rpm">RPM (K)</span>
   <span class="me-col me-col-tpd">TPD (K)</span>
       </div>
-      <div class="list"><ul tabindex="0" class="me-list"></ul></div>
+  <div class="list"><ul tabindex="0" class="me-list"></ul></div>
+  <div class="me-hintbar" aria-hidden="true"><span class="me-hint">CW — context window · TPM — tokens per minute · RPM — requests per minute · TPD — tokens per day</span></div>
     </div>
     <footer class="me-footer">
       <div class="me-controls">
@@ -64,17 +66,17 @@ export function openModelEditor({ onClose, store }){
   let stagedDeletes = new Set()
   let stagedAdds = new Map() // id -> meta
   let activeIndex = 0
-  // Navigation state: null = row only (no column focus); otherwise 0..5 => column index
-  // 0: toggle, 1: name (read-only except for new row), 2..5: numeric fields cw, tpm, rpm, tpd
+  // Navigation state: null = row only (no column focus); otherwise 0..6 => column index
+  // 0: toggle, 1: name (read-only except for new row), 2: provider (editable only for pending new row), 3..6: numeric fields cw, tpm, rpm, tpd
   let selectedCol = null
   let editing = false
   let pendingNewRow = null // { enabled, id:'', contextWindow,tpm,rpm,tpd }
   let __dirty = false
   let __applied = false // becomes true when changes are saved
 
-  const COLS = ['toggle','name','contextWindow','tpm','rpm','tpd']
+  const COLS = ['toggle','name','provider','contextWindow','tpm','rpm','tpd']
   const FIRST_EDITABLE_COL = 2
-  const LAST_COL = 5
+  const LAST_COL = 6
   function render(preserveId){
     const prevId = preserveId || (models[activeIndex] && models[activeIndex].id)
   models = listModels()
@@ -109,11 +111,12 @@ export function openModelEditor({ onClose, store }){
       li.tabIndex = -1
       li.classList.add('me-row')
       if(i === activeIndex) li.classList.add('active')
-      const activeBadge = m.id===activeModel?'<span class="me-active">active</span>':''
+  const activeBadge = m.id===activeModel?'<span class="me-active">(active)</span>':''
       const inUse = usedCounts.get(String(m.id).toLowerCase())>0
       li.innerHTML = `
         <span class="me-col me-col-toggle ${m.enabled?'on':'off'}" data-role="toggle" aria-label="${m.enabled?'enabled':'disabled'}">${m.enabled? '●':'○'}</span>
         <span class="me-col me-col-name">${m.id} ${activeBadge}</span>
+        <span class="me-col me-col-provider">${m.provider || 'openai'}</span>
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.contextWindow||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpm||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-field="rpm" type="number" min="0" step="1" value="${m.rpm}" class="me-num"/></span>
@@ -131,6 +134,7 @@ export function openModelEditor({ onClose, store }){
       li.innerHTML = `
         <span class="me-col me-col-toggle on" data-role="toggle" aria-label="enabled">●</span>
         <span class="me-col me-col-name"><input class="me-name-input" type="text" placeholder="New model id" value="${pendingNewRow.id||''}"/></span>
+        <span class="me-col me-col-provider">${pendingNewRow.provider || 'openai'}</span>
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-pending="1" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.contextWindow||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-pending="1" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpm||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-pending="1" data-field="rpm" type="number" min="0" step="1" value="${pendingNewRow.rpm||0}" class="me-num"/></span>
@@ -179,7 +183,7 @@ export function openModelEditor({ onClose, store }){
   }
   listContainer?.addEventListener('scroll', updateScrollHints)
 
-  function isBaseModel(id){ return ['gpt-5','gpt-5-mini','gpt-5-nano','gpt-4.1','gpt-4.1-mini','gpt-4.1-nano','o3','o4-mini','gpt-4o','gpt-4o-mini','gpt-3.5-turbo'].includes(id) }
+  function isBaseModel(id){ return ['gpt-5','gpt-5-mini','gpt-5-nano','gpt-4.1','gpt-4.1-mini','gpt-4.1-nano','o3','o4-mini','gpt-4o','gpt-4o-mini','gpt-3.5-turbo','claude-3-5-sonnet-20240620','claude-3-5-haiku-20241022'].includes(id) }
   ul.addEventListener('click', e=>{ 
     const li = e.target.closest('li.me-row')
     if(!li || li.classList.contains('me-add')) return
@@ -231,6 +235,7 @@ export function openModelEditor({ onClose, store }){
       if(draftById.has(id) || origById.has(id)) return
       const meta = {
         enabled: true,
+        provider: pendingNewRow?.provider || 'openai',
         contextWindow: pendingNewRow?.contextWindow || 8192,
         tpm: pendingNewRow?.tpm || 8192,
         rpm: pendingNewRow?.rpm || 60,
@@ -343,7 +348,7 @@ export function openModelEditor({ onClose, store }){
     if(e.key==='Enter'){ return }
     // Ctrl+N: start inline new row
   if(e.ctrlKey && lowerKey==='n'){
-      if(!pendingNewRow){ pendingNewRow = { id:'', enabled:true, contextWindow:8192, tpm:8192, rpm:60, tpd:100000 } }
+  if(!pendingNewRow){ pendingNewRow = { id:'', enabled:true, provider:'openai', contextWindow:8192, tpm:8192, rpm:60, tpd:100000 } }
       activeIndex = models.length
       selectedCol = 1 // name column
       render()
@@ -373,8 +378,16 @@ export function openModelEditor({ onClose, store }){
       if (selectedCol===null){ selectedCol = FIRST_EDITABLE_COL; applyCellSelection(); enterEditMode(); ensureVisible(); return }
       moveCol(-1); return
     }
-    // Toggle
-    if(isSpace){ const cur = (models[activeIndex]); if(cur){ toggle(cur.id) } return }
+    // Toggle / provider switch for pending row
+    if(isSpace){
+      const rowIdx = activeIndex
+      const isPending = !!pendingNewRow && rowIdx === models.length
+      if(selectedCol===2 && isPending){
+        pendingNewRow.provider = (pendingNewRow.provider==='openai' ? 'anthropic' : 'openai')
+        render(); applyCellSelection(); enterEditMode(); ensureVisible(); return
+      }
+      const cur = (models[rowIdx]); if(cur){ toggle(cur.id) } return
+    }
   }
   function move(delta){
     const rowsCount = models.length + (pendingNewRow?1:0)
@@ -418,7 +431,7 @@ export function openModelEditor({ onClose, store }){
     const row = ul.children[activeIndex]
     if(!row) return
     const sel = [
-      '.me-col-toggle', '.me-col-name', '.me-col-cw', '.me-col-tpm', '.me-col-rpm', '.me-col-tpd'
+      '.me-col-toggle', '.me-col-name', '.me-col-provider', '.me-col-cw', '.me-col-tpm', '.me-col-rpm', '.me-col-tpd'
     ][selectedCol]
     const cell = sel && row.querySelector(sel)
     if(cell) cell.classList.add('me-col-selected')
@@ -427,7 +440,7 @@ export function openModelEditor({ onClose, store }){
     if(selectedCol===null) return
     const row = ul.children[activeIndex]
     if(!row) return
-    const sel = [ '.me-col-toggle', '.me-col-name', '.me-col-cw', '.me-col-tpm', '.me-col-rpm', '.me-col-tpd' ][selectedCol]
+  const sel = [ '.me-col-toggle', '.me-col-name', '.me-col-provider', '.me-col-cw', '.me-col-tpm', '.me-col-rpm', '.me-col-tpd' ][selectedCol]
     const cell = sel && row.querySelector(sel)
     if(!cell) return
   const nameInput = cell.querySelector('input.me-name-input')

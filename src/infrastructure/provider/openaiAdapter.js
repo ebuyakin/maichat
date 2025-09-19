@@ -6,13 +6,14 @@ export function createOpenAIAdapter(){
   return {
     /** @param {import('./adapter.js').ChatRequest} req */
     async sendChat(req){
-      const { model, messages, apiKey, signal, options } = req
+  const { model, messages, system, apiKey, signal, options } = req
       const now = (typeof performance!=='undefined' && performance.now.bind(performance)) || Date.now
       const t0 = now()
       let tSerializeStart, tSerializeEnd, tFetchStart, tFetchEnd, tParseStart, tParseEnd
       if(!apiKey) throw new ProviderError('missing api key','auth',401)
       tSerializeStart = now()
-      const body = { model, messages: messages.map(m=> ({ role:m.role, content:m.content })) }
+  const msgArr = system ? [{ role:'system', content: system }, ...messages] : messages
+  const body = { model, messages: msgArr.map(m=> ({ role:m.role, content:m.content })) }
       if(options){
         if(typeof options.temperature === 'number') body.temperature = options.temperature
         if(typeof options.maxOutputTokens === 'number') body.max_tokens = options.maxOutputTokens
