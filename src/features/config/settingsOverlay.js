@@ -87,7 +87,10 @@ export function openSettingsOverlay({ onClose }){
             <fieldset class="spacing-fieldset context-fieldset">
               <legend>Context Assembly</legend>
               <label>User Request Allowance (URA)
-                <input name="userRequestAllowance" type="number" min="0" max="5000" step="10" value="${existing.userRequestAllowance != null ? existing.userRequestAllowance : 100}" />
+                <input name="userRequestAllowance" type="number" min="0" max="500000" step="10" value="${existing.userRequestAllowance != null ? existing.userRequestAllowance : 600}" />
+              </label>
+              <label>Assistant Response Allowance (ARA)
+                <input name="assistantResponseAllowance" type="number" min="0" max="500000" step="10" value="${existing.assistantResponseAllowance != null ? existing.assistantResponseAllowance : 800}" />
               </label>
               <label>Max Trim Attempts (NTA)
                 <input name="maxTrimAttempts" type="number" min="0" max="100" step="1" value="${existing.maxTrimAttempts != null ? existing.maxTrimAttempts : 10}" />
@@ -95,7 +98,7 @@ export function openSettingsOverlay({ onClose }){
               <label>Chars Per Token (CPT)
                 <input name="charsPerToken" type="number" min="1.5" max="8" step="0.1" value="${existing.charsPerToken != null ? existing.charsPerToken : 3.5}" />
               </label>
-              <div style="font-size:11px;opacity:.7;line-height:1.3;margin-top:4px;">Trimming only occurs after provider overflow errors. Predicted context (X) reserves URA tokens for your next message. Counter after trimming shows [X-T]/Y.</div>
+              <div style="font-size:11px;opacity:.7;line-height:1.3;margin-top:4px;">Prediction reserves URA for the *next* user message and ARA (provider-specific) for expected assistant output. Final trimming ensures history fits. ARA currently only influences future budget math phases.</div>
             </fieldset>
           </div>
           <div class="buttons">
@@ -154,9 +157,10 @@ export function openSettingsOverlay({ onClose }){
   const scrollAnimMaxMs = clampRange(parseInt(fd.get('scrollAnimMaxMs')),0,5000)
   const scrollAnimEasing = fd.get('scrollAnimEasing') || 'easeOutQuad'
   const userRequestAllowance = clampRange(parseInt(fd.get('userRequestAllowance')),0,500000)
+  const assistantResponseAllowance = clampRange(parseInt(fd.get('assistantResponseAllowance')),0,500000)
   const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')),0,1000)
   const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')),1.0,10.0)
-    return { partFraction, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, maxTrimAttempts, charsPerToken }
+  return { partFraction, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken }
   }
   function shallowEqual(a,b){
     if(a===b) return true
@@ -202,7 +206,8 @@ export function openSettingsOverlay({ onClose }){
     const sae = form.querySelector('select[name="scrollAnimEasing"]')
     if(sae) sae.value = s.scrollAnimEasing || 'easeOutQuad'
     // Context
-    setNum('userRequestAllowance', s.userRequestAllowance)
+  setNum('userRequestAllowance', s.userRequestAllowance)
+  setNum('assistantResponseAllowance', s.assistantResponseAllowance)
     setNum('maxTrimAttempts', s.maxTrimAttempts)
     const cpt = form.querySelector('input[name="charsPerToken"]')
     if(cpt && s.charsPerToken != null) cpt.value = String(s.charsPerToken)

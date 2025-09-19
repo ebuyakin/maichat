@@ -12,7 +12,7 @@ const BASE_MODELS = [
   { id:'gpt-4o', contextWindow:128000, tpm:30000, rpm:500, tpd:900000 },
   { id:'gpt-4o-mini', contextWindow:128000, tpm:200000, rpm:500, tpd:2000000 },
   { id:'gpt-3.5-turbo', contextWindow:16000, tpm:200000, rpm:500, tpd:2000000 },
-  // Anthropic popular models (approximated budgets)
+  // Anthropic popular models (approximated budgets) (otpm left undefined for now; user can supply)
   { id:'claude-3-5-sonnet-20240620', provider:'anthropic', contextWindow:200000, tpm:200000, rpm:60, tpd:2000000 },
   { id:'claude-3-5-haiku-20241022', provider:'anthropic', contextWindow:200000, tpm:200000, rpm:60, tpd:2000000 }
 ]
@@ -21,14 +21,16 @@ function saveState(state){ localStorage.setItem(STORAGE_KEY, JSON.stringify(stat
 function normalize(state){
   if(!state.models) state.models = {}
   for(const bm of BASE_MODELS){
-  if(!state.models[bm.id]){ state.models[bm.id] = { enabled:true, provider: bm.provider || 'openai', contextWindow: bm.contextWindow, tpm: bm.tpm, rpm: bm.rpm, tpd: bm.tpd } }
+  if(!state.models[bm.id]){ state.models[bm.id] = { enabled:true, provider: bm.provider || 'openai', contextWindow: bm.contextWindow, tpm: bm.tpm, rpm: bm.rpm, tpd: bm.tpd, otpm: state.models[bm.id]?.otpm } }
     else {
       if(typeof state.models[bm.id].contextWindow !== 'number') state.models[bm.id].contextWindow = bm.contextWindow
       if(typeof state.models[bm.id].enabled !== 'boolean') state.models[bm.id].enabled = true
       if(typeof state.models[bm.id].tpm !== 'number') state.models[bm.id].tpm = bm.tpm
       if(typeof state.models[bm.id].rpm !== 'number') state.models[bm.id].rpm = bm.rpm
       if(typeof state.models[bm.id].tpd !== 'number') state.models[bm.id].tpd = bm.tpd
-      if(typeof state.models[bm.id].provider !== 'string') state.models[bm.id].provider = bm.provider || 'openai'
+  if(typeof state.models[bm.id].provider !== 'string') state.models[bm.id].provider = bm.provider || 'openai'
+  // Preserve existing otpm if present; leave undefined otherwise
+  if(state.models[bm.id].otpm != null && !Number.isFinite(Number(state.models[bm.id].otpm))) delete state.models[bm.id].otpm
     }
   }
   // Ensure any custom models (not in BASE_MODELS) have required fields
@@ -39,7 +41,8 @@ function normalize(state){
       if(typeof m.tpm !== 'number') m.tpm = 8192
       if(typeof m.rpm !== 'number') m.rpm = 60
       if(typeof m.tpd !== 'number') m.tpd = 100000
-      if(typeof m.provider !== 'string') m.provider = 'openai'
+  if(typeof m.provider !== 'string') m.provider = 'openai'
+  if(m.otpm != null && !Number.isFinite(Number(m.otpm))) delete m.otpm
     }
   }
   if(!state.activeModel || !state.models[state.activeModel]?.enabled){
@@ -64,12 +67,16 @@ export function listModels(){
   const isBase = (id)=> !!BASE_MODELS.find(b=>b.id===id)
   return allIds
     .filter(id=> !!__state.models[id])
-    .map(id=> ({ id, provider: __state.models[id].provider || 'openai', contextWindow:__state.models[id].contextWindow, tpm:__state.models[id].tpm, rpm:__state.models[id].rpm, tpd:__state.models[id].tpd, enabled:__state.models[id].enabled }))
+  .map(id=> ({ id, provider: __state.models[id].provider || 'openai', contextWindow:__state.models[id].contextWindow, tpm:__state.models[id].tpm, rpm:__state.models[id].rpm, tpd:__state.models[id].tpd, otpm: __state.models[id].otpm, enabled:__state.models[id].enabled }))
     .sort((a,b)=> (b.enabled - a.enabled) || (Number(isBase(b.id)) - Number(isBase(a.id))) || a.id.localeCompare(b.id))
 }
 export function toggleModelEnabled(id){ const m = __state.models[id]; if(!m) return; m.enabled = !m.enabled; if(!m.enabled && __state.activeModel===id){ setActiveModel(listModels().find(x=>x.enabled)?.id) } saveState(__state) }
 export function getContextWindow(id){ const m = __state.models[id]; return m ? m.contextWindow : 8192 }
-export function getModelMeta(id){ const m = __state.models[id]; if(!m) return { provider:'openai', contextWindow:8192, tpm:8192, rpm:60, tpd:100000 }; return { ...m, provider: m.provider || 'openai' } }
+export function getModelMeta(id){
+  const m = __state.models[id]
+  if(!m) return { provider:'openai', contextWindow:8192, tpm:8192, rpm:60, tpd:100000, otpm: undefined }
+  return { ...m, provider: m.provider || 'openai', otpm: m.otpm }
+}
 export function ensureCatalogLoaded(){}
 
 // New: explicit enable/disable and metadata updates
@@ -83,6 +90,10 @@ export function updateModelMeta(id, patch){
   if(patch && 'tpm' in patch) next.tpm = num(patch.tpm, m.tpm)
   if(patch && 'rpm' in patch) next.rpm = num(patch.rpm, m.rpm)
   if(patch && 'tpd' in patch) next.tpd = num(patch.tpd, m.tpd)
+  if(patch && 'otpm' in patch){
+    const v = Number(patch.otpm)
+    if(Number.isFinite(v) && v >= 0) next.otpm = v; else if(patch.otpm === null) delete next.otpm
+  }
   __state.models[id] = next
   saveState(__state)
 }
@@ -99,7 +110,8 @@ export function addModel(id, meta){
     contextWindow: num(meta?.contextWindow, 8192),
     tpm: num(meta?.tpm, 8192),
     rpm: num(meta?.rpm, 60),
-    tpd: num(meta?.tpd, 100000)
+    tpd: num(meta?.tpd, 100000),
+    otpm: (meta && Number.isFinite(Number(meta.otpm)) && Number(meta.otpm) >= 0) ? Number(meta.otpm) : undefined
   }
   __state.models[id] = m
   if(!__state.activeModel || !__state.models[__state.activeModel]?.enabled) __state.activeModel = id

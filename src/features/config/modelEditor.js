@@ -13,7 +13,7 @@ export function openModelEditor({ onClose, store }){
   backdrop.className = 'overlay-backdrop centered'
   const panel = document.createElement('div')
   panel.className = 'overlay-panel model-editor'
-  panel.style.minWidth = '880px'
+  panel.style.minWidth = '930px'
   panel.innerHTML = `
     <header>Models</header>
   <div class="me-hintbar"><span class="me-hint">j/k rows · h/l cols · Space toggle · on Provider: switch · Ctrl+N new</span></div>
@@ -26,9 +26,10 @@ export function openModelEditor({ onClose, store }){
   <span class="me-col me-col-tpm">TPM (K)</span>
   <span class="me-col me-col-rpm">RPM (K)</span>
   <span class="me-col me-col-tpd">TPD (K)</span>
+  <span class="me-col me-col-otpm">OTPM (K)</span>
       </div>
   <div class="list"><ul tabindex="0" class="me-list"></ul></div>
-  <div class="me-hintbar" aria-hidden="true"><span class="me-hint">CW — context window · TPM — tokens per minute · RPM — requests per minute · TPD — tokens per day</span></div>
+  <div class="me-hintbar" aria-hidden="true"><span class="me-hint">CW — context window · TPM — tokens per minute · RPM — requests per minute · TPD — tokens per day · OTPM — output tokens per minute (Anthropic)</span></div>
     </div>
     <footer class="me-footer">
       <div class="me-controls">
@@ -66,17 +67,19 @@ export function openModelEditor({ onClose, store }){
   let stagedDeletes = new Set()
   let stagedAdds = new Map() // id -> meta
   let activeIndex = 0
-  // Navigation state: null = row only (no column focus); otherwise 0..6 => column index
-  // 0: toggle, 1: name (read-only except for new row), 2: provider (editable only for pending new row), 3..6: numeric fields cw, tpm, rpm, tpd
+  // Navigation state: null = row only (no column focus); otherwise 0..7 => column index
+  // 0: toggle, 1: name (read-only except for new row), 2: provider (ONLY focusable/editable for pending new row), 3..7: numeric fields cw, tpm, rpm, tpd, otpm.
+  // For existing rows, navigation should jump from name (1) directly to CW (3) when user presses 'l'.
   let selectedCol = null
   let editing = false
-  let pendingNewRow = null // { enabled, id:'', contextWindow,tpm,rpm,tpd }
+  let pendingNewRow = null // { enabled, id:'', contextWindow,tpm,rpm,tpd,otpm }
   let __dirty = false
   let __applied = false // becomes true when changes are saved
 
-  const COLS = ['toggle','name','provider','contextWindow','tpm','rpm','tpd']
-  const FIRST_EDITABLE_COL = 2
-  const LAST_COL = 6
+  const COLS = ['toggle','name','provider','contextWindow','tpm','rpm','tpd','otpm']
+  const PROVIDER_COL_INDEX = 2
+  const FIRST_NUMERIC_COL = 3 // contextWindow
+  const LAST_COL = 7
   function render(preserveId){
     const prevId = preserveId || (models[activeIndex] && models[activeIndex].id)
   models = listModels()
@@ -120,7 +123,8 @@ export function openModelEditor({ onClose, store }){
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.contextWindow||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpm||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-field="rpm" type="number" min="0" step="1" value="${m.rpm}" class="me-num"/></span>
-  <span class="me-col me-col-tpd"><div class="me-actions"><input aria-label="Tokens per day (K tokens)" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpd||0)/1000)}" class="me-num"/></div></span>`
+        <span class="me-col me-col-tpd"><div class="me-actions"><input aria-label="Tokens per day (K tokens)" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpd||0)/1000)}" class="me-num"/></div></span>
+        <span class="me-col me-col-otpm"><input aria-label="Output tokens per minute (K tokens)" data-field="otpm" data-scale="1000" type="number" min="0" step="1" value="${m.otpm!=null?Math.round((m.otpm||0)/1000):''}" class="me-num" placeholder="-"/></span>`
       ul.appendChild(li)
     })
     // Render inline pending new row, if any
@@ -138,7 +142,8 @@ export function openModelEditor({ onClose, store }){
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-pending="1" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.contextWindow||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-pending="1" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpm||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-pending="1" data-field="rpm" type="number" min="0" step="1" value="${pendingNewRow.rpm||0}" class="me-num"/></span>
-        <span class="me-col me-col-tpd"><div class="me-actions"><input aria-label="Tokens per day (K tokens)" data-pending="1" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpd||0)/1000)}" class="me-num"/></div></span>`
+        <span class="me-col me-col-tpd"><div class="me-actions"><input aria-label="Tokens per day (K tokens)" data-pending="1" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpd||0)/1000)}" class="me-num"/></div></span>
+        <span class="me-col me-col-otpm"><input aria-label="Output tokens per minute (K tokens)" data-pending="1" data-field="otpm" data-scale="1000" type="number" min="0" step="1" value="${pendingNewRow.otpm!=null?Math.round((pendingNewRow.otpm||0)/1000):''}" class="me-num" placeholder="-"/></span>`
       ul.appendChild(li)
     }
     // Apply visual selection outline when a column is selected
@@ -239,7 +244,8 @@ export function openModelEditor({ onClose, store }){
         contextWindow: pendingNewRow?.contextWindow || 8192,
         tpm: pendingNewRow?.tpm || 8192,
         rpm: pendingNewRow?.rpm || 60,
-        tpd: pendingNewRow?.tpd || 100000
+        tpd: pendingNewRow?.tpd || 100000,
+        otpm: pendingNewRow?.otpm
       }
       draftById.set(id, { id, ...meta })
       stagedAdds.set(id, { ...meta })
@@ -252,7 +258,7 @@ export function openModelEditor({ onClose, store }){
       const idx = models.findIndex(m=> m.id===id)
       if(idx>=0){ activeIndex = idx; ensureVisible() }
       // focus first numeric input of the row in edit mode
-  selectedCol = FIRST_EDITABLE_COL
+  selectedCol = FIRST_NUMERIC_COL
   applyCellSelection(); enterEditMode()
     }
   })
@@ -314,7 +320,8 @@ export function openModelEditor({ onClose, store }){
               contextWindow: pendingNewRow?.contextWindow || 8192,
               tpm: pendingNewRow?.tpm || 8192,
               rpm: pendingNewRow?.rpm || 60,
-              tpd: pendingNewRow?.tpd || 100000
+              tpd: pendingNewRow?.tpd || 100000,
+              otpm: pendingNewRow?.otpm
             }
             draftById.set(id, { id, ...meta })
             stagedAdds.set(id, { ...meta })
@@ -324,7 +331,7 @@ export function openModelEditor({ onClose, store }){
             render(id)
             const idx = models.findIndex(m=> m.id===id)
             if(idx>=0){ activeIndex = idx; ensureVisible() }
-            selectedCol = FIRST_EDITABLE_COL
+            selectedCol = FIRST_NUMERIC_COL
             applyCellSelection(); enterEditMode()
           }
         }
@@ -348,7 +355,7 @@ export function openModelEditor({ onClose, store }){
     if(e.key==='Enter'){ return }
     // Ctrl+N: start inline new row
   if(e.ctrlKey && lowerKey==='n'){
-  if(!pendingNewRow){ pendingNewRow = { id:'', enabled:true, provider:'openai', contextWindow:8192, tpm:8192, rpm:60, tpd:100000 } }
+  if(!pendingNewRow){ pendingNewRow = { id:'', enabled:true, provider:'openai', contextWindow:8192, tpm:8192, rpm:60, tpd:100000, otpm: undefined } }
       activeIndex = models.length
       selectedCol = 1 // name column
       render()
@@ -371,11 +378,20 @@ export function openModelEditor({ onClose, store }){
   if(e.key==='PageUp'){ movePage(-1); return }
     // Column movement
   if(lowerKey==='l'){
-      if (selectedCol===null){ selectedCol = FIRST_EDITABLE_COL; applyCellSelection(); enterEditMode(); ensureVisible(); return }
+      if (selectedCol===null){
+        // Determine initial column: provider only if pending new row (so user can toggle provider), else first numeric
+        const isPending = !!pendingNewRow && activeIndex === models.length
+        selectedCol = isPending ? PROVIDER_COL_INDEX : FIRST_NUMERIC_COL
+        applyCellSelection(); enterEditMode(); ensureVisible(); return
+      }
       moveCol(1); return
     }
   if(lowerKey==='h'){
-      if (selectedCol===null){ selectedCol = FIRST_EDITABLE_COL; applyCellSelection(); enterEditMode(); ensureVisible(); return }
+      if (selectedCol===null){
+        const isPending = !!pendingNewRow && activeIndex === models.length
+        selectedCol = isPending ? PROVIDER_COL_INDEX : FIRST_NUMERIC_COL
+        applyCellSelection(); enterEditMode(); ensureVisible(); return
+      }
       moveCol(-1); return
     }
     // Toggle / provider switch for pending row
@@ -412,12 +428,22 @@ export function openModelEditor({ onClose, store }){
     if(activeIndex<0) return
     const rowsCount = models.length + (pendingNewRow?1:0)
     if(activeIndex>=rowsCount) return
-  if(selectedCol===null){ selectedCol = FIRST_EDITABLE_COL; applyCellSelection(); enterEditMode(); return }
+  if(selectedCol===null){
+    const isPending = !!pendingNewRow && activeIndex === models.length
+    selectedCol = isPending ? PROVIDER_COL_INDEX : FIRST_NUMERIC_COL
+    applyCellSelection(); enterEditMode(); return
+  }
     let next = selectedCol + delta
-  // Allow name column (1) only for the pending new row; otherwise clamp to numeric [2..5]
+  // Determine pending row and columns allowed
   const isPendingRow = !!pendingNewRow && activeIndex === models.length
-  if(!isPendingRow && next < FIRST_EDITABLE_COL) next = FIRST_EDITABLE_COL
-  if(isPendingRow && next < 1) next = 1
+  // For existing rows skip provider column (2) entirely
+  if(!isPendingRow){
+    if(next === PROVIDER_COL_INDEX) next = delta>0 ? PROVIDER_COL_INDEX+1 : 1 // skip provider; 1 moves back to name
+    if(next < FIRST_NUMERIC_COL && next !== 1) next = FIRST_NUMERIC_COL
+  } else {
+    // Pending row: allow provider; allow name (1)
+    if(next < 1) next = 1
+  }
     if(next>LAST_COL) next=LAST_COL
     selectedCol = next
     applyCellSelection()
@@ -431,7 +457,7 @@ export function openModelEditor({ onClose, store }){
     const row = ul.children[activeIndex]
     if(!row) return
     const sel = [
-      '.me-col-toggle', '.me-col-name', '.me-col-provider', '.me-col-cw', '.me-col-tpm', '.me-col-rpm', '.me-col-tpd'
+      '.me-col-toggle', '.me-col-name', '.me-col-provider', '.me-col-cw', '.me-col-tpm', '.me-col-rpm', '.me-col-tpd', '.me-col-otpm'
     ][selectedCol]
     const cell = sel && row.querySelector(sel)
     if(cell) cell.classList.add('me-col-selected')
@@ -440,7 +466,7 @@ export function openModelEditor({ onClose, store }){
     if(selectedCol===null) return
     const row = ul.children[activeIndex]
     if(!row) return
-  const sel = [ '.me-col-toggle', '.me-col-name', '.me-col-provider', '.me-col-cw', '.me-col-tpm', '.me-col-rpm', '.me-col-tpd' ][selectedCol]
+  const sel = [ '.me-col-toggle', '.me-col-name', '.me-col-provider', '.me-col-cw', '.me-col-tpm', '.me-col-rpm', '.me-col-tpd', '.me-col-otpm' ][selectedCol]
     const cell = sel && row.querySelector(sel)
     if(!cell) return
   const nameInput = cell.querySelector('input.me-name-input')
@@ -467,7 +493,8 @@ export function openModelEditor({ onClose, store }){
       if ((draft.contextWindow||0) !== (orig.contextWindow||0)) return true
       if ((draft.tpm||0) !== (orig.tpm||0)) return true
       if ((draft.rpm||0) !== (orig.rpm||0)) return true
-      if ((draft.tpd||0) !== (orig.tpd||0)) return true
+  if ((draft.tpd||0) !== (orig.tpd||0)) return true
+  if ((draft.otpm||0) !== (orig.otpm||0)) return true
     }
     return !!__dirty
   }
@@ -489,7 +516,8 @@ export function openModelEditor({ onClose, store }){
       if(draft.contextWindow !== orig.contextWindow) patch.contextWindow = draft.contextWindow
       if(draft.tpm !== orig.tpm) patch.tpm = draft.tpm
       if(draft.rpm !== orig.rpm) patch.rpm = draft.rpm
-      if(draft.tpd !== orig.tpd) patch.tpd = draft.tpd
+  if(draft.tpd !== orig.tpd) patch.tpd = draft.tpd
+  if(draft.otpm !== orig.otpm) patch.otpm = draft.otpm
       if(Object.keys(patch).length){ updateModelMeta(id, patch) }
     }
     // Apply deletions for custom models not used

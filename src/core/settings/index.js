@@ -2,7 +2,7 @@
 // Removed legacy anchorMode / edgeAnchoringMode (stateless scroll now always explicit). Fallback is 'bottom'.
 // Updated spacing defaults (2025-09-11): gapOuterPx 15 (was 6), gapMetaPx 4 (was 6), gapIntraPx 4 (was 6)
 // Removed unused topZoneLines / bottomZoneLines (2025-09-11) — never implemented in scrollControllerV3; legacy keys are ignored if present in stored JSON.
-const DEFAULTS={ partFraction:0.2, partPadding:15, gapOuterPx:15, gapMetaPx:4, gapIntraPx:4, gapBetweenPx:10, fadeMode:'binary', fadeHiddenOpacity:1, fadeInMs:120, fadeOutMs:120, fadeTransitionMs:120, scrollAnimMs:240, scrollAnimEasing:'easeOutQuad', scrollAnimDynamic:true, scrollAnimMinMs:80, scrollAnimMaxMs:600, assumedUserTokens:256, userRequestAllowance:600, maxTrimAttempts:10, charsPerToken:4, showTrimNotice:false, topicOrderMode:'manual' }
+const DEFAULTS={ partFraction:0.2, partPadding:15, gapOuterPx:15, gapMetaPx:4, gapIntraPx:4, gapBetweenPx:10, fadeMode:'binary', fadeHiddenOpacity:1, fadeInMs:120, fadeOutMs:120, fadeTransitionMs:120, scrollAnimMs:240, scrollAnimEasing:'easeOutQuad', scrollAnimDynamic:true, scrollAnimMinMs:80, scrollAnimMaxMs:600, assumedUserTokens:256, userRequestAllowance:600, assistantResponseAllowance:800, maxTrimAttempts:10, charsPerToken:4, showTrimNotice:false, topicOrderMode:'manual' }
 const LS_KEY='maichat.settings.v1'
 let current=null; const listeners=new Set()
 export function loadSettings(){
