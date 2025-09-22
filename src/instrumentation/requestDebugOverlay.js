@@ -43,7 +43,7 @@ export function createRequestDebugOverlay({ historyRuntime }){
 		if(!requestDebugEnabled){ pane.style.display='none'; return }
 		pane.style.display='block'
 		if(!lastSentRequest){ pane.textContent = '[request debug] No request sent yet.'; return }
-		const { model, budget, selection, AUT, attemptTotalTokens, attemptHistoryTokens, predictedHistoryTokens, remainingReserve, attemptsUsed, trimmedCount, predictedMessageCount, messages, lastErrorMessage, overflowMatched, stage, timing } = lastSentRequest
+		const { model, budget, selection, AUT, attemptTotalTokens, attemptHistoryTokens, predictedHistoryTokens, remainingReserve, attemptsUsed, trimmedCount, predictedMessageCount, messages, lastErrorMessage, overflowMatched, stage, timing, symbols } = lastSentRequest
 		const settings = getSettings()
 		const ctxStats = historyRuntime.getContextStats()
 		const uraVal = (ctxStats && (("URA" in ctxStats)? ctxStats.URA : ctxStats.assumedUserTokens)) ?? settings.userRequestAllowance
@@ -55,6 +55,13 @@ export function createRequestDebugOverlay({ historyRuntime }){
 		const trimmedTok = (predictedHistoryTokens!=null && attemptHistoryTokens!=null) ? (predictedHistoryTokens - attemptHistoryTokens) : 0
 		const lines = []
 		lines.push(`MODEL: ${model}`)
+		if(symbols){
+			const { C, HLP, HLA, H0, H, URA, ARA, PARA, remainingContext, systemTokens, predictedTokenSum } = symbols
+			lines.push('BUDGET_SYMBOLS:')
+			lines.push(`  C=${C} URA=${URA} ARA=${ARA} PARA=${PARA} s=${systemTokens}`)
+			lines.push(`  HLP=${HLP} HLA=${HLA} H0=${H0!=null?H0:'-'} H=${H!=null?H:'-'} R=${remainingContext!=null?remainingContext:'-'}`)
+			lines.push(`  predictedTokenSum=${predictedTokenSum}`)
+		}
 		lines.push(`PARAMETERS: URA=${uraVal} CPT=${cpt} NTA=${nta} ML=${ml}`)
 		// Try to surface provider-specific options (temperature, max_tokens) if available in captured JSON
 		try {

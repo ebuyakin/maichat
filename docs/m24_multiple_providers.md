@@ -114,6 +114,15 @@ This section documents how each provider maps MaiChat’s universal envelope int
   - `text` ← join `content[]` `'text'` blocks
   - `usage` ← `{ promptTokens: usage.input_tokens, completionTokens: usage.output_tokens, totalTokens?: number }`
   - Error mapping: 401→auth, 429→rate, 5xx→server, 400→bad-request (include message)
+ - Role alternation & synthetic placeholders:
+   - Anthropic enforces strict alternation (`user`, `assistant`, `user`, ...). Our in-app history can contain consecutive pending user messages (multiple user turns with no assistant replies yet).
+   - Current implementation inserts synthetic assistant messages with content `"failed to respond"` between consecutive user turns before building the Anthropic payload.
+   - Rationale: preserves individual user turn boundaries for downstream UI features (ranking, topic assignment) without collapsing them into one composite user message.
+   - Trade-off: Placeholder text becomes part of the prompt context and could minimally influence the model. A future alternative (deferred) is to collapse consecutive user turns instead of inserting placeholders.
+ - Proxy usage (current state):
+   - Browser direct calls are blocked by CORS (Anthropic does not emit permissive `Access-Control-Allow-Origin`). We route through a hosted pass-through proxy (Vercel) that forwards the request and returns the response with appropriate CORS headers.
+   - BYOK still applies: user supplies their key; the client sends it to the proxy over TLS; proxy forwards it upstream unchanged.
+   - Future enhancement (deferred): user-configurable proxy URL or manual curl flow to maintain a pure-client option.
 
 Notes and differences to keep in mind
 - System message placement differs (OpenAI: first message; Anthropic: top-level `system`).
@@ -150,11 +159,13 @@ Notes and differences to keep in mind
 - Models are stored in the existing catalog with a new `provider` attribute; defaults include a few Anthropic/Gemini entries (disabled by default until a key is present).
 
 ## 11. Networking (BYOK)
-- Client `fetch` with configurable base URLs:
-  - OpenAI: `https://api.openai.com/v1/chat/completions`
-  - Anthropic: `https://api.anthropic.com/v1/messages` (requires headers: `x-api-key`, `anthropic-version`)
-  - Google: `https://generativelanguage.googleapis.com/v1beta/models/:model:generateContent?key=...`
-- CORS considerations: depending on provider/browser, direct calls may be blocked; users can configure their own proxy if needed, but MaiChat ships as a pure client and does not include a relay.
+Client `fetch` base endpoints / strategy:
+  - OpenAI: `https://api.openai.com/v1/chat/completions` (direct; permissive CORS currently allows pure client calls).
+  - Anthropic: Logical endpoint `https://api.anthropic.com/v1/messages` but implemented via hosted proxy due to CORS. Current code uses a fixed Vercel proxy URL (pass-through) and still sends the user key in headers.
+  - Google: `https://generativelanguage.googleapis.com/v1beta/models/:model:generateContent?key=...` (planned; CORS behavior TBD).
+Notes:
+  - Anthropic integration is not presently “pure client” because of the proxy dependency; documentation reflects this divergence from the original pure-client principle.
+  - Future work: optional configurable proxy URL and/or manual curl workflow to restore a zero-relay option for users who prefer no network intermediaries.
 
 ## 12. Error handling
 - Normalize provider-specific errors to common error types + user-friendly messages:
@@ -189,14 +200,51 @@ Step 2: Budget Math Integration (Full Replacement)
 - Emit budget object `{ maxContext: C, inputTokens, remainingContext: R }` and pass through to adapters.
 - Update request debug overlay to display the new symbols (C, URA, ARA, PARA, HLP, HLA, H₀, H, R, UTMO, otpm).
 
+ Step 2.1: Internal One-by-One Trim (Stage 2 separation)
+ - Adjust `pipeline.js` so that after prediction (H₀) and with actual `u`, if H₀ > HLA it removes oldest pairs strictly one at a time until fit (producing H_t) instead of batch trimming.
+ - Keep prediction logic & UI boundary marking unchanged (no recompute mid-send).
+ - Telemetry: add `T_internal` (number of pairs removed in Stage 2) while keeping existing selection reporting.
+ - Preserve current successful tests; add or adapt unit test verifying single-step removal when near boundary.
+
+ Step 2.2: Provider Retry Loop (Stage 3 introduction)
+ - Wrap the provider send in a retry loop listening specifically for context-length exceed responses.
+ - On each provider rejection: drop exactly one additional oldest history pair (increment `T_provider`), rebuild messages, retry.
+ - Stop on success or when retries reach `NTA` (settings `maxTrimAttempts`). On exhaustion raise overflow error.
+ - Telemetry additions: `T_provider`, `attemptsUsed` (network attempts), final `sentCount = predictedMessageCount - (T_internal + T_provider)`.
+ - Do not modify token estimation heuristics or boundary triggers.
+
+ Step 2.3: Debug Overlay Minimal Update
+ - Display (if present): `T_internal`, `T_provider`, `attemptsUsed` alongside existing symbols; hide values when zero to reduce noise.
+ - No new UI interactions; purely informational.
+
+Step 2.4: Always-On Debug Emission (HUD)
+ - Emit a debug payload at four lifecycle points:
+   - `preflight`: immediately after internal trim (Stage 2) before any provider attempt; `attemptsUsed=0`, `T_provider=0`.
+   - `attempt`: before each provider network call (includes attempt number N starting at 1 and current included pair ids).
+   - `success`: on first successful provider response (final `attemptsUsed`, `T_provider`).
+   - `error`: on terminal failure (e.g. missing_api_key, provider_not_registered, provider_context_overflow, context_overflow_after_trimming, auth, network).
+ - Payload invariants: includes `status`, `predictedMessageCount`, `T_internal`, `T_provider`, `trimmedCount = T_internal + T_provider`, `attemptsUsed`, `selection` (pair ids + token estimates), `errorCode?`.
+ - Rationale: HUD remains visible and informative even when network errors occur.
+
 Step 3: Anthropic Output Cap Logic
 - Enhance Anthropic adapter: always set `max_tokens = min(R, otpm?, UTMO?)` (ignoring undefined). Overflow error if < 1.
 - OpenAI adapter: continue to set `max_tokens` only when UTMO override present.
 - Add or adjust tests for budget math + Anthropic cap calculation.
 
+Step 3.1: Provider Adapter Registration
+ - Register `anthropic` adapter during bootstrap alongside OpenAI. Guard against double registration.
+ - (Future) Register `google` when implemented (Step 6).
+
+Step 3.2: Error Normalization
+ - Normalize provider-specific context overflow errors to internal code: `provider_context_overflow`.
+ - Distinguish from `context_overflow_after_trimming` (exhausted retries) and internal pre-send `user_prompt_too_large`.
+ - Map: Anthropic/OpenAI tokenizer overflows → `provider_context_overflow`.
+
 Step 4: Capabilities & Error Mapping Polishing
 - Add `capabilities()` method stubs returning static data per provider (supportsSystem, supportsStreaming=false for now, supportsJson=false).
 - Tighten Anthropic error parsing (context length, auth, quota distinctions) and normalize codes.
+ - Expose `requiresOutputCap` boolean: true for Anthropic, false for OpenAI.
+ - HUD optional block: show provider capabilities when debug overlay open.
 
 Step 5: Documentation & Cleanup
 - Add `docs/TECH_REF_BUDGET.md` summarizing formulas with a worked example.
@@ -274,7 +322,8 @@ Linear numbered items below replace prior Annex/duplicated math/rate sections.
 
 1. Symbols
    - cw: raw context window tokens;
-   - tpm: tokens per minute, model-specific usage limit.
+   - tpm: tokens per minute, model-specific usage limit (configured in Model Editor for each model separately). When applied to OpenAI it's interpreted as total limit (for both input and output), when applied to Anthropic it's interpreted as input tokens limit.
+   - otpm: output tokens per minutes limit (as configured for Anthropic models in the Model Editor)
    - C = min(cw, tpm). Effective request max size.
 
    - URA: pre-set new message allowance (prediction) - settings;
@@ -302,9 +351,10 @@ Linear numbered items below replace prior Annex/duplicated math/rate sections.
    - Walk B newest→oldest accumulating total while Σhᵢ ≤ HLP.
    - Included set reversed to chronological → I₀; H₀ = Σhᵢ.
 
-4. Send-time guard & trimming
-   - Compute u; if s + u > C → error (prompt too large).
-   - If H₀ ≤ HLA accept; else iteratively drop oldest pair until H ≤ HLA or none (overflow error if none fits).
+4. Send-time guard & trimming (three stages)
+  Stage 1 (Prediction / boundary visualization): Executed whenever the user changes an inclusion-affecting input (filter, selected model, selected topic, URA/ARA/charsPerToken, model cw/tpm). Produces I₀ and H₀ using URA as placeholder for unknown future user tokens. UI shows this boundary.
+  Stage 2 (Internal trim, pre-send): On Send, compute u and HLA. If H₀ > HLA trim oldest pairs one-by-one until H_t ≤ HLA. Otherwise H_t = H₀. This uses only the chars-per-token heuristic.
+  Stage 3 (Provider retry trimming): Send M_t = [s, H_t, u]. If provider rejects for context length, drop one additional oldest pair to form H_{t+1} and retry. Repeat up to NTA (Max Trim Attempts). If still rejected after NTA attempts, raise overflow error.
 
 6. Budget values
    - inputTokens = s + u + H.
@@ -314,11 +364,22 @@ Linear numbered items below replace prior Annex/duplicated math/rate sections.
 7. Output caps
    - OpenAI: only when override UTMO present → max_tokens = UTMO;
    - Anthropic: required → max_tokens = min(R, otpm?, UTMO?) (ignore undefined). If result <1 → overflow error.
+  - Note: OpenAI intentionally omits `max_tokens` when neither UTMO nor provider-required cap applies; Anthropic always supplies one.
 
-8. Rate limit fields
-   - tpm: combined (OpenAI) / input (Anthropic); influences C.
-   - otpm: optional Anthropic output ceiling; does not change C.
-   - No rolling minute accounting yet.
+### HUD Emission States
+- `preflight`: After Stage 2 internal trim; shows predicted vs trimmed before any provider attempt.
+- `attempt`: Before each send; attempt number increments; history may shrink between attempts only by one oldest pair.
+- `success`: Provider accepted; shows final counts and remaining context.
+- `error`: Terminal failure; includes `errorCode` and last attempted selection.
+- Fields stable across states: `predictedMessageCount`, `T_internal`, cumulative `trimmedCount`, `attemptsUsed`, `selection` (current included pair ids), `status`.
 
-9. Rationale note
-    - Using C = min(cw, tpm) preserves legacy behavior; separation of rate vs memory may change later but not in this iteration.
+
+
+### narrative how message assembly should work:
+
+1. We calculate predicted in-context history (using URA and s) - that is H_0. We calculate it every time the user applies filter or change the model or change the topic in the input zone (as both selected topic and model may affect the in-context history). Importatnly, We calculate it before we know the actual user request. The purpose of calculating H_0 is to mark it in the interface (in the message history), so the users can see what part of the displayed history is expected to be in-context,  and what part will be truncated ('extended WYSIWYG principle').
+2. Then when the user press Send command, we calculate the in-context history using actual user message (u), rather than URA (which is just a setting). If this (actual) history exceeds the limit we trim the oldest messages one by one until we fit the limit. Ths is the first (internal) trimming. That's how we get H_t (see 21.4). Generally speaking this should be rare occasion and most likely one trimmed message from history will be enough.
+
+- Crucially, in both 1 and 2 we use simplified mechanism of calculating the number of tokens (both in H_0 and H_t) - that is just using simple conversion char-per-token (that user can cusomize in settings). Since it's a simplification (and we dont' use any real tokenizers), we may underestimate the number of tokens that the actual LLM counts when we make and API call. Do you understand what I mean?
+
+3. To overcome this, we apply the second trimming mechanism. We try to send H_t, and if it's rejected by LLM due to exceeeded size, we trim the oldest message in the history again, hence H_{t+1}... We try to send it again, if LLM rejects it again, we trim another message and get H_{t+2}. and make another attempt. We do at maximum NTA (another customer setting) and if the message still rejected, declare an error and show error messge to the user with relevant error code.

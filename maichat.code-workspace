@@ -3,5 +3,12 @@
         {
             "path": "."
         }
-    ]
+    ],
+    "settings": {
+        "workbench.editor.centeredLayoutAutoResize": true,
+        "vim.startInInsertMode": false,
+        "editor.cursorSurroundingLines": 5,
+        "editor.scrollBeyondLastLine": true,
+        "workbench.editor.restoreViewState": false
+    }
 }

@@ -1,8 +1,9 @@
 // pipeline.js moved from send/pipeline.js (Phase 6.5 Compose)
 // Adjusted import paths to new relative locations.
 import { getProvider, ProviderError } from '../../infrastructure/provider/adapter.js'
-import { estimateTokens, getModelBudget, estimatePairTokens } from '../../core/context/tokenEstimator.js'
+import { estimateTokens, estimatePairTokens } from '../../core/context/tokenEstimator.js'
 import { getSettings } from '../../core/settings/index.js'
+import { predictHistory, finalizeHistory } from '../../core/context/budgetMath.js'
 import { getApiKey } from '../../infrastructure/api/keys.js'
 import { getModelMeta } from '../../core/models/modelCatalog.js'
 
@@ -18,167 +19,142 @@ export function buildMessages({ includedPairs, newUserText }){
   return msgs
 }
 
-export async function executeSend({ store, model, topicId, userText, signal, visiblePairs, boundarySnapshot, onDebugPayload }) {
+export async function executeSend({ store, model, topicId, userText, signal, visiblePairs, onDebugPayload }) {
   const settings = getSettings()
-  const { userRequestAllowance = 100, maxTrimAttempts = 10, charsPerToken = 3.5 } = settings
-  const baseline = visiblePairs ? visiblePairs.slice() : store.getAllPairs().sort((a, b) => a.createdAt - b.createdAt)
-  const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now())
-  // Resolve topic and use only per-topic system message
+  const { charsPerToken = 4 } = settings
+  const baseline = visiblePairs ? visiblePairs.slice() : store.getAllPairs().sort((a,b)=> a.createdAt - b.createdAt)
   const topic = topicId ? store.topics.get(topicId) : null
   const topicSystem = topic && typeof topic.systemMessage === 'string' ? topic.systemMessage.trim() : ''
-  const hasSystem = !!topicSystem
-  // Token cost of per-topic system message (reserved from context window)
-  const systemTokens = hasSystem ? estimateTokens(topicSystem, charsPerToken) : 0
-  let predicted = []
-  let allowance = userRequestAllowance
-  let maxContext
-  const timing = { t0, tAfterPrediction: null, attempts: [] }
-  if (boundarySnapshot) {
-    predicted = boundarySnapshot.included ? boundarySnapshot.included.slice() : []
-    allowance = boundarySnapshot.stats ? (boundarySnapshot.stats.URA ?? userRequestAllowance) : userRequestAllowance
-    maxContext = boundarySnapshot.stats ? boundarySnapshot.stats.maxContext : getModelBudget(model).maxContext
-  } else {
-    const budget = getModelBudget(model)
-    maxContext = budget.maxContext
-    allowance = userRequestAllowance
-    const predictedRev = []
-    let historyEstimate = 0
-    // Effective window after reserving space for system instruction
-  const effectiveMaxContext = Math.max(0, maxContext - systemTokens)
-    for (let i = baseline.length - 1; i >= 0; i--) {
-      const p = baseline[i]
-      const tok = estimatePairTokens(p, charsPerToken)
-      // Use effectiveMaxContext so we never over-pack beyond what remains after system message
-      if (historyEstimate + tok + allowance > effectiveMaxContext) break
-      predictedRev.push(p)
-      historyEstimate += tok
+  const providerMeta = getModelMeta(model) || { provider:'openai' }
+  const providerId = providerMeta.provider || 'openai'
+  // Phase 1: prediction (newest->oldest) reserving URA and provider PARA semantics
+  const URA = settings.userRequestAllowance
+  const ARA = settings.assistantResponseAllowance
+  const pred = predictHistory({ pairs: baseline, model, systemText: topicSystem, provider: providerId, charsPerToken: charsPerToken, URA, ARA })
+  // Phase 2: iterative overflow attempts using original predicted set (do not recompute prediction)
+  const systemTokens = pred.systemTokens
+  const userTokens = estimateTokens(userText||'', charsPerToken)
+  if(userTokens + systemTokens > pred.C){
+    const err = new Error('user_prompt_too_large'); err.code='user_prompt_too_large'; throw err
+  }
+  // Stage 2.1: internal one-by-one trim (do not rely on batch trimming inside finalizeHistory)
+  let working = pred.predicted.slice() // chronological
+  const HLA = Math.max(0, pred.C - userTokens - systemTokens - pred.PARA)
+  let T_internal = 0
+  // Compute H0 token sum via heuristic
+  const tokenOf = p=> estimatePairTokens(p, charsPerToken)
+  let currentTokens = working.reduce((a,p)=> a + tokenOf(p), 0)
+  if(currentTokens > HLA){
+    while(working.length && currentTokens > HLA){
+      const first = working[0]
+      currentTokens -= tokenOf(first)
+      working.shift()
+      T_internal++
     }
-    predicted = predictedRev.reverse()
+    if(currentTokens > HLA){
+      const err = new Error('context_overflow_after_trimming'); err.code='context_overflow_after_trimming'; throw err
+    }
   }
-  const userTokens = estimateTokens(userText, charsPerToken)
-  timing.tAfterPrediction = (typeof performance !== 'undefined' ? performance.now() : Date.now())
-  // Early guard: if user prompt + system message alone exceed model window, fail fast.
-  if (userTokens + systemTokens > maxContext) {
-    const err = new Error('message too large for model window')
-    err.code = 'user_prompt_too_large'
-    throw err
+  // Now finalize to build budget numbers (finalizeHistory will see already-trimmed set and should not remove more)
+  const finalResult = finalizeHistory({ predicted: working, userText, systemTokens, C: pred.C, PARA: pred.PARA, URA, charsPerToken })
+  if(finalResult.error){ const err = new Error(finalResult.error); err.code=finalResult.error; throw err }
+  const includedPairs = finalResult.included
+  const budget = { maxContext: finalResult.C, inputTokens: finalResult.inputTokens, remainingContext: finalResult.remainingContext }
+  const baseMessages = buildMessages({ includedPairs, newUserText: userText })
+  const provider = getProvider(providerId)
+  const apiKey = getApiKey(providerId)
+
+  const emitDebug = (payload)=>{ if(typeof onDebugPayload === 'function') onDebugPayload(payload) }
+  const baseDebugCore = ()=>({
+    model,
+    budget: { maxContext: budget.maxContext },
+    predictedMessageCount: pred.predicted.length,
+    T_internal,
+    systemTokens,
+    charsPerToken,
+    predictedHistoryTokens: pred.predictedTokenSum,
+    predictedTotalTokens: pred.predictedTokenSum + (settings.userRequestAllowance || 0),
+    remainingReserve: budget.remainingContext,
+    effectiveMaxContext: pred.C - systemTokens,
+    topicId
+  })
+
+  // Preflight HUD emission (before provider verification success)
+  emitDebug({
+    ...baseDebugCore(),
+    status:'preflight',
+    attemptsUsed:0,
+    T_provider:0,
+    trimmedCount: T_internal,
+    selection: includedPairs.map(p=> ({ id:p.id, model:p.model, tokens: estimatePairTokens(p, charsPerToken) })),
+    messages: (topicSystem? [{ role:'system', content:topicSystem}, ...baseMessages] : baseMessages)
+  })
+
+  if(!provider){
+    emitDebug({ ...baseDebugCore(), status:'error', errorCode:'provider_not_registered', attemptsUsed:0, T_provider:0, trimmedCount:T_internal, selection:[], messages:[] })
+    const err = new Error('provider_not_registered'); err.code='provider_not_registered'; throw err
   }
-  let trimmedCount = 0
-  let attemptsUsed = 0
-  let currentIncluded = predicted.slice()
-  function emitDebug(extra = {}) {
-    if (typeof onDebugPayload !== 'function') return
-  const attemptHistoryTokens = currentIncluded.reduce((acc, p) => acc + estimatePairTokens(p, charsPerToken), 0)
-    const attemptTotalTokens = attemptHistoryTokens + userTokens + systemTokens
-    const predictedHistoryTokens = predicted.reduce((acc, p) => acc + estimatePairTokens(p, charsPerToken), 0)
-    const predictedTotalTokens = predictedHistoryTokens + allowance
-    // Include debug copy of messages including system for HUD
-  const dbgBase = buildMessages({ includedPairs: currentIncluded, newUserText: userText })
-  const dbgMsgs = hasSystem ? [{ role:'system', content: topicSystem }, ...dbgBase] : dbgBase
-    onDebugPayload({
-      model,
-      budget: { maxContext, maxUsableRaw: maxContext },
-      selection: currentIncluded.map(p => ({ id: p.id, model: p.model, tokens: estimatePairTokens(p, charsPerToken) })),
-      predictedMessageCount: predicted.length,
-      trimmedCount,
-      attemptsUsed,
-      AUT: userTokens,
-      charsPerToken,
-      predictedHistoryTokens,
-      predictedTotalTokens,
-      attemptHistoryTokens,
-      attemptTotalTokens,
-      remainingReserve: maxContext - attemptHistoryTokens - userTokens - systemTokens,
-      systemTokens,
-      effectiveMaxContext: Math.max(0, maxContext - systemTokens),
-      messages: dbgMsgs,
-      topicId,
-      timing: { ...timing },
-      ...extra
-    })
+  if(!apiKey){
+    emitDebug({ ...baseDebugCore(), status:'error', errorCode:'missing_api_key', attemptsUsed:0, T_provider:0, trimmedCount:T_internal, selection:[], messages:[] })
+    const err = new Error('missing_api_key'); err.code='missing_api_key'; throw err
   }
-  async function attemptSend() {
-    const idx = attemptsUsed
-    const aStart = (typeof performance !== 'undefined' ? performance.now() : Date.now())
-    timing.attempts.push({ attempt: idx + 1, start: aStart, end: null, duration: null, trimmedCount })
-    emitDebug()
-    const meta = getModelMeta(model) || { provider: 'openai' }
-    const provider = getProvider(meta.provider || 'openai')
-    if (!provider) throw new Error('provider_not_registered')
-    const apiKey = getApiKey(meta.provider || 'openai')
-    if (!apiKey) throw new Error('missing_api_key')
-    const baseMessages = buildMessages({ includedPairs: currentIncluded, newUserText: userText })
-    // Universal envelope: pass system separately; messages contain user/assistant only
-    const messages = baseMessages
-    const options = {}
-    // Include topic request params if present
+  const options = {}
   const rp = topic && topic.requestParams || {}
-    if(typeof rp.temperature === 'number') options.temperature = rp.temperature
-    if(typeof rp.maxOutputTokens === 'number') options.maxOutputTokens = rp.maxOutputTokens
-  const result = await provider.sendChat({ model, messages, system: hasSystem ? topicSystem : undefined, apiKey, signal, options })
-    const aEnd = (typeof performance !== 'undefined' ? performance.now() : Date.now())
-    const rec = timing.attempts[timing.attempts.length - 1]
-    if (rec) {
-      rec.end = aEnd; rec.duration = aEnd - rec.start
-      if (result && result.__timing) {
-        rec.provider = {
-          serialize_ms: result.__timing.tSerializeEnd - result.__timing.tSerializeStart,
-          fetch_ms: result.__timing.tFetchEnd - result.__timing.tFetchStart,
-          parse_ms: result.__timing.tParseEnd - result.__timing.tParseStart
-        }
+  if(typeof rp.temperature === 'number') options.temperature = rp.temperature
+  if(typeof rp.maxOutputTokens === 'number') options.maxOutputTokens = rp.maxOutputTokens
+  // Stage 3: provider retry loop (context overflow at provider tokenizer)
+  let attemptsUsed = 0
+  let T_provider = 0
+  let workingProviderPairs = includedPairs.slice()
+  const attemptsTelemetry = []
+  const maxAttempts = settings.maxTrimAttempts || 10
+  const t0 = Date.now()
+  while(true){
+    const msgs = buildMessages({ includedPairs: workingProviderPairs, newUserText: userText })
+    attemptsUsed++
+    emitDebug({
+      ...baseDebugCore(),
+      status:'attempt',
+      attemptNumber: attemptsUsed,
+      attemptsUsed,
+      T_provider,
+      trimmedCount: T_internal + T_provider,
+      selection: workingProviderPairs.map(p=> ({ id:p.id, model:p.model, tokens: estimatePairTokens(p, charsPerToken) })),
+      messages: (topicSystem? [{ role:'system', content:topicSystem}, ...msgs] : msgs)
+    })
+    let result, overflow = false
+    try {
+      const meta = { otpm: (getModelMeta(model) || {}).otpm }
+      result = await provider.sendChat({ model, messages: msgs, system: topicSystem || undefined, apiKey, signal, options, budget, meta })
+    } catch(ex){
+      const msg = (ex && ex.message || '').toLowerCase()
+      const providerCode = ex && ex.providerCode
+      if(providerCode === 'context_length_exceeded' || /context length|too many tokens|too large|exceeds context window|maximum context/i.test(msg)){
+        overflow = true
+      } else {
+        emitDebug({ ...baseDebugCore(), status:'error', errorCode: ex.code || ex.kind || 'provider_error', attemptsUsed, T_provider, trimmedCount:T_internal + T_provider, selection: workingProviderPairs.map(p=>({id:p.id})), messages:[] })
+        throw ex
       }
     }
-    emitDebug({ stage: 'attempt_success' })
-    return result
-  }
-  function isOverflowError(e) {
-    if (!e) return false
-    if (e.providerCode && e.providerCode === 'context_length_exceeded') return true
-    const msg = (e.message || '').toLowerCase()
-    const patterns = [
-      'context_length',
-      'maximum context length',
-      'too many tokens',
-      'context too long',
-      'exceeds context window',
-      'request too large',
-      'too large for'
-    ]
-    return patterns.some(s => msg.includes(s))
-  }
-  try {
-    return await attemptSend()
-  } catch (ex) {
-    if (isOverflowError(ex)) {
-      emitDebug({ lastErrorMessage: ex.message, overflowMatched: true, stage: 'overflow_initial' })
-      while (trimmedCount < maxTrimAttempts && currentIncluded.length) {
-        currentIncluded.shift()
-        trimmedCount++
-        attemptsUsed = trimmedCount
-        try { return await attemptSend() } catch (inner) {
-          if (isOverflowError(inner)) {
-            emitDebug({ lastErrorMessage: inner.message, overflowMatched: true, stage: 'overflow_retry' })
-            continue
-          } else {
-            emitDebug({ lastErrorMessage: inner.message, overflowMatched: false, stage: 'retry_non_overflow' })
-            if (inner instanceof ProviderError && inner.kind === 'auth') {
-              const err = new Error('api_key_auth_failed'); err.__original = inner; throw err
-            }
-            throw inner
-          }
-        }
-      }
-      const err = new Error('context_overflow_after_trimming')
-      err.code = 'context_overflow_after_trimming'
-      err.trimmedCount = trimmedCount
-      err.predictedMessageCount = predicted.length
-      emitDebug({ lastErrorMessage: err.message, overflowMatched: true, stage: 'overflow_exhausted' })
-      throw err
+    attemptsTelemetry.push({ attempt: attemptsUsed, trimmedInternal: T_internal, trimmedProvider: T_provider, sentPairs: workingProviderPairs.map(p=>p.id) })
+    if(!overflow){
+      emitDebug({
+        ...baseDebugCore(),
+        status:'success',
+        attemptsUsed,
+        T_provider,
+        trimmedCount: T_internal + T_provider,
+        selection: workingProviderPairs.map(p=> ({ id:p.id, model:p.model, tokens: estimatePairTokens(p, charsPerToken) })),
+        messages: (topicSystem? [{ role:'system', content:topicSystem}, ...msgs] : msgs),
+        timing: { t0, attempts: attemptsTelemetry }
+      })
+      return result
     }
-    if (ex instanceof ProviderError && ex.kind === 'auth') {
-      const err = new Error('api_key_auth_failed'); err.__original = ex; emitDebug({ lastErrorMessage: err.message, overflowMatched: false, stage: 'auth_error' }); throw err
+    if(workingProviderPairs.length === 0 || attemptsUsed >= maxAttempts){
+      emitDebug({ ...baseDebugCore(), status:'error', errorCode:'context_overflow_after_trimming', attemptsUsed, T_provider, trimmedCount:T_internal+T_provider, selection: [], messages: [] })
+      const err = new Error('context_overflow_after_trimming'); err.code='context_overflow_after_trimming'; throw err
     }
-    emitDebug({ lastErrorMessage: ex.message, overflowMatched: false, stage: 'other_error' })
-    throw ex
+    workingProviderPairs = workingProviderPairs.slice(1)
+    T_provider++
   }
 }

@@ -1,0 +1,202 @@
+Processed 75 files (365ms) 
+
+core/context/boundaryManager.js
+  core/context/tokenEstimator.js
+core/context/budgetMath.js
+  core/context/tokenEstimator.js
+  core/models/modelCatalog.js
+  core/settings/index.js
+core/context/tokenEstimator.js
+  core/models/modelCatalog.js
+core/models/messagePair.js
+core/models/modelCatalog.js
+core/models/topic.js
+core/persistence/contentPersistence.js
+core/settings/index.js
+core/store/adapters/indexedDb.js
+core/store/indexedDbAdapter.js
+  core/store/adapters/indexedDb.js
+core/store/indexes.js
+core/store/memoryStore.js
+  core/models/messagePair.js
+  core/models/topic.js
+features/command/colon/colonCommandParser.js
+features/command/colon/colonCommandRegistry.js
+  features/export/exportApi.js
+  features/export/exportDownload.js
+features/command/colon/colonCommandSplitter.js
+features/command/confirmOverlay.js
+  shared/openModal.js
+features/command/evaluator.js
+  features/command/topicResolver.js
+features/command/lexer.js
+features/command/parser.js
+  features/command/lexer.js
+features/command/topicResolver.js
+features/compose/pipeline.js
+  core/context/budgetMath.js
+  core/context/tokenEstimator.js
+  core/models/modelCatalog.js
+  core/settings/index.js
+  infrastructure/api/keys.js
+  infrastructure/provider/adapter.js
+features/config/apiKeysOverlay.js
+  shared/openModal.js
+features/config/dailyStatsOverlay.js
+  shared/openModal.js
+features/config/helpOverlay.js
+  shared/openModal.js
+features/config/modelEditor.js
+  core/models/modelCatalog.js
+  shared/openModal.js
+features/config/modelSelector.js
+  core/models/modelCatalog.js
+  shared/openModal.js
+features/config/settingsOverlay.js
+  core/settings/index.js
+  shared/openModal.js
+features/export/exportApi.js
+  features/export/exportFormatting.js
+  features/export/exportJsonSerializer.js
+  features/export/exportMarkdownSerializer.js
+  features/export/exportOrdering.js
+  features/export/exportTextSerializer.js
+features/export/exportDownload.js
+features/export/exportFormatting.js
+features/export/exportJsonSerializer.js
+features/export/exportMarkdownSerializer.js
+  features/export/exportFormatting.js
+features/export/exportOrdering.js
+features/export/exportTextSerializer.js
+  features/export/exportFormatting.js
+features/history/fadeVisibility.js
+features/history/historyRuntime.js
+  core/models/modelCatalog.js
+  core/settings/index.js
+  features/command/evaluator.js
+  features/command/parser.js
+  features/history/fadeVisibility.js
+  features/history/partitioner.js
+  features/history/parts.js
+  features/history/spacingStyles.js
+features/history/historyView.js
+  shared/util.js
+features/history/newMessageLifecycle.js
+  shared/util.js
+features/history/partitioner.js
+  core/settings/index.js
+features/history/parts.js
+  features/history/partitioner.js
+features/history/scrollControllerV3.js
+  core/settings/index.js
+features/history/spacingStyles.js
+features/interaction/interaction.js
+  core/models/modelCatalog.js
+  core/settings/index.js
+  features/command/colon/colonCommandParser.js
+  features/command/colon/colonCommandRegistry.js
+  features/command/colon/colonCommandSplitter.js
+  features/command/confirmOverlay.js
+  features/command/evaluator.js
+  features/command/parser.js
+  features/command/topicResolver.js
+  features/compose/pipeline.js
+  features/config/apiKeysOverlay.js
+  features/config/dailyStatsOverlay.js
+  features/config/helpOverlay.js
+  features/config/modelEditor.js
+  features/config/modelSelector.js
+  features/config/settingsOverlay.js
+  features/interaction/keyRouter.js
+  features/interaction/sanitizeAssistant.js
+  features/topics/topicEditor.js
+  features/topics/topicPicker.js
+  shared/openModal.js
+features/interaction/keyRouter.js
+features/interaction/modes.js
+features/interaction/pointerModeSwitcher.js
+features/interaction/sanitizeAssistant.js
+features/topics/topicEditor.js
+  core/settings/index.js
+  shared/openModal.js
+features/topics/topicPicker.js
+  core/settings/index.js
+  shared/openModal.js
+infrastructure/api/keys.js
+infrastructure/provider/adapter.js
+infrastructure/provider/anthropicAdapter.js
+  infrastructure/provider/adapter.js
+infrastructure/provider/openaiAdapter.js
+  infrastructure/provider/adapter.js
+instrumentation/hudRuntime.js
+  core/settings/index.js
+  shared/openModal.js
+instrumentation/requestDebugOverlay.js
+  core/settings/index.js
+  shared/openModal.js
+main.js
+  core/settings/index.js
+  features/history/historyRuntime.js
+  features/history/historyView.js
+  features/history/partitioner.js
+  features/interaction/interaction.js
+  features/interaction/modes.js
+  features/interaction/pointerModeSwitcher.js
+  instrumentation/hudRuntime.js
+  instrumentation/requestDebugOverlay.js
+  runtime/bootstrap.js
+  runtime/renderPolicy.js
+  runtime/runtimeSetup.js
+  styles/index.css
+runtime/bootstrap.js
+  core/models/modelCatalog.js
+  core/settings/index.js
+  features/config/apiKeysOverlay.js
+  infrastructure/api/keys.js
+  infrastructure/provider/adapter.js
+  infrastructure/provider/anthropicAdapter.js
+  infrastructure/provider/openaiAdapter.js
+  runtime/initialSeeding.js
+runtime/initialSeeding.js
+  core/models/modelCatalog.js
+runtime/renderPolicy.js
+runtime/runtimeSetup.js
+  core/context/boundaryManager.js
+  core/models/modelCatalog.js
+  core/persistence/contentPersistence.js
+  core/settings/index.js
+  core/store/indexedDbAdapter.js
+  core/store/indexes.js
+  core/store/memoryStore.js
+  features/history/historyView.js
+  features/history/newMessageLifecycle.js
+  features/history/parts.js
+  features/history/scrollControllerV3.js
+shared/confirmModal.js
+  shared/openModal.js
+shared/focusTrap.js
+shared/openModal.js
+  shared/focusTrap.js
+shared/util.js
+styles/base.css
+styles/components/command.css
+styles/components/config.css
+styles/components/controls.css
+styles/components/history.css
+styles/components/input.css
+styles/components/instrumentation.css
+styles/components/overlays.css
+styles/index.css
+  styles/base.css
+  styles/components/command.css
+  styles/components/config.css
+  styles/components/controls.css
+  styles/components/history.css
+  styles/components/input.css
+  styles/components/instrumentation.css
+  styles/components/overlays.css
+  styles/layout.css
+  styles/variables.css
+styles/layout.css
+styles/variables.css
+
