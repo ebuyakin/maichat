@@ -42,6 +42,27 @@ export function createInteraction({
   let commandHistoryPos = -1
   try { const saved = localStorage.getItem('maichat_command_history'); if(saved){ const arr = JSON.parse(saved); if(Array.isArray(arr)) commandHistory = arr.slice(-100) } } catch{}
   function pushCommandHistory(q){ if(!q) return; if(commandHistory[commandHistory.length-1]===q) return; commandHistory.push(q); if(commandHistory.length>100) commandHistory = commandHistory.slice(-100); try{ localStorage.setItem('maichat_command_history', JSON.stringify(commandHistory)) }catch{} }
+  function setFilterActive(active){ try{ localStorage.setItem('maichat_filter_active', active ? 'true' : 'false') }catch{} }
+  function isFilterActive(){ try{ return localStorage.getItem('maichat_filter_active') === 'true' }catch{ return false } }
+  function restoreLastFilter(){ 
+    if(isFilterActive() && commandHistory.length > 0){ 
+      const lastFilter = commandHistory[commandHistory.length-1]
+      if(lastFilter){
+        commandInput.value = lastFilter
+        // Trigger filter application logic (same as pressing Enter)
+        lifecycle.setFilterQuery(lastFilter)
+        historyRuntime.renderCurrentView({ preserveActive:true })
+        try {
+          const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active()
+          const id = act && act.id
+          if(id && ctx.scrollController && ctx.scrollController.alignTo){
+            requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
+          }
+        } catch {}
+        modeManager.set('view')
+      }
+    }
+  }
   function historyPrev(){ if(!commandHistory.length) return; if(commandHistoryPos===-1) commandHistoryPos = commandHistory.length; if(commandHistoryPos>0){ commandHistoryPos--; commandInput.value = commandHistory[commandHistoryPos] } }
   function historyNext(){ if(!commandHistory.length) return; if(commandHistoryPos===-1) return; if(commandHistoryPos < commandHistory.length) commandHistoryPos++; if(commandHistoryPos===commandHistory.length){ commandInput.value=''; commandHistoryPos=-1 } else { commandInput.value = commandHistory[commandHistoryPos] } }
   let lastAppliedFilter = ''
@@ -217,6 +238,7 @@ export function createInteraction({
               // Retain only the filter in the command line after execution
               commandInput.value = filterStr
               pushCommandHistory(`${filterStr}`); commandHistoryPos=-1
+              setFilterActive(!!filterStr) // Set flag based on whether filter is non-empty
               modeManager.set('view')
             })
             .catch(ex=>{
@@ -358,6 +380,7 @@ export function createInteraction({
         // Turn off Reading Mode on apply (idempotent) and switch to VIEW
         readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
         lastAppliedFilter = q; pushCommandHistory(q); commandHistoryPos=-1
+        setFilterActive(!!q) // Set flag based on whether filter is non-empty
         modeManager.set('view')
       } catch(ex){
         const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'
@@ -888,5 +911,5 @@ export function createInteraction({
       // If no parts remain (empty history), no focus needed
     }
   }
-  return { keyRouter, updateSendDisabled, renderPendingMeta, openQuickTopicPicker, prepareEditResend, deletePairWithFocus, isErrorPair }
+  return { keyRouter, updateSendDisabled, renderPendingMeta, openQuickTopicPicker, prepareEditResend, deletePairWithFocus, isErrorPair, restoreLastFilter }
 }

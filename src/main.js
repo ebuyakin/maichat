@@ -197,6 +197,8 @@ console.log('[MaiChat] bootstrap start')
 bootstrap({ ctx: __runtime, historyRuntime, interaction, loadingEl })
   .then(()=>{
     try {
+      // Restore last filter if it was active
+      interaction.restoreLastFilter()
       // Default to Input Mode on startup for immediate typing
       window.__modeManager && window.__modeManager.set(MODES.INPUT)
       console.log('[MaiChat] default mode set to INPUT')
