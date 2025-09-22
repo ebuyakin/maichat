@@ -400,6 +400,11 @@ export function createInteraction({
   // Emacs-like editing shortcuts in input (new message) box
   if(e.ctrlKey && (e.key==='u' || e.key==='U')){ e.preventDefault(); const el = inputField; const end = el.selectionEnd; const start = 0; el.setRangeText('', start, end, 'end'); return true }
   if(e.ctrlKey && (e.key==='w' || e.key==='W')){ e.preventDefault(); const el = inputField; const pos = el.selectionStart; const left = el.value.slice(0, pos); const right = el.value.slice(el.selectionEnd); const newLeft = left.replace(/\s*[^\s]+\s*$/, ''); const delStart = newLeft.length; el.value = newLeft + right; el.setSelectionRange(delStart, delStart); return true }
+    // Shift+Enter = new line (don't send)
+    if(e.key==='Enter' && e.shiftKey){
+      // Let default behavior handle the newline insertion
+      return false
+    }
     if(e.key==='Enter'){
       const text = inputField.value.trim();
       if(text){

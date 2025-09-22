@@ -55,7 +55,7 @@ appEl.innerHTML = `
   <div id="inputBar" class="zone" data-mode="input">
     <div class="inputBar-inner">
       <div class="row first">
-        <input id="inputField" placeholder="Type message... (Enter to send)" autocomplete="off" />
+        <textarea id="inputField" placeholder="Type message... (Enter to send)" autocomplete="off" rows="2"></textarea>
       </div>
       <div class="row second">
         <div class="input-meta-left">
