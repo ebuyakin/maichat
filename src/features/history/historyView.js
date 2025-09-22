@@ -41,7 +41,7 @@ export function createHistoryView({ store, onActivePartRendered }){
 			else if(pair.lifecycleState === 'error') {
 				const label = classifyErrLabel(pair)
 				stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage||'error')}">${label}</span>`
-				errActions = `<span class="err-actions"><button class="btn btn-ghost resend" data-action="resend" title="Copy to input and send as a new message (uses current context)">Re-ask</button><button class="btn btn-ghost del" data-action="delete" title="Delete pair">Delete</button></span>`
+				errActions = `<span class="err-actions"><button class="btn btn-ghost resend" data-action="resend" title="Copy to input and send as a new message (uses current context) - E key">Re-ask</button><button class="btn btn-ghost del" data-action="delete" title="Delete pair - D key">Delete</button></span>`
 			}
 			return `<div class="part meta" data-part-id="${pt.id}" data-role="meta" data-pair-id="${pt.pairId}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
 					<div class="meta-left">

@@ -855,40 +855,37 @@ export function createInteraction({
     pendingMessageMeta.topicId = pair.topicId
     pendingMessageMeta.model = pair.model
     renderPendingMeta()
-    // Clear error badge immediately for UX cleanliness (optional)
-    store.updatePair(pair.id, { errorMessage: undefined })
+    // Delete the original pair after copying its content
+    store.removePair(pair.id)
     historyRuntime.renderCurrentView({ preserveActive:true })
+    // Focus on last part and bottom align
+    try {
+      activeParts.last()
+      historyRuntime.applyActivePart()
+      const act = activeParts.active()
+      const id = act && act.id
+      if(id && ctx.scrollController && ctx.scrollController.alignTo){
+        requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
+      }
+    } catch {}
     modeManager.set('input')
     inputField.focus()
     window.__editingPairId = pair.id
   }
   function deletePairWithFocus(pairId){
-    const wasActive = !!activeParts.active() && activeParts.active().pairId === pairId
-    const preParts = activeParts.parts.slice()
-    let targetId = null
-    if(wasActive){
-      // Find previous non-meta part before the first part of the deleted pair
-      const firstIdx = preParts.findIndex(p=> p.pairId===pairId)
-      for(let i=firstIdx-1; i>=0; i--){ if(preParts[i].role!=='meta'){ targetId = preParts[i].id; break } }
-    } else {
-      const act = activeParts.active(); targetId = act ? act.id : null
-    }
     store.removePair(pairId)
     historyRuntime.renderCurrentView({ preserveActive:true })
-    if(targetId){
-      activeParts.setActiveById(targetId)
+    // Always focus on last part and bottom align after deletion
+    try {
+      activeParts.last()
       historyRuntime.applyActivePart()
-      // After rebuild, keep the new focus on-screen (non-intrusive)
-      try {
-        const act = activeParts.active()
-        const id = act && act.id
-        if(id && ctx.scrollController && ctx.scrollController.ensureVisible){
-          requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.ensureVisible(id, false) }) })
-        }
-      } catch {}
-    }
-    else {
-      // No target available (likely empty list). Keep mode; nothing to focus.
+      const act = activeParts.active()
+      const id = act && act.id
+      if(id && ctx.scrollController && ctx.scrollController.alignTo){
+        requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
+      }
+    } catch {
+      // If no parts remain (empty history), no focus needed
     }
   }
   return { keyRouter, updateSendDisabled, renderPendingMeta, openQuickTopicPicker, prepareEditResend, deletePairWithFocus, isErrorPair }
