@@ -215,13 +215,45 @@ export function createScrollController({ container, getParts }){
 		function alignTo(partId, position='bottom', animate=false){
 			if(!metrics) measure()
 			if(!metrics || metrics.parts.length===0) return
-			const idx = typeof partId === 'number' ? partId : findIndexById(partId)
+			
+			let targetPartId = partId
+			
+			// Special case: if bottom-aligning a user part, check if we should align its meta instead
+			if(position === 'bottom'){
+				targetPartId = getBottomAlignTarget(partId)
+			}
+			
+			const idx = typeof targetPartId === 'number' ? targetPartId : findIndexById(targetPartId)
 			if(idx < 0 || idx >= metrics.parts.length) return
 			const target = anchorScrollTop(idx, position)
 			if(Math.abs(container.scrollTop - target) > ADJUST_THRESHOLD){
 				scrollTo(target, !!animate && animationEnabled)
 			}
 			scheduleValidate()
+		}
+		
+		function getBottomAlignTarget(partId){
+			// Extract role from part ID
+			const parts = String(partId).split(':')
+			if(parts.length < 2) return partId // malformed ID, use as-is
+			
+			const role = parts[1]
+			if(role !== 'user') return partId // only redirect user parts
+			
+			// Find current part index
+			const currentIdx = findIndexById(partId)
+			if(currentIdx < 0) return partId // part not found
+			
+			// Check next part
+			if(currentIdx + 1 < metrics.parts.length){
+				const nextPart = metrics.parts[currentIdx + 1]
+				const nextParts = String(nextPart.id).split(':')
+				if(nextParts.length >= 2 && nextParts[1] === 'meta'){
+					return nextPart.id // redirect to meta
+				}
+			}
+			
+			return partId // fallback: align to original part
 		}
 		function ensureVisible(partId, animate=false){
 			if(!metrics) measure()

@@ -12,6 +12,8 @@
 - filter application on topic change in the input zone?
 - model editor - focus on Model Field.
 - Send button ('AI is thinking' version) right alignment. shall be aligned with history right edge.
+- Model editor height.
+- Daily stat (reverse sorting, limited height).
 
 ### Current dialogue:
 

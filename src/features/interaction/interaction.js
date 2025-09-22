@@ -92,7 +92,7 @@ export function createInteraction({
   if(e.key==='G'){
       activeParts.last();
       historyRuntime.applyActivePart();
-      const act = activeParts.active(); if(act){ if(ctx.scrollController.ensureVisible){ ctx.scrollController.ensureVisible(act.id, false) } }
+      const act = activeParts.active(); if(act){ if(ctx.scrollController.alignTo){ ctx.scrollController.alignTo(act.id, 'bottom', false) } }
       readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
       return true
     }

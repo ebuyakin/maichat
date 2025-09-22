@@ -50,17 +50,27 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
     const ap = ctx.activeParts
     if(sc && ap && Array.isArray(ap.parts) && ap.parts.length){
       requestAnimationFrame(()=>{
-        // Prefer the last assistant part for alignment
-        let lastAssistant = null
+        // Check if the LAST MESSAGE (last pair) has an assistant part
+        const tail = ap.parts[ap.parts.length-1]
+        const lastPairId = tail && tail.pairId
+        
+        // Find assistant parts that belong to the last pair only
+        let lastMessageAssistant = null
         for(let i=ap.parts.length-1; i>=0; i--){
           const p = ap.parts[i]
-          if(p && p.role === 'assistant'){ lastAssistant = p; break }
+          if(p && p.pairId === lastPairId && p.role === 'assistant'){ 
+            lastMessageAssistant = p; 
+            break 
+          }
         }
-        if(lastAssistant && sc.alignTo){ sc.alignTo(lastAssistant.id, 'bottom', false) }
+        
+        if(lastMessageAssistant && sc.alignTo){ 
+          sc.alignTo(lastMessageAssistant.id, 'bottom', false) 
+        }
         else {
-          const tail = ap.parts[ap.parts.length-1]
-          const lastPairId = tail && tail.pairId
-          if(lastPairId && sc.alignTo){ sc.alignTo(`${lastPairId}:meta`, 'bottom', false) }
+          if(lastPairId && sc.alignTo){ 
+            sc.alignTo(`${lastPairId}:meta`, 'bottom', false) 
+          }
         }
       })
     }

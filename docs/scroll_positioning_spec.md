@@ -117,6 +117,15 @@ Reply height measurement (fit criterion):
    - Mode: Unchanged.
    - Scope isolation: This bottom-align is specific to settings/model rebuilds and does not alter other flows defined above (open/reload, send, reply, filter, navigation, typewriter).
 
+11. Last user part special case (bottom alignment proxy):
+   - When any core flow above requires bottom-aligning the focused part, AND the focused part is the last user part of its message pair, then bottom-align the meta part of that same pair instead of the user part itself.
+   - This ensures consistent positioning at the "end" of a message pair, providing a stable visual anchor regardless of whether the message has an assistant reply or not.
+   - Examples:
+     - Single user part focused → bottom-align its meta part
+     - Multiple user parts, last one focused → bottom-align the meta part  
+     - Multiple user parts, non-last one focused → bottom-align the user part itself (normal behavior)
+   - Applies to: open/reload, G key, jump to newest (n), filter apply, and any other flow that would bottom-align a focused last user part.
+
 ## Meta visibility and fade
    - Top‑align sets targetTop = outerGap.
    - Bottom‑align sets targetBottom = viewportBottom − outerGap.
