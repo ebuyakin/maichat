@@ -759,7 +759,19 @@ export function createInteraction({
     }
   }
   
-  modeManager.onChange((m)=>{ historyRuntime.renderStatus(); if(m==='view'){ commandInput.blur(); inputField.blur() } else if(m==='input'){ inputField.focus() } else if(m==='command'){ commandModeEntryActivePartId = activeParts.active() ? activeParts.active().id : null; commandInput.focus() } })
+  modeManager.onChange((m)=>{ 
+    historyRuntime.renderStatus(); 
+    if(m==='view'){ 
+      commandInput.blur(); inputField.blur() 
+    } else if(m==='input'){ 
+      // Delay focus to avoid mouse click interference
+      requestAnimationFrame(()=> inputField.focus())
+    } else if(m==='command'){ 
+      commandModeEntryActivePartId = activeParts.active() ? activeParts.active().id : null; 
+      // Delay focus to avoid mouse click interference
+      requestAnimationFrame(()=> commandInput.focus())
+    } 
+  })
   const keyRouter = createKeyRouter({ modeManager, handlers:{ view:viewHandler, command:commandHandler, input:inputHandler } }); keyRouter.attach()
   document.addEventListener('click', e=>{
     const partEl = e.target.closest('.part'); if(!partEl) return
