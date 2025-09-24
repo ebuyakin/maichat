@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Placeholder Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, sans-serif;
+      background: #0a0a0a;
+      color: #eee;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    
+    .part {
+      background: transparent;
+      padding: 8px;
+      margin: 8px 0;
+      border-radius: 4px;
+    }
+    
+    .part.assistant {
+      background: rgba(40,80,120,0.05);
+    }
+    
+    /* Code placeholders styling */
+    .code-placeholder {
+      display: inline-block;
+      background: rgba(100, 149, 237, 0.15);
+      color: #6495ed;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      border: 1px solid rgba(100, 149, 237, 0.3);
+      cursor: default;
+      user-select: none;
+    }
+    
+    h2 {
+      color: #6495ed;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>MaiChat Code Placeholder Test</h1>
+  
+  <h2>Example 1: Python Code</h2>
+  <div class="part assistant">
+    <div class="part-inner">Here's a simple Python function:
+
+<span class="code-placeholder">[:python-1]</span>
+
+This should help with your task!</div>
+  </div>
+  
+  <h2>Example 2: Multiple Code Blocks</h2>
+  <div class="part assistant">
+    <div class="part-inner">First, let's look at Python:
+
+<span class="code-placeholder">[:python-1]</span>
+
+Now here's the JavaScript equivalent:
+
+<span class="code-placeholder">[:javascript-2]</span>
+
+Both should work similarly.</div>
+  </div>
+  
+  <h2>Example 3: Mixed Content</h2>
+  <div class="part assistant">
+    <div class="part-inner">You can install dependencies with:
+
+<span class="code-placeholder">[:bash-1]</span>
+
+Then run the server:
+
+<span class="code-placeholder">[:bash-2]</span>
+
+Finally, check the database:
+
+<span class="code-placeholder">[:sql-1]</span>
+
+That's the complete setup process.</div>
+  </div>
+
+  <h2>Navigation Test</h2>
+  <p>Code placeholders should be treated as atomic units during navigation. They should never be split across part boundaries.</p>
+  
+</body>
+</html>

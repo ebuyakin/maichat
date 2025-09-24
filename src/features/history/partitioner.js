@@ -1,5 +1,9 @@
 // partitioner moved from partition/partitioner.js
 import { getSettings } from '../../core/settings/index.js'
+
+// Regex to match code placeholders: [:language-number]
+const CODE_PLACEHOLDER_REGEX = /\[:[\w]+-\d+\]/g;
+
 const cache = new Map()
 export function partitionMessage({ text, role, pairId }){
 	if(!text) return []
@@ -47,6 +51,45 @@ function getHistoryContentWidth(){ if(typeof document === 'undefined') return 80
 let _measureCtx = null
 function getMeasureCtx(font){ if(typeof document === 'undefined'){ return { font, measureText(str){ return { width: (str||'').length * 7 } } } } if(!_measureCtx){ const canvas = document.createElement('canvas'); _measureCtx = canvas.getContext('2d') } _measureCtx.font = font; return _measureCtx }
 function getUiFont(){ try { if(typeof document === 'undefined') return '400 13px sans-serif'; const root = document.documentElement; const cs = window.getComputedStyle(root); const weight = cs.fontWeight || '400'; const size = cs.fontSize || '13px'; const family = cs.fontFamily || 'sans-serif'; return `${weight} ${size} ${family}` } catch { return '400 13px sans-serif' } }
-function wrapTextToLines(text, ctx, maxWidth){ const paragraphs = text.split(/\n/); const lines = []; for(const para of paragraphs){ if(para === ''){ lines.push(''); continue } const words = para.split(/(\s+)/); let cur=''; for(const token of words){ if(token === '') continue; const tentative = cur + token; const w = ctx.measureText(tentative).width; if(w <= maxWidth){ cur = tentative } else { if(cur === ''){ const broken = hardBreakToken(token, ctx, maxWidth); for(let i=0;i<broken.length-1;i++) lines.push(broken[i]); cur = broken[broken.length-1] } else { lines.push(cur.trimEnd()); cur = token.trimStart() } } } if(cur) lines.push(cur.trimEnd()) } return lines }
+function wrapTextToLines(text, ctx, maxWidth){ 
+	const paragraphs = text.split(/\n/); 
+	const lines = []; 
+	for(const para of paragraphs){ 
+		if(para === ''){ 
+			lines.push(''); 
+			continue; 
+		} 
+		// Split by whitespace but preserve code placeholders as atomic units
+		const tokens = para.split(/(\s+|\[:[\w]+-\d+\])/);
+		let cur=''; 
+		for(const token of tokens){ 
+			if(token === '') continue; 
+			const tentative = cur + token; 
+			const w = ctx.measureText(tentative).width; 
+			if(w <= maxWidth){ 
+				cur = tentative; 
+			} else { 
+				if(cur === ''){ 
+					// Token too long for line - check if it's a code placeholder
+					if(CODE_PLACEHOLDER_REGEX.test(token)) {
+						// Code placeholder must not be broken - force it on its own line
+						lines.push(token);
+						cur = '';
+					} else {
+						// Regular token - use hard break as before
+						const broken = hardBreakToken(token, ctx, maxWidth); 
+						for(let i=0;i<broken.length-1;i++) lines.push(broken[i]); 
+						cur = broken[broken.length-1]; 
+					}
+				} else { 
+					lines.push(cur.trimEnd()); 
+					cur = token.trimStart(); 
+				} 
+			} 
+		} 
+		if(cur) lines.push(cur.trimEnd()); 
+	} 
+	return lines; 
+}
 function hardBreakToken(token, ctx, maxWidth){ const pieces = []; let buf=''; for(const ch of token){ const tentative = buf + ch; if(ctx.measureText(tentative).width <= maxWidth){ buf = tentative } else { if(buf) pieces.push(buf); buf = ch } } if(buf) pieces.push(buf); return pieces }
 export function invalidatePartitionCacheOnResize(){ cache.clear(); _lineHeightCache = null }

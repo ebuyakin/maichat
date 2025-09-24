@@ -13,8 +13,39 @@ export class MemoryStore { constructor(){ this.pairs=new Map(); this.topics=new 
     }
     return true }
   deleteTopic(id){ if(id===this.rootTopicId) return false; if(this.children.get(id)?.size) return false; for(const p of this.pairs.values()) if(p.topicId===id) return false; const topic=this.topics.get(id); if(!topic) return false; const parentId=topic.parentId; const existed=this.topics.delete(id); if(existed){ const set=this.children.get(parentId); if(set) set.delete(id); this.children.delete(id); this.emitter.emit('topic:delete', id); this.recalculateTopicCounts() } return !!existed }
-  addMessagePair({ topicId, model, userText, assistantText }){ const id=crypto.randomUUID(); const pair=createMessagePair({ id, topicId, model, userText, assistantText }); this.pairs.set(id,pair); this.emitter.emit('pair:add', pair); this._incrementCountsForTopic(topicId); this._bumpLastActiveForTopic(topicId, pair.createdAt); return id }
-  updatePair(id,patch){ const existing=this.pairs.get(id); if(!existing) return false; const oldTopicId=existing.topicId; const beforeCreatedAt=existing.createdAt; Object.assign(existing, patch); this.emitter.emit('pair:update', existing); if(patch.topicId && patch.topicId!==oldTopicId){ this._decrementCountsForTopic(oldTopicId); this._incrementCountsForTopic(existing.topicId); this._bumpLastActiveForTopic(existing.topicId, existing.createdAt); this._recalcLastActiveForTopicSubtree(oldTopicId) } else if (patch.createdAt && patch.createdAt!==beforeCreatedAt){ this._bumpLastActiveForTopic(existing.topicId, existing.createdAt) } return true }
+  addMessagePair({ topicId, model, userText, assistantText }){ 
+    const id=crypto.randomUUID(); 
+    const pair=createMessagePair({ id, topicId, model, userText, assistantText }); 
+    
+    // Note: Code processing now happens in interaction.js for new responses
+    // Initial creation may not have assistantText yet, so no processing needed here
+    
+    this.pairs.set(id,pair); 
+    this.emitter.emit('pair:add', pair); 
+    this._incrementCountsForTopic(topicId); 
+    this._bumpLastActiveForTopic(topicId, pair.createdAt); 
+    return id 
+  }
+  updatePair(id,patch){ 
+    const existing=this.pairs.get(id); 
+    if(!existing) return false; 
+    const oldTopicId=existing.topicId; 
+    const beforeCreatedAt=existing.createdAt; 
+    Object.assign(existing, patch); 
+    
+    // Note: Code processing now happens in interaction.js before sanitization
+    
+    this.emitter.emit('pair:update', existing); 
+    if(patch.topicId && patch.topicId!==oldTopicId){ 
+      this._decrementCountsForTopic(oldTopicId); 
+      this._incrementCountsForTopic(existing.topicId); 
+      this._bumpLastActiveForTopic(existing.topicId, existing.createdAt); 
+      this._recalcLastActiveForTopicSubtree(oldTopicId) 
+    } else if (patch.createdAt && patch.createdAt!==beforeCreatedAt){ 
+      this._bumpLastActiveForTopic(existing.topicId, existing.createdAt) 
+    } 
+    return true 
+  }
   removePair(id){ const pair=this.pairs.get(id); if(!pair) return false; this.pairs.delete(id); this._decrementCountsForTopic(pair.topicId); this._recalcLastActiveForTopicSubtree(pair.topicId); this.emitter.emit('pair:delete', id); return true }
   getAllPairs(){ return Array.from(this.pairs.values()) }
   getAllTopics(){ return Array.from(this.topics.values()) }

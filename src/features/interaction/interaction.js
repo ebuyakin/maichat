@@ -24,6 +24,8 @@ import { getActiveModel } from '../../core/models/modelCatalog.js'
 // Compose pipeline moved (Phase 6.5) to features/compose
 import { executeSend } from '../compose/pipeline.js'
 import { sanitizeAssistantText } from './sanitizeAssistant.js'
+import { extractCodeBlocks } from '../codeDisplay/codeExtractor.js'
+import { createCodeOverlay } from '../codeDisplay/codeOverlay.js'
 import { openModal } from '../../shared/openModal.js'
 
 export function createInteraction({
@@ -71,6 +73,9 @@ export function createInteraction({
   let maskDebug = true
   const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) ? import.meta.env.BASE_URL : '/'
   const tutorialUrl = (BASE.endsWith('/') ? BASE : (BASE + '/')) + 'tutorial.html'
+  
+  // Create code overlay instance
+  const codeOverlay = createCodeOverlay();
   const viewHandler = (e)=>{
     if(window.modalIsActive && window.modalIsActive()) return false
     window.__lastKey = e.key
@@ -137,6 +142,21 @@ export function createInteraction({
     // VIEW-only fast keys for error pairs
     if(e.key==='e'){ if(handleEditIfErrorActive()) return true }
     if(e.key==='d'){ if(handleDeleteIfErrorActive()) return true }
+    
+    // Code overlay trigger
+    if(e.key==='v'){ 
+      const activePart = activeParts.active()
+      if(activePart && activePart.role === 'assistant') {
+        const messagePair = store.pairs.get(activePart.pairId)
+        if(messagePair && messagePair.codeBlocks && messagePair.codeBlocks.length > 0) {
+          // For now, show first code block (Phase 2 basic implementation)
+          const firstCodeBlock = messagePair.codeBlocks[0]
+          codeOverlay.show(firstCodeBlock, messagePair)
+          return true
+        }
+      }
+      return false // Don't prevent default if no code blocks
+    }
   }
   const commandHandler = (e)=>{
     if(window.modalIsActive && window.modalIsActive()) return false
@@ -438,8 +458,24 @@ export function createInteraction({
             boundaryMgr.applySettings(getSettings());
             const boundarySnapshot = boundaryMgr.getBoundary();
             const { content } = await executeSend({ store, model, topicId, userText:text, signal: undefined, visiblePairs: chrono, boundarySnapshot, onDebugPayload: (payload)=>{ historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount); requestDebug.setPayload(payload); historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length) } });
-            const clean = sanitizeAssistantText(content)
-            store.updatePair(id, { assistantText: clean, lifecycleState:'complete', errorMessage:undefined });
+            
+            // Extract code blocks BEFORE sanitizing to preserve structure
+            const codeExtraction = extractCodeBlocks(content);
+            
+            // Sanitize the display content (with placeholders) or original if no code
+            const contentToSanitize = codeExtraction.hasCode ? codeExtraction.displayText : content;
+            const clean = sanitizeAssistantText(contentToSanitize);
+            
+            // Prepare update data
+            const updateData = { assistantText: clean, lifecycleState:'complete', errorMessage:undefined };
+            
+            // Add code data if code blocks were found
+            if (codeExtraction.hasCode) {
+              updateData.processedContent = clean; // This now contains placeholders
+              updateData.codeBlocks = codeExtraction.codeBlocks;
+            }
+            
+            store.updatePair(id, updateData);
             lifecycle.completeSend();
             updateSendDisabled();
             historyRuntime.renderCurrentView({ preserveActive:true });

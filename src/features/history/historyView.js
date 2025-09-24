@@ -1,6 +1,24 @@
 // historyView moved from ui/history/historyView.js
 import { escapeHtml } from '../../shared/util.js'
 
+// Regex to match code placeholders: [:language-number]
+const CODE_PLACEHOLDER_REGEX = /(\[:[\w]+-\d+\])/g;
+
+/**
+ * Processes text content to style code placeholders
+ * @param {string} text - The text content to process
+ * @returns {string} HTML with styled placeholders
+ */
+function processCodePlaceholders(text) {
+	if (!text) return '';
+	
+	// First escape HTML to prevent XSS
+	const escapedText = escapeHtml(text);
+	
+	// Then wrap code placeholders with CSS class
+	return escapedText.replace(CODE_PLACEHOLDER_REGEX, '<span class="code-placeholder">$1</span>');
+}
+
 export function createHistoryView({ store, onActivePartRendered }){
 	const container = document.getElementById('history')
 	if(!container) throw new Error('history container missing')
@@ -57,7 +75,9 @@ export function createHistoryView({ store, onActivePartRendered }){
 					</div>
 				</div></div>`
 		}
-		return `<div class="part ${pt.role}" data-part-id="${pt.id}" data-role="${pt.role}" data-pair-id="${pt.pairId}"><div class="part-inner">${escapeHtml(pt.text)}</div></div>`
+		// Process assistant content for code placeholders, regular escaping for user content
+		const processedContent = pt.role === 'assistant' ? processCodePlaceholders(pt.text) : escapeHtml(pt.text);
+		return `<div class="part ${pt.role}" data-part-id="${pt.id}" data-role="${pt.role}" data-pair-id="${pt.pairId}"><div class="part-inner">${processedContent}</div></div>`
 	}
 	function classifyErrLabel(pair){
 		return classifyErrorCode(pair.errorMessage)

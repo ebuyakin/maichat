@@ -50,3 +50,9 @@
 #historyPane::-webkit-scrollbar-track { background: var(--bg); }
 #historyPane::-webkit-scrollbar-thumb { background: var(--border); }
 #historyPane::-webkit-scrollbar-thumb:hover { background: var(--border-active); }
+
+/* Code placeholders styling */
+.code-placeholder {
+  color: #85db87;
+  white-space: normal;
+}

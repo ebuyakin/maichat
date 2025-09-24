@@ -1,5 +1,6 @@
 // parts.js moved from ui/parts.js
 import { partitionMessage } from './partitioner.js'
+import { getDisplayContent } from '../codeDisplay/codeExtractor.js'
 export function splitText(text, role, pairId){
 	return partitionMessage({ text, role, pairId })
 }
@@ -9,7 +10,9 @@ export function buildParts(pairs){
 		const userParts = splitText(pair.userText, 'user', pair.id)
 		userParts.forEach(p=> parts.push(p))
 		parts.push({ id:`${pair.id}:meta`, pairId:pair.id, role:'meta', index:0, text:null })
-		const assistantParts = splitText(pair.assistantText, 'assistant', pair.id)
+		// Use display content (with placeholders) instead of raw assistantText
+		const assistantText = getDisplayContent(pair)
+		const assistantParts = splitText(assistantText, 'assistant', pair.id)
 		assistantParts.forEach(p=> parts.push(p))
 	}
 	return parts
