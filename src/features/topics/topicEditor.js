@@ -26,7 +26,49 @@ export function openTopicEditor({ store, onSelect, onClose }) {
 
   const backdrop = document.createElement('div')
   backdrop.className = 'topic-editor-backdrop'
-  backdrop.innerHTML = `\n    <div class="topic-editor">\n      <div class="te-header">\n        <div><strong>Topic Editor</strong></div>\n        <div style="margin-top:14px;">Ctrl+J - focus on topic tree; Ctrl+F - focus search</div>\n        <div>j/k - move down/up the tree, h/l - collapse/expand, n - new child topic, N - new root topic</div>\n        <div>r - rename topic, d - delete topic, m - mark topic, p - paste topic.</div>\n        <div style="margin-top:4px;">Edit focused topic parameters: Ctrl+E - system message, Ctrl+T - temperature, Ctrl+L - max response length.</div>\n        <div>Apply (Ctrl+S) saves changes, Esc - Cancel+Close.</div>\n      </div>\n      <div class="te-body">\n        <div class="te-left">\n          <input type="text" class="te-search" placeholder="Search (name / path substring)"/>\n          <div class="te-tree" role="tree" tabindex="0"></div>\n          <div class="te-hints" aria-live="polite"></div>\n        </div>\n        <div class="te-details" data-pane="details">\n          <div class="te-path"></div>\n          <div class="te-field">\n            <label>System message</label>\n            <textarea class="te-textarea" spellcheck="false" placeholder="You are MaiChat Assistant for this topic. Be concise and ask clarifying questions when needed."></textarea>\n            <div class="te-actions">\n              <button class="te-btn" data-act="reset">Reset to template (Ctrl+R)</button>\n              <button class="te-btn" data-act="insert-path">Insert topic path (Ctrl+I)</button>\n            </div>\n          </div>\n          <div class="te-grid">\n            <div class="te-field">\n              <label>Temperature (0–2)</label>\n              <input type="number" step="0.1" min="0" max="2" class="te-input" data-field="temperature"/>\n              <div class="te-hint">Higher = more creative.</div>\n            </div>\n            <div class="te-field">\n              <label>Max output tokens</label>\n              <input type="number" min="1" class="te-input" data-field="maxTokens"/>\n              <div class="te-hint">Leave empty for default output size.</div>\n            </div>\n          </div>\n          <div class="te-primary-actions">\n            <button class="te-btn te-apply" data-act="save">Apply (Ctrl+S)</button>\n            <button class="te-btn te-cancel" data-act="cancel">Cancel+Close (Esc)</button>\n          </div>\n        </div>\n      </div>\n      <div class="te-warning" aria-live="polite"></div>\n    </div>`
+  backdrop.innerHTML = `
+    <div class="topic-editor">
+      <div class="te-header">
+        <div><strong>Topic Editor</strong></div>
+        <div style="margin-top:14px;">Ctrl+J - focus on topic tree; Ctrl+F - focus search, j/k - move down/up the tree, h/l - collapse/expand, n - new child topic, N - new root topic r - rename topic, d - delete topic, m - mark topic, p - paste topic. 
+        Edit focused topic parameters: Ctrl+E - system message, Ctrl+T - temperature, Ctrl+L - max response length. Apply (Ctrl+S) saves changes, Esc - Cancel+Close.</div>
+      </div>
+      <div class="te-body">
+        <div class="te-left">
+          <input type="text" class="te-search" placeholder="Search (name / path substring)"/>
+          <div class="te-tree" role="tree" tabindex="0"></div>
+          <div class="te-hints" aria-live="polite"></div>
+        </div>
+        <div class="te-details" data-pane="details">
+          <div class="te-path"></div>
+          <div class="te-field">
+            <label>System message</label>
+            <textarea class="te-textarea" spellcheck="false" placeholder="You are MaiChat Assistant for this topic. Be concise and ask clarifying questions when needed."></textarea>
+          </div>
+          <div class="te-grid">
+            <div class="te-grid-left">
+              <div class="te-field">
+                <label>Temperature (0–2)</label>
+                <input type="number" step="0.1" min="0" max="2" class="te-input" data-field="temperature"/>
+              </div>
+              <div class="te-field">
+                <label>Max output tokens</label>
+                <input type="number" min="1" class="te-input" data-field="maxTokens"/>
+              </div>
+            </div>
+            <div class="te-actions">
+              <button class="te-btn" data-act="insert-path">Insert topic (Ctrl+I)</button>
+              <button class="te-btn" data-act="reset">Reset (Ctrl+R)</button>
+            </div>
+          </div>
+          <div class="te-primary-actions">
+            <button class="te-btn te-apply" data-act="save">Apply (Ctrl+S)</button>
+            <button class="te-btn te-cancel" data-act="cancel">Cancel+Close (Esc)</button>
+          </div>
+        </div>
+      </div>
+      <div class="te-warning" aria-live="polite"></div>
+    </div>`
   const searchInput = backdrop.querySelector('.te-search')
   const treeEl = backdrop.querySelector('.te-tree')
   const detailsEl = backdrop.querySelector('.te-details')
