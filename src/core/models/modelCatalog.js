@@ -94,6 +94,7 @@ export function updateModelMeta(id, patch){
     const v = Number(patch.otpm)
     if(Number.isFinite(v) && v >= 0) next.otpm = v; else if(patch.otpm === null) delete next.otpm
   }
+  if(patch && 'provider' in patch) next.provider = String(patch.provider || 'openai')
   __state.models[id] = next
   saveState(__state)
 }
@@ -130,6 +131,31 @@ export function deleteModel(id){
     const first = listModels().find(m=>m.enabled)
     __state.activeModel = first ? first.id : undefined
   }
+  saveState(__state)
+  return true
+}
+
+export function renameModel(oldId, newId){
+  // Can't rename if new ID already exists
+  if(__state.models[newId]) return false
+  
+  // Can't rename base models
+  if(BASE_MODELS.find(b=>b.id===oldId)) return false
+  
+  const model = __state.models[oldId]
+  if(!model) return false
+  
+  // Create new model with new ID but same metadata
+  __state.models[newId] = { ...model, id: newId }
+  
+  // Delete old model
+  delete __state.models[oldId]
+  
+  // Update activeModel if it was the renamed model
+  if(__state.activeModel === oldId) {
+    __state.activeModel = newId
+  }
+  
   saveState(__state)
   return true
 }

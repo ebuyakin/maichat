@@ -48,56 +48,186 @@
 
 /* Model Editor (overlay variant) */
 .overlay-panel.model-editor { 
-  max-width:1180px; 
+  /* Responsive width - override base overlay constraints */
+  width: clamp(800px, 80vw, 950px);
+  max-width: clamp(800px, 80vw, 950px);
+  
+  /* Legacy fallback */
   max-height: calc(100vh - 70px);
-  --me-scrollbar-w: 11px; 
+  
+  /* Simplified spacing system */
+  --me-padding: 16px;
+  --me-gap: 12px;
+  --me-scrollbar-width: 8px;
+  
+  /* Legacy variables (kept for compatibility) */
+  --me-scrollbar-w: var(--me-scrollbar-width); 
   --me-scrollbar-track-border: 1px; 
-  --me-list-right-margin: 6px; 
-  --me-right-gutter: calc(14px + var(--me-scrollbar-w) + var(--me-scrollbar-track-border) + var(--me-list-right-margin));
+  --me-list-right-margin: 4px; 
+  --me-right-gutter: calc(10px + var(--me-scrollbar-w) + var(--me-scrollbar-track-border) + var(--me-list-right-margin));
+  
   /* Grid: toggle | name | provider | cw | tpm | rpm | tpd | otpm */
-  /* Final polish: reduce Model (name) and Provider widths by 20px each; keep numeric widths; add OTPM column */
-  --me-name-col: 280px; /* previously implicit ~300px flexible space */
-  --me-grid-columns: 50px var(--me-name-col) 100px 70px 60px 50px 60px 60px;
+  --me-name-col: 230px;
+  --me-grid-columns: 50px var(--me-name-col) 90px 65px 55px 45px 55px 55px;
+  
+  /* Simplified padding */
+  padding: var(--me-padding);
 }
+.overlay-panel.model-editor .list::-webkit-scrollbar-track { 
+  background: #0b0b0b; 
+  border-left: 1px solid #202020; 
+}
+
+.overlay-panel.model-editor .list::-webkit-scrollbar-thumb { 
+  background: #2a2a2a; 
+  border-radius: 6px; 
+}
+
+.overlay-panel.model-editor .list::-webkit-scrollbar-thumb:hover { 
+  background: #3a3a3a; 
+}
+
+.overlay-panel.model-editor ul { 
+  padding: 0; 
+}
+
+.overlay-panel.model-editor li .me-col { 
+  min-width: 0; 
+}
+
+.overlay-panel.model-editor .me-col-name { 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+}
+
+.overlay-panel.model-editor .me-col-provider { 
+  white-space: nowrap; 
+}
+
+.overlay-panel.model-editor li.me-add { 
+  opacity: .9; 
+}
+
+.overlay-panel.model-editor .me-actions { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+}
+
+.overlay-panel.model-editor .me-active { 
+  color: #ffd54a; 
+  opacity: 0.95; 
+}
+
 .overlay-panel.model-editor .me-add-controls,
 .overlay-panel.model-editor .me-hint,
-.overlay-panel.model-editor .me-controls { padding-right: var(--me-right-gutter); }
-.overlay-panel.model-editor .me-table { display:flex; flex-direction:column; }
-.overlay-panel.model-editor .me-table { margin-bottom: 15px; }
-.overlay-panel.model-editor .me-head { display:grid; grid-template-columns: var(--me-grid-columns); align-items:center; gap:18px; padding:6px 14px; padding-right: var(--me-right-gutter); font:11px/1.2 var(--font-ui); color:#9aa; letter-spacing:.3px; margin-bottom:3px; border-bottom:none; }
+.overlay-panel.model-editor .me-controls { 
+  padding-right: var(--me-padding); 
+}
+.overlay-panel.model-editor .me-table { 
+  display: flex; 
+  flex-direction: column; 
+  margin-bottom: var(--me-padding);
+}
+
+.overlay-panel.model-editor .me-head { 
+  display: grid; 
+  /* Use responsive grid directly */
+  grid-template-columns: 50px minmax(180px, 1fr) minmax(80px, 90px) repeat(5, minmax(45px, 65px)); 
+  align-items: center; 
+  gap: var(--me-gap); 
+  padding: 6px var(--me-padding); 
+  font: 11px/1.2 var(--font-ui); 
+  color: #9aa; 
+  letter-spacing: .3px; 
+  margin-bottom: 3px; 
+  border-bottom: none; 
+}
 .overlay-panel.model-editor ul { padding:0; }
-.overlay-panel.model-editor .list { position:relative; max-height: calc(10 * 30px + 8px); overflow-y: scroll; overflow-x: hidden; margin-right: var(--me-list-right-margin); }
-.overlay-panel.model-editor .list::-webkit-scrollbar { width: var(--me-scrollbar-w); }
-.overlay-panel.model-editor .list::-webkit-scrollbar-track { background: #0b0b0b; border-left: var(--me-scrollbar-track-border) solid #202020; }
-.overlay-panel.model-editor .list::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 6px; }
-.overlay-panel.model-editor .list::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
-.overlay-panel.model-editor li { display:grid; grid-template-columns: var(--me-grid-columns); align-items:center; gap:18px; font:var(--size-base)/1.35 var(--font-ui); padding:3px 14px; min-height:27px; }
-.overlay-panel.model-editor li .me-col { min-width:0; }
-.overlay-panel.model-editor .me-col-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.overlay-panel.model-editor .me-col-provider { white-space:nowrap; }
-.overlay-panel.model-editor li.me-add { opacity:.9; }
-.overlay-panel.model-editor .me-actions { display:flex; align-items:center; gap:8px; }
-.overlay-panel.model-editor .me-active { color: #ffd54a; opacity: 0.95; }
-.overlay-panel.model-editor .me-add .me-id-input, .overlay-panel.model-editor .me-new .me-id-input { background: transparent; border: 1px solid #333; color: var(--text); padding: 4px 6px; font: var(--size-base)/1.4 var(--font-ui); border-radius: 4px; width: 100%; box-sizing: border-box; }
+.overlay-panel.model-editor .list { 
+  position: relative; 
+  max-height: calc(8 * 30px); 
+  overflow-y: auto; 
+  overflow-x: hidden; 
+  margin-right: 4px;
+}
+
+.overlay-panel.model-editor .list::-webkit-scrollbar { 
+  width: var(--me-scrollbar-width); 
+}
+
+.overlay-panel.model-editor li { 
+  display: grid; 
+  grid-template-columns: 50px minmax(180px, 1fr) minmax(80px, 90px) repeat(5, minmax(45px, 65px)); 
+  align-items: center; 
+  gap: var(--me-gap); 
+  font: var(--size-base)/1.35 var(--font-ui); 
+  padding: 3px var(--me-padding); 
+  min-height: 27px; 
+}
+.overlay-panel.model-editor .me-add .me-id-input, 
+.overlay-panel.model-editor .me-new .me-id-input,
 .overlay-panel.model-editor .me-name-input,
-.overlay-panel.model-editor .me-col input.me-num { background: transparent; border: 1px solid #333; color: var(--text); padding: 4px 6px; font: var(--size-base)/1.4 var(--font-ui); border-radius: 4px; width: 100%; box-sizing: border-box; }
-.overlay-panel.model-editor input.me-num { appearance: textfield; -moz-appearance: textfield; }
+.overlay-panel.model-editor .me-provider-input,
+.overlay-panel.model-editor .me-col input.me-num { 
+  background: transparent; 
+  border: 1px solid #333; 
+  color: var(--text); 
+  padding: 4px 6px; 
+  font: var(--size-base)/1.4 var(--font-ui); 
+  border-radius: 4px; 
+  width: 100%; 
+  box-sizing: border-box; 
+}
+
+.overlay-panel.model-editor input.me-num { 
+  appearance: textfield; 
+  -moz-appearance: textfield; 
+}
+
 .overlay-panel.model-editor input.me-num::-webkit-outer-spin-button,
-.overlay-panel.model-editor input.me-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.overlay-panel.model-editor input.me-num::-webkit-inner-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
 .overlay-panel.model-editor .me-col-cw input:focus,
 .overlay-panel.model-editor .me-col-tpm input:focus,
 .overlay-panel.model-editor .me-col-rpm input:focus,
 .overlay-panel.model-editor .me-col-tpd input:focus,
-.overlay-panel.model-editor input.me-name-input:focus { border-color: #333; box-shadow:none; }
-.overlay-panel.model-editor .me-col.me-col-selected { outline: 1px solid #3b82f6; outline-offset: 2px; border-radius: 3px; }
-.daily-stats-panel .stats-table tr.active td { background:#162234; }
+.overlay-panel.model-editor input.me-name-input:focus,
+.overlay-panel.model-editor input.me-provider-input:focus { 
+  border-color: #333; 
+  box-shadow: none; 
+}
 
-/* Footer hint and buttons spacing/colors */
-.overlay-panel.model-editor .me-hint { color: var(--text-dim); display:block; margin: 15px 14px 10px 0; font: 11px/1.35 var(--font-ui); letter-spacing: .3px; }
-.overlay-panel.model-editor .me-controls { display:flex; justify-content:flex-end; padding: 0 14px 0; margin-top: 10px; }
+.overlay-panel.model-editor .me-col.me-col-selected { 
+  outline: 1px solid #3b82f6; 
+  outline-offset: 2px; 
+  border-radius: 3px; 
+}
 
-/* Increase overlay internal padding */
-.overlay-panel.model-editor { padding: 16px 6px 12px; }
+/* Footer hint and buttons spacing */
+.overlay-panel.model-editor .me-hint { 
+  color: var(--text-dim); 
+  display: block; 
+  margin: var(--me-padding) var(--me-padding) 10px 0; 
+  font: 11px/1.35 var(--font-ui); 
+  letter-spacing: .3px; 
+}
+
+.overlay-panel.model-editor .me-controls { 
+  display: flex; 
+  justify-content: flex-end; 
+  padding: 0 var(--me-padding) 0; 
+  margin-top: 10px; 
+}
+
+/* Daily Stats Panel */
+.daily-stats-panel .stats-table tr.active td { 
+  background: #162234; 
+}
 
 /* Model Selector */
 .model-selector-panel { min-width:380px; }

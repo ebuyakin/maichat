@@ -1,6 +1,6 @@
 // modelEditor.js moved from ui/modelEditor.js (Phase 6.6 Config)
 // Restored original (moved from src/ui/modelEditor.js) - path adjusted only.
-import { listModels, getActiveModel, setActiveModel, updateModelMeta, setModelEnabled, addModel, deleteModel } from '../../core/models/modelCatalog.js'
+import { listModels, getActiveModel, setActiveModel, updateModelMeta, setModelEnabled, addModel, deleteModel, renameModel } from '../../core/models/modelCatalog.js'
 import { openModal } from '../../shared/openModal.js'
 
 // Ensure only the latest opened editor handles global keys
@@ -118,8 +118,8 @@ export function openModelEditor({ onClose, store }){
       const inUse = usedCounts.get(String(m.id).toLowerCase())>0
       li.innerHTML = `
         <span class="me-col me-col-toggle ${m.enabled?'on':'off'}" data-role="toggle" aria-label="${m.enabled?'enabled':'disabled'}">${m.enabled? '●':'○'}</span>
-        <span class="me-col me-col-name">${m.id} ${activeBadge}</span>
-        <span class="me-col me-col-provider">${m.provider || 'openai'}</span>
+        <span class="me-col me-col-name"><input aria-label="Model ID" data-field="id" type="text" value="${m.id}" class="me-name-input"/>${activeBadge}</span>
+        <span class="me-col me-col-provider"><input aria-label="Provider" data-field="provider" type="text" value="${m.provider || 'openai'}" class="me-provider-input"/></span>
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.contextWindow||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpm||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-field="rpm" type="number" min="0" step="1" value="${m.rpm}" class="me-num"/></span>
@@ -138,7 +138,7 @@ export function openModelEditor({ onClose, store }){
       li.innerHTML = `
         <span class="me-col me-col-toggle on" data-role="toggle" aria-label="enabled">●</span>
         <span class="me-col me-col-name"><input class="me-name-input" type="text" placeholder="New model id" value="${pendingNewRow.id||''}"/></span>
-        <span class="me-col me-col-provider">${pendingNewRow.provider || 'openai'}</span>
+        <span class="me-col me-col-provider"><input class="me-provider-input" data-pending="1" data-field="provider" type="text" placeholder="Provider" value="${pendingNewRow.provider || 'openai'}"/></span>
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-pending="1" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.contextWindow||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-pending="1" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpm||0)/1000)}" class="me-num"/></span>
         <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-pending="1" data-field="rpm" type="number" min="0" step="1" value="${pendingNewRow.rpm||0}" class="me-num"/></span>
@@ -193,7 +193,7 @@ export function openModelEditor({ onClose, store }){
     const li = e.target.closest('li.me-row')
     if(!li || li.classList.contains('me-add')) return
     activeIndex = Array.from(ul.querySelectorAll('li.me-row')).indexOf(li)
-    const tgt = e.target; if(tgt && ((tgt.getAttribute('data-field')||'').length || tgt.classList.contains('me-name-input'))){ return }
+    const tgt = e.target; if(tgt && ((tgt.getAttribute('data-field')||'').length || tgt.classList.contains('me-name-input') || tgt.classList.contains('me-provider-input'))){ return }
     // Toggle enabled in draft
     const id = li.dataset.id
     const cur = draftById.get(id) || origById.get(id)
@@ -204,25 +204,45 @@ export function openModelEditor({ onClose, store }){
     }
   })
   ul.addEventListener('change', e=>{
-    const input = e.target.closest('input.me-num')
+    const input = e.target.closest('input.me-num, input.me-name-input, input.me-provider-input')
     if(!input) return
     const li = e.target.closest('li')
     if(!li) return
     const id = li.dataset.id
     const field = input.getAttribute('data-field')
-    let val = Number(input.value)
-    if(!Number.isFinite(val) || val < 0) { val = 0; input.value = '0' }
-    const scale = Number(input.getAttribute('data-scale') || '1')
-    const absVal = val * scale
-    // Pending new row or existing draft
-  if(input.getAttribute('data-pending')==='1'){
-      if(!pendingNewRow) return
-      pendingNewRow[field] = absVal
-    } else {
-      const cur = draftById.get(id) || origById.get(id)
-      if(cur){ draftById.set(id, { ...cur, [field]: absVal }) }
+    
+    // Handle numeric fields
+    if(input.classList.contains('me-num')){
+      let val = Number(input.value)
+      if(!Number.isFinite(val) || val < 0) { val = 0; input.value = '0' }
+      const scale = Number(input.getAttribute('data-scale') || '1')
+      const absVal = val * scale
+      
+      if(input.getAttribute('data-pending')==='1'){
+        if(!pendingNewRow) return
+        pendingNewRow[field] = absVal
+      } else {
+        const cur = draftById.get(id) || origById.get(id)
+        if(cur){ draftById.set(id, { ...cur, [field]: absVal }) }
+      }
     }
-  __dirty = true
+    
+    // Handle text fields (Model ID and Provider)
+    else if(input.classList.contains('me-name-input') || input.classList.contains('me-provider-input')){
+      const val = (input.value || '').trim()
+      
+      if(input.getAttribute('data-pending')==='1'){
+        if(!pendingNewRow) return
+        pendingNewRow[field] = val
+      } else {
+        const cur = draftById.get(id) || origById.get(id)
+        if(cur){ 
+          draftById.set(id, { ...cur, [field]: val }) 
+        }
+      }
+    }
+    
+    __dirty = true
     // re-render but keep focus on edited input
     const preserveId = id || ''
     const caretPos = input.selectionStart
@@ -290,10 +310,11 @@ export function openModelEditor({ onClose, store }){
     // Do not intercept when editing inside an input except Esc and special stepping
     const inputFocused = document.activeElement && document.activeElement.tagName==='INPUT' && document.activeElement.classList.contains('me-num')
     const nameEditing = document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('me-name-input')
+    const providerEditing = document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('me-provider-input')
     const isSpace = (e.key===' ' || e.key==='Spacebar' || e.code==='Space')
   const handledKeys = ['Escape','Enter','PageDown','PageUp','ArrowDown','ArrowUp']
     // When editing an input, intercept vim-like nav keys and treat them as navigation
-    if (inputFocused || nameEditing){
+    if (inputFocused || nameEditing || providerEditing){
       if (e.key==='Enter'){
         // Commit current input value into draft/pending and remain in editor
         const ae = document.activeElement
@@ -311,6 +332,46 @@ export function openModelEditor({ onClose, store }){
             if(cur){ draftById.set(id, { ...cur, [field]: absVal }); __dirty = true }
           }
         }
+        
+        // Handle provider field changes for existing models
+        if (ae && ae.classList.contains('me-provider-input')){
+          const li = ae.closest('li')
+          const id = li && li.dataset.id
+          const field = ae.getAttribute('data-field') // should be 'provider'
+          const val = (ae.value || '').trim()
+          
+          if (ae.getAttribute('data-pending')==='1'){
+            // New row: update pending row
+            if(pendingNewRow && field){ pendingNewRow[field] = val; __dirty = true }
+          } else if (id && field){
+            // Existing row: update draft
+            const cur = draftById.get(id) || origById.get(id)
+            if(cur){ draftById.set(id, { ...cur, [field]: val }); __dirty = true }
+          }
+        }
+        
+        // Handle model ID field changes for existing models
+        if (ae && ae.classList.contains('me-name-input') && ae.getAttribute('data-field') === 'id'){
+          const li = ae.closest('li')
+          const oldId = li && li.dataset.id
+          const newId = (ae.value || '').trim()
+          
+          if (oldId && newId && oldId !== newId){
+            // Renaming existing model
+            const cur = draftById.get(oldId) || origById.get(oldId)
+            if(cur && !draftById.has(newId) && !origById.has(newId)){
+              draftById.set(newId, { ...cur, id: newId })
+              draftById.delete(oldId)
+              stagedDeletes.set(oldId, cur)
+              stagedAdds.set(newId, { ...cur, id: newId })
+              __dirty = true
+              render(newId)
+              const idx = models.findIndex(m=> m.id===newId)
+              if(idx>=0){ activeIndex = idx; ensureVisible() }
+            }
+          }
+        }
+        
         if (nameEditing){
           const inputEl = document.activeElement
           const id = (inputEl && inputEl.value || '').trim()
@@ -379,17 +440,18 @@ export function openModelEditor({ onClose, store }){
     // Column movement
   if(lowerKey==='l'){
       if (selectedCol===null){
-        // Determine initial column: provider only if pending new row (so user can toggle provider), else first numeric
+        // Start at Model column (1) for existing rows, Provider column (2) for new rows
         const isPending = !!pendingNewRow && activeIndex === models.length
-        selectedCol = isPending ? PROVIDER_COL_INDEX : FIRST_NUMERIC_COL
+        selectedCol = isPending ? PROVIDER_COL_INDEX : 1  // Start at Model column for existing rows
         applyCellSelection(); enterEditMode(); ensureVisible(); return
       }
       moveCol(1); return
     }
   if(lowerKey==='h'){
       if (selectedCol===null){
+        // Start at Model column (1) for existing rows, Provider column (2) for new rows
         const isPending = !!pendingNewRow && activeIndex === models.length
-        selectedCol = isPending ? PROVIDER_COL_INDEX : FIRST_NUMERIC_COL
+        selectedCol = isPending ? PROVIDER_COL_INDEX : 1  // Start at Model column for existing rows
         applyCellSelection(); enterEditMode(); ensureVisible(); return
       }
       moveCol(-1); return
@@ -430,21 +492,16 @@ export function openModelEditor({ onClose, store }){
     if(activeIndex>=rowsCount) return
   if(selectedCol===null){
     const isPending = !!pendingNewRow && activeIndex === models.length
-    selectedCol = isPending ? PROVIDER_COL_INDEX : FIRST_NUMERIC_COL
+    selectedCol = isPending ? PROVIDER_COL_INDEX : 1  // Start at Model column for existing rows, Provider for new rows
     applyCellSelection(); enterEditMode(); return
   }
     let next = selectedCol + delta
   // Determine pending row and columns allowed
   const isPendingRow = !!pendingNewRow && activeIndex === models.length
-  // For existing rows skip provider column (2) entirely
-  if(!isPendingRow){
-    if(next === PROVIDER_COL_INDEX) next = delta>0 ? PROVIDER_COL_INDEX+1 : 1 // skip provider; 1 moves back to name
-    if(next < FIRST_NUMERIC_COL && next !== 1) next = FIRST_NUMERIC_COL
-  } else {
-    // Pending row: allow provider; allow name (1)
-    if(next < 1) next = 1
-  }
-    if(next>LAST_COL) next=LAST_COL
+  
+  // Allow navigation to all columns for both existing and pending rows
+  if(next < 1) next = 1  // Start from name column (1)
+  if(next > LAST_COL) next = LAST_COL
     selectedCol = next
     applyCellSelection()
     // Immediately enter edit mode for numeric cells
@@ -471,6 +528,10 @@ export function openModelEditor({ onClose, store }){
     if(!cell) return
   const nameInput = cell.querySelector('input.me-name-input')
   if(nameInput){ editing = true; nameInput.focus(); try{ nameInput.select() }catch{}; return }
+  
+  const providerInput = cell.querySelector('input.me-provider-input')
+  if(providerInput){ editing = true; providerInput.focus(); try{ providerInput.select() }catch{}; return }
+  
   const input = cell.querySelector('input.me-num')
   if(input){ editing = true; input.focus(); try{ input.select() }catch{} }
   }
@@ -504,6 +565,25 @@ export function openModelEditor({ onClose, store }){
     if (cancelBtn) cancelBtn.textContent = dirty ? 'Cancel+Close (Esc)' : 'Close (Esc)'
   }
   function performSave(){
+    // First pass: Handle model ID renames
+    for(const [id, draft] of draftById){
+      if(stagedAdds.has(id)) continue
+      const orig = origById.get(id)
+      if(!orig) continue
+      
+      // Check if this is a model ID rename
+      if(draft.id && draft.id !== orig.id && draft.id !== id){
+        const success = renameModel(id, draft.id)
+        if(success){
+          // Update our tracking maps to use the new ID
+          draftById.delete(id)
+          draftById.set(draft.id, draft)
+          origById.delete(id)
+          origById.set(draft.id, { ...orig, id: draft.id })
+        }
+      }
+    }
+    
     // Apply staged adds
     for(const [id, meta] of stagedAdds){ addModel(id, meta) }
     // Apply updates vs originals
@@ -516,8 +596,9 @@ export function openModelEditor({ onClose, store }){
       if(draft.contextWindow !== orig.contextWindow) patch.contextWindow = draft.contextWindow
       if(draft.tpm !== orig.tpm) patch.tpm = draft.tpm
       if(draft.rpm !== orig.rpm) patch.rpm = draft.rpm
-  if(draft.tpd !== orig.tpd) patch.tpd = draft.tpd
-  if(draft.otpm !== orig.otpm) patch.otpm = draft.otpm
+      if(draft.tpd !== orig.tpd) patch.tpd = draft.tpd
+      if(draft.otpm !== orig.otpm) patch.otpm = draft.otpm
+      if(draft.provider !== orig.provider) patch.provider = draft.provider
       if(Object.keys(patch).length){ updateModelMeta(id, patch) }
     }
     // Apply deletions for custom models not used
