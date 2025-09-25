@@ -20,7 +20,7 @@
   border-radius: 8px;
   width: 80%;
   max-width: 900px;
-  max-height: 80vh;
+  height: 80vh; /* Fixed overlay height independent of content */
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 24px rgba(0,0,0,0.6);
@@ -65,8 +65,11 @@
 
 .code-overlay-content {
   flex: 1;
-  overflow: auto;
+  display: flex;          /* enable child stretch */
+  flex-direction: column;
+  overflow: hidden;       /* scrolling handled by pre */
   padding: 0;
+  min-height: 0;          /* allow flex child to shrink properly */
 }
 
 .code-overlay-pre {
@@ -75,9 +78,12 @@
   background: #0a0a0a;
   color: #e8e8e8;
   font: 13px/1.4 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-  overflow: auto;
+  overflow: auto;         /* single scroll container */
   border: none;
   white-space: pre;
+  flex: 1;                /* fill vertical space */
+  min-height: 0;          /* prevent overflow issues inside flex parent */
+  box-sizing: border-box;
 }
 
 .code-overlay-code {
@@ -93,10 +99,11 @@
   padding: 12px 16px;
   border-top: 1px solid #333;
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
   background: rgba(255, 255, 255, 0.01);
 }
+.code-overlay-footer .code-overlay-hint { color: var(--text-dim); font-size:11px; letter-spacing:.5px; margin-right:auto; }
 
 .code-copy-btn {
   background: var(--btn-bg);

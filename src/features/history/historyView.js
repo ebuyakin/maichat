@@ -1,8 +1,8 @@
 // historyView moved from ui/history/historyView.js
 import { escapeHtml } from '../../shared/util.js'
 
-// Regex to match code placeholders: [:language-number]
-const CODE_PLACEHOLDER_REGEX = /(\[:[\w]+-\d+\])/g;
+// Regex to match code placeholders: [language-number] (language lowercase alphanum/underscore), e.g. [python-1], [code-2]
+const CODE_PLACEHOLDER_REGEX = /(\[[a-zA-Z0-9_]+-\d+\])/g;
 
 /**
  * Processes text content to style code placeholders

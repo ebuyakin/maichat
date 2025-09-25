@@ -143,7 +143,7 @@ export function createInteraction({
       const blocks = pair.codeBlocks;
       if(!blocks || blocks.length<2){ window.__mcPendingCodeOpen=null; return false }
       const idx = parseInt(e.key,10)-1;
-      if(idx>=0 && idx<blocks.length){ codeOverlay.show(blocks[idx], pair); }
+  if(idx>=0 && idx<blocks.length){ codeOverlay.show(blocks[idx], pair, { index: idx }); }
       window.__mcPendingCodeOpen=null;
       return true;
     }
@@ -172,7 +172,7 @@ export function createInteraction({
       const blocks = pair && pair.codeBlocks;
       if(!blocks || blocks.length===0) return false;
       if(blocks.length===1){
-        codeOverlay.show(blocks[0], pair); return true;
+        codeOverlay.show(blocks[0], pair, { index:0 }); return true;
       }
       // Multiple blocks: record intent and wait for digit key (v1..v9). No action yet.
       // Store lightweight flag with timestamp (in case future expiry desired)

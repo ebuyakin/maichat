@@ -58,12 +58,10 @@ export function extractCodeBlocks(content) {
     });
     
     // Generate placeholder
-    // Format: [:language-number] or [:text-1] if no language
-    const placeholder = language 
-      ? ` [${language}-${blockIndex}] ` 
-      : ` [code-${blockIndex}] `;
-    
-    return placeholder;
+    // Contract: placeholders rendered inline as `[language-N]` (or `[code-N]` fallback)
+    // Surrounded by single spaces to keep separation from adjacent words.
+    const langToken = (language && language.trim()) ? language.trim() : 'code'
+    return ` [${langToken}-${blockIndex}] `;
   });
 
   return {
