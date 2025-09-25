@@ -7,7 +7,8 @@
  */
 
 // Regex to match code blocks with optional language specifier
-const CODE_BLOCK_REGEX = /```(\w*)\n([\s\S]*?)```/g;
+/*const CODE_BLOCK_REGEX = /```(\w*)\n([\s\S]*?)```/g;*/
+const CODE_BLOCK_REGEX = /\s*```(\w*)\s*([\s\S]*?)```\s*/g;
 
 /**
  * Checks if content contains any code blocks
@@ -59,8 +60,8 @@ export function extractCodeBlocks(content) {
     // Generate placeholder
     // Format: [:language-number] or [:text-1] if no language
     const placeholder = language 
-      ? `[:${language}-${blockIndex}]` 
-      : `[:code-${blockIndex}]`;
+      ? ` v[:${language}-${blockIndex}] ` 
+      : ` [:code-${blockIndex}] `;
     
     return placeholder;
   });

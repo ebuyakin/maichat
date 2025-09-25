@@ -54,5 +54,5 @@
 /* Code placeholders styling */
 .code-placeholder {
   color: #85db87;
-  white-space: normal;
+  white-space: normal !important;
 }
