@@ -1,4 +1,5 @@
 // Code snippet detection and extraction module
+import { applyEquationsToPair } from './equationExtractor.js'
 // Phase 0: Infrastructure - no UI changes yet
 
 /**
@@ -85,13 +86,12 @@ export function processMessagePair(messagePair) {
   const extraction = extractCodeBlocks(messagePair.assistantText);
   
   if (extraction.hasCode) {
-    // Add new fields only if code blocks found
     messagePair.processedContent = extraction.displayText;
     messagePair.codeBlocks = extraction.codeBlocks;
-    
     console.log(`[CodeExtractor] Processed message ${messagePair.id}: found ${extraction.codeBlocks.length} code blocks`);
   }
-  
+  // Equation extraction (hybrid simple/complex) builds on processedContent if present
+  applyEquationsToPair(messagePair);
   return messagePair;
 }
 

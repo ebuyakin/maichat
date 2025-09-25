@@ -3,6 +3,8 @@ import { escapeHtml } from '../../shared/util.js'
 
 // Regex to match code placeholders: [language-number] (language lowercase alphanum/underscore), e.g. [python-1], [code-2]
 const CODE_PLACEHOLDER_REGEX = /(\[[a-zA-Z0-9_]+-\d+\])/g;
+// Equation placeholders: [eq-n]
+const EQ_PLACEHOLDER_REGEX = /(\[eq-\d+\])/g;
 
 /**
  * Processes text content to style code placeholders
@@ -13,10 +15,12 @@ function processCodePlaceholders(text) {
 	if (!text) return '';
 	
 	// First escape HTML to prevent XSS
-	const escapedText = escapeHtml(text);
-	
-	// Then wrap code placeholders with CSS class
-	return escapedText.replace(CODE_PLACEHOLDER_REGEX, '<span class="code-placeholder">$1</span>');
+	let escapedText = escapeHtml(text);
+	// Wrap code placeholders
+	escapedText = escapedText.replace(CODE_PLACEHOLDER_REGEX, '<span class="code-placeholder">$1</span>');
+	// Wrap equation placeholders
+	escapedText = escapedText.replace(EQ_PLACEHOLDER_REGEX, '<span class="eq-placeholder">$1</span>');
+	return escapedText;
 }
 
 export function createHistoryView({ store, onActivePartRendered }){

@@ -56,3 +56,12 @@
   color: #85db87;
   white-space: normal !important;
 }
+.eq-placeholder {
+  color: #5dd6d3;
+  white-space: normal !important;
+}
+.eq-inline {
+  color: #5dd6d3;
+  font-style: normal;
+  white-space: normal !important;
+}
