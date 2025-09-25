@@ -74,8 +74,8 @@ export function createInteraction({
   const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) ? import.meta.env.BASE_URL : '/'
   const tutorialUrl = (BASE.endsWith('/') ? BASE : (BASE + '/')) + 'tutorial.html'
   
-  // Create code overlay instance
-  const codeOverlay = createCodeOverlay();
+  // Create code overlay instance (modal integrated)
+  const codeOverlay = createCodeOverlay({ modeManager });
   const viewHandler = (e)=>{
     if(window.modalIsActive && window.modalIsActive()) return false
     window.__lastKey = e.key

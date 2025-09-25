@@ -113,3 +113,10 @@
   background: var(--btn-bg-hover, rgba(255, 255, 255, 0.1));
   border-color: var(--btn-border-hover, #555);
 }
+
+/* Token highlighting */
+.tok-kw { color:#c792ea; }
+.tok-num { color:#ffcb6b; }
+.tok-str { color:#a5e075; }
+.tok-key { color:#82aaff; }
+.tok-com { color:#546e7a; font-style:italic; }
