@@ -60,7 +60,7 @@ export function extractCodeBlocks(content) {
     // Generate placeholder
     // Format: [:language-number] or [:text-1] if no language
     const placeholder = language 
-      ? ` v[:${language}-${blockIndex}] ` 
+      ? ` [:${language}-${blockIndex}] ` 
       : ` [:code-${blockIndex}] `;
     
     return placeholder;

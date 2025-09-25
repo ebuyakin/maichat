@@ -133,6 +133,24 @@ export function createInteraction({
       } catch {}
       return true
     }
+    // Pending code overlay digit selection must take precedence over star rating
+    if(/^[1-9]$/.test(e.key) && window.__mcPendingCodeOpen){
+      const act = activeParts.active();
+      const pending = window.__mcPendingCodeOpen;
+      if(!(act && act.role==='assistant')){ window.__mcPendingCodeOpen=null; return false }
+      const pair = store.pairs.get(act.pairId);
+      if(!pair || pair.id!==pending.pairId){ window.__mcPendingCodeOpen=null; return false }
+      const blocks = pair.codeBlocks;
+      if(!blocks || blocks.length<2){ window.__mcPendingCodeOpen=null; return false }
+      const idx = parseInt(e.key,10)-1;
+      if(idx>=0 && idx<blocks.length){ codeOverlay.show(blocks[idx], pair); }
+      window.__mcPendingCodeOpen=null;
+      return true;
+    }
+    // Passive expiry: if pending older than 3s, drop it before any further handling
+    if(window.__mcPendingCodeOpen){
+      if(Date.now() - window.__mcPendingCodeOpen.ts > 3000){ window.__mcPendingCodeOpen = null }
+    }
     if(e.key==='*'){ cycleStar(); return true }
     if(e.key==='a'){ toggleFlag(); return true }
     if(e.key==='1'){ setStarRating(1); return true }
@@ -143,19 +161,29 @@ export function createInteraction({
     if(e.key==='e'){ if(handleEditIfErrorActive()) return true }
     if(e.key==='d'){ if(handleDeleteIfErrorActive()) return true }
     
-    // Code overlay trigger
-    if(e.key==='v'){ 
-      const activePart = activeParts.active()
-      if(activePart && activePart.role === 'assistant') {
-        const messagePair = store.pairs.get(activePart.pairId)
-        if(messagePair && messagePair.codeBlocks && messagePair.codeBlocks.length > 0) {
-          // For now, show first code block (Phase 2 basic implementation)
-          const firstCodeBlock = messagePair.codeBlocks[0]
-          codeOverlay.show(firstCodeBlock, messagePair)
-          return true
-        }
+    // Code overlay trigger logic (smart):
+    // - If exactly 1 code block in active assistant message: 'v' opens it immediately.
+    // - If >1 code blocks: require explicit 'v' + digit (v1..v9). Lone 'v' does nothing.
+    // - After pressing 'v' (multi-case), next digit (1-9) within normal key routing will open block.
+    if(e.key==='v'){
+      const act = activeParts.active();
+      if(!(act && act.role==='assistant')) return false;
+      const pair = store.pairs.get(act.pairId);
+      const blocks = pair && pair.codeBlocks;
+      if(!blocks || blocks.length===0) return false;
+      if(blocks.length===1){
+        codeOverlay.show(blocks[0], pair); return true;
       }
-      return false // Don't prevent default if no code blocks
+      // Multiple blocks: record intent and wait for digit key (v1..v9). No action yet.
+      // Store lightweight flag with timestamp (in case future expiry desired)
+      window.__mcPendingCodeOpen = { ts: Date.now(), pairId: pair.id };
+      // Optionally could surface a HUD hint here in future.
+      return true; // consume 'v' so it doesn't collide with other mappings
+    }
+    // Broad cancel: any key (other than 'v' and digits 1-9 during valid pending window) clears pending
+    if(window.__mcPendingCodeOpen){
+      const isDigit = /^[1-9]$/.test(e.key);
+      if(e.key!=='v' && !isDigit){ window.__mcPendingCodeOpen=null }
     }
   }
   const commandHandler = (e)=>{
