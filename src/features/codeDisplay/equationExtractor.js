@@ -2,43 +2,53 @@
 // Mirrors codeExtractor pattern but keeps concerns separate.
 
 // Regex patterns applied AFTER code extraction to avoid $ inside code blocks
-const DISPLAY_DOLLAR = /\$\$([\s\s]*?)\$\$/g; // non-greedy
-const BRACKETED = /\\\[([\s\S]*?)\\\]/g;
+// NOTE: use [\s\S] instead of [\s\s] (previous typo prevented some matches) and correct bracket form.
+const DISPLAY_DOLLAR = /\$\$([\s\S]*?)\$\$/g; // non-greedy
+const BRACKETED = /\\\[([\s\S]*?)\\\]/g; // matches \[ ... \]
+const INLINE_PARENS = /\\\(([^\n]*?)\\\)/g; // matches \( ... \) single-line
 // Inline: single $ ... $ (no newline). Negative lookahead for $$ handled by not matching $$ pairs here.
 const INLINE = /(^|[^$])\$([^\n$][^$]*?)\$(?!\$)/g;
 
 // Simple heuristic configuration
-const SIMPLE_MAX_LEN = 30;
+const SIMPLE_MAX_LEN = 10;
 const FORBIDDEN_MACROS = /\\(frac|sqrt|sum|int|begin|over|align|matrix|displaystyle|text)\b/;
 const ALLOWED_MACROS = /\\(alpha|beta|gamma|delta|epsilon|pi|mu|sigma|theta|lambda|phi|psi|omega|times|cdot|pm|to|rightarrow|leftarrow)\b/g;
 const SAFE_CHARS = /^[A-Za-z0-9_+\-*=<>≤≥(),.\/ ^\\]*$/; // includes backslash for allowed macros & spaces
 
-export function extractEquations(content){
-  if(!content || typeof content !== 'string') return { displayText: content, equationBlocks: [], hasEquations:false };
+export function extractEquations(content, { inlineMode='markers' } = {}){
+  if(!content || typeof content !== 'string') return { displayText: content, equationBlocks: [], hasEquations:false, inlineSimple: [] };
   let working = content;
   const equationBlocks = [];
+  const inlineSimple = [];
   let eqIndex = 0;
+  let simpleIndex = 0;
 
   function classifyAndReplace(match, texBody, display){
     eqIndex++;
     const raw = texBody.trim();
     const isSimple = classifySimple(raw, display);
     if(isSimple){
+      // Return marker; final HTML span inserted later during post-sanitize phase
+      simpleIndex++;
       const unicode = convertSimpleInline(raw);
-      return (display? '' : ' ') + `<span class="eq-inline" data-tex="${escapeHtmlAttr(raw)}">${unicode}</span>` + ' ';
+      const marker = `__EQINL_${simpleIndex}__`;
+      inlineSimple.push({ marker, raw, unicode });
+      return (display? '' : ' ') + marker + ' ';
     } else {
       equationBlocks.push({ index:eqIndex, tex: raw, display: !!display, lineCount: raw.split(/\n/).length });
-      return ` [eq-${eqIndex}] `;
+      return ` [eq-${equationBlocks.length}] `; // numbering matches push order
     }
   }
 
   // Process display first
   working = working.replace(DISPLAY_DOLLAR, (_, body)=> classifyAndReplace(_, body, true));
   working = working.replace(BRACKETED, (_, body)=> classifyAndReplace(_, body, true));
-  // Inline last (use function to capture prefix char group 1)
+  // Then parenthesis inline math \( ... \)
+  working = working.replace(INLINE_PARENS, (_, body)=> classifyAndReplace(_, body, false));
+  // Inline last
   working = working.replace(INLINE, (m, prefix, body)=> prefix + classifyAndReplace(m, body, false));
 
-  return { displayText: working, equationBlocks, hasEquations: equationBlocks.length>0 };
+  return { displayText: working, equationBlocks, hasEquations: equationBlocks.length>0 || inlineSimple.length>0, inlineSimple };
 }
 
 function classifySimple(raw, display){
@@ -90,13 +100,15 @@ function escapeHtmlAttr(str){
 }
 
 export function applyEquationsToPair(messagePair){
+  // Legacy helper retained (now returns markers) but not used in new pipeline.
   if(!messagePair || !messagePair.assistantText) return messagePair;
   const base = messagePair.processedContent || messagePair.assistantText;
-  const { displayText, equationBlocks, hasEquations } = extractEquations(base);
+  const { displayText, equationBlocks, inlineSimple, hasEquations } = extractEquations(base, { inlineMode:'markers' });
   if(hasEquations){
-    messagePair.processedContent = displayText; // augment further
-    messagePair.equationBlocks = equationBlocks;
-    console.log(`[EquationExtractor] Processed message ${messagePair.id}: equations=${equationBlocks.length}`);
+    messagePair.processedContent = displayText;
+    if(equationBlocks.length) messagePair.equationBlocks = equationBlocks;
+    if(inlineSimple.length) messagePair.inlineSimpleEquations = inlineSimple; // not rendered yet
+    console.log(`[EquationExtractor] Processed message ${messagePair.id}: equations=${equationBlocks.length}, inlineSimple=${inlineSimple.length}`);
   }
   return messagePair;
 }

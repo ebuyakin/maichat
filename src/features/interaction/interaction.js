@@ -25,7 +25,9 @@ import { getActiveModel } from '../../core/models/modelCatalog.js'
 import { executeSend } from '../compose/pipeline.js'
 import { sanitizeAssistantText } from './sanitizeAssistant.js'
 import { extractCodeBlocks } from '../codeDisplay/codeExtractor.js'
+import { extractEquations } from '../codeDisplay/equationExtractor.js'
 import { createCodeOverlay } from '../codeDisplay/codeOverlay.js'
+import { createEquationOverlay } from '../codeDisplay/equationOverlay.js'
 import { openModal } from '../../shared/openModal.js'
 
 export function createInteraction({
@@ -74,8 +76,9 @@ export function createInteraction({
   const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) ? import.meta.env.BASE_URL : '/'
   const tutorialUrl = (BASE.endsWith('/') ? BASE : (BASE + '/')) + 'tutorial.html'
   
-  // Create code overlay instance (modal integrated)
+  // Create overlay instances
   const codeOverlay = createCodeOverlay({ modeManager });
+  const equationOverlay = createEquationOverlay({ modeManager });
   const viewHandler = (e)=>{
     if(window.modalIsActive && window.modalIsActive()) return false
     window.__lastKey = e.key
@@ -147,9 +150,26 @@ export function createInteraction({
       window.__mcPendingCodeOpen=null;
       return true;
     }
+    // Pending equation overlay digit selection (parallel to code overlay)
+    if(/^[1-9]$/.test(e.key) && window.__mcPendingEqOpen){
+      const act = activeParts.active();
+      const pending = window.__mcPendingEqOpen;
+      if(!(act && act.role==='assistant')){ window.__mcPendingEqOpen=null; return false }
+      const pair = store.pairs.get(act.pairId);
+      if(!pair || pair.id!==pending.pairId){ window.__mcPendingEqOpen=null; return false }
+      const blocks = pair.equationBlocks;
+      if(!blocks || blocks.length<2){ window.__mcPendingEqOpen=null; return false }
+      const idx = parseInt(e.key,10)-1;
+      if(idx>=0 && idx<blocks.length){ equationOverlay.show(blocks[idx], pair, { index: idx }); }
+      window.__mcPendingEqOpen=null;
+      return true;
+    }
     // Passive expiry: if pending older than 3s, drop it before any further handling
     if(window.__mcPendingCodeOpen){
       if(Date.now() - window.__mcPendingCodeOpen.ts > 3000){ window.__mcPendingCodeOpen = null }
+    }
+    if(window.__mcPendingEqOpen){
+      if(Date.now() - window.__mcPendingEqOpen.ts > 3000){ window.__mcPendingEqOpen = null }
     }
     if(e.key==='*'){ cycleStar(); return true }
     if(e.key==='a'){ toggleFlag(); return true }
@@ -161,7 +181,7 @@ export function createInteraction({
     if(e.key==='e'){ if(handleEditIfErrorActive()) return true }
     if(e.key==='d'){ if(handleDeleteIfErrorActive()) return true }
     
-    // Code overlay trigger logic (smart):
+  // Code overlay trigger logic (smart):
     // - If exactly 1 code block in active assistant message: 'v' opens it immediately.
     // - If >1 code blocks: require explicit 'v' + digit (v1..v9). Lone 'v' does nothing.
     // - After pressing 'v' (multi-case), next digit (1-9) within normal key routing will open block.
@@ -180,10 +200,26 @@ export function createInteraction({
       // Optionally could surface a HUD hint here in future.
       return true; // consume 'v' so it doesn't collide with other mappings
     }
-    // Broad cancel: any key (other than 'v' and digits 1-9 during valid pending window) clears pending
+    // Code overlay trigger logic (smart): handled above.
+    // Equation overlay trigger logic (smart, mirrors code overlay with 'm'):
+    if(e.key==='m'){
+      const act = activeParts.active();
+      if(!(act && act.role==='assistant')) return false;
+      const pair = store.pairs.get(act.pairId);
+      const blocks = pair && pair.equationBlocks;
+      if(!blocks || blocks.length===0) return false;
+      if(blocks.length===1){ equationOverlay.show(blocks[0], pair, { index:0 }); return true; }
+      window.__mcPendingEqOpen = { ts: Date.now(), pairId: pair.id };
+      return true;
+    }
+    // Broad cancel: any key (other than 'v','m' and digits 1-9 during valid pending window) clears pending
     if(window.__mcPendingCodeOpen){
       const isDigit = /^[1-9]$/.test(e.key);
       if(e.key!=='v' && !isDigit){ window.__mcPendingCodeOpen=null }
+    }
+    if(window.__mcPendingEqOpen){
+      const isDigit = /^[1-9]$/.test(e.key);
+      if(e.key!=='m' && !isDigit){ window.__mcPendingEqOpen=null }
     }
   }
   const commandHandler = (e)=>{
@@ -487,21 +523,31 @@ export function createInteraction({
             const boundarySnapshot = boundaryMgr.getBoundary();
             const { content } = await executeSend({ store, model, topicId, userText:text, signal: undefined, visiblePairs: chrono, boundarySnapshot, onDebugPayload: (payload)=>{ historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount); requestDebug.setPayload(payload); historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length) } });
             
-            // Extract code blocks BEFORE sanitizing to preserve structure
-            const codeExtraction = extractCodeBlocks(content);
-            
-            // Sanitize the display content (with placeholders) or original if no code
-            const contentToSanitize = codeExtraction.hasCode ? codeExtraction.displayText : content;
-            const clean = sanitizeAssistantText(contentToSanitize);
-            
-            // Prepare update data
-            const updateData = { assistantText: clean, lifecycleState:'complete', errorMessage:undefined };
-            
-            // Add code data if code blocks were found
-            if (codeExtraction.hasCode) {
-              updateData.processedContent = clean; // This now contains placeholders
-              updateData.codeBlocks = codeExtraction.codeBlocks;
+            const rawText = content; // keep original for assistantText (context fidelity)
+            // 1. Code extraction first
+            const codeExtraction = extractCodeBlocks(rawText);
+            const afterCode = codeExtraction.hasCode ? codeExtraction.displayText : rawText;
+            // 2. Equation extraction (markers for simple inline)
+            const eqResult = extractEquations(afterCode, { inlineMode:'markers' });
+            const afterEq = eqResult.displayText; // contains [eq-n] placeholders + __EQINL_X__ markers
+            // 3. Segmented sanitize (skip placeholders & markers)
+            const sanitized = sanitizeDisplayPreservingTokens(afterEq);
+            // 4. Expand inline markers to spans
+            let finalDisplay = sanitized;
+            if(eqResult.inlineSimple && eqResult.inlineSimple.length){
+              for(const item of eqResult.inlineSimple){
+                const span = `<span class=\"eq-inline\" data-tex=\"${escapeHtmlAttr(item.raw)}\">${escapeHtml(item.unicode)}</span>`;
+                finalDisplay = finalDisplay.replaceAll(item.marker, span);
+              }
             }
+            // Normalize placeholder spacing: ensure one space on each side and collapse multiple spaces
+            finalDisplay = finalDisplay.replace(/\s*\[([a-z0-9_]+-\d+|eq-\d+)\]\s*/gi, ' [$1] ');
+            finalDisplay = finalDisplay.replace(/ {2,}/g,' ');
+            const updateData = { assistantText: rawText, lifecycleState:'complete', errorMessage:undefined };
+            if(codeExtraction.hasCode){ updateData.codeBlocks = codeExtraction.codeBlocks; }
+            if(eqResult.equationBlocks && eqResult.equationBlocks.length){ updateData.equationBlocks = eqResult.equationBlocks; }
+            // Always set processedContent (sanitized or enriched)
+            updateData.processedContent = (codeExtraction.hasCode || eqResult.hasEquations) ? finalDisplay : sanitizeAssistantText(rawText);
             
             store.updatePair(id, updateData);
             lifecycle.completeSend();
@@ -837,6 +883,25 @@ export function createInteraction({
     } 
   })
   const keyRouter = createKeyRouter({ modeManager, handlers:{ view:viewHandler, command:commandHandler, input:inputHandler } }); keyRouter.attach()
+
+  // Helpers for segmented sanitize preserving placeholders & inline equation markers
+  function sanitizeDisplayPreservingTokens(text){
+    if(!text) return text || '';
+    const TOKEN_REGEX = /(\[[a-zA-Z0-9_]+-\d+\]|\[eq-\d+\]|__EQINL_\d+__)/g;
+    const parts = text.split(TOKEN_REGEX).filter(p=> p!=='' && p!=null);
+    let out = '';
+    for(const part of parts){
+      if(TOKEN_REGEX.test(part)){
+        out += part; // token untouched
+      } else {
+        out += sanitizeAssistantText(part);
+      }
+      TOKEN_REGEX.lastIndex = 0;
+    }
+    return out;
+  }
+  function escapeHtmlAttr(str){ return String(str).replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[s])); }
+  function escapeHtml(str){ const div=document.createElement('div'); div.textContent=str; return div.innerHTML; }
   document.addEventListener('click', e=>{
     const partEl = e.target.closest('.part'); if(!partEl) return
     // Ignore selection changes when clicking meta parts (request was: meta never becomes active via mouse)
