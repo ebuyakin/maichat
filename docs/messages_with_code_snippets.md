@@ -1,12 +1,12 @@
 I'll create a formal specification document for the code snippet extraction and overlay system we just discussed.
 
-# Code Snippet Extraction and Overlay Display Specification
+# Code & Equation Extraction and Overlay Display Specification
 
 ## Status
 Draft - Under Discussion
 
 ## Scope
-This specification covers the extraction, display, and interaction with code snippets in MaiChat message history.
+This specification covers the extraction, display, and interaction with code snippets and (Phase 2 extension) LaTeX equations in MaiChat message history.
 
 ## See Also
 - `docs/plan.md` - M25 Message formatting milestone
@@ -15,7 +15,7 @@ This specification covers the extraction, display, and interaction with code sni
 
 ## Overview
 
-This feature introduces a system for extracting code blocks from message content, replacing them with visual placeholders in the main view, and providing an overlay system for rich code display with syntax highlighting and utility features.
+This feature introduces a system for extracting code blocks (and optionally LaTeX equations) from message content, replacing them with visual placeholders in the main view, and providing overlay systems for rich display (syntax highlighting for code; KaTeX rendering for math) with utility features.
 
 ## Motivation
 
@@ -29,7 +29,8 @@ This feature introduces a system for extracting code blocks from message content
 1. **Separation of Storage and Display**: Full message content (including code) is always preserved; only the display layer shows placeholders
 2. **Atomic Navigation Units**: Code placeholders are treated as single navigation targets
 3. **Progressive Enhancement**: Basic functionality works without JavaScript libraries; rich features load on demand
-4. **Keyboard-First Interaction**: All code viewing remains keyboard accessible
+4. **Keyboard-First Interaction**: All code & equation viewing remains keyboard accessible
+5. **Parallel Extensibility**: Math extraction mirrors code architecture without coupling (separate overlay; shared modal primitives)
 
 ## Current Message Lifecycle & Storage Implementation
 
@@ -98,6 +99,56 @@ code content
 
 **Supported Languages**: Initially support common languages (python, javascript, bash, sql, json, yaml)
 
+### 1b. Equation Detection (Optional Phase Introduced by This Revision)
+
+**Patterns Supported (initial):**
+- Inline math: `$...$` (single line, no newlines inside)
+- Display math: `$$...$$` (multi-line allowed)
+- Bracketed display: `\\[ ... \\]`
+- Environments (first pass – optional / later): `\\begin{equation} ... \\end{equation}`
+
+**Regex Strategy (sequential passes to avoid nesting conflicts):**
+1. Extract code blocks first (prevents `$` inside fenced code misleading math parser).
+2. Display math: `/\$\$([\s\S]*?)\$\$/g`
+3. Bracket math: `/\\\\\[([\s\S]*?)\\\\\]/g`
+4. Inline math (non-greedy, avoid `$$`): `/(^|[^$])\$([^\n$][^$]*?)\$(?!\$)/g`
+
+**Captured Data (equationBlocks array):**
+```javascript
+{
+  index: 1,
+#### Inline Equation Hybrid Strategy (Simple vs Complex)
+To balance readability and stability of partitioning:
+1. Classify inline math tokens as SIMPLE or COMPLEX before placeholder replacement.
+2. SIMPLE → convert directly to lightweight Unicode math inline (no placeholder, wrapped with `<span class="eq-inline" data-tex="...">…</span>`).
+3. COMPLEX → replaced by `[eq-n]` placeholder and listed in `equationBlocks`.
+
+SIMPLE heuristic (all must pass):
+- Raw TeX length ≤ 30 chars
+- Contains only alphanumerics, spaces, and symbols: `+ - = < > ≤ ≥ ( ) [ ] , . / * ^ _`
+- Allowed macros only (whitelist): `\alpha \beta \gamma \delta \epsilon \pi \mu \sigma \theta \lambda \phi \psi \omega \times \cdot \pm \to \rightarrow \leftarrow`
+- At most one level of simple superscript or subscript (no nested braces)
+- No forbidden macros: `\frac \sqrt \sum \int \begin \over \align \matrix \displaystyle \text`
+
+Conversion rules (subset):
+- Greek macros → Unicode (e.g. `\alpha`→α)
+- Arrows: `\to`, `\rightarrow`→→; `\leftarrow`→←
+- Multiplication: `\times`→×; `\cdot`→·
+- Plus/minus: `\pm`→±
+- Superscripts: `^2`→², `^3`→³, `^(-1)`→⁻¹ (strip outer parens if single token). Others fallback to caret form.
+- Subscripts digits: `_0`→₀ … `_9`→₉; `_i`→ᵢ (optional minimal set). Otherwise keep `_x` literal.
+- Normalization: collapse multiple spaces, remove surrounding `$` delimiters.
+
+All converted inline spans retain original TeX in `data-tex` for future overlay or re-render toggles.
+
+  tex: 'E=mc^2',
+  display: false,      // true if from $$ $$ or \[ \]
+  lineCount: 1,
+  startPos: <number>,
+  endPos: <number>
+}
+```
+
 ### 2. Message Processing
 
 **Extended MessagePair Structure**:
@@ -129,6 +180,17 @@ MessagePair = {
       endPos: 45
     }
   ]
+  // NEW OPTIONAL FIELDS (only present if equations detected)
+  equationBlocks: [
+    {
+      index: 1,
+      tex: 'E=mc^2',
+      display: false,
+      lineCount: 1,
+      startPos: 90,
+      endPos: 100
+    }
+  ]
 }
 ```
 **Processing Logic**:
@@ -153,9 +215,10 @@ function processMessagePair(pair) {
 
 ### 3. Placeholder Format
 
-**Single code block**: `[:language]`  
-**Multiple blocks**: `[:language-1]`, `[:language-2]`
-the code blocks are also visually highlighted with a different color (discuss with one)
+Code (implemented): `[python-1]`, `[code-2]` (green styling).  
+Equations (new): `[eq-1]`, `[eq-2]` (distinct styling, e.g. teal).  
+Placeholders always surrounded by single spaces: ` ... [eq-1] ... ` to ensure tokenizer clarity.  
+Both placeholder classes: `.code-placeholder`, `.eq-placeholder`.
 
 
 ### 4. Overlay Trigger Mechanism
@@ -175,6 +238,15 @@ the code blocks are also visually highlighted with a different color (discuss wi
 - `v2` while overlay open: splits view to show both blocks
 - `v3` while showing 1+2: shows all three blocks
 - User can configure horizontal/vertical split preference
+
+Equation overlay uses a separate trigger to avoid cognitive overload.
+
+**Equation Trigger (parallel design – initial simple form):**
+- `m` when focused on assistant part containing at least one equation placeholder:
+  - Single equation → open equation overlay at index 0.
+  - Multiple → pending state; next digit `1..9` selects (same pattern as code `v`).
+- `m1..m9` direct.
+- Inside overlay: `n/p` navigate equations; `j/k/d/u` scroll; `c` copies TeX; Esc closes.
 
 ### 5. Code Overlay Features
 
@@ -205,6 +277,23 @@ the code blocks are also visually highlighted with a different color (discuss wi
 - Maximum 4 frames (practical limit for readability)
 - Vertical split default, horizontal split option in settings
 
+### 5b. Equation Overlay Features (New)
+**Layout:** Reuses modal foundation; single-frame (Phase 1) with planned multi-snippet navigation same as code.
+
+**Rendering:** Lazy-load KaTeX (MIT) on first equation overlay open. If load fails, show raw TeX with fallback styling.
+
+**Keyboard:**
+- `n/p` next / previous equation (if >1)
+- `j/k` line scroll, `d/u` half-page (shared logic)
+- `c` copy raw TeX
+- (Future) `y` yank; `g/G` top/bottom
+
+**Footer Hint:** Mirrors code overlay (navigation hint left, copy button right).
+
+**Accessibility:** Use `role="dialog"` and label with equation index `(1/N)`.
+
+**Deferred (Phase 2+):** multi-frame simultaneous equations, rendered inline preview toggle, equation numbering alignment with source positions.
+
 ### 6. Context Preservation
 
 When building context for API requests:
@@ -214,19 +303,31 @@ When building context for API requests:
 
 ### 7. Implementation Phases
 
-**Phase 1 - Core Extraction** (MVP):
+**Phase 1 - Core Extraction (Code) / Math Extraction (Parallel MVP)**:
 - Code detection and extraction
 - Placeholder replacement
 - Basic overlay with raw code display
 - Context preservation
 
-**Phase 2 - Rich Display**:
+**Phase 2 - Rich Display (Code)**:
 - Lazy load syntax highlighter (Prism.js)
 - Line numbers
 - Copy functionality
 - Language detection
 
-**Phase 3 - Enhanced Features**:
+**Phase 2b - Math Display:**
+- KaTeX load + render
+- Copy TeX
+- Navigation (n/p)
+ - Inline SIMPLE math Unicode conversion (hybrid) — may also land at end of Phase 1b if low-risk
+
+**Phase 3 - Enhanced Features (Code)**:
+**Phase 3b - Enhanced Features (Math):**
+- Multi-frame equation viewing
+- Inline preview on hover or focus
+- Export LaTeX snippet
+- Alignment / numbering (equation tags)
+
 - Code block navigation (n/p between blocks)
 - Export individual code blocks
 - Inline preview on hover (optional)
@@ -239,6 +340,11 @@ When building context for API requests:
 3. **Empty code blocks**: Ignore or show minimal placeholder
 4. **Very long code**: Limit initial display, scroll for more
 5. **Unsupported languages**: Default to plain text highlighting
+
+Additional math-specific edge cases:
+6. Escaped dollars `\$` not treated as math delimiters
+7. Avoid nested math detection (do not recurse inside already captured blocks)
+8. Very large display math (truncate visually but keep full TeX for overlay)
 
 ### 9. Performance Considerations
 
@@ -261,14 +367,19 @@ When building context for API requests:
 ## Acceptance Criteria
 
 - [ ] Code blocks are correctly detected and extracted
-- [ ] Navigation with j/k treats placeholders as single units
-- [ ] Context sent to API includes full code
-- [ ] C key opens overlay when on code placeholder
-- [ ] Overlay displays code with proper formatting
+- [ ] Equation blocks (math expressions) detected & extracted without corrupting code parsing order
+- [ ] Navigation with j/k treats placeholders as single units (both code + eq)
+- [ ] Context sent to API includes full code & equations (original assistantText)
+- [ ] V key family opens code overlay; M key family opens equation overlay
+- [ ] Code overlay displays syntax-highlighted code (basic highlight Phase 1 ok)
+- [ ] Equation overlay displays KaTeX-rendered math (or raw TeX fallback)
+- [ ] SIMPLE inline math tokens rendered as Unicode inline spans (no placeholder)
+- [ ] COMPLEX math replaced with `[eq-n]` placeholders and appears in overlay
+- [ ] Each converted inline span preserves original TeX in `data-tex`
 - [ ] Esc closes overlay and returns focus
-- [ ] Multiple code blocks are numbered and accessible
-- [ ] No impact on non-code messages
-- [ ] Performance remains smooth with 100+ code blocks
+- [ ] Multiple code & equation blocks are numbered and individually accessible via digit shortcuts
+- [ ] No impact on messages without code/equations
+- [ ] Performance remains smooth with 100+ code + 100+ equation placeholders
 
 ## Open Questions
 
@@ -277,10 +388,14 @@ When building context for API requests:
 3. Should code language be auto-detected if not specified?
 4. Do we need a visual indicator for "code available" in the part?
 5. Should extracted code be searchable via the filter language?
+6. Provide unified overlay (tabs) vs separate overlays? (Current: separate → simpler lifecycle)
+7. Inline rendering of small inline math (heuristic threshold)?
+8. Should equation indexing continue across an entire conversation or restart per message?
 
 ## Dependencies
 
 - Optional: Prism.js (~20KB) for syntax highlighting
+- KaTeX (lazy-loaded) for equation rendering
 - Optional: Clipboard API polyfill for older browsers
 
 ## File Structure
@@ -291,6 +406,8 @@ src/features/codeDisplay/
 ├── codeExtractor.js      // Detection & extraction logic
 ├── codeOverlay.js        // Multi-frame overlay UI component  
 ├── codeOverlay.css       // Overlay and frame styles
+├── equationExtractor.js  // LaTeX math detection & extraction
+├── equationOverlay.js    // KaTeX rendering overlay (single-frame initial)
 ├── frameManager.js       // Frame splitting and layout logic
 └── codeDisplay.js        // Main module (renamed from index.js)
 ```
