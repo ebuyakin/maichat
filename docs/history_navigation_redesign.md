@@ -81,44 +81,42 @@ Boundary behavior:
 
 ## 7. Message Navigation Controller (new API)
 
-Introduce a Message Navigation Controller to replace the Part Controller in VIEW mode:
+Introduce a Message Navigation Controller to replace the Part Controller in VIEW mode.
 
 State
 - activeMessageId: string
 
 Methods
-- Replace Part Controller with a Message Navigation Controller (one‑way migration). No feature flags; direct replacement.
-- Allow minimal compatibility shims during the short transition (same PR chain), but do not keep both mechanisms active at runtime.
+- stepScroll(deltaPx): apply a scroll increment to the inner History container, then update Active Message based on viewport vs message bounds (switch when the active message fully exits on the scrolled side).
+- jumpToMessage(messageId, anchor: 'top'|'bottom'): jump to a specific message (user or assistant) and align accordingly. Top anchor considers configured `messageMarginPx`. Bottom anchor aligns message bottom within the viewport while margins/overlays remain in place. Special case: last message bottom‑anchor rule.
 - alignToMessage(messageId, anchor: 'top'|'bottom'|'center', animate: boolean): one‑shot alignment using the scroll controller.
-- getActiveMessageRect(): returns viewport‑relative rect of the active block (for debug/tests).
+- getActiveMessageRect(): return viewport‑relative rect of the active message (for debug/tests).
 
 Integration
-### 8.2 Rendering changes
-- History renderer outputs 2 blocks per pair: user block; assistant block that includes its meta header. Remove part IDs and partition markup.
-- Define stable `messageId` for each block (e.g., `pairId:user`, `pairId:assistant`) for controller/DOM coordination.
-- Keep badge structure (stars/flag/topic) inside the assistant header area.
-- History runtime exposes message block rects keyed by messageId (e.g., `pairId:user`, `pairId:assistant`); controller reads them to decide active transitions.
-- Scroll controller is reused; no persistent policy. One‑shot ensureVisible/alignTo are applied via alignToMessage.
+- History runtime exposes message block rects keyed by `messageId` (e.g., `pairId:user`, `pairId:assistant`); the controller reads them to decide active transitions.
+- Scroll controller is reused; policy‑free. One‑shot ensureVisible/align operations use margins/padding (no outer‑gap concept).
 
-## 8. Migration plan (from Parts → Fragment)
+## 8. Implementation plan (Parts → Messages)
 
 ### 8.1 Architecture shifts
-- Replace Part Controller with Message Navigation Controller behind a feature flag `settings.messageNavigation`.
-- Maintain both systems temporarily; choose at runtime based on the flag.
+- Replace Part Controller with a Message Navigation Controller (one‑way migration). No feature flags; direct replacement.
+- Allow minimal compatibility shims during the short transition (same PR chain), but do not keep both mechanisms active at runtime.
 
 ### 8.2 Rendering changes
 - History renderer outputs 2 blocks per pair: user block; assistant block that includes its meta header. Remove part IDs and partition markup.
+- Define stable `messageId` for each block (e.g., `pairId:user`, `pairId:assistant`) and set it on DOM via `data-message-id` and `data-role`.
+- Use `.message` elements instead of `.part` in markup and selectors; update fade/out‑of‑context logic to target `#history > .message`.
 - Keep badge structure (stars/flag/topic) inside the assistant header area.
 
 ### 8.3 Key routing (VIEW)
-- Replace part navigation with scroll‑based handlers: j/k/J/K call stepScroll with small/big deltas.
-- Map d/u to message jumps (top anchor).
-- Preserve g/G behaviors and ESC/ENTER mode transitions.
+- Replace part navigation with scroll‑based handlers: j/k/J/K call `stepScroll` with small/big deltas.
+- Map d/u to message jumps (top anchor; last‑message special case). Preserve g/G as absolute jumps (first/top and last/bottom).
+- Mouse: clicking a `.message` sets Active Message; do not auto‑scroll.
 
 ### 8.4 Anchoring and clamps
-- Replace Outer Gap padding with per‑message margins; alignment targets compute against message top/bottom plus configured `messageMarginPx`.
+- Use per‑message margins and inner padding; compute anchors against message top/bottom plus configured `messageMarginPx`.
 - Retain dead‑band stabilization (avoid micro‑jitter near the anchor).
-- j/k = plain scroll increments; d/u/g/G = one‑shot align per anchor.
+- j/k = plain scroll increments (instant); d/u = smooth jumps by default; G always bottom‑anchors last message.
 
 ### 8.5 Tests (update and add)
 - Long assistant with internal code block: scrolling traverses without DOM reflow; content intact.
@@ -127,10 +125,28 @@ Integration
 - Clicking assistant header (meta) behaves like assistant block; sets Active Message accordingly.
 - No regression in filter/export/provider/token budgeting tests (unchanged).
 
-### 8.6 Rollout
-- Phase A (Flagged): ship Fragment Controller under settings flag; legacy parts remain default.
-- Phase B (Default): enable fragment navigation by default; retain legacy parts under a hidden flag.
-- Phase C (Remove): delete partitioner code and legacy tests after stabilization.
+### 8.6 Sequenced steps (no dual maintenance)
+- Step A — Extract key handlers (no behavior change)
+  - Files: create `src/features/interaction/viewKeys.js`, `commandKeys.js`, `inputKeys.js`.
+  - Move current `viewHandler`, `commandHandler`, `inputHandler` from `interaction.js` into these files; export factories; rewire `createKeyRouter`.
+  - Success: build/tests pass; behavior unchanged; `interaction.js` smaller.
+
+- Step B — Message model and render
+  - Files: add `src/features/history/messageModel.js` (MessageList builder), `ActiveMessageController`.
+  - Update `historyView` to render `.message.user` and `.message.assistant` (assistant contains `<meta-line>`); update out‑of‑context styling/badges for `.message`.
+  - Success: visual parity; compiles with existing scroll logic.
+
+- Step C — Scroll controller: message metrics and API
+  - Update `src/features/history/scrollControllerV3.js` to measure `#history > .message`; add `stepScroll`, `jumpToMessage`, `alignToMessage`.
+  - Success: deterministic positioning; margins/overlays intact.
+
+- Step D — Wire navigation
+  - VIEW: j/k/J/K → `stepScroll`; d/u/g/G per spec; click sets Active Message by `data-message-id`.
+  - Success: keyboard/mouse navigation matches spec.
+
+- Step E — Remove legacy and update tests
+  - Remove `partitioner.js`, `parts.js`; update selectors, fade logic, and tests from `.part` to `.message`.
+  - Success: all tests green; no references to parts/partitioner remain.
 
 ## 9. Open values for review
 - Defaults: `scrollStepPx` (proposed 200), `scrollBigStepPx` (proposed 500).
