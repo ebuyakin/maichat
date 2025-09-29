@@ -121,7 +121,7 @@ export function createInputKeyHandler({
         // Focus the new pair's last user part explicitly (meta remains non-focusable)
         try {
           const pane = document.getElementById('historyPane')
-          const userEls = pane ? pane.querySelectorAll(`.part[data-pair-id="${id}"][data-role="user"]`) : null
+            const userEls = pane ? pane.querySelectorAll(`.message[data-pair-id="${id}"][data-role="user"], .part[data-pair-id="${id}"][data-role="user"]`) : null
           const lastUserEl = userEls && userEls.length ? userEls[userEls.length-1] : null
           if(lastUserEl){
             const lastUserId = lastUserEl.getAttribute('data-part-id')

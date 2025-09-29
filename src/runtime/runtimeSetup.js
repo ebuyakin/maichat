@@ -10,7 +10,7 @@ import { getSettings } from '../core/settings/index.js'
 import { getActiveModel } from '../core/models/modelCatalog.js'
 // History feature (post Phase 6.1 transplant)
 import { createHistoryView, bindHistoryErrorActions } from '../features/history/historyView.js'
-import { ActivePartController } from '../features/history/parts.js'
+import { ActivePartController } from '../features/history/parts.js' // TODO: replace with message controller in Step 4
 import { createScrollController } from '../features/history/scrollControllerV3.js'
 import { createNewMessageLifecycle } from '../features/history/newMessageLifecycle.js'
 import { createBoundaryManager } from '../core/context/boundaryManager.js'

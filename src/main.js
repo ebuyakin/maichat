@@ -7,7 +7,6 @@ import { bindHistoryErrorActions } from './features/history/historyView.js'
 import { createHistoryRuntime } from './features/history/historyRuntime.js'
 import { getSettings, subscribeSettings } from './core/settings/index.js'
 import { decideRenderAction } from './runtime/renderPolicy.js'
-import { invalidatePartitionCacheOnResize } from './features/history/partitioner.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
@@ -162,8 +161,9 @@ subscribeSettings((s)=>{
   // Maintain previous snapshot for next diff
   __prevSettings = { ...s }
   // Partition cache invalidation for line budget changes
-  if(s.partFraction !== __lastPF){ __lastPF = s.partFraction; invalidatePartitionCacheOnResize() }
-  if(s.partPadding !== __lastPadding){ __lastPadding = s.partPadding; invalidatePartitionCacheOnResize() }
+  // Partition cache invalidation removed in message-based rendering
+  if(s.partFraction !== __lastPF){ __lastPF = s.partFraction }
+  if(s.partPadding !== __lastPadding){ __lastPadding = s.partPadding }
   if(action === 'rebuild'){
     applySpacingStyles(s)
     layoutHistoryPane()

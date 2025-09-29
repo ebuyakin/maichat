@@ -28,7 +28,7 @@ export function createNewMessageLifecycle({ store, activeParts, commandInput, re
 				const pane = document.getElementById('historyPane'); if(!pane) return
 				const input = document.getElementById('inputField')
 				const inputEmpty = !input || input.value.trim().length === 0
-				const replyParts = Array.from(pane.querySelectorAll(`.part[data-pair-id="${pairId}"][data-role="assistant"]`))
+				const replyParts = Array.from(pane.querySelectorAll(`.message[data-pair-id="${pairId}"][data-role="assistant"], .part[data-pair-id="${pairId}"][data-role="assistant"]`))
 				if(!replyParts.length) return
 				const first = replyParts[0]
 				const last = replyParts[replyParts.length-1]
@@ -79,7 +79,7 @@ export function createNewMessageLifecycle({ store, activeParts, commandInput, re
 	function isPairVisibleInCurrentFilter(pairId){
 		if(!hasDocument) return true
 		if(!activeFilterQuery) return true
-		return !!document.querySelector(`.part[data-pair-id="${pairId}"]`)
+		return !!document.querySelector(`.message[data-pair-id="${pairId}"], .part[data-pair-id="${pairId}"]`)
 	}
 	function jumpToNewReply(){ return false }
 	function updateNewReplyBadgeVisibility(){}

@@ -1,9 +1,7 @@
 // historyRuntime moved from ui/history/historyRuntime.js
-import { buildParts } from './parts.js'
-import { shouldUseMessageView } from './featureFlags.js'
 import { buildMessages, flattenMessagesToParts } from './messageList.js'
 import { getSettings } from '../../core/settings/index.js'
-import { invalidatePartitionCacheOnResize } from './partitioner.js'
+// partitioner removed in message-based rendering
 import { parse } from '../command/parser.js'
 import { evaluate } from '../command/evaluator.js'
 import { getActiveModel } from '../../core/models/modelCatalog.js'
@@ -43,8 +41,8 @@ export function createHistoryRuntime(ctx){
     const delta = Math.abs(h - lastViewportH) / lastViewportH
     if(delta >= 0.10){
       lastViewportH = h
-      invalidatePartitionCacheOnResize()
-      renderCurrentView({ preserveActive:true })
+  // No partition cache; just re-render preserving active
+  renderCurrentView({ preserveActive:true })
       // After resize rebuild, keep the currently focused part on-screen (non-intrusive)
       try {
         const act = activeParts && activeParts.active && activeParts.active()
@@ -70,18 +68,11 @@ export function createHistoryRuntime(ctx){
     lastContextStats = boundary.stats
     lastContextIncludedIds = new Set(boundary.included.map(p=>p.id))
     lastPredictedCount = boundary.included.length
-    if(shouldUseMessageView()){
-      const messages = buildMessages(pairs)
-      const parts = flattenMessagesToParts(messages)
-      activeParts.setParts(parts)
-      // Expose messages for potential future use on ctx
-      try { ctx.__messages = messages } catch {}
-      historyView.renderMessages(messages)
-    } else {
-      const parts = buildParts(pairs)
-      activeParts.setParts(parts)
-      historyView.render(parts)
-    }
+    const messages = buildMessages(pairs)
+    const parts = flattenMessagesToParts(messages)
+    activeParts.setParts(parts)
+    try { ctx.__messages = messages } catch {}
+    historyView.renderMessages(messages)
   // Apply initial fade state before first paint to avoid bright-then-dim flicker on re-render
   updateFadeVisibility({ initial: true })
   applyOutOfContextStyling()
@@ -137,13 +128,13 @@ export function createHistoryRuntime(ctx){
     }
   }
   function applyActivePart(){
-    document.querySelectorAll('.part.active').forEach(el=>el.classList.remove('active'))
+    // Remove legacy and message active classes, then set on the current message node
+    document.querySelectorAll('.part.active, .message.active').forEach(el=>el.classList.remove('active'))
     const act = activeParts.active(); if(!act) return
-    const el = document.querySelector(`[data-part-id="${act.id}"]`)
+    const el = document.querySelector(`.message[data-part-id="${act.id}"]`) || document.querySelector(`[data-part-id="${act.id}"]`)
     if(el){
       el.classList.add('active')
-  // Highlight only; caller triggers one-shot alignment when needed
-  scrollController.setActiveIndex(activeParts.activeIndex)
+      scrollController.setActiveIndex(activeParts.activeIndex)
       updateFadeVisibility()
     }
   }
@@ -152,8 +143,8 @@ export function createHistoryRuntime(ctx){
     const settings = getSettings()
     const pane = historyPaneEl
     if(!pane) return
-    const parts = pane.querySelectorAll('#history > .part')
-    applyFadeVisibility({ paneEl: pane, parts, settings, initial })
+  const nodes = pane.querySelectorAll('#history > .message, #history > .part')
+  applyFadeVisibility({ paneEl: pane, parts: nodes, settings, initial })
   }
   historyPaneEl.addEventListener('scroll', ()=> updateFadeVisibility())
   function renderStatus(){
@@ -179,14 +170,23 @@ export function createHistoryRuntime(ctx){
     else { el.title = (newestHidden? 'Latest message hidden by filter. ' : '') + 'Predicted Included / Visible' }
   }
   function applyOutOfContextStyling(){
-    const partEls = document.querySelectorAll('#history .part')
-    partEls.forEach(el=>{
+    const els = document.querySelectorAll('#history .message, #history .part')
+    els.forEach(el=>{
       const partId = el.getAttribute('data-part-id')
       if(!partId) return
       const partObj = activeParts.parts.find(p=> p.id === partId)
       if(!partObj) return
       const included = lastContextIncludedIds.has(partObj.pairId)
       el.classList.toggle('ooc', !included)
+      // In message layout, adjust offctx badge inside assistant meta
+      if(el.classList.contains('message') && el.getAttribute('data-role')==='assistant'){
+        const off = el.querySelector('.assistant-meta .badge.offctx')
+        if(off){
+          if(!included){ off.textContent = 'off'; off.setAttribute('data-offctx','1') }
+          else { off.textContent = ''; off.setAttribute('data-offctx','0') }
+        }
+      }
+      // Legacy meta support
       if(el.classList.contains('meta')){
         const off = el.querySelector('.badge.offctx')
         if(off){
