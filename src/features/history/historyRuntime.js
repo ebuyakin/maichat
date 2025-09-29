@@ -53,6 +53,48 @@ export function createHistoryRuntime(ctx){
       } catch {}
     }
   })
+  // Track scroll direction for viewport-based active switching
+  let __lastScrollTop = historyPaneEl ? historyPaneEl.scrollTop : 0
+  function updateActiveOnScroll(){
+    const pane = historyPaneEl; if(!pane) return
+    try {
+      const isProg = ctx.scrollController && ctx.scrollController.isProgrammaticScroll && ctx.scrollController.isProgrammaticScroll()
+      const lastKey = (window && window.__lastKey) || ''
+      const isStepKey = lastKey==='j' || lastKey==='k' || lastKey==='J' || lastKey==='K' || lastKey==='ArrowDown' || lastKey==='ArrowUp'
+      // Permit active switching for user-initiated step scrolls (j/k), but ignore ongoing smooth animations
+      if(isProg && !isStepKey){ __lastScrollTop = pane.scrollTop; return }
+      const dirDown = pane.scrollTop > __lastScrollTop + 1
+      const dirUp = pane.scrollTop < __lastScrollTop - 1
+      __lastScrollTop = pane.scrollTop
+      if(!dirDown && !dirUp) return
+      const act = activeParts.active && activeParts.active(); if(!act) return
+      const el = pane.querySelector(`.message[data-part-id="${act.id}"]`) || pane.querySelector(`[data-part-id="${act.id}"]`)
+      if(!el) return
+      const paneRect = pane.getBoundingClientRect()
+      const r = el.getBoundingClientRect()
+      const topRel = r.top - paneRect.top
+      const bottomRel = r.bottom - paneRect.top
+      const fullyAbove = bottomRel <= 0
+      const fullyBelow = topRel >= paneRect.height
+      if((dirDown && fullyAbove) || (dirUp && fullyBelow)){
+        // Compute first/last visible message
+        const nodes = Array.from(pane.querySelectorAll('#history > .message'))
+        let firstVis = null, lastVis = null
+        for(const n of nodes){
+          const nr = n.getBoundingClientRect()
+          const nTop = nr.top - paneRect.top
+          const nBottom = nr.bottom - paneRect.top
+          const visible = (nBottom > 0) && (nTop < paneRect.height)
+          if(visible){ if(!firstVis) firstVis = n; lastVis = n }
+        }
+        const target = dirDown ? firstVis : lastVis
+        if(target){
+          const id = target.getAttribute('data-part-id') || target.getAttribute('data-message-id')
+          if(id){ activeParts.setActiveById(id); applyActivePart() }
+        }
+      }
+    } catch {}
+  }
   function applySpacingStyles(settings){
     applySpacingStylesHelper(settings)
   }
@@ -146,7 +188,7 @@ export function createHistoryRuntime(ctx){
   const nodes = pane.querySelectorAll('#history > .message, #history > .part')
   applyFadeVisibility({ paneEl: pane, parts: nodes, settings, initial })
   }
-  historyPaneEl.addEventListener('scroll', ()=> updateFadeVisibility())
+  historyPaneEl.addEventListener('scroll', ()=>{ updateFadeVisibility(); updateActiveOnScroll() })
   function renderStatus(){
     const modeEl = document.getElementById('modeIndicator')
     if(!modeEl) return

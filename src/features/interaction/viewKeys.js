@@ -39,48 +39,65 @@ export function createViewKeyHandler({
       return true
     }
 
-    if(e.key==='j' || e.key==='ArrowDown'){
-      activeParts.next();
-      historyRuntime.applyActivePart();
-      const act = activeParts.active(); if(act){
-        if(getReadingMode() && scrollController && scrollController.alignTo){ scrollController.alignTo(act.id, 'center', false) }
-        else if(scrollController && scrollController.ensureVisible){ scrollController.ensureVisible(act.id, false) }
-      }
+    // Scrolling steps on messages
+    if(e.key==='j' || e.key==='ArrowDown' || e.key==='J'){
+      window.__lastKey = e.key
+      const s = (window.getSettings ? window.getSettings() : null) || (historyRuntime && historyRuntime.getSettings && historyRuntime.getSettings()) || {}
+      const step = (e.key==='J') ? (s.scrollBigStepPx||500) : (s.scrollStepPx||200)
+      if(scrollController && scrollController.stepScroll){ scrollController.stepScroll(step) }
       return true
     }
-    if(e.key==='k' || e.key==='ArrowUp'){
-      activeParts.prev();
-      historyRuntime.applyActivePart();
-      const act = activeParts.active(); if(act){
-        if(getReadingMode() && scrollController && scrollController.alignTo){ scrollController.alignTo(act.id, 'center', false) }
-        else if(scrollController && scrollController.ensureVisible){ scrollController.ensureVisible(act.id, false) }
-      }
+    if(e.key==='k' || e.key==='ArrowUp' || e.key==='K'){
+      window.__lastKey = e.key
+      const s = (window.getSettings ? window.getSettings() : null) || (historyRuntime && historyRuntime.getSettings && historyRuntime.getSettings()) || {}
+      const step = (e.key==='K') ? (s.scrollBigStepPx||500) : (s.scrollStepPx||200)
+      if(scrollController && scrollController.stepScroll){ scrollController.stepScroll(-step) }
       return true
     }
     if(e.key==='g'){
-      activeParts.first();
-      historyRuntime.applyActivePart();
-      const act = activeParts.active(); if(act){ if(scrollController && scrollController.ensureVisible){ scrollController.ensureVisible(act.id, false) } }
-      setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
-      return true
+      activeParts.first(); historyRuntime.applyActivePart();
+      const act = activeParts.active(); if(act && scrollController && scrollController.alignToMessage){ scrollController.alignToMessage(act.id, 'top', false) }
+      setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false); return true
     }
     if(e.key==='G'){
-      activeParts.last();
-      historyRuntime.applyActivePart();
-      const act = activeParts.active(); if(act){ if(scrollController && scrollController.alignTo){ scrollController.alignTo(act.id, 'bottom', false) } }
-      setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
-      return true
+      activeParts.last(); historyRuntime.applyActivePart();
+      const act = activeParts.active(); if(act && scrollController && scrollController.alignToMessage){ scrollController.alignToMessage(act.id, 'bottom', false) }
+      setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false); return true
     }
     // Jump to first in-context (included) pair and center it (one-shot, does not toggle Reading Mode)
     if((e.key==='O' && e.shiftKey) || e.key==='o'){
       historyRuntime.jumpToBoundary();
       try {
         const act = activeParts.active();
-        if(act && scrollController && scrollController.alignTo){
-          scrollController.alignTo(act.id, 'center', false)
+        if(act && scrollController && scrollController.alignToMessage){
+          scrollController.alignToMessage(act.id, 'center', false)
         }
       } catch {}
       return true
+    }
+    // d/u: jump to next/prev message and align to top (last message aligns bottom)
+    if(e.key==='d'){
+      const curIdx = activeParts.activeIndex || 0
+      const nextIdx = Math.min(curIdx+1, activeParts.parts.length-1)
+      const next = activeParts.parts[nextIdx]
+      if(next){
+        activeParts.setActiveById(next.id); historyRuntime.applyActivePart()
+        const isLast = nextIdx === activeParts.parts.length-1
+        if(scrollController && scrollController.jumpToMessage){ scrollController.jumpToMessage(next.id, isLast ? 'bottom' : 'top', true) }
+        setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
+        return true
+      }
+    }
+    if(e.key==='u'){
+      const curIdx = activeParts.activeIndex || 0
+      const prevIdx = Math.max(0, curIdx-1)
+      const prev = activeParts.parts[prevIdx]
+      if(prev){
+        activeParts.setActiveById(prev.id); historyRuntime.applyActivePart()
+        if(scrollController && scrollController.jumpToMessage){ scrollController.jumpToMessage(prev.id, 'top', true) }
+        setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
+        return true
+      }
     }
     // Pending code overlay digit selection must take precedence over star rating
     if(/^[1-9]$/.test(e.key) && window.__mcPendingCodeOpen){

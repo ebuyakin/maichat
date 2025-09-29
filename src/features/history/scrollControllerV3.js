@@ -21,12 +21,12 @@ export function createScrollController({ container, getParts }){
 		const settings = getSettings()
 		const edgeGap = settings.gapOuterPx || 0
 		const paneH = container.clientHeight
-		const nodeList = Array.from(container.querySelectorAll('#history > *'))
+		const nodeList = Array.from(container.querySelectorAll('#history > .message, #history > .part'))
 		const parts = []
 		const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
 		for(let i=0;i<nodeList.length;i++){
 			const node = nodeList[i]
-			if(!node.classList.contains('part')) continue
+			if(!node.classList.contains('part') && !node.classList.contains('message')) continue
 			const h = node.offsetHeight
 			const start = node.offsetTop - padTop
 			let gBefore = 0
@@ -36,7 +36,8 @@ export function createScrollController({ container, getParts }){
 				const rawGap = start - prevBottom
 				if(rawGap > 0) gBefore = rawGap
 			} else { if(start > 0) gBefore = start }
-			parts.push({ id: node.getAttribute('data-part-id'), h, g: gBefore, start })
+			const id = node.getAttribute('data-part-id') || node.getAttribute('data-message-id')
+			parts.push({ id, h, g: gBefore, start })
 		}
 		let totalContentH = 0
 		if(parts.length){
@@ -282,5 +283,9 @@ export function createScrollController({ container, getParts }){
 			scheduleValidate()
 		}
 
-		return { remeasure: measure, apply, setActiveIndex, debugInfo, setAnimationEnabled, suppressNextValidate, isProgrammaticScroll, alignTo, ensureVisible }
+	function stepScroll(deltaPx){ if(!Number.isFinite(deltaPx)) return; cancelAnimation(); setScrollTopProgrammatic(container.scrollTop + deltaPx); scheduleValidate() }
+	function indexByMessageId(messageId){ return findIndexById(messageId) }
+	function alignToMessage(messageId, anchor='top', animate=false){ alignTo(messageId, anchor, animate) }
+	function jumpToMessage(messageId, anchor='top', animate=true){ alignTo(messageId, anchor, animate) }
+	return { remeasure: measure, apply, setActiveIndex, debugInfo, setAnimationEnabled, suppressNextValidate, isProgrammaticScroll, alignTo, ensureVisible, stepScroll, indexByMessageId, alignToMessage, jumpToMessage }
 }

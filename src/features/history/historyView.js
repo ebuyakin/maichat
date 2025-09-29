@@ -196,10 +196,10 @@ export function bindHistoryErrorActions(rootEl, { onResend, onDelete }) {
 			const btn = e.target.closest('button[data-action]')
 			if(!btn) return
 			const action = btn.dataset.action
-			// Find nearest rendered part element and read pair id from data attribute
-			const partEl = btn.closest('.part[data-pair-id]')
-			if(!partEl) return
-			const pairId = partEl.getAttribute('data-pair-id')
+			// Find nearest message element and read pair id
+			const host = btn.closest('.message.assistant[data-pair-id], .part[data-pair-id]')
+			if(!host) return
+			const pairId = host.getAttribute('data-pair-id')
 			if(action === 'resend' && onResend) onResend(pairId)
 			else if(action === 'delete' && onDelete) onDelete(pairId)
 		})

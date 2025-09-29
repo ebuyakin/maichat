@@ -10,7 +10,8 @@ import { getSettings } from '../core/settings/index.js'
 import { getActiveModel } from '../core/models/modelCatalog.js'
 // History feature (post Phase 6.1 transplant)
 import { createHistoryView, bindHistoryErrorActions } from '../features/history/historyView.js'
-import { ActivePartController } from '../features/history/parts.js' // TODO: replace with message controller in Step 4
+// Minimal active controller compatible with message ids (pairId:u / pairId:a)
+class ActivePartController { constructor(){ this.parts=[]; this.activeIndex=0 } setParts(parts){ const prev=this.active(); this.parts=parts||[]; if(prev){ const idx=this.parts.findIndex(p=>p.id===prev.id); if(idx!==-1) this.activeIndex=idx; else if(this.activeIndex>=this.parts.length) this.activeIndex=this.parts.length?this.parts.length-1:0 } else { if(this.activeIndex>=this.parts.length) this.activeIndex=this.parts.length?this.parts.length-1:0 } } setActiveById(id){ const i=this.parts.findIndex(p=>p.id===id); if(i!==-1) this.activeIndex=i } active(){ return this.parts[this.activeIndex] } first(){ if(this.parts.length) this.activeIndex=0 } last(){ if(this.parts.length) this.activeIndex=this.parts.length-1 } next(){ if(this.activeIndex < this.parts.length-1) this.activeIndex++ } prev(){ if(this.activeIndex > 0) this.activeIndex-- } }
 import { createScrollController } from '../features/history/scrollControllerV3.js'
 import { createNewMessageLifecycle } from '../features/history/newMessageLifecycle.js'
 import { createBoundaryManager } from '../core/context/boundaryManager.js'
