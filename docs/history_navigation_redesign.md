@@ -1,4 +1,4 @@
-# History Navigation Redesign (Fragment-Based)
+# History Navigation Redesign (Message-based)
 
 Status: Draft (for review)
 Scope: History navigation and rendering only; no change to filtering, context assembly, or provider pipelines.
@@ -10,6 +10,10 @@ See also: `ui_layout.md`, `ui_view_reading_behaviour.md`, `scroll_positioning_sp
 Replace the existing “message partitioning” navigation with a continuous rendering of each message (no DOM parts). Navigation is scroll‑based (j/k) and switches the Active Message when the viewport moves past the current message’s bounds. This preserves content integrity (code, math, markdown) while keeping discrete, keyboard‑first reading.
 
 Source of truth for behavior: the prototype in `docs/history_view_template/`.
+
+### 1.1 Dual purpose
+- UX redesign: simplify reading/navigation by operating on messages (user/assistant), using per‑message margins/padding and fixed gradient overlays; remove artificial “parts” and any extra layout entities.
+- Codebase refactor: simplify architecture and reduce complexity by removing the partitioner/parts pipeline, shrinking `interaction.js` via key‑handler extraction, and introducing a small Message Navigation Controller with clear, stable APIs.
 
 ## 2. Terms (MaiChat mapping)
 - History Workspace: the inner scroll container (e.g., `#history` / `.text-container`) inside a non‑scrolling outer wrapper (`#historyPane`).
@@ -83,12 +87,16 @@ State
 - activeMessageId: string
 
 Methods
-- stepScroll(deltaPx): apply a scroll increment to the inner History container, then update Active Message based on viewport vs message bounds (prototype rule: if the active message fully exits on the scrolled side, switch to next/previous).
-- jumpToMessage(messageId, anchor: 'top'|'bottom'): jump to a specific message (user or assistant block) and align accordingly. Top anchor considers configured `messageMarginPx`; bottom anchor aligns the block bottom within the viewport while margins/overlays remain in place.
+- Replace Part Controller with a Message Navigation Controller (one‑way migration). No feature flags; direct replacement.
+- Allow minimal compatibility shims during the short transition (same PR chain), but do not keep both mechanisms active at runtime.
 - alignToMessage(messageId, anchor: 'top'|'bottom'|'center', animate: boolean): one‑shot alignment using the scroll controller.
 - getActiveMessageRect(): returns viewport‑relative rect of the active block (for debug/tests).
 
 Integration
+### 8.2 Rendering changes
+- History renderer outputs 2 blocks per pair: user block; assistant block that includes its meta header. Remove part IDs and partition markup.
+- Define stable `messageId` for each block (e.g., `pairId:user`, `pairId:assistant`) for controller/DOM coordination.
+- Keep badge structure (stars/flag/topic) inside the assistant header area.
 - History runtime exposes message block rects keyed by messageId (e.g., `pairId:user`, `pairId:assistant`); controller reads them to decide active transitions.
 - Scroll controller is reused; no persistent policy. One‑shot ensureVisible/alignTo are applied via alignToMessage.
 
