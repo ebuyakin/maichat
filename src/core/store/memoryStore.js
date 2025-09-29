@@ -13,6 +13,7 @@ export class MemoryStore { constructor(){ this.pairs=new Map(); this.topics=new 
     }
     return true }
   deleteTopic(id){ if(id===this.rootTopicId) return false; if(this.children.get(id)?.size) return false; for(const p of this.pairs.values()) if(p.topicId===id) return false; const topic=this.topics.get(id); if(!topic) return false; const parentId=topic.parentId; const existed=this.topics.delete(id); if(existed){ const set=this.children.get(parentId); if(set) set.delete(id); this.children.delete(id); this.emitter.emit('topic:delete', id); this.recalculateTopicCounts() } return !!existed }
+  
   addMessagePair({ topicId, model, userText, assistantText }){ 
     const id=crypto.randomUUID(); 
     const pair=createMessagePair({ id, topicId, model, userText, assistantText }); 

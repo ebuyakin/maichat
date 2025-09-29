@@ -131,7 +131,7 @@ SIMPLE heuristic (all must pass):
 - No forbidden macros: `\frac \sqrt \sum \int \begin \over \align \matrix \displaystyle \text`
 
 Conversion rules (subset):
-- Greek macros → Unicode (e.g. `\alpha`→α)
+- Greek macros → Unicode (e.g. `\alpha`→α)`
 - Arrows: `\to`, `\rightarrow`→→; `\leftarrow`→←
 - Multiplication: `\times`→×; `\cdot`→·
 - Plus/minus: `\pm`→±
@@ -418,7 +418,7 @@ src/features/codeDisplay/
 - `src/core/models/messagePair.js` - Add optional `processedContent` and `codeBlocks` fields
 
 **Storage Layer**:
-- `src/core/store/memoryStore.js` - Process messages during `addMessagePair()` and `updateMessagePair()`
+- `src/core/store/memoryStore.js` - Process messages during `()` and `updateMessagePair()`
 - `src/core/store/indexedDbAdapter.js` - Handle new fields in persistence schema
 
 **Message Lifecycle**:
