@@ -1,5 +1,6 @@
 // historyView moved from ui/history/historyView.js
 import { escapeHtml } from '../../shared/util.js'
+import { flattenMessagesToParts } from './messageList.js'
 
 // Regex to match code placeholders: [language-number] (language lowercase alphanum/underscore), e.g. [python-1], [code-2]
 const CODE_PLACEHOLDER_REGEX = /(\[[a-zA-Z0-9_]+-\d+\])/g;
@@ -39,6 +40,25 @@ export function createHistoryView({ store, onActivePartRendered }){
 				}
 			}
 			tokens.push(partHtml(cur))
+		}
+		container.innerHTML = tokens.join('')
+		if(onActivePartRendered) onActivePartRendered()
+	}
+
+	function renderMessages(messages){
+		if(!Array.isArray(messages)) { container.innerHTML=''; if(onActivePartRendered) onActivePartRendered(); return }
+		const tokens = []
+		let prevPart = null
+		for(const msg of messages){
+			if(!msg || !Array.isArray(msg.parts)) continue
+			for(const cur of msg.parts){
+				if(prevPart){
+					const gapType = classifyGap(prevPart, cur)
+					if(gapType){ tokens.push(`<div class="gap gap-${gapType}" data-gap-type="${gapType}"></div>`) }
+				}
+				tokens.push(partHtml(cur))
+				prevPart = cur
+			}
 		}
 		container.innerHTML = tokens.join('')
 		if(onActivePartRendered) onActivePartRendered()
@@ -86,7 +106,7 @@ export function createHistoryView({ store, onActivePartRendered }){
 	function classifyErrLabel(pair){
 		return classifyErrorCode(pair.errorMessage)
 	}
-	return { render }
+	return { render, renderMessages }
 }
 // Exported for tests and reuse: classify an error message to compact label
 export function classifyErrorCode(message){

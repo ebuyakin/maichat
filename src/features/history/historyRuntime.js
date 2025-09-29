@@ -1,5 +1,7 @@
 // historyRuntime moved from ui/history/historyRuntime.js
 import { buildParts } from './parts.js'
+import { shouldUseMessageView } from './featureFlags.js'
+import { buildMessages, flattenMessagesToParts } from './messageList.js'
 import { getSettings } from '../../core/settings/index.js'
 import { invalidatePartitionCacheOnResize } from './partitioner.js'
 import { parse } from '../command/parser.js'
@@ -68,9 +70,18 @@ export function createHistoryRuntime(ctx){
     lastContextStats = boundary.stats
     lastContextIncludedIds = new Set(boundary.included.map(p=>p.id))
     lastPredictedCount = boundary.included.length
-    const parts = buildParts(pairs)
-    activeParts.setParts(parts)
-  historyView.render(parts)
+    if(shouldUseMessageView()){
+      const messages = buildMessages(pairs)
+      const parts = flattenMessagesToParts(messages)
+      activeParts.setParts(parts)
+      // Expose messages for potential future use on ctx
+      try { ctx.__messages = messages } catch {}
+      historyView.renderMessages(messages)
+    } else {
+      const parts = buildParts(pairs)
+      activeParts.setParts(parts)
+      historyView.render(parts)
+    }
   // Apply initial fade state before first paint to avoid bright-then-dim flicker on re-render
   updateFadeVisibility({ initial: true })
   applyOutOfContextStyling()
