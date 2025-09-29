@@ -29,6 +29,9 @@ import { extractEquations } from '../codeDisplay/equationExtractor.js'
 import { createCodeOverlay } from '../codeDisplay/codeOverlay.js'
 import { createEquationOverlay } from '../codeDisplay/equationOverlay.js'
 import { openModal } from '../../shared/openModal.js'
+import { createViewKeyHandler } from './viewKeys.js'
+import { createCommandKeyHandler } from './commandKeys.js'
+import { createInputKeyHandler } from './inputKeys.js'
 
 export function createInteraction({
   ctx,
@@ -37,6 +40,7 @@ export function createInteraction({
   requestDebug,
   hudRuntime
 }){
+  // Restore local state and utilities (previously at top)
   const { store, activeParts, lifecycle, boundaryMgr, pendingMessageMeta } = ctx
   const modeManager = window.__modeManager
   // Reading Mode toggle (centers on j/k when active)
@@ -44,7 +48,10 @@ export function createInteraction({
   let currentTopicId = store.rootTopicId
   let commandHistory = []
   let commandHistoryPos = -1
-  try { const saved = localStorage.getItem('maichat_command_history'); if(saved){ const arr = JSON.parse(saved); if(Array.isArray(arr)) commandHistory = arr.slice(-100) } } catch{}
+  try {
+    const saved = localStorage.getItem('maichat_command_history');
+    if(saved){ const arr = JSON.parse(saved); if(Array.isArray(arr)) commandHistory = arr.slice(-100) }
+  } catch{}
   function pushCommandHistory(q){ if(!q) return; if(commandHistory[commandHistory.length-1]===q) return; commandHistory.push(q); if(commandHistory.length>100) commandHistory = commandHistory.slice(-100); try{ localStorage.setItem('maichat_command_history', JSON.stringify(commandHistory)) }catch{} }
   function setFilterActive(active){ try{ localStorage.setItem('maichat_filter_active', active ? 'true' : 'false') }catch{} }
   function isFilterActive(){ try{ return localStorage.getItem('maichat_filter_active') === 'true' }catch{ return false } }
@@ -75,531 +82,73 @@ export function createInteraction({
   let maskDebug = true
   const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) ? import.meta.env.BASE_URL : '/'
   const tutorialUrl = (BASE.endsWith('/') ? BASE : (BASE + '/')) + 'tutorial.html'
-  
-  // Create overlay instances
+
+  // Create overlay instances (used by view handler and others)
   const codeOverlay = createCodeOverlay({ modeManager });
   const equationOverlay = createEquationOverlay({ modeManager });
-  const viewHandler = (e)=>{
-    if(window.modalIsActive && window.modalIsActive()) return false
-    window.__lastKey = e.key
-    if(e.key==='Enter'){ modeManager.set('input'); return true }
-    if(e.key==='Escape'){ modeManager.set('command'); return true }
-    if(e.key==='r' && !e.ctrlKey && !e.metaKey && !e.altKey){
-      readingMode = !readingMode
-      hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(readingMode)
-      // When turning ON, immediately center the currently focused part
-      if(readingMode){
-        try { const act = activeParts.active(); if(act && ctx.scrollController && ctx.scrollController.alignTo){ ctx.scrollController.alignTo(act.id, 'center', false) } } catch{}
-      }
-      return true
-    }
-  if(e.key==='j' || e.key==='ArrowDown'){
-      activeParts.next();
-      historyRuntime.applyActivePart();
-      const act = activeParts.active(); if(act){
-        if(readingMode && ctx.scrollController.alignTo){ ctx.scrollController.alignTo(act.id, 'center', false) }
-        else if(ctx.scrollController.ensureVisible){ ctx.scrollController.ensureVisible(act.id, false) }
-      }
-      return true
-    }
-  if(e.key==='k' || e.key==='ArrowUp'){
-      activeParts.prev();
-      historyRuntime.applyActivePart();
-      const act = activeParts.active(); if(act){
-        if(readingMode && ctx.scrollController.alignTo){ ctx.scrollController.alignTo(act.id, 'center', false) }
-        else if(ctx.scrollController.ensureVisible){ ctx.scrollController.ensureVisible(act.id, false) }
-      }
-      return true
-    }
-  if(e.key==='g'){
-      activeParts.first();
-      historyRuntime.applyActivePart();
-      const act = activeParts.active(); if(act){ if(ctx.scrollController.ensureVisible){ ctx.scrollController.ensureVisible(act.id, false) } }
-      readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
-      return true
-    }
-  if(e.key==='G'){
-      activeParts.last();
-      historyRuntime.applyActivePart();
-      const act = activeParts.active(); if(act){ if(ctx.scrollController.alignTo){ ctx.scrollController.alignTo(act.id, 'bottom', false) } }
-      readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
-      return true
-    }
-    // Jump to first in-context (included) pair and center it (one-shot, does not toggle Reading Mode)
-    if((e.key==='O' && e.shiftKey) || e.key==='o'){
-      historyRuntime.jumpToBoundary();
-      try {
-        const act = activeParts.active();
-        if(act && ctx.scrollController && ctx.scrollController.alignTo){
-          ctx.scrollController.alignTo(act.id, 'center', false)
-        }
-      } catch {}
-      return true
-    }
-    // Pending code overlay digit selection must take precedence over star rating
-    if(/^[1-9]$/.test(e.key) && window.__mcPendingCodeOpen){
-      const act = activeParts.active();
-      const pending = window.__mcPendingCodeOpen;
-      if(!(act && act.role==='assistant')){ window.__mcPendingCodeOpen=null; return false }
-      const pair = store.pairs.get(act.pairId);
-      if(!pair || pair.id!==pending.pairId){ window.__mcPendingCodeOpen=null; return false }
-      const blocks = pair.codeBlocks;
-      if(!blocks || blocks.length<2){ window.__mcPendingCodeOpen=null; return false }
-      const idx = parseInt(e.key,10)-1;
-  if(idx>=0 && idx<blocks.length){ codeOverlay.show(blocks[idx], pair, { index: idx }); }
-      window.__mcPendingCodeOpen=null;
-      return true;
-    }
-    // Pending equation overlay digit selection (parallel to code overlay)
-    if(/^[1-9]$/.test(e.key) && window.__mcPendingEqOpen){
-      const act = activeParts.active();
-      const pending = window.__mcPendingEqOpen;
-      if(!(act && act.role==='assistant')){ window.__mcPendingEqOpen=null; return false }
-      const pair = store.pairs.get(act.pairId);
-      if(!pair || pair.id!==pending.pairId){ window.__mcPendingEqOpen=null; return false }
-      const blocks = pair.equationBlocks;
-      if(!blocks || blocks.length<2){ window.__mcPendingEqOpen=null; return false }
-      const idx = parseInt(e.key,10)-1;
-      if(idx>=0 && idx<blocks.length){ equationOverlay.show(blocks[idx], pair, { index: idx }); }
-      window.__mcPendingEqOpen=null;
-      return true;
-    }
-    // Passive expiry: if pending older than 3s, drop it before any further handling
-    if(window.__mcPendingCodeOpen){
-      if(Date.now() - window.__mcPendingCodeOpen.ts > 3000){ window.__mcPendingCodeOpen = null }
-    }
-    if(window.__mcPendingEqOpen){
-      if(Date.now() - window.__mcPendingEqOpen.ts > 3000){ window.__mcPendingEqOpen = null }
-    }
-    if(e.key==='*'){ cycleStar(); return true }
-    if(e.key==='a'){ toggleFlag(); return true }
-    if(e.key==='1'){ setStarRating(1); return true }
-    if(e.key==='2'){ setStarRating(2); return true }
-    if(e.key==='3'){ setStarRating(3); return true }
-    if(e.key===' '){ setStarRating(0); return true }
-    // VIEW-only fast keys for error pairs
-    if(e.key==='e'){ if(handleEditIfErrorActive()) return true }
-    if(e.key==='d'){ if(handleDeleteIfErrorActive()) return true }
-    
-  // Code overlay trigger logic (smart):
-    // - If exactly 1 code block in active assistant message: 'v' opens it immediately.
-    // - If >1 code blocks: require explicit 'v' + digit (v1..v9). Lone 'v' does nothing.
-    // - After pressing 'v' (multi-case), next digit (1-9) within normal key routing will open block.
-    if(e.key==='v'){
-      const act = activeParts.active();
-      if(!(act && act.role==='assistant')) return false;
-      const pair = store.pairs.get(act.pairId);
-      const blocks = pair && pair.codeBlocks;
-      if(!blocks || blocks.length===0) return false;
-      if(blocks.length===1){
-        codeOverlay.show(blocks[0], pair, { index:0 }); return true;
-      }
-      // Multiple blocks: record intent and wait for digit key (v1..v9). No action yet.
-      // Store lightweight flag with timestamp (in case future expiry desired)
-      window.__mcPendingCodeOpen = { ts: Date.now(), pairId: pair.id };
-      // Optionally could surface a HUD hint here in future.
-      return true; // consume 'v' so it doesn't collide with other mappings
-    }
-    // Code overlay trigger logic (smart): handled above.
-    // Equation overlay trigger logic (smart, mirrors code overlay with 'm'):
-    if(e.key==='m'){
-      const act = activeParts.active();
-      if(!(act && act.role==='assistant')) return false;
-      const pair = store.pairs.get(act.pairId);
-      const blocks = pair && pair.equationBlocks;
-      if(!blocks || blocks.length===0) return false;
-      if(blocks.length===1){ equationOverlay.show(blocks[0], pair, { index:0 }); return true; }
-      window.__mcPendingEqOpen = { ts: Date.now(), pairId: pair.id };
-      return true;
-    }
-    // Broad cancel: any key (other than 'v','m' and digits 1-9 during valid pending window) clears pending
-    if(window.__mcPendingCodeOpen){
-      const isDigit = /^[1-9]$/.test(e.key);
-      if(e.key!=='v' && !isDigit){ window.__mcPendingCodeOpen=null }
-    }
-    if(window.__mcPendingEqOpen){
-      const isDigit = /^[1-9]$/.test(e.key);
-      if(e.key!=='m' && !isDigit){ window.__mcPendingEqOpen=null }
-    }
-  }
-  const commandHandler = (e)=>{
-    if(window.modalIsActive && window.modalIsActive()) return false
-  // Emacs-like editing shortcuts in command box
-  if(e.ctrlKey && (e.key==='u' || e.key==='U')){ e.preventDefault(); const el = commandInput; const end = el.selectionEnd; const start = 0; el.setRangeText('', start, end, 'end'); return true }
-  if(e.ctrlKey && (e.key==='w' || e.key==='W')){ e.preventDefault(); const el = commandInput; const pos = el.selectionStart; const left = el.value.slice(0, pos); const right = el.value.slice(el.selectionEnd); const newLeft = left.replace(/\s*[^\s]+\s*$/, ''); const delStart = newLeft.length; el.value = newLeft + right; el.setSelectionRange(delStart, delStart); return true }
-    if(e.ctrlKey && (e.key==='p' || e.key==='P')){ historyPrev(); return true }
-    if(e.ctrlKey && (e.key==='n' || e.key==='N')){ historyNext(); return true }
-  if(e.key==='Enter'){
-      const q = commandInput.value.trim()
-      // Handle debug/utility commands first
-      if(q === ':hud' || q === ':hud on'){ hudEnabled=true; hudRuntime.enable(true); commandInput.value=''; commandErrEl.textContent=''; return true }
-      if(q === ':hud off'){ hudEnabled=false; hudRuntime.enable(false); commandInput.value=''; commandErrEl.textContent=''; return true }
-      if(q === ':maskdebug' || q === ':maskdebug on'){ maskDebug=true; commandInput.value=''; commandErrEl.textContent=''; historyRuntime.applySpacingStyles(getSettings()); historyRuntime.updateFadeVisibility(); return true }
-      if(q === ':maskdebug off'){ maskDebug=false; commandInput.value=''; commandErrEl.textContent=''; historyRuntime.applySpacingStyles(getSettings()); historyRuntime.updateFadeVisibility(); return true }
-      if(q === ':anim off' || q === ':noanim' || q === ':noanim on'){ ctx.scrollController.setAnimationEnabled(false); commandInput.value=''; commandErrEl.textContent=''; return true }
-      if(q === ':anim on' || q === ':noanim off'){ ctx.scrollController.setAnimationEnabled(true); commandInput.value=''; commandErrEl.textContent=''; return true }
-      if(q === ':scrolllog on'){ window.__scrollLog=true; commandInput.value=''; commandErrEl.textContent=''; return true }
-      if(q === ':scrolllog off'){ window.__scrollLog=false; commandInput.value=''; commandErrEl.textContent=''; return true }
 
-      // Colon commands: <filter> :<command [args]>
-      const split = splitFilterAndCommand(q)
-      if(split && split.commandPart){
-        const filterStr = split.filterPart || ''
-        const cmdStr = split.commandPart
-        lifecycle.setFilterQuery(filterStr)
-        try{
-          // Parse filter (left) and evaluate base/final selections
-          const basePairsAll = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
-          const currentBareTopicId = pendingMessageMeta.topicId || currentTopicId
-          const currentBareModel = pendingMessageMeta.model || getActiveModel()
-          const hasO = (node)=>{ if(!node) return false; if(node.type==='FILTER' && node.kind==='o') return true; if(node.type==='NOT') return hasO(node.expr); if(node.type==='AND' || node.type==='OR') return hasO(node.left)||hasO(node.right); return false }
-          const stripO = (node)=>{ if(!node) return null; if(node.type==='FILTER' && node.kind==='o') return null; if(node.type==='NOT'){ const inner=stripO(node.expr); return inner?{type:'NOT',expr:inner}:null } if(node.type==='AND' || node.type==='OR'){ const l=stripO(node.left); const r=stripO(node.right); if(!l&&!r) return null; if(!l) return r; if(!r) return l; return { type:node.type, left:l, right:r } } return node }
-          let ast = null
-          if(filterStr){ ast = parse(filterStr) }
-          // Evaluate base set
-          let base = basePairsAll
-          if(ast){
-            if(hasO(ast)){
-              const baseAst = stripO(ast) || { type:'ALL' }
-              base = evaluate(baseAst, basePairsAll, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
-            } else {
-              base = evaluate(ast, basePairsAll, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
-            }
-          }
-          // Compute boundary on base
-          boundaryMgr.updateVisiblePairs(base)
-          boundaryMgr.setModel(currentBareModel)
-          boundaryMgr.applySettings(getSettings())
-          const boundary = boundaryMgr.getBoundary()
-          const includedIdsSet = new Set(boundary.included.map(p=> p.id))
-          const offContextOrder = base.filter(p=> !includedIdsSet.has(p.id)).map(p=> p.id)
-          // Final (apply full ast including o/oN if present) else base
-          let finalPairs = base
-          if(ast && hasO(ast)){
-            finalPairs = evaluate(ast, base, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel, includedIds: includedIdsSet, offContextOrder })
-          }
-          const baseIds = base.map(p=> p.id)
-          const finalIds = finalPairs.map(p=> p.id)
+  // VIEW handler extracted
+  const getReadingMode = ()=> readingMode
+  const setReadingMode = (v)=>{ readingMode = !!v }
+  const viewHandler = createViewKeyHandler({
+    modeManager,
+    activeParts,
+    historyRuntime,
+    scrollController: ctx.scrollController,
+    hudRuntime,
+    store,
+    codeOverlay,
+    equationOverlay,
+    getReadingMode,
+    setReadingMode,
+    cycleStar,
+    toggleFlag,
+    setStarRating,
+    handleEditIfErrorActive,
+    handleDeleteIfErrorActive,
+  })
 
-          // Build environment and helpers
-          const currentTopicPath = formatTopicPath(pendingMessageMeta.topicId || currentTopicId)
-          const environment = { currentModel: currentBareModel, currentTopicId: pendingMessageMeta.topicId || currentTopicId, currentTopicPath }
-          const ui = {
-            notify: (msg)=>{ try{ window.__hud && window.__hud.notify && window.__hud.notify(msg) }catch{} },
-            info: (msg)=>{ try{ window.__hud && window.__hud.info && window.__hud.info(msg) }catch{} },
-            confirm: (msg)=> openConfirmOverlay({ modeManager, message: msg, title: 'Confirm' })
-          }
-          const topicResolver = async (arg, env)=>{
-            if(!arg || !String(arg).trim()) return env.currentTopicId
-            const ids = resolveTopicFilter(String(arg), { store, currentTopicId: env.currentTopicId })
-            // resolveTopicFilter returns a Set of ids
-            const arr = Array.from(ids)
-            if(arr.length===1) return arr[0]
-            if(arr.length===0) throw new Error('Topic not found')
-            throw new Error('Ambiguous topic expression; please specify a full path')
-          }
-          const registry = createCommandRegistry({
-            store,
-            selectionProvider: ()=> ({ baseIds, finalIds }),
-            environment,
-            ui,
-            utils: { topicResolver }
-          })
-          const cmd = parseColonCommand(cmdStr)
-          registry.run(cmd)
-            .then(()=>{
-              // Re-render current view with the left-side filter; preserve focus
-              historyRuntime.renderCurrentView({ preserveActive:true })
-              // Spec: after filter+command rebuild, bottom-align the focused part (one-shot, no animation)
-              try {
-                const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active();
-                const id = act && act.id;
-                if(id && ctx.scrollController && ctx.scrollController.alignTo){
-                  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
-                }
-              } catch {}
-              commandErrEl.textContent=''
-              // Retain only the filter in the command line after execution
-              commandInput.value = filterStr
-              pushCommandHistory(`${filterStr}`); commandHistoryPos=-1
-              setFilterActive(!!filterStr) // Set flag based on whether filter is non-empty
-              modeManager.set('view')
-            })
-            .catch(ex=>{
-              const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'
-              const friendly = `Command error: ${raw}`
-              commandErrEl.textContent = friendly
-            })
-        } catch(ex){
-          const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'
-          const friendly = `Command error: ${raw}`
-          commandErrEl.textContent = friendly
-        }
-        return true
-      }
+  // COMMAND handler extracted
+  const commandHandler = createCommandKeyHandler({
+    modeManager,
+    commandInput,
+    commandErrEl,
+    lifecycle,
+    store,
+    boundaryMgr,
+    pendingMessageMeta,
+    historyRuntime,
+    activeParts,
+    scrollController: ctx.scrollController,
+    hudRuntime,
+    openConfirmOverlay,
+    getCurrentTopicId: ()=> currentTopicId,
+    pushCommandHistory: (q)=>{ pushCommandHistory(q); commandHistoryPos=-1 },
+    historyPrev,
+    historyNext,
+    setFilterActive,
+    getCommandModeEntryActivePartId: ()=> commandModeEntryActivePartId,
+  })
 
-      // Apply filter (including empty) and rebuild view. Preserve focus if possible; else fallback.
-  // Preserve focus based on snapshot taken on entering COMMAND mode only
-  const prevActiveId = commandModeEntryActivePartId
-      lifecycle.setFilterQuery(q)
-      try {
-        let pairs
-        if(q){
-          const ast = parse(q)
-          const basePairsAll = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
-          const currentBareTopicId = pendingMessageMeta.topicId || currentTopicId
-          const currentBareModel = pendingMessageMeta.model || getActiveModel()
-          // Helpers to detect/strip 'o' filters
-          const hasO = (node)=>{
-            if(!node) return false
-            if(node.type==='FILTER' && node.kind==='o') return true
-            if(node.type==='NOT') return hasO(node.expr)
-            if(node.type==='AND' || node.type==='OR') return hasO(node.left) || hasO(node.right)
-            return false
-          }
-          const stripO = (node)=>{
-            if(!node) return null
-            if(node.type==='FILTER' && node.kind==='o') return null
-            if(node.type==='NOT'){
-              const inner = stripO(node.expr)
-              if(inner==null) return null
-              return { type:'NOT', expr: inner }
-            }
-            if(node.type==='AND' || node.type==='OR'){
-              const l = stripO(node.left)
-              const r = stripO(node.right)
-              if(!l && !r) return null
-              if(!l) return r
-              if(!r) return l
-              return { type: node.type, left: l, right: r }
-            }
-            return node
-          }
-          if(hasO(ast)){
-            const baseAst = stripO(ast) || { type:'ALL' }
-            const base = evaluate(baseAst, basePairsAll, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
-            // Compute boundary on base
-            boundaryMgr.updateVisiblePairs(base)
-            boundaryMgr.setModel(currentBareModel)
-            boundaryMgr.applySettings(getSettings())
-            const boundary = boundaryMgr.getBoundary()
-            const includedIds = new Set(boundary.included.map(p=> p.id))
-            const offContextOrder = base.filter(p=> !includedIds.has(p.id)).map(p=> p.id)
-            pairs = evaluate(ast, base, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel, includedIds, offContextOrder })
-          } else {
-            pairs = evaluate(ast, basePairsAll, { store, currentTopicId: currentBareTopicId, currentModel: currentBareModel })
-          }
-        } else {
-          pairs = store.getAllPairs().slice().sort((a,b)=> a.createdAt - b.createdAt)
-        }
-        historyRuntime.renderHistory(pairs)
-        commandErrEl.textContent=''
-
-        // If nothing to show, leave focus empty and viewport unchanged.
-        if(!activeParts.parts.length){
-          lastAppliedFilter = q
-          // Turn off Reading Mode on apply (idempotent)
-          readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
-          pushCommandHistory(q); commandHistoryPos=-1
-          modeManager.set('view')
-          return true
-        }
-
-        // Try to preserve previous focused part if still present.
-        let preserved = false
-        if(prevActiveId){
-          const before = activeParts.active() && activeParts.active().id
-          activeParts.setActiveById(prevActiveId)
-          const now = activeParts.active() && activeParts.active().id
-          preserved = !!now && now === prevActiveId
-          // If setActiveById couldn't match exactly, don't treat as preserved.
-          if(!preserved && before && now === before){ preserved = false }
-        }
-
-        // Compute fallback focus and anchor when not preserved.
-        let anchorTargetId = null
-        if(!preserved){
-          try{
-            const lastPair = pairs && pairs.length ? pairs[pairs.length-1] : null
-            if(lastPair){
-              const lastId = lastPair.id
-              // Find parts for this pair in current view
-              const partsForPair = activeParts.parts.filter(p=> p.pairId === lastId)
-              const assistants = partsForPair.filter(p=> p.role==='assistant')
-              if(assistants.length){
-                const focusPart = assistants[assistants.length-1]
-                activeParts.setActiveById(focusPart.id)
-                anchorTargetId = focusPart.id // anchor to the focused assistant part
-              } else {
-                const users = partsForPair.filter(p=> p.role==='user')
-                if(users.length){
-                  const focusPart = users[users.length-1]
-                  activeParts.setActiveById(focusPart.id)
-                  anchorTargetId = `${lastId}:meta` // anchor bottom to meta, not the focused user
-                } else {
-                  // Extremely rare: no user/assistant (shouldn't happen). Fallback to last non-meta in entire list
-                  let idx = activeParts.parts.length-1
-                  while(idx>=0 && activeParts.parts[idx].role==='meta') idx--
-                  if(idx>=0){ activeParts.activeIndex = idx }
-                  anchorTargetId = `${lastId}:meta`
-                }
-              }
-            }
-          } catch{}
-        }
-
-        // Apply visual active highlight
-        historyRuntime.applyActivePart()
-
-        // Ensure fresh metrics then one-shot bottom align
-        try { if(ctx.scrollController && ctx.scrollController.remeasure) ctx.scrollController.remeasure() } catch {}
-        try {
-          const act = activeParts.active()
-          const targetId = anchorTargetId || (act && act.id)
-          if(targetId && ctx.scrollController && ctx.scrollController.alignTo){
-            ctx.scrollController.alignTo(targetId, 'bottom', false)
-          }
-        } catch {}
-
-        // Turn off Reading Mode on apply (idempotent) and switch to VIEW
-        readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
-        lastAppliedFilter = q; pushCommandHistory(q); commandHistoryPos=-1
-        setFilterActive(!!q) // Set flag based on whether filter is non-empty
-        modeManager.set('view')
-      } catch(ex){
-        const raw = (ex && ex.message) ? String(ex.message).trim() : 'error'
-        const friendly = (/^Unexpected token:/i.test(raw) || /^Unexpected trailing input/i.test(raw)) ? 'Incorrect command' : `Incorrect command: ${raw}`
-        commandErrEl.textContent = friendly
-      }
-      return true
-    }
-    if(e.key==='Escape'){
-      // Clear input only; do not rebuild, do not change mode, do not change Reading Mode
-      if(commandInput.value){ commandInput.value=''; return true }
-      return true
-    }
-  }
-  const inputHandler = (e)=>{
-    if(window.modalIsActive && window.modalIsActive()) return false
-  // Emacs-like editing shortcuts in input (new message) box
-  if(e.ctrlKey && (e.key==='u' || e.key==='U')){ e.preventDefault(); const el = inputField; const end = el.selectionEnd; const start = 0; el.setRangeText('', start, end, 'end'); return true }
-  if(e.ctrlKey && (e.key==='w' || e.key==='W')){ e.preventDefault(); const el = inputField; const pos = el.selectionStart; const left = el.value.slice(0, pos); const right = el.value.slice(el.selectionEnd); const newLeft = left.replace(/\s*[^\s]+\s*$/, ''); const delStart = newLeft.length; el.value = newLeft + right; el.setSelectionRange(delStart, delStart); return true }
-    // Shift+Enter = new line (don't send)
-    if(e.key==='Enter' && e.shiftKey){
-      // Let default behavior handle the newline insertion
-      return false
-    }
-    if(e.key==='Enter'){
-      const text = inputField.value.trim();
-      if(text){
-        if(lifecycle.isPending()) return true;
-        const editingId = window.__editingPairId;
-        const topicId = pendingMessageMeta.topicId || currentTopicId;
-  const model = pendingMessageMeta.model || getActiveModel();
-        boundaryMgr.updateVisiblePairs(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt));
-        boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel());
-        boundaryMgr.applySettings(getSettings());
-        const preBoundary = boundaryMgr.getBoundary();
-        const beforeIncludedIds = new Set(preBoundary.included.map(p=>p.id));
-  lifecycle.beginSend(); readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
-        let id;
-        if(editingId){
-          // Re-ask behavior: remove old error pair and create a new pair at end with same meta
-          const old = store.pairs.get(editingId);
-          if(old){ store.removePair(editingId) }
-          id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' });
-          window.__editingPairId = null;
-        } else {
-          id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' })
-        }
-        
-        ;(async()=>{
-          try {
-            const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean);
-            const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt);
-            boundaryMgr.updateVisiblePairs(chrono);
-            boundaryMgr.setModel(model);
-            boundaryMgr.applySettings(getSettings());
-            const boundarySnapshot = boundaryMgr.getBoundary();
-            const { content } = await executeSend({ store, model, topicId, userText:text, signal: undefined, visiblePairs: chrono, boundarySnapshot, onDebugPayload: (payload)=>{ historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount); requestDebug.setPayload(payload); historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length) } });
-            
-            const rawText = content; // keep original for assistantText (context fidelity)
-            // 1. Code extraction first
-            const codeExtraction = extractCodeBlocks(rawText);
-            const afterCode = codeExtraction.hasCode ? codeExtraction.displayText : rawText;
-            // 2. Equation extraction (markers for simple inline)
-            const eqResult = extractEquations(afterCode, { inlineMode:'markers' });
-            const afterEq = eqResult.displayText; // contains [eq-n] placeholders + __EQINL_X__ markers
-            // 3. Segmented sanitize (skip placeholders & markers)
-            const sanitized = sanitizeDisplayPreservingTokens(afterEq);
-            // 4. Expand inline markers to spans
-            let finalDisplay = sanitized;
-            if(eqResult.inlineSimple && eqResult.inlineSimple.length){
-              for(const item of eqResult.inlineSimple){
-                const span = `<span class=\"eq-inline\" data-tex=\"${escapeHtmlAttr(item.raw)}\">${escapeHtml(item.unicode)}</span>`;
-                finalDisplay = finalDisplay.replaceAll(item.marker, span);
-              }
-            }
-            // Normalize placeholder spacing: ensure one space on each side and collapse multiple spaces
-            finalDisplay = finalDisplay.replace(/\s*\[([a-z0-9_]+-\d+|eq-\d+)\]\s*/gi, ' [$1] ');
-            finalDisplay = finalDisplay.replace(/ {2,}/g,' ');
-            const updateData = { assistantText: rawText, lifecycleState:'complete', errorMessage:undefined };
-            if(codeExtraction.hasCode){ updateData.codeBlocks = codeExtraction.codeBlocks; }
-            if(eqResult.equationBlocks && eqResult.equationBlocks.length){ updateData.equationBlocks = eqResult.equationBlocks; }
-            // Always set processedContent (sanitized or enriched)
-            updateData.processedContent = (codeExtraction.hasCode || eqResult.hasEquations) ? finalDisplay : sanitizeAssistantText(rawText);
-            
-            store.updatePair(id, updateData);
-            lifecycle.completeSend();
-            updateSendDisabled();
-            historyRuntime.renderCurrentView({ preserveActive:true });
-            lifecycle.handleNewAssistantReply(id)
-          } catch(ex){
-            let errMsg = (ex && ex.message)? ex.message : 'error';
-            if(errMsg==='missing_api_key') errMsg='API key missing (Ctrl+. → API Keys or Ctrl+K)';
-            store.updatePair(id, { assistantText:'', lifecycleState:'error', errorMessage: errMsg });
-            lifecycle.completeSend();
-            updateSendDisabled();
-            historyRuntime.renderCurrentView({ preserveActive:true })
-          } finally {
-            if(getSettings().showTrimNotice){
-              boundaryMgr.updateVisiblePairs(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt));
-              boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel());
-              boundaryMgr.applySettings(getSettings());
-              const postBoundary = boundaryMgr.getBoundary();
-              const afterIncludedIds = new Set(postBoundary.included.map(p=>p.id));
-              let trimmed=0; beforeIncludedIds.forEach(pid=>{ if(!afterIncludedIds.has(pid)) trimmed++ });
-              if(trimmed>0){ console.log(`[context] large prompt trimmed ${trimmed} older pair(s)`) }
-            }
-          }
-        })();
-        inputField.value='';
-  historyRuntime.renderCurrentView({ preserveActive:true });
-        // Focus the new pair's last user part explicitly (meta remains non-focusable)
-        try {
-          const pane = document.getElementById('historyPane')
-          const userEls = pane ? pane.querySelectorAll(`.part[data-pair-id="${id}"][data-role="user"]`) : null
-          const lastUserEl = userEls && userEls.length ? userEls[userEls.length-1] : null
-          if(lastUserEl){
-            const lastUserId = lastUserEl.getAttribute('data-part-id')
-            if(lastUserId){ activeParts.setActiveById(lastUserId) }
-          } else {
-            activeParts.last()
-          }
-        } catch { activeParts.last() }
-        historyRuntime.applyActivePart();
-  // One-shot: bottom-align the new meta row as visual cue (spec)
-  // Ensure fresh metrics: remeasure immediately before aligning.
-  if(id && ctx.scrollController && ctx.scrollController.alignTo){
-    try { if(ctx.scrollController.remeasure) ctx.scrollController.remeasure() } catch {}
-    ctx.scrollController.alignTo(`${id}:meta`, 'bottom', false)
-  }
-        updateSendDisabled()
-      }
-      return true
-    }
-    if(e.key==='Escape'){ modeManager.set('view'); return true }
-  }
+  const inputHandler = createInputKeyHandler({
+    modeManager,
+    inputField,
+    lifecycle,
+    store,
+    boundaryMgr,
+    pendingMessageMeta,
+    historyRuntime,
+    activeParts,
+    scrollController: ctx.scrollController,
+    requestDebug,
+    updateSendDisabled,
+    getCurrentTopicId: ()=> currentTopicId,
+    getReadingMode: ()=> readingMode,
+    setReadingMode: (v)=>{ readingMode = !!v },
+    sanitizeDisplayPreservingTokens,
+    escapeHtmlAttr,
+    escapeHtml,
+  })
   function cycleStar(){
     const act = activeParts.active(); if(!act) return;
     const pair = store.pairs.get(act.pairId); if(!pair) return;

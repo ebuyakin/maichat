@@ -96,57 +96,48 @@ Integration
 - History runtime exposes message block rects keyed by `messageId` (e.g., `pairId:user`, `pairId:assistant`); the controller reads them to decide active transitions.
 - Scroll controller is reused; policy‑free. One‑shot ensureVisible/align operations use margins/padding (no outer‑gap concept).
 
-## 8. Implementation plan (Parts → Messages)
+## 8. Implementation plan (single stream)
 
-### 8.1 Architecture shifts
-- Replace Part Controller with a Message Navigation Controller (one‑way migration). No feature flags; direct replacement.
-- Allow minimal compatibility shims during the short transition (same PR chain), but do not keep both mechanisms active at runtime.
+One-way migration from parts → messages. No feature flags or dual maintenance. Each step is small, testable, and keeps the app runnable.
 
-### 8.2 Rendering changes
-- History renderer outputs 2 blocks per pair: user block; assistant block that includes its meta header. Remove part IDs and partition markup.
-- Define stable `messageId` for each block (e.g., `pairId:user`, `pairId:assistant`) and set it on DOM via `data-message-id` and `data-role`.
-- Use `.message` elements instead of `.part` in markup and selectors; update fade/out‑of‑context logic to target `#history > .message`.
-- Keep badge structure (stars/flag/topic) inside the assistant header area.
+Step 1 — Extract key handlers (stabilize interaction.js)
+- Create `src/features/interaction/viewKeys.js`, `commandKeys.js`, `inputKeys.js`.
+- Move bodies of `viewHandler`, `commandHandler`, `inputHandler` from `interaction.js` into these files as factory functions (accepting the same dependencies they currently close over).
+- Rewire `interaction.js` to import and register them via `createKeyRouter`.
+- Success: build/tests pass; behavior unchanged; `interaction.js` smaller and easier to work with.
 
-### 8.3 Key routing (VIEW)
-- Replace part navigation with scroll‑based handlers: j/k/J/K call `stepScroll` with small/big deltas.
-- Map d/u to message jumps (top anchor; last‑message special case). Preserve g/G as absolute jumps (first/top and last/bottom).
-- Mouse: clicking a `.message` sets Active Message; do not auto‑scroll.
+Step 2 — Message model and rendering
+- Add `src/features/history/messageModel.js` with a MessageList builder mapping each pair to two messages (`pairId:user`, `pairId:assistant`).
+- Add `ActiveMessageController` with `{ activeMessageId }` and helpers: `first/last/next/prev/setActiveById/active()`.
+- Update `historyView` to render `.message.user` and `.message.assistant` (assistant contains `<meta-line>`). Set `data-message-id`, `data-pair-id`, `data-role` on each message node.
+- Update out‑of‑context styling, badges, and counts to operate on `.message` elements.
+- Success: visual parity with current UI; compiles with existing scroll logic.
 
-### 8.4 Anchoring and clamps
-- Use per‑message margins and inner padding; compute anchors against message top/bottom plus configured `messageMarginPx`.
-- Retain dead‑band stabilization (avoid micro‑jitter near the anchor).
-- j/k = plain scroll increments (instant); d/u = smooth jumps by default; G always bottom‑anchors last message.
+Step 3 — Scroll controller: message metrics and API
+- Update `src/features/history/scrollControllerV3.js` to measure `#history > .message` and compute metrics keyed by `messageId`.
+- Add APIs: `stepScroll(px)`, `jumpToMessage(messageId, anchor)`, `alignToMessage(messageId, anchor, animate)`.
+- Anchor math uses per‑message margins/padding; keep dead‑band (no outer gaps). Last message: always bottom‑anchor for G and when d lands on a short last message.
+- Success: programmatic calls position messages deterministically with gradients/margins intact.
 
-### 8.5 Tests (update and add)
-- Long assistant with internal code block: scrolling traverses without DOM reflow; content intact.
-- Boundary transitions for j/k and d/u are deterministic (switch Active Message only when fully out of view on the scrolled side; top/bottom clamps applied).
-- d on last message anchors bottom if message is shorter than the viewport. G always anchors the last message to bottom. g anchors the first message to top.
-- Clicking assistant header (meta) behaves like assistant block; sets Active Message accordingly.
-- No regression in filter/export/provider/token budgeting tests (unchanged).
+Step 4 — History runtime wiring
+- Replace `applyActivePart` with `applyActiveMessage`; update any `.part` selectors to `.message`.
+- Update fade visibility to target `#history > .message`.
+- Keep context/boundary logic intact; only the presentation layer changes.
+- Success: active styling and fade behavior work with message nodes.
 
-### 8.6 Sequenced steps (no dual maintenance)
-- Step A — Extract key handlers (no behavior change)
-  - Files: create `src/features/interaction/viewKeys.js`, `commandKeys.js`, `inputKeys.js`.
-  - Move current `viewHandler`, `commandHandler`, `inputHandler` from `interaction.js` into these files; export factories; rewire `createKeyRouter`.
-  - Success: build/tests pass; behavior unchanged; `interaction.js` smaller.
+Step 5 — Wire navigation (VIEW mode)
+- In `viewKeys.js`: j/k/J/K → `stepScroll`; d/u → `jumpToMessage` (top anchor; last‑message rule); g → first/top; G → last/bottom.
+- Click on `.message` sets `ActiveMessageController` by `data-message-id` (no auto‑scroll on click).
+- Success: keyboard and mouse navigation match the spec precisely.
 
-- Step B — Message model and render
-  - Files: add `src/features/history/messageModel.js` (MessageList builder), `ActiveMessageController`.
-  - Update `historyView` to render `.message.user` and `.message.assistant` (assistant contains `<meta-line>`); update out‑of‑context styling/badges for `.message`.
-  - Success: visual parity; compiles with existing scroll logic.
+Step 6 — Remove legacy and update tests
+- Remove `src/features/history/partitioner.js` and `parts.js`; delete imports and dead code paths.
+- Update tests and selectors from `.part` to `.message`; add tests for last‑message bottom anchoring; ensure code/equation placeholder styling unaffected.
+- Success: all tests green; no references to parts/partitioner remain.
 
-- Step C — Scroll controller: message metrics and API
-  - Update `src/features/history/scrollControllerV3.js` to measure `#history > .message`; add `stepScroll`, `jumpToMessage`, `alignToMessage`.
-  - Success: deterministic positioning; margins/overlays intact.
-
-- Step D — Wire navigation
-  - VIEW: j/k/J/K → `stepScroll`; d/u/g/G per spec; click sets Active Message by `data-message-id`.
-  - Success: keyboard/mouse navigation matches spec.
-
-- Step E — Remove legacy and update tests
-  - Remove `partitioner.js`, `parts.js`; update selectors, fade logic, and tests from `.part` to `.message`.
-  - Success: all tests green; no references to parts/partitioner remain.
+Step 7 — Cleanup & docs
+- Inline shims removed; docs updated (this file, `ui_view_reading_behaviour.md` cross‑link).
+- Success: repo reflects the new, simpler architecture.
 
 ## 9. Open values for review
 - Defaults: `scrollStepPx` (proposed 200), `scrollBigStepPx` (proposed 500).
