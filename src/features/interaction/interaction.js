@@ -32,6 +32,8 @@ import { openModal } from '../../shared/openModal.js'
 import { createViewKeyHandler } from './viewKeys.js'
 import { createCommandKeyHandler } from './commandKeys.js'
 import { createInputKeyHandler } from './inputKeys.js'
+import { createAppMenuController } from './appMenu.js'
+import { loadCommandHistory, saveCommandHistory, pushCommand, setFilterActive as setFilterActivePref, getFilterActive } from './userPrefs.js'
 
 export function createInteraction({
   ctx,
@@ -46,17 +48,12 @@ export function createInteraction({
   // Reading Mode toggle (centers on j/k when active)
   let readingMode = false
   let currentTopicId = store.rootTopicId
-  let commandHistory = []
+  let commandHistory = loadCommandHistory()
   let commandHistoryPos = -1
-  try {
-    const saved = localStorage.getItem('maichat_command_history');
-    if(saved){ const arr = JSON.parse(saved); if(Array.isArray(arr)) commandHistory = arr.slice(-100) }
-  } catch{}
-  function pushCommandHistory(q){ if(!q) return; if(commandHistory[commandHistory.length-1]===q) return; commandHistory.push(q); if(commandHistory.length>100) commandHistory = commandHistory.slice(-100); try{ localStorage.setItem('maichat_command_history', JSON.stringify(commandHistory)) }catch{} }
-  function setFilterActive(active){ try{ localStorage.setItem('maichat_filter_active', active ? 'true' : 'false') }catch{} }
-  function isFilterActive(){ try{ return localStorage.getItem('maichat_filter_active') === 'true' }catch{ return false } }
+  function pushCommandHistory(q){ commandHistory = pushCommand(commandHistory, q); saveCommandHistory(commandHistory) }
+  function setFilterActive(active){ setFilterActivePref(!!active) }
   function restoreLastFilter(){ 
-    if(isFilterActive() && commandHistory.length > 0){ 
+  if(getFilterActive() && commandHistory.length > 0){ 
       const lastFilter = commandHistory[commandHistory.length-1]
       if(lastFilter){
         commandInput.value = lastFilter
@@ -233,153 +230,20 @@ export function createInteraction({
       }
     } catch {}
   }
-  const menuBtn = ()=> document.getElementById('appMenuBtn')
-  const menuEl = ()=> document.getElementById('appMenu')
-  let menuModal = null
-  function toggleMenu(force){
-    const btn = menuBtn(); const m = menuEl(); if(!btn||!m) return
-    let show = force; if(show==null) show = m.hasAttribute('hidden')
-    if(show){
-      // Wrap existing menu in a modal backdrop container (non-centered)
-      const backdrop = document.createElement('div')
-      backdrop.className = 'overlay-backdrop menu-overlay' // menu-specific overlay variant
-      // Ensure menu is visible inside the backdrop; preserve DOM structure
-      m.removeAttribute('hidden')
-      backdrop.appendChild(m)
-      document.body.appendChild(backdrop)
-      btn.setAttribute('aria-expanded','true')
-      document.body.setAttribute('data-menu-open','1')
-  // Init selection
-  m.querySelectorAll('li.active').forEach(li=> li.classList.remove('active'))
-  const first = m.querySelector('li'); if(first) first.classList.add('active')
-      // Local key handler on backdrop (capture) so it's isolated
-      function onKey(e){
-        const nav=['j','k','ArrowDown','ArrowUp','Enter','Escape']
-        if(!nav.includes(e.key)) return
-        e.preventDefault(); e.stopImmediatePropagation()
-        const items = Array.from(m.querySelectorAll('li'))
-        let idx = items.findIndex(li=> li.classList.contains('active'))
-        if(idx<0 && items.length){ idx=0; items[0].classList.add('active') }
-        if(e.key==='Escape'){ closeMenu(); return }
-        if(e.key==='j' || e.key==='ArrowDown'){
-          if(items.length){ idx=(idx+1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active') }
-          return
-        }
-        if(e.key==='k' || e.key==='ArrowUp'){
-          if(items.length){ idx=(idx-1+items.length)%items.length; items.forEach(li=>li.classList.remove('active')); items[idx].classList.add('active') }
-          return
-        }
-        if(e.key==='Enter'){
-          const act=items[idx]||items[0]; if(act) activateMenuItem(act)
-          return
-        }
-      }
-      // Position the menu relative to the button within the overlay
-      try {
-        // Ensure menu has measurable width (shrink-to-fit) before reading rects
-        m.style.display = 'inline-block'
-        m.style.width = 'auto'
-        const br = btn.getBoundingClientRect()
-        // After appending and setting display, get menu size
-        const mm = m.getBoundingClientRect()
-        const VW = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
-        const VH = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
-        const margin = 4
-        const menuW = Math.min(mm.width || 220, 320)
-        const menuH = mm.height || 240
-        // Desired: right-align to button's right, top at button's bottom
-        let left = Math.round(br.right - menuW)
-        let top = Math.round(br.bottom + margin)
-        // Clamp to viewport
-        if(left < margin) left = margin
-        if(left + menuW > VW - margin) left = VW - menuW - margin
-        if(top + menuH > VH - margin) top = Math.max(margin, br.top - menuH - margin) // try above if doesn't fit below
-        m.style.left = left + 'px'
-        m.style.top = top + 'px'
-      } catch {}
-
-  backdrop.addEventListener('keydown', onKey, true)
-  menuModal = openModal({ modeManager, root: backdrop, closeKeys:[], restoreMode:true, preferredFocus: ()=> m })
-  // Focus menu to ensure key handling works without relying on body focus
-  try { m.setAttribute('tabindex','-1'); m.focus() } catch {}
-      // Ensure exclusive hover highlight: when hovering an item, make it the only active
-      function onHover(e){
-        const li = e.target && e.target.closest && e.target.closest('li')
-        if(!li || !m.contains(li)) return
-        const items = Array.from(m.querySelectorAll('li'))
-        items.forEach(x=> x.classList.remove('active'))
-        li.classList.add('active')
-      }
-      // Use direct delegation on the menu for reliability in tests and browsers
-      m.addEventListener('mouseover', onHover)
-      // Click handling within menu
-      backdrop.addEventListener('click', (e)=>{
-        if(m.contains(e.target)){
-          const li = e.target.closest('li[data-action]')
-          if(li){ e.stopPropagation(); activateMenuItem(li) }
-          return
-        }
-        // Click outside menu closes it
-        closeMenu()
-      })
-    } else {
-      closeMenu()
-    }
-  }
-  function closeMenu(){
-    const btn = menuBtn(); const m = menuEl(); if(!btn||!m) return
-    if(menuModal){ try{ menuModal.close('manual') }catch{} menuModal=null }
-    // Restore menu element back to its original container and hide
-    const statusRight = document.getElementById('statusRight')
-    if(statusRight && !m.parentElement?.isSameNode(statusRight)){
-      statusRight.appendChild(m)
-    }
-  // Clear positioning and sizing styles
-  try { m.style.left=''; m.style.top=''; m.style.position=''; m.style.display=''; m.style.width=''; } catch {}
-    m.setAttribute('hidden','')
-    document.body.removeAttribute('data-menu-open')
-    btn.setAttribute('aria-expanded','false')
-  }
-  function activateMenuItem(li){ if(!li) return; const act = li.getAttribute('data-action'); closeMenu(); runMenuAction(act) }
-  function runMenuAction(action){
-    if(action==='topic-editor'){
-      const prev=modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prev) } })
-    } else if(action==='model-editor'){
-      const prev=modeManager.mode; openModelEditor({ store, onClose: ({ dirty } = {})=>{
-        // Always refresh pending meta
-        pendingMessageMeta.model = getActiveModel();
-        renderPendingMeta();
-        if(dirty){
-          // Local parity with settings subscription: render + bottom-align focused (one-shot)
-          historyRuntime.renderCurrentView({ preserveActive:true });
-          try {
-            const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active();
-            const id = act && act.id;
-            if(id && ctx.scrollController && ctx.scrollController.alignTo){
-              // schedule after rAF to ensure measurements are up to date
-              requestAnimationFrame(()=>{
-                requestAnimationFrame(()=>{
-                  ctx.scrollController.alignTo(id, 'bottom', false)
-                })
-              })
-            }
-          } catch {}
-        }
-        modeManager.set(prev)
-      } })
-    } else if(action==='daily-stats'){
-      openDailyStatsOverlay({ store, activeParts, historyRuntime, modeManager })
-    } else if(action==='settings'){
-      const prev=modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prev) } })
-    } else if(action==='api-keys'){
-      const prev=modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prev) } })
-    } else if(action==='tutorial'){
-      try { window.open(tutorialUrl, '_blank', 'noopener'); } catch { window.location.href = tutorialUrl }
-    } else if(action==='help'){
-      openHelpOverlay({ modeManager, onClose:()=>{} })
-    }
-  }
-  document.addEventListener('click', e=>{ const btn = menuBtn(); const m = menuEl(); if(!btn||!m) return; if(e.target===btn){ e.stopPropagation(); toggleMenu(); return } })
+  // App menu controller
+  const appMenu = createAppMenuController({
+    modeManager,
+    store,
+    activeParts,
+    historyRuntime,
+    pendingMessageMeta,
+    tutorialUrl,
+    overlays: { openTopicEditor, openModelEditor, openDailyStatsOverlay, openSettingsOverlay, openApiKeysOverlay, openHelpOverlay },
+    getActiveModel,
+    renderPendingMeta,
+    scrollController: ctx.scrollController,
+  })
+  appMenu.handleGlobalClick()
   function renderPendingMeta(){ const pm = document.getElementById('pendingModel'); const pt = document.getElementById('pendingTopic'); if(pm){ pm.textContent = pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'; if(!pm.textContent) pm.textContent='gpt-4o-mini'; pm.title = `Model: ${pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'} (Ctrl+M select (Input mode) · Ctrl+Shift+M manage (any mode))` } if(pt){ const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId); if(topic){ const path = formatTopicPath(topic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { const rootTopic = store.topics.get(store.rootTopicId); if(rootTopic){ const path = formatTopicPath(rootTopic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { pt.textContent='Select Topic'; pt.title='No topic found (Ctrl+T)' } } } }
   function formatTopicPath(id){ const parts = store.getTopicPath(id); if(parts[0]==='Root') parts.shift(); return parts.join(' > ') }
   function middleTruncate(str,max){ if(str.length<=max) return str; const keep=max-3; const head=Math.ceil(keep/2); const tail=Math.floor(keep/2); return str.slice(0,head)+'…'+str.slice(str.length-tail) }
@@ -530,7 +394,7 @@ export function createInteraction({
     }
     else if(k==='k'){ e.preventDefault(); const prevMode=modeManager.mode; openApiKeysOverlay({ modeManager, onClose:()=>{ modeManager.set(prevMode) } }) }
     else if(k===','){ e.preventDefault(); const prevMode=modeManager.mode; openSettingsOverlay({ onClose:()=>{ modeManager.set(prevMode) } }) }
-    else if(e.key==='.' || e.code==='Period'){ e.preventDefault(); toggleMenu(); }
+  else if(e.key==='.' || e.code==='Period'){ e.preventDefault(); appMenu.toggle(); }
     else if(e.shiftKey && k==='r'){ e.preventDefault(); requestDebug.toggle(); }
     else if(e.shiftKey && k==='s'){ e.preventDefault(); window.seedTestMessages && window.seedTestMessages() }
   // Removed global error actions for clarity; use VIEW-only e/d on focused row
