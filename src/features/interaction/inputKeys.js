@@ -134,7 +134,13 @@ export function createInputKeyHandler({
         // One-shot: bottom-align the new meta row as visual cue (spec)
         if(id && scrollController && scrollController.alignTo){
           try { if(scrollController.remeasure) scrollController.remeasure() } catch {}
-          scrollController.alignTo(`${id}:meta`, 'bottom', false)
+          try{
+            import('../history/featureFlags.js').then(mod=>{
+              const useMsg = mod && mod.shouldUseMessageView && mod.shouldUseMessageView()
+              const anchorId = useMsg ? `${id}:a` : `${id}:meta`
+              scrollController.alignTo(anchorId, 'bottom', false)
+            }).catch(()=>{ scrollController.alignTo(`${id}:meta`, 'bottom', false) })
+          } catch { scrollController.alignTo(`${id}:meta`, 'bottom', false) }
         }
         updateSendDisabled()
       }

@@ -1,6 +1,7 @@
 // historyView moved from ui/history/historyView.js
 import { escapeHtml } from '../../shared/util.js'
 import { flattenMessagesToParts } from './messageList.js'
+import { shouldUseMessageView } from './featureFlags.js'
 
 // Regex to match code placeholders: [language-number] (language lowercase alphanum/underscore), e.g. [python-1], [code-2]
 const CODE_PLACEHOLDER_REGEX = /(\[[a-zA-Z0-9_]+-\d+\])/g;
@@ -48,16 +49,32 @@ export function createHistoryView({ store, onActivePartRendered }){
 	function renderMessages(messages){
 		if(!Array.isArray(messages)) { container.innerHTML=''; if(onActivePartRendered) onActivePartRendered(); return }
 		const tokens = []
-		let prevPart = null
 		for(const msg of messages){
 			if(!msg || !Array.isArray(msg.parts)) continue
-			for(const cur of msg.parts){
-				if(prevPart){
-					const gapType = classifyGap(prevPart, cur)
-					if(gapType){ tokens.push(`<div class="gap gap-${gapType}" data-gap-type="${gapType}"></div>`) }
+			const pairId = msg.id
+			const user = msg.parts.find(p=> p.role==='user')
+			const assistant = msg.parts.find(p=> p.role==='assistant')
+			if(user){
+				// User message block
+				tokens.push(`<div class="message user" data-message-id="${user.id}" data-part-id="${user.id}" data-pair-id="${user.pairId}" data-role="user">${escapeHtml(user.text||'')}</div>`)
+			}
+			if(assistant){
+				// Assistant message block with inline meta header
+				const pair = store.pairs.get(assistant.pairId)
+				const topic = pair ? store.topics.get(pair.topicId) : null
+				const ts = pair ? formatTimestamp(pair.createdAt) : ''
+				const topicPath = topic ? formatTopicPath(store, topic.id) : '(no topic)'
+				const modelName = pair && pair.model ? pair.model : '(model)'
+				let stateBadge = ''
+				let errActions = ''
+				if(pair && pair.lifecycleState === 'sending') stateBadge = '<span class="badge state" data-state="sending">…</span>'
+				else if(pair && pair.lifecycleState === 'error') {
+					const label = classifyErrLabel(pair)
+					stateBadge = `<span class=\"badge state error\" title=\"${escapeHtml(pair.errorMessage||'error')}\">${label}</span>`
+					errActions = `<span class=\"err-actions\"><button class=\"btn btn-ghost resend\" data-action=\"resend\" title=\"Copy to input and send as a new message (uses current context) - E key\">Re-ask</button><button class=\"btn btn-ghost del\" data-action=\"delete\" title=\"Delete pair - D key\">Delete</button></span>`
 				}
-				tokens.push(partHtml(cur))
-				prevPart = cur
+				const processed = processCodePlaceholders(assistant.text||'')
+				tokens.push(`<div class="message assistant" data-message-id="${assistant.id}" data-part-id="${assistant.id}" data-pair-id="${assistant.pairId}" data-role="assistant"><div class="assistant-meta"><div class="meta-left"><span class="badge flag" data-flag="${pair ? pair.colorFlag : 'g'}" title="${pair && pair.colorFlag==='b'?'Flagged (blue)':'Unflagged (grey)'}"></span><span class="badge stars">${pair ? '★'.repeat(pair.star) + '☆'.repeat(Math.max(0,3-pair.star)) : '☆☆☆'}</span><span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span></div><div class="meta-right">${stateBadge}${errActions}<span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span><span class="badge model">${escapeHtml(modelName)}</span><span class="badge timestamp" data-ts="${pair ? pair.createdAt : ''}">${ts}</span></div></div><div class="assistant-body">${processed}</div></div>`)
 			}
 		}
 		container.innerHTML = tokens.join('')
@@ -85,7 +102,8 @@ export function createHistoryView({ store, onActivePartRendered }){
 				stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage||'error')}">${label}</span>`
 				errActions = `<span class="err-actions"><button class="btn btn-ghost resend" data-action="resend" title="Copy to input and send as a new message (uses current context) - E key">Re-ask</button><button class="btn btn-ghost del" data-action="delete" title="Delete pair - D key">Delete</button></span>`
 			}
-			return `<div class="part meta" data-part-id="${pt.id}" data-role="meta" data-pair-id="${pt.pairId}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
+			if(!shouldUseMessageView()){
+				return `<div class="part meta" data-part-id="${pt.id}" data-role="meta" data-pair-id="${pt.pairId}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
 					<div class="meta-left">
 						<span class="badge flag" data-flag="${pair.colorFlag}" title="${pair.colorFlag==='b'?'Flagged (blue)':'Unflagged (grey)'}"></span>
 						<span class="badge stars">${'★'.repeat(pair.star)}${'☆'.repeat(Math.max(0,3-pair.star))}</span>
@@ -98,9 +116,43 @@ export function createHistoryView({ store, onActivePartRendered }){
 						<span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
 					</div>
 				</div></div>`
+			}
+			// In message view, meta is rendered inside assistant block header; skip standalone meta part
+			return ''
 		}
 		// Process assistant content for code placeholders, regular escaping for user content
 		const processedContent = pt.role === 'assistant' ? processCodePlaceholders(pt.text) : escapeHtml(pt.text);
+		if(pt.role === 'assistant' && shouldUseMessageView()){
+			const pair = store.pairs.get(pt.pairId)
+			const topic = store.topics.get(pair.topicId)
+			const ts = formatTimestamp(pair.createdAt)
+			const topicPath = topic ? formatTopicPath(store, topic.id) : '(no topic)'
+			const modelName = pair.model || '(model)'
+			let stateBadge = ''
+			let errActions = ''
+			if(pair.lifecycleState === 'sending') stateBadge = '<span class="badge state" data-state="sending">…</span>'
+			else if(pair.lifecycleState === 'error') {
+				const label = classifyErrLabel(pair)
+				stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage||'error')}">${label}</span>`
+				errActions = `<span class="err-actions"><button class="btn btn-ghost resend" data-action="resend" title="Copy to input and send as a new message (uses current context) - E key">Re-ask</button><button class="btn btn-ghost del" data-action="delete" title="Delete pair - D key">Delete</button></span>`
+			}
+			return `<div class="part assistant" data-part-id="${pt.id}" data-role="assistant" data-pair-id="${pt.pairId}"><div class="part-inner">
+				<div class="assistant-meta">
+					<div class="meta-left">
+						<span class="badge flag" data-flag="${pair.colorFlag}" title="${pair.colorFlag==='b'?'Flagged (blue)':'Unflagged (grey)'}"></span>
+						<span class="badge stars">${'★'.repeat(pair.star)}${'☆'.repeat(Math.max(0,3-pair.star))}</span>
+						<span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span>
+					</div>
+					<div class="meta-right">
+						${stateBadge}${errActions}
+						<span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span>
+						<span class="badge model">${escapeHtml(modelName)}</span>
+						<span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
+					</div>
+				</div>
+				<div class="assistant-body">${processedContent}</div>
+			</div></div>`
+		}
 		return `<div class="part ${pt.role}" data-part-id="${pt.id}" data-role="${pt.role}" data-pair-id="${pt.pairId}"><div class="part-inner">${processedContent}</div></div>`
 	}
 	function classifyErrLabel(pair){

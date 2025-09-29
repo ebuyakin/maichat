@@ -38,6 +38,8 @@ export function buildMessages(pairs){
 // Temporary helper: convert message parts back to legacy flat parts for current renderer.
 export function flattenMessagesToParts(messages){
   const flat = []
-  for(const m of messages){ for(const pt of m.parts){ flat.push(pt) } }
+  for(const m of messages){
+    for(const pt of m.parts){ if(pt.role !== 'meta') flat.push(pt) }
+  }
   return flat
 }

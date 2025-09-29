@@ -198,11 +198,19 @@ export function createInteraction({
   function updateMetaBadgesInline(pairId, changes){
     try {
       const pane = document.getElementById('historyPane'); if(!pane) return
-      // Update badges for all meta parts of this pair (there is exactly one meta per pair in DOM)
-      const metaEl = pane.querySelector(`.part.meta[data-pair-id="${pairId}"]`)
-      if(!metaEl) return
-      const left = metaEl.querySelector('.meta-left')
-      const right = metaEl.querySelector('.meta-right')
+      // Flag-aware: prefer assistant-meta in message view; fallback to legacy .part.meta
+      let metaRoot = null
+      try{
+        import('../history/featureFlags.js').then(mod=>{
+          if(mod && mod.shouldUseMessageView && mod.shouldUseMessageView()){
+            metaRoot = pane.querySelector(`.message.assistant[data-pair-id="${pairId}"] .assistant-meta`)
+          }
+        }).catch(()=>{})
+      } catch {}
+      if(!metaRoot){ metaRoot = pane.querySelector(`.part.meta[data-pair-id="${pairId}"] .part-inner`) }
+      if(!metaRoot) return
+      const left = metaRoot.querySelector('.meta-left')
+      const right = metaRoot.querySelector('.meta-right')
       if(!left || !right) return
       // Stars
       if(Object.prototype.hasOwnProperty.call(changes,'star')){
@@ -410,7 +418,18 @@ export function createInteraction({
         const id = lastPair ? lastPair.id : null
         if(id && ctx.scrollController && ctx.scrollController.alignTo){
           try { if(ctx.scrollController.remeasure) ctx.scrollController.remeasure() } catch {}
-          ctx.scrollController.alignTo(`${id}:meta`, 'bottom', false)
+          try {
+            // Lazy import to avoid cyclic deps; avoid await in non-async function
+            import('../history/featureFlags.js').then(mod=>{
+              const useMsg = mod && mod.shouldUseMessageView && mod.shouldUseMessageView()
+              const anchorId = useMsg ? `${id}:a` : `${id}:meta`
+              ctx.scrollController.alignTo(anchorId, 'bottom', false)
+            }).catch(()=>{
+              ctx.scrollController.alignTo(`${id}:meta`, 'bottom', false)
+            })
+          } catch {
+            ctx.scrollController.alignTo(`${id}:meta`, 'bottom', false)
+          }
         }
       } catch {}
     })

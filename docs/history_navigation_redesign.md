@@ -54,18 +54,43 @@ Boundary behavior:
 - Clicking inside a user or assistant block sets Active Message to that block. But it doesn't scroll the history! 
 - Since meta is inside the assistant block, clicking the meta header is equivalent to clicking the assistant block.
 
+
 ## 4. Rendering & DOM structure
-- No DOM partitioning of message text. Each block is a single DOM element (with standard inner markup for code/math formatting in future M25).
-- DOM structure (prototype‑aligned):
-  - `<historyPane>` (outer wrapper; not scrollable)
-    - `<gradientOverlayTop>` (overlay element; fixed within wrapper; visual fade for upward scrolling)
-    - `<history>` (inner scroll container; holds messages)
-      - `<message class="user">` (margin separates blocks; padding formats content)
-      - `<message class="assistant">`
-        - `<meta-line>` (header area inside assistant; moves with assistant block)
-        - assistant content…
-    - `<gradientOverlayBottom>` (overlay element; fixed within wrapper; visual fade for downward scrolling)
+
+- No DOM partitioning of message text. Each message is a single block (with standard inner markup for code/math formatting, images, etc. in future M25).
+- DOM structure (prototype‑aligned, explicit):
+
+  ```html
+  <div id="historyPane"> <!-- not scrollable -->
+    <div class="gradientOverlayTop"></div>
+    <div id="history"> <!-- scrollable -->
+      <div class="message user" data-message-id="..." data-pair-id="..." data-role="user">
+        <!-- user text -->
+      </div>
+      <div class="message assistant" data-message-id="..." data-pair-id="..." data-role="assistant">
+        <div class="assistant-meta">
+          <!-- meta badges, topic, model, error actions, etc. -->
+        </div>
+        <div class="assistant-body">
+          <!-- assistant text, code blocks, equations, images, etc. -->
+        </div>
+      </div>
+      <!-- ...more messages... -->
+    </div>
+    <div class="gradientOverlayBottom"></div>
+  </div>
+  ```
+
 - Long code blocks/equations are not split; scrolling traverses across them without altering the DOM.
+
+### 4.1 Overlays and scrolling (concise)
+
+- Scroll container: `#history` (inner). The outer `#historyPane` is not scrollable.
+- Overlays: top/bottom gradient elements live inside `#historyPane` and stay fixed; content scrolls beneath. Do not use sticky for overlays.
+- Positioning contract:
+  - `#historyPane`: position: relative; overflow: hidden (overlays’ positioning context and clipping).
+  - `#history`: position: relative; overflow-y: auto; height: 100% (scrollable area).
+  - Message separation uses per-message margin; inner padding formats content.
 
 ## 5. Settings
 - scrollStepPx: default small step (prototype indicates ~200px).
