@@ -19,7 +19,7 @@ export function createScrollController({ container, getParts }){
 	}
 	function measure(){
 		const settings = getSettings()
-		const edgeGap = settings.gapOuterPx || 0
+		const edgeGap = settings.fadeZonePx || 0
 		const paneH = container.clientHeight
 		const nodeList = Array.from(container.querySelectorAll('.message, .part'))
 		const parts = []
@@ -64,8 +64,8 @@ export function createScrollController({ container, getParts }){
 		const part = parts[k]
 		let S
 		if(mode === 'top'){
-			// Align top edge just below the top fade overlay
-			S = part.start - fadeZone
+			// Align top edge just below the top fade overlay, accounting for container top padding
+			S = padTop + part.start - fadeZone
 		} else if(mode === 'bottom'){
 			// Align bottom edge of part to inner bottom (H - padBottom)
 			// Using part.start measured from inner top, we must add padTop to convert to visual offsetTop
@@ -295,6 +295,6 @@ export function createScrollController({ container, getParts }){
 	function stepScroll(deltaPx){ if(!Number.isFinite(deltaPx)) return; cancelAnimation(); setScrollTopProgrammatic(container.scrollTop + deltaPx); scheduleValidate() }
 	function indexByMessageId(messageId){ return findIndexById(messageId) }
 	function alignToMessage(messageId, anchor='top', animate=false){ alignTo(messageId, anchor, animate) }
-	function jumpToMessage(messageId, anchor='top', animate=true){ alignTo(messageId, anchor, animate) }
+	function jumpToMessage(messageId, anchor='top', animate=false){ alignTo(messageId, anchor, animate) }
 	return { remeasure: measure, apply, setActiveIndex, debugInfo, setAnimationEnabled, suppressNextValidate, isProgrammaticScroll, alignTo, ensureVisible, stepScroll, indexByMessageId, alignToMessage, jumpToMessage }
 }

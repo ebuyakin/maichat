@@ -22,21 +22,15 @@
   --bottombar-h: 96px;
   --gutter: 16px;
 
-  /* Geometry (history pane/doc: history_geometry) */
-  --pane-gutter-l: 10px; /* GutterL1 */
-  --pane-gutter-r: 10px; /* GutterR1 */
-  --msg-gutter-l: 10px;  /* GutterL2 */
-  --msg-gutter-r: 10px;  /* GutterR2 */
-  --message-gap: 10px;   /* MessageGap */
-  --fade-zone: 10px;     /* FadeZone */
-  --gutter-sum-l: calc(var(--pane-gutter-l) + var(--msg-gutter-l));
-  --gutter-sum-r: calc(var(--pane-gutter-r) + var(--msg-gutter-r));
+  /* Geometry (history pane/doc: history_geometry) – user-facing */
+  --gutter-l: 10px;         /* GutterL */
+  --gutter-r: 10px;         /* GutterR */
+  --message-gap: 10px;      /* MessageGap */
+  --assistant-gap: 5px;     /* AssistantGap */
+  --message-padding: 10px;  /* MessagePadding */
+  --meta-gap: 5px;          /* MetaGap */
+  --fade-zone: 40px;        /* FadeZone (keep current value) */
 
-  /* Spacing/fade defaults (overridden at runtime by JS via :root) */
-  --gap-outer: 20px;      /* legacy; prefer --fade-zone for overlays */
-  --gap-meta: 6px;        /* gap between user->meta and meta->assistant */
-  --gap-intra: 6px;       /* gap between consecutive parts of same role */
-  --gap-between: 10px;    /* gap between message pairs */
-  --part-padding: 4px;    /* inner padding of .part-inner */
+  /* Transition defaults */
   --fade-transition-ms: 120ms; /* default transition for opacity */
 }

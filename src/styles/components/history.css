@@ -21,11 +21,12 @@
 
 /* Legacy gap elements removed; separation via margins below */
 
-/* Message-based layout: symmetric gaps and L2 gutters */
-#history .message{ display:block; margin-top: var(--message-gap); margin-bottom: var(--message-gap); }
-#history .message.user{ background:#0d2233; padding: 8px var(--msg-gutter-r) 8px var(--msg-gutter-l); border-radius:3px; white-space:pre-wrap; }
-#history .message.assistant{ background:transparent; padding: 8px var(--msg-gutter-r) 8px var(--msg-gutter-l); }
-#history .message.assistant .assistant-meta{ display:flex; align-items:center; gap:12px; white-space:nowrap; padding: 0; margin-bottom:5px; }
+/* Message-based layout: gaps + uniform message padding */
+#history .message{ display:block; margin-top: var(--message-gap); margin-bottom: 0; }
+#history .message.assistant{ margin-top: var(--assistant-gap); }
+#history .message.user{ background:#0d2233; padding: var(--message-padding); border-radius:3px; white-space:pre-wrap; }
+#history .message.assistant{ background:transparent; padding: var(--message-padding); }
+#history .message.assistant .assistant-meta{ display:flex; align-items:center; gap:12px; white-space:nowrap; padding: 0; margin-bottom: var(--meta-gap); }
 #history .message.assistant .assistant-meta .meta-left{ display:flex; gap:10px; align-items:center; }
 #history .message.assistant .assistant-meta .meta-right{ display:flex; gap:10px; align-items:center; margin-left:auto; }
 #history .message.assistant .assistant-body{ display:block; margin:0; padding-top:6px; white-space:pre-wrap; }

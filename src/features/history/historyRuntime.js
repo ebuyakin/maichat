@@ -69,29 +69,54 @@ export function createHistoryRuntime(ctx){
       __lastScrollTop = pane.scrollTop
       if(!dirDown && !dirUp) return
       const act = activeParts.active && activeParts.active(); if(!act) return
-      const el = pane.querySelector(`.message[data-part-id="${act.id}"]`) || pane.querySelector(`[data-part-id="${act.id}"]`)
-      if(!el) return
-      const paneRect = pane.getBoundingClientRect()
-      const r = el.getBoundingClientRect()
-      const topRel = r.top - paneRect.top
-      const bottomRel = r.bottom - paneRect.top
-      const fullyAbove = bottomRel <= 0
-      const fullyBelow = topRel >= paneRect.height
-      if((dirDown && fullyAbove) || (dirUp && fullyBelow)){
-        // Compute first/last visible message
-        const nodes = Array.from(pane.querySelectorAll('#history > .message'))
-        let firstVis = null, lastVis = null
-        for(const n of nodes){
-          const nr = n.getBoundingClientRect()
-          const nTop = nr.top - paneRect.top
-          const nBottom = nr.bottom - paneRect.top
-          const visible = (nBottom > 0) && (nTop < paneRect.height)
-          if(visible){ if(!firstVis) firstVis = n; lastVis = n }
+      let idx = typeof activeParts.activeIndex === 'number' ? activeParts.activeIndex : (activeParts.parts||[]).findIndex(p=> p.id===act.id)
+      if(idx < 0) return
+
+      // Thresholds in scrollTop space
+      const S = pane.scrollTop
+      const H = pane.clientHeight
+      // Prefer settings for fade zone; fallback to CSS var
+      const s = getSettings && getSettings()
+      let fadeZone = (s && Number.isFinite(s.fadeZonePx)) ? s.fadeZonePx : 0
+      if(!fadeZone){
+        try { const v = getComputedStyle(document.documentElement).getPropertyValue('--fade-zone'); const n = parseFloat(v); if(Number.isFinite(n)) fadeZone = n } catch{}
+      }
+      const topThreshold = S + fadeZone
+      const bottomThreshold = S + H - fadeZone
+
+      // Use direct children (.message) of #history to avoid selector scoping issues
+      const nodes = Array.from(pane.children).filter(n=> n.classList && n.classList.contains('message'))
+      if(nodes.length === 0) return
+      let safety = 0
+      while(safety++ < 100){
+        const curr = nodes[idx]; if(!curr) break
+        const top = curr.offsetTop
+        const bottom = top + curr.offsetHeight
+        
+        if(dirDown){
+          // Scrolling down: switch when ENTIRE message is above the BOTTOM edge of top fade zone
+          // This means the message bottom has crossed above topThreshold
+          if(bottom <= topThreshold && idx+1 < nodes.length){ 
+            idx++; 
+            continue 
+          }
+        } else if(dirUp){
+          // Scrolling up: switch when ENTIRE message is below the TOP edge of bottom fade zone
+          // This means the message top has crossed below bottomThreshold
+          if(top >= bottomThreshold && idx-1 >= 0){ 
+            idx--; 
+            continue 
+          }
         }
-        const target = dirDown ? firstVis : lastVis
-        if(target){
-          const id = target.getAttribute('data-part-id') || target.getAttribute('data-message-id')
-          if(id){ activeParts.setActiveById(id); applyActiveMessage() }
+        break
+      }
+      
+      if(idx !== activeParts.activeIndex && nodes[idx]){
+        const id = nodes[idx].getAttribute('data-part-id') || nodes[idx].getAttribute('data-message-id')
+        if(id){ 
+          activeParts.activeIndex = idx  // Update index directly
+          activeParts.setActiveById(id)
+          applyActiveMessage() 
         }
       }
     } catch {}

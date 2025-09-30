@@ -22,20 +22,26 @@ export function openSettingsOverlay({ onClose }){
               <label><span>Part Fraction <span class="pf-hint" style="opacity:.7;font-size:12px;color:var(--text-dim);"></span></span>
                 <input name="partFraction" type="number" step="0.10" min="0.10" max="1.00" value="${existing.partFraction}" />
               </label>
-              <label>Part Padding (px)
-                <input name="partPadding" type="number" step="1" min="0" max="48" value="${existing.partPadding}" />
+              <label>Fade Zone (px)
+                <input name="fadeZonePx" type="number" step="1" min="0" max="120" value="${existing.fadeZonePx != null ? existing.fadeZonePx : 20}" />
               </label>
-              <label>Edge Gap (px)
-                <input name="gapOuterPx" type="number" step="1" min="0" max="48" value="${existing.gapOuterPx}" />
+              <label>Message Gap (px)
+                <input name="messageGapPx" type="number" step="1" min="0" max="60" value="${existing.messageGapPx != null ? existing.messageGapPx : 10}" />
+              </label>
+              <label>Assistant Gap (px)
+                <input name="assistantGapPx" type="number" step="1" min="0" max="60" value="${existing.assistantGapPx != null ? existing.assistantGapPx : 5}" />
+              </label>
+              <label>Message Padding (px)
+                <input name="messagePaddingPx" type="number" step="1" min="0" max="48" value="${existing.messagePaddingPx != null ? existing.messagePaddingPx : 10}" />
               </label>
               <label>Meta Gap (px)
-                <input name="gapMetaPx" type="number" step="1" min="0" max="48" value="${existing.gapMetaPx}" />
+                <input name="metaGapPx" type="number" step="1" min="0" max="48" value="${existing.metaGapPx != null ? existing.metaGapPx : 5}" />
               </label>
-              <label>Intra-role Gap (px)
-                <input name="gapIntraPx" type="number" step="1" min="0" max="48" value="${existing.gapIntraPx}" />
+              <label>Gutter Left (px)
+                <input name="gutterLPx" type="number" step="1" min="0" max="60" value="${existing.gutterLPx != null ? existing.gutterLPx : 10}" />
               </label>
-              <label>Between Messages Gap (px)
-                <input name="gapBetweenPx" type="number" step="1" min="0" max="48" value="${existing.gapBetweenPx}" />
+              <label>Gutter Right (px)
+                <input name="gutterRPx" type="number" step="1" min="0" max="60" value="${existing.gutterRPx != null ? existing.gutterRPx : 10}" />
               </label>
             </fieldset>
             <div class="tab-hint" data-tab-hint="spacing">Shift+1..4 switch tabs • h/l or [ ] cycle • j/k move • +/- adjust • Ctrl+S - Save & Close • Esc - Cancel & Close</div>
@@ -140,12 +146,14 @@ export function openSettingsOverlay({ onClose }){
 
   function readFormValues(){
     const fd = new FormData(form)
-    const partFraction = clampPF(parseFloat(fd.get('partFraction')))
-    const partPadding = clampRange(parseInt(fd.get('partPadding')),0,48)
-    const gapOuterPx = clampRange(parseInt(fd.get('gapOuterPx')),0,48)
-    const gapMetaPx = clampRange(parseInt(fd.get('gapMetaPx')),0,48)
-    const gapIntraPx = clampRange(parseInt(fd.get('gapIntraPx')),0,48)
-    const gapBetweenPx = clampRange(parseInt(fd.get('gapBetweenPx')),0,48)
+  const partFraction = clampPF(parseFloat(fd.get('partFraction')))
+  const fadeZonePx = clampRange(parseInt(fd.get('fadeZonePx')),0,120)
+  const messageGapPx = clampRange(parseInt(fd.get('messageGapPx')),0,60)
+  const assistantGapPx = clampRange(parseInt(fd.get('assistantGapPx')),0,60)
+  const messagePaddingPx = clampRange(parseInt(fd.get('messagePaddingPx')),0,48)
+  const metaGapPx = clampRange(parseInt(fd.get('metaGapPx')),0,48)
+  const gutterLPx = clampRange(parseInt(fd.get('gutterLPx')),0,60)
+  const gutterRPx = clampRange(parseInt(fd.get('gutterRPx')),0,60)
   // anchorMode / edgeAnchoringMode removed
     const fadeMode = fd.get('fadeMode') || 'binary'
   const fadeHiddenOpacity = clampFloat(parseFloat(fd.get('fadeHiddenOpacity')),0,1)
@@ -160,7 +168,7 @@ export function openSettingsOverlay({ onClose }){
   const assistantResponseAllowance = clampRange(parseInt(fd.get('assistantResponseAllowance')),0,500000)
   const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')),0,1000)
   const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')),1.0,10.0)
-  return { partFraction, partPadding, gapOuterPx, gapMetaPx, gapIntraPx, gapBetweenPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken }
+  return { partFraction, fadeZonePx, messageGapPx, assistantGapPx, messagePaddingPx, metaGapPx, gutterLPx, gutterRPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken }
   }
   function shallowEqual(a,b){
     if(a===b) return true
@@ -186,11 +194,13 @@ export function openSettingsOverlay({ onClose }){
   // anchorMode / edgeAnchoringMode removed; nothing to populate
     // Spacing
     const setNum = (name, v)=>{ const el=form.querySelector(`input[name="${name}"]`); if(el && v!=null) el.value = String(v) }
-    setNum('partPadding', s.partPadding)
-    setNum('gapOuterPx', s.gapOuterPx)
-    setNum('gapMetaPx', s.gapMetaPx)
-    setNum('gapIntraPx', s.gapIntraPx)
-    setNum('gapBetweenPx', s.gapBetweenPx)
+  setNum('fadeZonePx', s.fadeZonePx)
+  setNum('messageGapPx', s.messageGapPx)
+  setNum('assistantGapPx', s.assistantGapPx)
+  setNum('messagePaddingPx', s.messagePaddingPx)
+  setNum('metaGapPx', s.metaGapPx)
+  setNum('gutterLPx', s.gutterLPx)
+  setNum('gutterRPx', s.gutterRPx)
     // Visibility
     const fm = form.querySelector('select[name="fadeMode"]')
     if(fm) fm.value = s.fadeMode || 'binary'
