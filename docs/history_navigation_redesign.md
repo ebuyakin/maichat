@@ -176,3 +176,6 @@ Step 7 — Cleanup & docs
 
 ---
 This document is derived from the prototype in `docs/history_view_template/` and translates its behavior into the MaiChat vocabulary to guide implementation.
+
+
+

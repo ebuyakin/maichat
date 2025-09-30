@@ -22,6 +22,24 @@ export function applySpacingStyles(settings){
   if(Number.isFinite(metaGapPx)) root.style.setProperty('--meta-gap', `${metaGapPx}px`)
   if(Number.isFinite(gutterLPx)) root.style.setProperty('--gutter-l', `${gutterLPx}px`)
   if(Number.isFinite(gutterRPx)) root.style.setProperty('--gutter-r', `${gutterRPx}px`)
+  
+  // Update topBar and inputBar padding dynamically
+  if(Number.isFinite(gutterLPx) && Number.isFinite(gutterRPx) && Number.isFinite(messagePaddingPx)){
+    const topBar = document.getElementById('topBar')
+    const inputBar = document.getElementById('inputBar')
+    const leftPadding = `${gutterLPx + messagePaddingPx}px`
+    const rightPadding = `${gutterRPx + messagePaddingPx}px`
+    
+    if(topBar){
+      topBar.style.paddingLeft = leftPadding
+      topBar.style.paddingRight = rightPadding
+    }
+    if(inputBar){
+      inputBar.style.paddingLeft = leftPadding
+      inputBar.style.paddingRight = rightPadding
+    }
+  }
+  
   // Fade base var (used as default; JS still governs per-part durations)
   root.style.setProperty('--fade-transition-ms', `${baseFadeMs}ms`)
 }

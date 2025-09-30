@@ -23,11 +23,11 @@
   --gutter: 16px;
 
   /* Geometry (history pane/doc: history_geometry) – user-facing */
-  --gutter-l: 10px;         /* GutterL */
+  --gutter-l: 70px;         /* GutterL */
   --gutter-r: 10px;         /* GutterR */
-  --message-gap: 10px;      /* MessageGap */
+  --message-gap: 70px;      /* MessageGap */
   --assistant-gap: 5px;     /* AssistantGap */
-  --message-padding: 10px;  /* MessagePadding */
+  --message-padding: 30px;  /* MessagePadding */
   --meta-gap: 5px;          /* MetaGap */
   --fade-zone: 40px;        /* FadeZone (keep current value) */
 

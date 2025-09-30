@@ -93,3 +93,6 @@ With padTop = padBottom = fadeZone, Top simplifies to S = part.start (and for th
 - CSS rounding can cause ±1px; tests should tolerate this.
 - Always remeasure before anchoring after structural DOM changes.
 - If variables become theme-dependent, ensure Settings updates recompute CSS vars before any programmatic scroll.
+
+
+fadevisibility.js - dead code

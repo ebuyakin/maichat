@@ -19,9 +19,6 @@ export function openSettingsOverlay({ onClose }){
           <div class="tab-section" data-tab-section="spacing" id="tab-spacing">
             <fieldset class="spacing-fieldset">
               <legend>Spacing</legend>
-              <label><span>Part Fraction <span class="pf-hint" style="opacity:.7;font-size:12px;color:var(--text-dim);"></span></span>
-                <input name="partFraction" type="number" step="0.10" min="0.10" max="1.00" value="${existing.partFraction}" />
-              </label>
               <label>Fade Zone (px)
                 <input name="fadeZonePx" type="number" step="1" min="0" max="120" value="${existing.fadeZonePx != null ? existing.fadeZonePx : 20}" />
               </label>
@@ -146,8 +143,7 @@ export function openSettingsOverlay({ onClose }){
 
   function readFormValues(){
     const fd = new FormData(form)
-  const partFraction = clampPF(parseFloat(fd.get('partFraction')))
-  const fadeZonePx = clampRange(parseInt(fd.get('fadeZonePx')),0,120)
+    const fadeZonePx = clampRange(parseInt(fd.get('fadeZonePx')),0,120)
   const messageGapPx = clampRange(parseInt(fd.get('messageGapPx')),0,60)
   const assistantGapPx = clampRange(parseInt(fd.get('assistantGapPx')),0,60)
   const messagePaddingPx = clampRange(parseInt(fd.get('messagePaddingPx')),0,48)
@@ -168,7 +164,7 @@ export function openSettingsOverlay({ onClose }){
   const assistantResponseAllowance = clampRange(parseInt(fd.get('assistantResponseAllowance')),0,500000)
   const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')),0,1000)
   const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')),1.0,10.0)
-  return { partFraction, fadeZonePx, messageGapPx, assistantGapPx, messagePaddingPx, metaGapPx, gutterLPx, gutterRPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken }
+  return { fadeZonePx, messageGapPx, assistantGapPx, messagePaddingPx, metaGapPx, gutterLPx, gutterRPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken }
   }
   function shallowEqual(a,b){
     if(a===b) return true
@@ -188,10 +184,6 @@ export function openSettingsOverlay({ onClose }){
     close()
   }
   function populateFormFromSettings(s){
-    // Layout
-    const pf = form.querySelector('input[name="partFraction"]')
-    if(pf) pf.value = (s.partFraction != null ? Number(s.partFraction).toFixed(2) : '0.60')
-  // anchorMode / edgeAnchoringMode removed; nothing to populate
     // Spacing
     const setNum = (name, v)=>{ const el=form.querySelector(`input[name="${name}"]`); if(el && v!=null) el.value = String(v) }
   setNum('fadeZonePx', s.fadeZonePx)
@@ -228,7 +220,6 @@ export function openSettingsOverlay({ onClose }){
     updatePfHint()
     setDirty(true)
   }
-  function clampPF(v){ if(isNaN(v)) v = existing.partFraction || 0.6; return Math.min(1.00, Math.max(0.10, v)) }
   function clampRange(v,min,max){ if(isNaN(v)) return min; return Math.min(max, Math.max(min,v)) }
   function clampFloat(v,min,max){ if(isNaN(v)) return min; return Math.min(max, Math.max(min,v)) }
   function markSaved(){ setDirty(false) }
@@ -245,16 +236,7 @@ export function openSettingsOverlay({ onClose }){
   function adjustNumber(el, delta){
     if(!el) return
     const name = el.name
-    if(name === 'partFraction'){
-      const stepBase = 0.10
-      const stepLarge = 0.20
-      const step = (Math.abs(delta)===2?stepLarge:stepBase) * (delta>0?1:-1)
-      let v = parseFloat(el.value)
-      if(isNaN(v)) v = existing.partFraction || 0.6
-      v += step
-      v = clampPF(v)
-  el.value = v.toFixed(2)
-    } else if(name === 'fadeHiddenOpacity') {
+    if(name === 'fadeHiddenOpacity') {
       const min = parseFloat(el.min); const max = parseFloat(el.max)
       const base = parseFloat(el.step)||0.05
       const step = base * (Math.abs(delta)===2?2:1) * (delta>0?1:-1)
@@ -416,17 +398,19 @@ export function openSettingsOverlay({ onClose }){
       if(activeName){
           panel.querySelectorAll('.tab-hint').forEach(h=>{ h.style.display = (h.getAttribute('data-tab-hint')===activeName)?'block':'none' })
         }
-      const cap = Math.floor(window.innerHeight * 0.70)
-      const finalH = Math.min(maxH, cap)
-      panel.dataset.maxMeasuredHeight = String(maxH)
+      const cap = Math.floor(window.innerHeight * 0.95)
+      // Force a minimum height for spacing tab if it's too small
+      const minDesiredHeight = 800
+      const finalH = Math.min(Math.max(maxH, minDesiredHeight), cap)
+      panel.dataset.maxMeasuredHeight = String(Math.max(maxH, minDesiredHeight))
       panel.style.height = finalH + 'px'
       panel.classList.add('fixed-height')
       const body = panel.querySelector('.settings-body')
-      if(body){ body.style.overflow = (maxH > cap) ? 'auto' : 'hidden' }
-      // On resize, keep constant measured height but re-clamp to current 70vh
+      if(body){ body.style.overflow = (Math.max(maxH, minDesiredHeight) > cap) ? 'auto' : 'hidden' }
+      // On resize, keep constant measured height but re-clamp to current 95vh
       window.addEventListener('resize', ()=>{
         const stored = parseInt(panel.dataset.maxMeasuredHeight,10) || maxH
-        const capNow = Math.floor(window.innerHeight * 0.70)
+        const capNow = Math.floor(window.innerHeight * 0.95)
         const hNow = Math.min(stored, capNow)
         panel.style.height = hNow + 'px'
         if(body){ body.style.overflow = (stored > capNow) ? 'auto' : 'hidden' }

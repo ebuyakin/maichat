@@ -16,7 +16,7 @@
 .settings-panel fieldset.spacing-fieldset, 
 .settings-panel fieldset.layout-fieldset,
 .settings-panel fieldset.visibility-fieldset, 
-.settings-panel fieldset.scroll-fieldset { border:1px solid #333; padding:14px 18px 18px; border-radius:8px; display:flex; flex-direction:column; gap:12px; width:var(--settings-fieldset-w); max-width:100%; background:rgba(255,255,255,0.01); }
+.settings-panel fieldset.scroll-fieldset { border:1px solid #333; padding:14px 18px 18px; border-radius:8px; display:flex; flex-direction:column; gap:6px; width:var(--settings-fieldset-w); max-width:100%; background:rgba(255,255,255,0.01); }
 .settings-panel fieldset.spacing-fieldset legend { font-size:11px; padding:0 4px; color:var(--text-dim); letter-spacing:.5px; }
 .settings-panel.compact { width:440px; }
 @media (max-width:520px){ .settings-panel.compact { width:92vw; } }

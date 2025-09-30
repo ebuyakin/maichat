@@ -95,15 +95,15 @@ export function createHistoryRuntime(ctx){
         
         if(dirDown){
           // Scrolling down: switch when ENTIRE message is above the BOTTOM edge of top fade zone
-          // This means the message bottom has crossed above topThreshold
-          if(bottom <= topThreshold && idx+1 < nodes.length){ 
+          // This means the message bottom has crossed above topThreshold (with 1px earlier trigger)
+          if(bottom <= topThreshold - 1 && idx+1 < nodes.length){ 
             idx++; 
             continue 
           }
         } else if(dirUp){
           // Scrolling up: switch when ENTIRE message is below the TOP edge of bottom fade zone
-          // This means the message top has crossed below bottomThreshold
-          if(top >= bottomThreshold && idx-1 >= 0){ 
+          // This means the message top has crossed below bottomThreshold (with 1px earlier trigger)
+          if(top >= bottomThreshold + 1 && idx-1 >= 0){ 
             idx--; 
             continue 
           }
