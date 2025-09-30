@@ -205,7 +205,7 @@ export function createCommandKeyHandler({
             }
           } catch{}
         }
-        historyRuntime.applyActivePart()
+  historyRuntime.applyActiveMessage()
         try { if(scrollController && scrollController.remeasure) scrollController.remeasure() } catch {}
         try { const act = activeParts.active(); const targetId = anchorTargetId || (act && act.id); if(targetId && scrollController && scrollController.alignTo){ scrollController.alignTo(targetId, 'bottom', false) } } catch {}
         pushCommandHistory(q)

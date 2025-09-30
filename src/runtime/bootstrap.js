@@ -22,7 +22,7 @@ import { openApiKeysOverlay } from '../features/config/apiKeysOverlay.js'
  */
 export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl }){
   const { store, persistence, pendingMessageMeta } = ctx
-  const { applySpacingStyles, renderCurrentView, applyActivePart, renderStatus, layoutHistoryPane } = historyRuntime
+  const { applySpacingStyles, renderCurrentView, applyActiveMessage, renderStatus, layoutHistoryPane } = historyRuntime
 
   registerProvider('openai', createOpenAIAdapter())
   registerProvider('anthropic', createAnthropicAdapter())
@@ -43,7 +43,7 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
   renderStatus()
   // Start focused at the last (newest) part on first load
   try { ctx.activeParts && ctx.activeParts.last && ctx.activeParts.last() } catch{}
-  applyActivePart()
+  applyActiveMessage()
   // One-shot alignment on open: bottom-align last assistant if present; else bottom-align last meta
   try {
     const sc = ctx.scrollController
@@ -69,7 +69,8 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
         }
         else {
           if(lastPairId && sc.alignTo){ 
-            sc.alignTo(`${lastPairId}:meta`, 'bottom', false) 
+            // If no assistant yet, align to the last user message of that pair
+            sc.alignTo(`${lastPairId}:user`, 'bottom', false) 
           }
         }
       })

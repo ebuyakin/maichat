@@ -185,7 +185,7 @@ export function createInteraction({
               // Inline update of topic badge; do not rebuild list per spec
               updateMetaBadgesInline(pair.id, { topicId })
               // Preserve focus styling
-              activeParts.setActiveById(act.id); historyRuntime.applyActivePart()
+              activeParts.setActiveById(act.id); historyRuntime.applyActiveMessage()
             }
           }
         }
@@ -323,27 +323,24 @@ export function createInteraction({
   }
   function escapeHtmlAttr(str){ return String(str).replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[s])); }
   function escapeHtml(str){ const div=document.createElement('div'); div.textContent=str; return div.innerHTML; }
-  document.addEventListener('click', e=>{
-    const partEl = e.target.closest('.part'); if(!partEl) return
-    // Ignore selection changes when clicking meta parts (request was: meta never becomes active via mouse)
-    if(partEl.getAttribute('data-role') === 'meta'){
-      // However, allow interactive controls inside meta to work without changing selection
+    document.addEventListener('click', e=>{
+      const msgEl = e.target.closest('.message'); if(!msgEl) return
+      // Allow interactive controls to work without changing selection when inside assistant-meta
       const t = e.target
       const tag = t && t.tagName ? t.tagName.toLowerCase() : ''
       const isInteractive = tag==='button' || tag==='a' || tag==='input' || tag==='textarea' || t.getAttribute('role')==='button' || t.isContentEditable
-      if(isInteractive){ return }
-      // Non-interactive click on meta: do nothing selection-wise
-      return
-    }
-  activeParts.setActiveById(partEl.getAttribute('data-part-id'))
-    historyRuntime.applyActivePart()
-    // If Reading Mode is ON, center-align the newly focused part on click as well
-    try {
-      if(readingMode && ctx.scrollController && ctx.scrollController.alignTo){
-        const act = activeParts.active(); if(act) ctx.scrollController.alignTo(act.id, 'center', false)
-      }
-    } catch {}
-  })
+      if(isInteractive) return
+      const id = msgEl.getAttribute('data-part-id')
+      if(!id) return
+      activeParts.setActiveById(id)
+      historyRuntime.applyActiveMessage()
+      // No auto-scroll on click per spec. If reading mode is ON, we still center for readability.
+      try {
+        if(readingMode && ctx.scrollController && ctx.scrollController.alignToMessage){
+          const act = activeParts.active(); if(act) ctx.scrollController.alignToMessage(act.id, 'center', false)
+        }
+      } catch {}
+    })
   window.addEventListener('keydown', e=>{
     if(!e.ctrlKey) return;
     const k = e.key.toLowerCase();

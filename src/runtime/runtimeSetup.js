@@ -20,8 +20,9 @@ export function initRuntime() {
   attachIndexes(store)
   const persistence = attachContentPersistence(store, createIndexedDbAdapter())
   const historyPaneEl = document.getElementById('historyPane')
+  const historyEl = document.getElementById('history')
   const activeParts = new ActivePartController()
-  const scrollController = createScrollController({ container: historyPaneEl })
+  const scrollController = createScrollController({ container: historyEl })
   const historyView = createHistoryView({ store, onActivePartRendered: ()=> {} })
   const boundaryMgr = createBoundaryManager()
 
@@ -34,7 +35,7 @@ export function initRuntime() {
     activeParts,
     commandInput: null, // assigned later by interaction module
     renderHistory: ()=> {},
-  applyActivePart: ()=> {},
+  applyActiveMessage: ()=> {},
   alignTo: (id, pos, anim)=> scrollController.alignTo && scrollController.alignTo(id, pos, anim)
   })
 

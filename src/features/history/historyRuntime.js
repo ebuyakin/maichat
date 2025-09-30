@@ -10,6 +10,7 @@ import { applyFadeVisibility } from './fadeVisibility.js'
 export function createHistoryRuntime(ctx){
   const { store, activeParts, historyView, scrollController, boundaryMgr, lifecycle, pendingMessageMeta } = ctx
   const historyPaneEl = document.getElementById('historyPane')
+  const historyEl = document.getElementById('history')
   const commandErrEl = document.getElementById('commandError')
   let lastContextStats = null
   let lastContextIncludedIds = new Set()
@@ -54,9 +55,9 @@ export function createHistoryRuntime(ctx){
     }
   })
   // Track scroll direction for viewport-based active switching
-  let __lastScrollTop = historyPaneEl ? historyPaneEl.scrollTop : 0
+  let __lastScrollTop = historyEl ? historyEl.scrollTop : 0
   function updateActiveOnScroll(){
-    const pane = historyPaneEl; if(!pane) return
+    const pane = historyEl; if(!pane) return
     try {
       const isProg = ctx.scrollController && ctx.scrollController.isProgrammaticScroll && ctx.scrollController.isProgrammaticScroll()
       const lastKey = (window && window.__lastKey) || ''
@@ -90,7 +91,7 @@ export function createHistoryRuntime(ctx){
         const target = dirDown ? firstVis : lastVis
         if(target){
           const id = target.getAttribute('data-part-id') || target.getAttribute('data-message-id')
-          if(id){ activeParts.setActiveById(id); applyActivePart() }
+          if(id){ activeParts.setActiveById(id); applyActiveMessage() }
         }
       }
     } catch {}
@@ -119,7 +120,7 @@ export function createHistoryRuntime(ctx){
   updateFadeVisibility({ initial: true })
   applyOutOfContextStyling()
     updateMessageCount(boundary.included.length, pairs.length)
-  requestAnimationFrame(()=>{ scrollController.remeasure(); applyActivePart() })
+  requestAnimationFrame(()=>{ scrollController.remeasure(); applyActiveMessage() })
     lifecycle.updateNewReplyBadgeVisibility()
   }
   function renderCurrentView(opts={}){
@@ -166,14 +167,14 @@ export function createHistoryRuntime(ctx){
     if(prevActiveId){
       activeParts.setActiveById(prevActiveId)
       if(!activeParts.active()){ activeParts.last() }
-      applyActivePart()
+  applyActiveMessage()
     }
   }
-  function applyActivePart(){
-    // Remove legacy and message active classes, then set on the current message node
-    document.querySelectorAll('.part.active, .message.active').forEach(el=>el.classList.remove('active'))
+  function applyActiveMessage(){
+    // Remove active classes, then set on the current message node
+    document.querySelectorAll('.message.active').forEach(el=>el.classList.remove('active'))
     const act = activeParts.active(); if(!act) return
-    const el = document.querySelector(`.message[data-part-id="${act.id}"]`) || document.querySelector(`[data-part-id="${act.id}"]`)
+    const el = document.querySelector(`.message[data-part-id="${act.id}"]`)
     if(el){
       el.classList.add('active')
       scrollController.setActiveIndex(activeParts.activeIndex)
@@ -185,10 +186,10 @@ export function createHistoryRuntime(ctx){
     const settings = getSettings()
     const pane = historyPaneEl
     if(!pane) return
-  const nodes = pane.querySelectorAll('#history > .message, #history > .part')
+  const nodes = pane.querySelectorAll('#history > .message')
   applyFadeVisibility({ paneEl: pane, parts: nodes, settings, initial })
   }
-  historyPaneEl.addEventListener('scroll', ()=>{ updateFadeVisibility(); updateActiveOnScroll() })
+  historyEl.addEventListener('scroll', ()=>{ updateFadeVisibility(); updateActiveOnScroll() })
   function renderStatus(){
     const modeEl = document.getElementById('modeIndicator')
     if(!modeEl) return
@@ -212,7 +213,7 @@ export function createHistoryRuntime(ctx){
     else { el.title = (newestHidden? 'Latest message hidden by filter. ' : '') + 'Predicted Included / Visible' }
   }
   function applyOutOfContextStyling(){
-    const els = document.querySelectorAll('#history .message, #history .part')
+    const els = document.querySelectorAll('#history .message')
     els.forEach(el=>{
       const partId = el.getAttribute('data-part-id')
       if(!partId) return
@@ -220,17 +221,9 @@ export function createHistoryRuntime(ctx){
       if(!partObj) return
       const included = lastContextIncludedIds.has(partObj.pairId)
       el.classList.toggle('ooc', !included)
-      // In message layout, adjust offctx badge inside assistant meta
-      if(el.classList.contains('message') && el.getAttribute('data-role')==='assistant'){
+      // Adjust offctx badge inside assistant meta
+      if(el.getAttribute('data-role')==='assistant'){
         const off = el.querySelector('.assistant-meta .badge.offctx')
-        if(off){
-          if(!included){ off.textContent = 'off'; off.setAttribute('data-offctx','1') }
-          else { off.textContent = ''; off.setAttribute('data-offctx','0') }
-        }
-      }
-      // Legacy meta support
-      if(el.classList.contains('meta')){
-        const off = el.querySelector('.badge.offctx')
         if(off){
           if(!included){ off.textContent = 'off'; off.setAttribute('data-offctx','1') }
           else { off.textContent = ''; off.setAttribute('data-offctx','0') }
@@ -238,7 +231,7 @@ export function createHistoryRuntime(ctx){
       }
     })
   }
-  function jumpToBoundary(){ if(!lastContextIncludedIds || lastContextIncludedIds.size === 0) return; const idx = activeParts.parts.findIndex(pt=> lastContextIncludedIds.has(pt.pairId)); if(idx >= 0){ activeParts.activeIndex = idx; applyActivePart() } }
-  try { lifecycle.bindApplyActivePart && lifecycle.bindApplyActivePart(applyActivePart) } catch {}
-  return { layoutHistoryPane, applySpacingStyles, renderHistory, renderCurrentView, applyActivePart, updateFadeVisibility, updateMessageCount, applyOutOfContextStyling, jumpToBoundary, renderStatus, setSendDebug, setContextStats, getContextStats: ()=> lastContextStats, getPredictedCount: ()=> lastPredictedCount, getTrimmedCount: ()=> lastTrimmedCount, getIncludedIds: ()=> new Set(lastContextIncludedIds) }
+  function jumpToBoundary(){ if(!lastContextIncludedIds || lastContextIncludedIds.size === 0) return; const idx = activeParts.parts.findIndex(pt=> lastContextIncludedIds.has(pt.pairId)); if(idx >= 0){ activeParts.activeIndex = idx; applyActiveMessage() } }
+  try { lifecycle.bindApplyActivePart && lifecycle.bindApplyActivePart(applyActiveMessage) } catch {}
+  return { layoutHistoryPane, applySpacingStyles, renderHistory, renderCurrentView, applyActiveMessage, updateFadeVisibility, updateMessageCount, applyOutOfContextStyling, jumpToBoundary, renderStatus, setSendDebug, setContextStats, getContextStats: ()=> lastContextStats, getPredictedCount: ()=> lastPredictedCount, getTrimmedCount: ()=> lastTrimmedCount, getIncludedIds: ()=> new Set(lastContextIncludedIds) }
 }

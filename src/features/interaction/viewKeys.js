@@ -55,12 +55,12 @@ export function createViewKeyHandler({
       return true
     }
     if(e.key==='g'){
-      activeParts.first(); historyRuntime.applyActivePart();
+      activeParts.first(); historyRuntime.applyActiveMessage();
       const act = activeParts.active(); if(act && scrollController && scrollController.alignToMessage){ scrollController.alignToMessage(act.id, 'top', false) }
       setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false); return true
     }
     if(e.key==='G'){
-      activeParts.last(); historyRuntime.applyActivePart();
+      activeParts.last(); historyRuntime.applyActiveMessage();
       const act = activeParts.active(); if(act && scrollController && scrollController.alignToMessage){ scrollController.alignToMessage(act.id, 'bottom', false) }
       setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false); return true
     }
@@ -81,7 +81,7 @@ export function createViewKeyHandler({
       const nextIdx = Math.min(curIdx+1, activeParts.parts.length-1)
       const next = activeParts.parts[nextIdx]
       if(next){
-        activeParts.setActiveById(next.id); historyRuntime.applyActivePart()
+  activeParts.setActiveById(next.id); historyRuntime.applyActiveMessage()
         const isLast = nextIdx === activeParts.parts.length-1
         if(scrollController && scrollController.jumpToMessage){ scrollController.jumpToMessage(next.id, isLast ? 'bottom' : 'top', true) }
         setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
@@ -93,7 +93,7 @@ export function createViewKeyHandler({
       const prevIdx = Math.max(0, curIdx-1)
       const prev = activeParts.parts[prevIdx]
       if(prev){
-        activeParts.setActiveById(prev.id); historyRuntime.applyActivePart()
+  activeParts.setActiveById(prev.id); historyRuntime.applyActiveMessage()
         if(scrollController && scrollController.jumpToMessage){ scrollController.jumpToMessage(prev.id, 'top', true) }
         setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
         return true

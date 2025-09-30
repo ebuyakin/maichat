@@ -18,12 +18,22 @@
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   --size-base: 13px;
-  --topbar-h: 60px;
+  --topbar-h: 40px;
   --bottombar-h: 96px;
   --gutter: 16px;
 
+  /* Geometry (history pane/doc: history_geometry) */
+  --pane-gutter-l: 10px; /* GutterL1 */
+  --pane-gutter-r: 10px; /* GutterR1 */
+  --msg-gutter-l: 10px;  /* GutterL2 */
+  --msg-gutter-r: 10px;  /* GutterR2 */
+  --message-gap: 10px;   /* MessageGap */
+  --fade-zone: 10px;     /* FadeZone */
+  --gutter-sum-l: calc(var(--pane-gutter-l) + var(--msg-gutter-l));
+  --gutter-sum-r: calc(var(--pane-gutter-r) + var(--msg-gutter-r));
+
   /* Spacing/fade defaults (overridden at runtime by JS via :root) */
-  --gap-outer: 20px;      /* top/bottom padding inside history pane */
+  --gap-outer: 20px;      /* legacy; prefer --fade-zone for overlays */
   --gap-meta: 6px;        /* gap between user->meta and meta->assistant */
   --gap-intra: 6px;       /* gap between consecutive parts of same role */
   --gap-between: 10px;    /* gap between message pairs */

@@ -1,12 +1,12 @@
 // newMessageLifecycle moved from ui/newMessageLifecycle.js
 import { escapeHtml } from '../../shared/util.js'
-export function createNewMessageLifecycle({ store, activeParts, commandInput, renderHistory, applyActivePart, alignTo }){
+export function createNewMessageLifecycle({ store, activeParts, commandInput, renderHistory, applyActivePart, applyActiveMessage, alignTo }){
 	let pendingSend = false
 	let lastReplyPairId = null
 	let activeFilterQuery = ''
 	const hasDocument = typeof document !== 'undefined'
 	// Late-bindable highlight function (wired by historyRuntime after it’s created)
-	let _applyActivePart = typeof applyActivePart === 'function' ? applyActivePart : ()=>{}
+	let _applyActivePart = typeof applyActiveMessage === 'function' ? applyActiveMessage : (typeof applyActivePart==='function' ? applyActivePart : ()=>{})
 	function setFilterQuery(q){ activeFilterQuery = q }
 	function getFilterQuery(){ return activeFilterQuery }
 	function isPending(){ return pendingSend }

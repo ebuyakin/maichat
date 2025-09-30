@@ -130,7 +130,7 @@ export function createInputKeyHandler({
             activeParts.last()
           }
         } catch { activeParts.last() }
-        historyRuntime.applyActivePart();
+  historyRuntime.applyActiveMessage();
         // One-shot: bottom-align the new meta row as visual cue (spec)
         if(id && scrollController && scrollController.alignTo){
           try { if(scrollController.remeasure) scrollController.remeasure() } catch {}

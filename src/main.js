@@ -49,7 +49,9 @@ appEl.innerHTML = `
     </div>
   </div>
   <div id="historyPane" class="zone" data-mode="view">
-  <div id="history" class="history"></div>
+    <div class="gradientOverlayTop"></div>
+    <div id="history" class="history"></div>
+    <div class="gradientOverlayBottom"></div>
   </div>
   <div id="inputBar" class="zone" data-mode="input">
     <div class="inputBar-inner">
@@ -91,7 +93,7 @@ const { store, persistence, activeParts, pendingMessageMeta } = __runtime
 console.log('[MaiChat] createHistoryRuntime start')
 const historyRuntime = createHistoryRuntime(__runtime)
 console.log('[MaiChat] createHistoryRuntime done')
-const { layoutHistoryPane, applySpacingStyles, renderCurrentView, applyActivePart, renderStatus } = historyRuntime
+const { layoutHistoryPane, applySpacingStyles, renderCurrentView, applyActiveMessage, renderStatus } = historyRuntime
 requestAnimationFrame(layoutHistoryPane)
 // (currentTopicId handled inside interaction module now)
 const historyPaneEl = document.getElementById('historyPane')
@@ -168,18 +170,14 @@ subscribeSettings((s)=>{
     applySpacingStyles(s)
     layoutHistoryPane()
     // Rebuild while preserving active
-    renderCurrentView({ preserveActive:true })
+  renderCurrentView({ preserveActive:true })
     // After rebuild completes and parts are measured, bottom-align the focused part once
     try {
       const act = __runtime.activeParts && __runtime.activeParts.active && __runtime.activeParts.active()
       const id = act && act.id
       if(id){
         // Wait for remeasure in renderHistory's rAF, then align
-        requestAnimationFrame(()=>{
-          requestAnimationFrame(()=>{
-            __runtime.scrollController && __runtime.scrollController.alignTo(id, 'bottom', false)
-          })
-        })
+        requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ __runtime.scrollController && __runtime.scrollController.alignTo(id, 'bottom', false) }) })
       }
     } catch {}
   } else if(action === 'restyle'){

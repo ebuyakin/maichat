@@ -1,0 +1,65 @@
+# Geometry of the history pane
+
+history pane (outer container)
+padding top : 0
+padding bottom :0
+margin top : GutterL1 = 10px
+margin bottom : GutterL1 = 10px
+padding left :  0
+padding right : 0
+
+gradientOverlayTop
+height: FadeZone = 20px
+
+gradientOverlayBottom
+height: FadeZone = 20px
+
+history (inner container)
+top/bottom: 0
+left/right: 0
+padding: 0
+margin: 0
+
+message user
+margin-top: MessageGap = 10px
+margin-bottom: MessageGap 
+padding-left: GutterL2 = 10px
+padding-right: GutterR2 = 10px
+padding-top: 10px
+padding-bottom: 10px
+
+message assistant
+margin-top: MessageGap
+margin-bottom: MessageGap
+padding-left: GutterL2 = 10px
+padding-right: GutterR2 = 10px
+padding-top: 10px
+padding-bottom: 10px
+
+assistant meta
+margin-top: 0px
+margin-bottom: 5px 
+padding-left: 0
+padding-right: 0
+
+assistant body
+margin-top: 0px
+margin-bottom: 0px 
+padding-left: 0
+padding-right: 0
+
+topBar
+padding-top: 8px
+padding-left: GutterL1 + GutterL2
+padding-right: GutterR1 + GutterR2
+padding-bottom: 8px
+height: 40px
+
+inputBar
+padding-left: GutterL1 + GutterL2
+padding-right: GutterR1 + GutterR2
+
+
+Active message background color:
+NO BACKGROUND COLOR CHANGE for the active message. ONLY BLUE BORDER.
+right now the active assistant message get some semi-transparent blue color and user message when active loses its blue background color

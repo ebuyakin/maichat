@@ -21,7 +21,7 @@ export function createScrollController({ container, getParts }){
 		const settings = getSettings()
 		const edgeGap = settings.gapOuterPx || 0
 		const paneH = container.clientHeight
-		const nodeList = Array.from(container.querySelectorAll('#history > .message, #history > .part'))
+		const nodeList = Array.from(container.querySelectorAll('.message, .part'))
 		const parts = []
 		const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
 		for(let i=0;i<nodeList.length;i++){
@@ -54,14 +54,23 @@ export function createScrollController({ container, getParts }){
 		if(k < 0 || k >= parts.length) return 0
 		const padTop = parseFloat(getComputedStyle(container).paddingTop)||0
 		const padBottom = parseFloat(getComputedStyle(container).paddingBottom)||0
+		let fadeZone = 0
+		try {
+			const root = document.documentElement
+			const v = getComputedStyle(root).getPropertyValue('--fade-zone')
+			const n = parseFloat(v)
+			if(Number.isFinite(n)) fadeZone = n
+		} catch{}
 		const part = parts[k]
 		let S
 		if(mode === 'top'){
-			S = part.start
+			// Align top edge just below the top fade overlay
+			S = part.start - fadeZone
 		} else if(mode === 'bottom'){
 			// Align bottom edge of part to inner bottom (H - padBottom)
 			// Using part.start measured from inner top, we must add padTop to convert to visual offsetTop
-			S = (part.start + padTop + part.h) - (paneH - padBottom)
+			// Then push it up by the bottom fade overlay height
+			S = (part.start + padTop + part.h) - (paneH - padBottom) + fadeZone
 		} else {
 			// Center relative to the pane; convert to visual by adding padTop
 			S = (part.start + padTop) + part.h/2 - (paneH/2)
