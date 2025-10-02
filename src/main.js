@@ -1,6 +1,7 @@
 import './styles/index.css'
 // Boot diagnostics injected (temporary) to investigate blank page issue.
 console.log('[MaiChat] boot script loaded (pre-imports)')
+
 import { initRuntime } from './runtime/runtimeSetup.js'
 import { createModeManager, MODES } from './features/interaction/modes.js'
 import { bindHistoryErrorActions } from './features/history/historyView.js'
@@ -10,9 +11,11 @@ import { decideRenderAction } from './runtime/renderPolicy.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
+
 window.addEventListener('error', (e)=>{ try { console.error('[MaiChat] window error', e.error || e.message || e) } catch{} })
 window.addEventListener('unhandledrejection', (e)=>{ try { console.error('[MaiChat] unhandled rejection', e.reason) } catch{} })
 window.__BOOT_STAGE = 'imports-complete'
+
 console.log('[MaiChat] imports complete')
 
 // Mode management

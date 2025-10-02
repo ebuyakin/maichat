@@ -81,14 +81,14 @@
     top: 0;
     height: var(--fade-zone);
     /* background: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.60) 55%, rgba(0,0,0,0.00) 100%);*/
-    background: linear-gradient(to bottom, blue 0%, transparent 100%);
+    background: linear-gradient(to bottom, black 0%, transparent 100%);
 }
 
 .gradientOverlayBottom {
     bottom: 0;
     height: var(--fade-zone);
     /*background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.60) 55%, rgba(0,0,0,0.00) 100%);*/
-    background: linear-gradient(to top, blue 0%, transparent 100%);
+    background: linear-gradient(to top, black 0%, transparent 100%);
 }
 
 #history {
