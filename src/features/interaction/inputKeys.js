@@ -131,16 +131,11 @@ export function createInputKeyHandler({
           }
         } catch { activeParts.last() }
   historyRuntime.applyActiveMessage();
-        // One-shot: bottom-align the new meta row as visual cue (spec)
+        // One-shot: bottom-align the new user message as visual cue
         if(id && scrollController && scrollController.alignTo){
           try { if(scrollController.remeasure) scrollController.remeasure() } catch {}
-          try{
-            import('../history/featureFlags.js').then(mod=>{
-              const useMsg = mod && mod.shouldUseMessageView && mod.shouldUseMessageView()
-              const anchorId = useMsg ? `${id}:a` : `${id}:meta`
-              scrollController.alignTo(anchorId, 'bottom', false)
-            }).catch(()=>{ scrollController.alignTo(`${id}:meta`, 'bottom', false) })
-          } catch { scrollController.alignTo(`${id}:meta`, 'bottom', false) }
+          // In message-based view, anchor to user message (id:u)
+          scrollController.alignTo(`${id}:u`, 'bottom', false)
         }
         updateSendDisabled()
       }

@@ -67,10 +67,9 @@ export function createScrollController({ container, getParts }){
 			// Align top edge just below the top fade overlay, accounting for container top padding
 			S = padTop + part.start - fadeZone
 		} else if(mode === 'bottom'){
-			// Align bottom edge of part to inner bottom (H - padBottom)
-			// Using part.start measured from inner top, we must add padTop to convert to visual offsetTop
-			// Then push it up by the bottom fade overlay height
-			S = (part.start + padTop + part.h) - (paneH - padBottom) + fadeZone
+			// Align bottom edge of part to be at the bottom of viewport
+			// padBottom already equals fadeZone (set in CSS), so no need to add fadeZone again
+			S = (part.start + padTop + part.h) - (paneH - padBottom)
 		} else {
 			// Center relative to the pane; convert to visual by adding padTop
 			S = (part.start + padTop) + part.h/2 - (paneH/2)
