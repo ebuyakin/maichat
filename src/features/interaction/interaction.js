@@ -209,16 +209,8 @@ export function createInteraction({
   function updateMetaBadgesInline(pairId, changes){
     try {
       const pane = document.getElementById('historyPane'); if(!pane) return
-      // Flag-aware: prefer assistant-meta in message view; fallback to legacy .part.meta
-      let metaRoot = null
-      try{
-        import('../history/featureFlags.js').then(mod=>{
-          if(mod && mod.shouldUseMessageView && mod.shouldUseMessageView()){
-            metaRoot = pane.querySelector(`.message.assistant[data-pair-id="${pairId}"] .assistant-meta`)
-          }
-        }).catch(()=>{})
-      } catch {}
-      if(!metaRoot){ metaRoot = pane.querySelector(`.part.meta[data-pair-id="${pairId}"] .part-inner`) }
+      // Query for assistant-meta in message-based view
+      const metaRoot = pane.querySelector(`.message.assistant[data-pair-id="${pairId}"] .assistant-meta`)
       if(!metaRoot) return
       const left = metaRoot.querySelector('.meta-left')
       const right = metaRoot.querySelector('.meta-right')
