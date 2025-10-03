@@ -17,7 +17,22 @@
 .badge.state[data-state=sending] { animation:pulse 1.2s ease-in-out infinite; }
 .badge.state.error { color:var(--text-dim); }
 @keyframes pulse { 0%{opacity:.3;} 50%{opacity:1;} 100%{opacity:.3;} }
-.err-actions { display:inline-flex; gap:6px; }
+.err-actions { display:inline-flex; gap:4px; align-items:center; }
+.btn-icon { 
+  background: none !important; 
+  border: none !important; 
+  color: var(--text-dim); 
+  cursor: pointer; 
+  padding: 0 !important; 
+  margin: 0;
+  font-size: 11px; 
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+.btn-icon:hover { opacity: 1; color: var(--text); background: none !important; border: none !important; }
+.btn-icon.resend:hover { color: #85db87; }
+.btn-icon.del:hover { color: #ff6b6b; }
 
 /* Legacy gap elements removed; separation via margins below */
 

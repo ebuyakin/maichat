@@ -24,6 +24,7 @@ export class IndexedDbAdapter {
   }
   _tx(storeName, mode){ const tx = this.db.transaction(storeName, mode); return tx.objectStore(storeName) }
   async savePair(pair){ await this.init(); await new Promise((res,rej)=>{ const r = this._tx(PAIRS,'readwrite').put(pair); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error) }) }
+  async deletePair(id){ await this.init(); await new Promise((res,rej)=>{ const r = this._tx(PAIRS,'readwrite').delete(id); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error) }) }
   async saveTopic(topic){ await this.init(); await new Promise((res,rej)=>{ const r = this._tx(TOPICS,'readwrite').put(topic); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error) }) }
   async deleteTopic(id){ await this.init(); await new Promise((res,rej)=>{ const r = this._tx(TOPICS,'readwrite').delete(id); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error) }) }
   async getAllPairs(){ await this.init(); return new Promise((res,rej)=>{ const r = this._tx(PAIRS,'readonly').getAll(); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error) }) }
