@@ -90,7 +90,9 @@ document.body.appendChild(loadingEl)
 
 // Runtime context
 console.log('[MaiChat] initRuntime start')
-const __runtime = initRuntime()
+
+const __runtime = initRuntime() // create runtime NB!
+
 console.log('[MaiChat] initRuntime done')
 const { store, persistence, activeParts, pendingMessageMeta } = __runtime
 console.log('[MaiChat] createHistoryRuntime start')

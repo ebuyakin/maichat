@@ -1,12 +1,14 @@
 // historyRuntime moved from ui/history/historyRuntime.js
 import { buildMessages, flattenMessagesToParts } from './messageList.js'
 import { getSettings } from '../../core/settings/index.js'
+
 // partitioner removed in message-based rendering
 import { parse } from '../command/parser.js'
 import { evaluate } from '../command/evaluator.js'
 import { getActiveModel } from '../../core/models/modelCatalog.js'
 import { applySpacingStyles as applySpacingStylesHelper } from './spacingStyles.js'
 import { applyFadeVisibility } from './fadeVisibility.js'
+
 export function createHistoryRuntime(ctx){
   const { store, activeParts, historyView, scrollController, boundaryMgr, lifecycle, pendingMessageMeta } = ctx
   const historyPaneEl = document.getElementById('historyPane')
@@ -138,9 +140,11 @@ export function createHistoryRuntime(ctx){
     lastPredictedCount = boundary.included.length
     const messages = buildMessages(pairs)
     const parts = flattenMessagesToParts(messages)
-    activeParts.setParts(parts)
+    activeParts.setParts(parts) // this is
     try { ctx.__messages = messages } catch {}
+
     historyView.renderMessages(messages)
+
   // Apply initial fade state before first paint to avoid bright-then-dim flicker on re-render
   updateFadeVisibility({ initial: true })
   applyOutOfContextStyling()

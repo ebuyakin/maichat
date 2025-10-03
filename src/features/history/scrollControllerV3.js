@@ -229,9 +229,9 @@ export function createScrollController({ container, getParts }){
 			let targetPartId = partId
 			
 			// Special case: if bottom-aligning a user part, check if we should align its meta instead
-			if(position === 'bottom'){
+			/*if(position === 'bottom'){
 				targetPartId = getBottomAlignTarget(partId)
-			}
+			}*/
 			
 			const idx = typeof targetPartId === 'number' ? targetPartId : findIndexById(targetPartId)
 			if(idx < 0 || idx >= metrics.parts.length) return

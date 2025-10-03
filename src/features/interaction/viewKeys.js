@@ -54,16 +54,31 @@ export function createViewKeyHandler({
       if(scrollController && scrollController.stepScroll){ scrollController.stepScroll(-step) }
       return true
     }
+    
+    // g/G processing
     if(e.key==='g'){
-      activeParts.first(); historyRuntime.applyActiveMessage();
-      const act = activeParts.active(); if(act && scrollController && scrollController.alignToMessage){ scrollController.alignToMessage(act.id, 'top', false) }
-      setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false); return true
+      activeParts.first();
+      historyRuntime.applyActiveMessage();
+      const act = activeParts.active();
+      if(act && scrollController && scrollController.alignToMessage){
+        scrollController.alignToMessage(act.id, 'top', false)
+      }
+      //setReadingMode(false);
+      //hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
+      return true
     }
+
     if(e.key==='G'){
-      activeParts.last(); historyRuntime.applyActiveMessage();
-      const act = activeParts.active(); if(act && scrollController && scrollController.alignToMessage){ scrollController.alignToMessage(act.id, 'bottom', false) }
-      setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false); return true
+      activeParts.last();
+      historyRuntime.applyActiveMessage();
+      const act = activeParts.active();
+      if(act && scrollController && scrollController.alignToMessage){
+        scrollController.alignToMessage(act.id, 'bottom', false)}
+      //setReadingMode(false);
+      //hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
+      return true
     }
+
     // Jump to first in-context (included) pair and center it (one-shot, does not toggle Reading Mode)
     if((e.key==='O' && e.shiftKey) || e.key==='o'){
       historyRuntime.jumpToBoundary();

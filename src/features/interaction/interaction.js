@@ -71,7 +71,18 @@ export function createInteraction({
       }
     }
   }
-  function historyPrev(){ if(!commandHistory.length) return; if(commandHistoryPos===-1) commandHistoryPos = commandHistory.length; if(commandHistoryPos>0){ commandHistoryPos--; commandInput.value = commandHistory[commandHistoryPos] } }
+  function historyPrev(){ 
+    if(!commandHistory.length) return; 
+    if(commandHistoryPos===-1) commandHistoryPos = commandHistory.length; 
+    if(commandHistoryPos>0){ 
+      commandHistoryPos--; 
+      // If the new position shows the same value as currently in input, skip to previous
+      if(commandHistory[commandHistoryPos] === commandInput.value && commandHistoryPos > 0){
+        commandHistoryPos--;
+      }
+      commandInput.value = commandHistory[commandHistoryPos];
+    } 
+  }
   function historyNext(){ if(!commandHistory.length) return; if(commandHistoryPos===-1) return; if(commandHistoryPos < commandHistory.length) commandHistoryPos++; if(commandHistoryPos===commandHistory.length){ commandInput.value=''; commandHistoryPos=-1 } else { commandInput.value = commandHistory[commandHistoryPos] } }
   let lastAppliedFilter = ''
   let commandModeEntryActivePartId = null
@@ -298,7 +309,9 @@ export function createInteraction({
       // Delay focus to avoid mouse click interference
       requestAnimationFrame(()=> inputField.focus())
     } else if(m==='command'){ 
-      commandModeEntryActivePartId = activeParts.active() ? activeParts.active().id : null; 
+      commandModeEntryActivePartId = activeParts.active() ? activeParts.active().id : null;
+      // Reset command history position so first Ctrl-P shows previous command, not current
+      commandHistoryPos = commandHistory.length;
       // Delay focus to avoid mouse click interference
       requestAnimationFrame(()=> commandInput.focus())
     } 
