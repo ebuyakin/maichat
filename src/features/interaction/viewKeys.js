@@ -157,7 +157,7 @@ export function createViewKeyHandler({
     if(e.key===' '){ setStarRating(0); return true }
     // VIEW-only fast keys for error pairs
     if(e.key==='e'){ if(handleEditIfErrorActive()) return true }
-    if(e.key==='d'){ if(handleDeleteIfErrorActive()) return true }
+    if(e.key==='w'){ if(handleDeleteIfErrorActive()) return true }
     
     // Code overlay trigger logic (smart):
     if(e.key==='v'){

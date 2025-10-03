@@ -71,7 +71,7 @@ export function createHistoryView({ store, onActivePartRendered }){
 				else if(pair && pair.lifecycleState === 'error') {
 					const label = classifyErrLabel(pair)
 					stateBadge = `<span class=\"badge state error\" title=\"${escapeHtml(pair.errorMessage||'error')}\">${label}</span>`
-					errActions = `<span class=\"err-actions\"><button class=\"btn btn-ghost resend\" data-action=\"resend\" title=\"Copy to input and send as a new message (uses current context) - E key\">Re-ask</button><button class=\"btn btn-ghost del\" data-action=\"delete\" title=\"Delete pair - D key\">Delete</button></span>`
+					errActions = `<span class=\"err-actions\"><button class=\"btn btn-ghost resend\" data-action=\"resend\" title=\"Copy to input and send as a new message (uses current context) - E key\">Re-ask</button><button class=\"btn btn-ghost del\" data-action=\"delete\" title=\"Delete pair - W key\">Delete</button></span>`
 				}
 				const processed = processCodePlaceholders(assistant.text||'')
 				tokens.push(`<div class="message assistant" data-message-id="${assistant.id}" data-part-id="${assistant.id}" data-pair-id="${assistant.pairId}" data-role="assistant"><div class="assistant-meta"><div class="meta-left"><span class="badge flag" data-flag="${pair ? pair.colorFlag : 'g'}" title="${pair && pair.colorFlag==='b'?'Flagged (blue)':'Unflagged (grey)'}"></span><span class="badge stars">${pair ? '★'.repeat(pair.star) + '☆'.repeat(Math.max(0,3-pair.star)) : '☆☆☆'}</span><span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span></div><div class="meta-right">${stateBadge}${errActions}<span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span><span class="badge model">${escapeHtml(modelName)}</span><span class="badge timestamp" data-ts="${pair ? pair.createdAt : ''}">${ts}</span></div></div><div class="assistant-body">${processed}</div></div>`)
@@ -100,7 +100,7 @@ export function createHistoryView({ store, onActivePartRendered }){
 			else if(pair.lifecycleState === 'error') {
 				const label = classifyErrLabel(pair)
 				stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage||'error')}">${label}</span>`
-				errActions = `<span class="err-actions"><button class="btn btn-ghost resend" data-action="resend" title="Copy to input and send as a new message (uses current context) - E key">Re-ask</button><button class="btn btn-ghost del" data-action="delete" title="Delete pair - D key">Delete</button></span>`
+				errActions = `<span class="err-actions"><button class="btn btn-ghost resend" data-action="resend" title="Copy to input and send as a new message (uses current context) - E key">Re-ask</button><button class="btn btn-ghost del" data-action="delete" title="Delete pair - W key">Delete</button></span>`
 			}
 			if(!shouldUseMessageView()){
 				return `<div class="part meta" data-part-id="${pt.id}" data-role="meta" data-pair-id="${pt.pairId}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
@@ -134,7 +134,7 @@ export function createHistoryView({ store, onActivePartRendered }){
 			else if(pair.lifecycleState === 'error') {
 				const label = classifyErrLabel(pair)
 				stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage||'error')}">${label}</span>`
-				errActions = `<span class="err-actions"><button class="btn btn-ghost resend" data-action="resend" title="Copy to input and send as a new message (uses current context) - E key">Re-ask</button><button class="btn btn-ghost del" data-action="delete" title="Delete pair - D key">Delete</button></span>`
+				errActions = `<span class="err-actions"><button class="btn btn-ghost resend" data-action="resend" title="Copy to input and send as a new message (uses current context) - E key">Re-ask</button><button class="btn btn-ghost del" data-action="delete" title="Delete pair - W key">Delete</button></span>`
 			}
 			return `<div class="part assistant" data-part-id="${pt.id}" data-role="assistant" data-pair-id="${pt.pairId}"><div class="part-inner">
 				<div class="assistant-meta">

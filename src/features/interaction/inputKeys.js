@@ -104,6 +104,26 @@ export function createInputKeyHandler({
             lifecycle.completeSend();
             updateSendDisabled();
             historyRuntime.renderCurrentView({ preserveActive:true })
+            // Activate and anchor the error assistant message
+            try {
+              const pane = document.getElementById('historyPane')
+              const assistantEls = pane ? pane.querySelectorAll(`.message[data-pair-id="${id}"][data-role="assistant"], .part[data-pair-id="${id}"][data-role="assistant"]`) : null
+              const assistantEl = assistantEls && assistantEls.length ? assistantEls[0] : null
+              if(assistantEl){
+                const assistantId = assistantEl.getAttribute('data-part-id')
+                if(assistantId){ 
+                  activeParts.setActiveById(assistantId)
+                  historyRuntime.applyActiveMessage()
+                  // Anchor error message to bottom
+                  if(scrollController && scrollController.alignTo){
+                    requestAnimationFrame(()=>{
+                      if(scrollController.remeasure) scrollController.remeasure()
+                      scrollController.alignTo(assistantId, 'bottom', false)
+                    })
+                  }
+                }
+              }
+            } catch {}
           } finally {
             if(getSettings().showTrimNotice){
               boundaryMgr.updateVisiblePairs(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt));

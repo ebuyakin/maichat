@@ -461,14 +461,15 @@ export function createInteraction({
     // Delete the original pair after copying its content
     store.removePair(pair.id)
     historyRuntime.renderCurrentView({ preserveActive:true })
-    // Focus on last part and bottom align
+    // Focus on last message and bottom align
     try {
       activeParts.last()
-      historyRuntime.applyActivePart()
+      historyRuntime.applyActiveMessage()
       const act = activeParts.active()
       const id = act && act.id
       if(id && ctx.scrollController && ctx.scrollController.alignTo){
-        requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
+        if(ctx.scrollController.remeasure) ctx.scrollController.remeasure()
+        requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) })
       }
     } catch {}
     modeManager.set('input')
@@ -478,14 +479,15 @@ export function createInteraction({
   function deletePairWithFocus(pairId){
     store.removePair(pairId)
     historyRuntime.renderCurrentView({ preserveActive:true })
-    // Always focus on last part and bottom align after deletion
+    // Always focus on last message and bottom align after deletion
     try {
       activeParts.last()
-      historyRuntime.applyActivePart()
+      historyRuntime.applyActiveMessage()
       const act = activeParts.active()
       const id = act && act.id
       if(id && ctx.scrollController && ctx.scrollController.alignTo){
-        requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
+        if(ctx.scrollController.remeasure) ctx.scrollController.remeasure()
+        requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) })
       }
     } catch {
       // If no parts remain (empty history), no focus needed
