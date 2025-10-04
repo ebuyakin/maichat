@@ -30,10 +30,44 @@ export function renderMarkdownInline(markdown) {
   if (!markdown || typeof markdown !== 'string') return '';
   
   try {
-    // Step 1: Parse markdown to HTML
-    const rawHtml = marked.parse(markdown);
+    // Step 1: Extract and protect math expressions before markdown parsing
+    const mathExpressions = [];
+    let textWithPlaceholders = markdown;
     
-    // Step 2: Sanitize to prevent XSS
+    // Extract display math: $$...$$ (must be done before inline to avoid conflicts)
+    textWithPlaceholders = textWithPlaceholders.replace(/\$\$([\s\S]+?)\$\$/g, (match, content) => {
+      const index = mathExpressions.length;
+      mathExpressions.push({ type: 'display', content: match });
+      return `ⱮATHDISPLAY${index}ƤLACEHOLDER`;
+    });
+    
+    // Extract display math: \[...\] (LaTeX bracket notation)
+    textWithPlaceholders = textWithPlaceholders.replace(/\\\[([\s\S]+?)\\\]/g, (match, content) => {
+      const index = mathExpressions.length;
+      // Normalize to $$ delimiters to avoid backslash issues
+      mathExpressions.push({ type: 'display', content: `$$${content}$$` });
+      return `ⱮATHDISPLAY${index}ƤLACEHOLDER`;
+    });
+    
+    // Extract inline math: $...$ (single line only to avoid false positives)
+    textWithPlaceholders = textWithPlaceholders.replace(/\$([^\n$]+?)\$/g, (match, content) => {
+      const index = mathExpressions.length;
+      mathExpressions.push({ type: 'inline', content: match });
+      return `ⱮATHINLINE${index}ƤLACEHOLDER`;
+    });
+    
+    // Extract inline math: \(...\) (LaTeX parenthesis notation)
+    textWithPlaceholders = textWithPlaceholders.replace(/\\\((.+?)\\\)/g, (match, content) => {
+      const index = mathExpressions.length;
+      // Normalize to $ delimiters to avoid backslash issues
+      mathExpressions.push({ type: 'inline', content: `$${content}$` });
+      return `ⱮATHINLINE${index}ƤLACEHOLDER`;
+    });
+    
+    // Step 2: Parse markdown to HTML
+    const rawHtml = marked.parse(textWithPlaceholders);
+    
+    // Step 3: Sanitize to prevent XSS
     const cleanHtml = DOMPurify.sanitize(rawHtml, {
       ALLOWED_TAGS: [
         // Headings & structure
@@ -59,7 +93,21 @@ export function renderMarkdownInline(markdown) {
       RETURN_TRUSTED_TYPE: false
     });
     
-    return cleanHtml;
+    // Step 4: Restore math expressions (after sanitization to preserve LaTeX)
+    let finalHtml = cleanHtml;
+    
+    mathExpressions.forEach((math, index) => {
+      const displayPlaceholder = `ⱮATHDISPLAY${index}ƤLACEHOLDER`;
+      const inlinePlaceholder = `ⱮATHINLINE${index}ƤLACEHOLDER`;
+      
+      if (math.type === 'display') {
+        finalHtml = finalHtml.split(displayPlaceholder).join(math.content);
+      } else {
+        finalHtml = finalHtml.split(inlinePlaceholder).join(math.content);
+      }
+    });
+    
+    return finalHtml;
     
   } catch (error) {
     console.error('Markdown rendering error:', error);

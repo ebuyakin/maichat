@@ -89,8 +89,8 @@ export function createHistoryView({ store, onActivePartRendered }){
 		
 		// Enhance rendered messages with lazy-loaded features (syntax highlighting, math)
 		if(settings.useInlineFormatting){
-			container.querySelectorAll('.message.assistant').forEach(msg => {
-				enhanceRenderedMessage(msg)
+			container.querySelectorAll('.message.assistant .assistant-body').forEach(body => {
+				enhanceRenderedMessage(body)
 			})
 		}
 		
