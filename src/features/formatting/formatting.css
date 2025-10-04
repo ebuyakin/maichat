@@ -1,0 +1,328 @@
+/* Inline markdown formatting styles for assistant messages */
+
+/* ============================================
+   INLINE ELEMENTS
+   ============================================ */
+
+.assistant-body code {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: #85db87;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.assistant-body strong {
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.assistant-body em {
+  font-style: italic;
+  color: var(--text);
+}
+
+.assistant-body del {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.assistant-body a {
+  color: #58a6ff;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+.assistant-body a:hover {
+  border-bottom-color: #58a6ff;
+}
+
+/* ============================================
+   HEADINGS
+   ============================================ */
+
+.assistant-body h1,
+.assistant-body h2,
+.assistant-body h3,
+.assistant-body h4,
+.assistant-body h5,
+.assistant-body h6 {
+  margin: 1em 0 0.5em 0;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-bright);
+}
+
+.assistant-body h1:first-child,
+.assistant-body h2:first-child,
+.assistant-body h3:first-child {
+  margin-top: 0;
+}
+
+.assistant-body h1 { font-size: 1.5em; }
+.assistant-body h2 { font-size: 1.3em; }
+.assistant-body h3 { font-size: 1.15em; }
+.assistant-body h4,
+.assistant-body h5,
+.assistant-body h6 {
+  font-size: 1em;
+  margin: 0.75em 0 0.25em 0;
+}
+
+/* ============================================
+   PARAGRAPHS
+   ============================================ */
+
+.assistant-body p {
+  margin: 0.75em 0;
+  line-height: 1.6;
+}
+
+.assistant-body p:first-child { 
+  margin-top: 0; 
+}
+
+.assistant-body p:last-child { 
+  margin-bottom: 0; 
+}
+
+/* ============================================
+   LISTS
+   ============================================ */
+
+.assistant-body ul,
+.assistant-body ol {
+  margin: 0.75em 0;
+  padding-left: 2em;
+  line-height: 1.6;
+}
+
+.assistant-body ul:first-child,
+.assistant-body ol:first-child {
+  margin-top: 0;
+}
+
+.assistant-body ul:last-child,
+.assistant-body ol:last-child {
+  margin-bottom: 0;
+}
+
+.assistant-body li {
+  margin: 0.25em 0;
+}
+
+.assistant-body li > p {
+  margin: 0.25em 0;
+}
+
+/* Nested lists */
+.assistant-body li > ul,
+.assistant-body li > ol {
+  margin: 0.25em 0;
+}
+
+/* ============================================
+   BLOCKQUOTES
+   ============================================ */
+
+.assistant-body blockquote {
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  border-left: 3px solid var(--border-active);
+  background: rgba(255, 255, 255, 0.02);
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+.assistant-body blockquote:first-child {
+  margin-top: 0;
+}
+
+.assistant-body blockquote:last-child {
+  margin-bottom: 0;
+}
+
+.assistant-body blockquote > p:first-child {
+  margin-top: 0;
+}
+
+.assistant-body blockquote > p:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   CODE BLOCKS
+   ============================================ */
+
+/* Counter for code blocks within each message */
+.assistant-body {
+  counter-reset: code-block;
+}
+
+.assistant-body pre {
+  counter-increment: code-block;
+  margin: 1em 0;
+  padding: 0;
+  background: #050505;  /* Very dark grey, darker than input (#0a0a0a) */
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  line-height: 1.5;
+}
+
+.assistant-body pre:first-child {
+  margin-top: 0;
+}
+
+.assistant-body pre:last-child {
+  margin-bottom: 0;
+}
+
+/* Code block header with language and number */
+.assistant-body pre::before {
+  content: attr(data-language) " [" counter(code-block) "]";
+  display: block;
+  padding: 0.4em 1em;
+  background: #050505;  /* Same as code body */
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-family: var(--font-ui);
+  letter-spacing: 0.5px;
+}
+
+/* If no language specified, show generic "code [n]" */
+.assistant-body pre:not([data-language])::before {
+  content: "code [" counter(code-block) "]";
+}
+
+.assistant-body pre > code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: #c9d1d9;
+  background: transparent;
+  padding: 1em;
+  border: none;
+  display: block;
+  overflow-x: auto;  /* Horizontal scroll for long lines */
+}
+
+/* Remove the old language badge (now using header) */
+/* Commented out - no longer needed
+.assistant-body pre[data-language]::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+  ...
+}
+*/
+
+/* ============================================
+   TABLES
+   ============================================ */
+
+.assistant-body table {
+  margin: 1em 0;
+  border-collapse: collapse;
+  width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.assistant-body table:first-child {
+  margin-top: 0;
+}
+
+.assistant-body table:last-child {
+  margin-bottom: 0;
+}
+
+.assistant-body th,
+.assistant-body td {
+  border: 1px solid var(--border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+  vertical-align: top;
+}
+
+.assistant-body th {
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.assistant-body tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ============================================
+   HORIZONTAL RULE
+   ============================================ */
+
+.assistant-body hr {
+  margin: 1.5em 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+.assistant-body hr:first-child {
+  margin-top: 0;
+}
+
+.assistant-body hr:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   MATH (KATEX)
+   ============================================ */
+
+.assistant-body .katex {
+  font-size: 1.1em;
+  color: var(--text);
+}
+
+.assistant-body .katex-display {
+  margin: 1em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+}
+
+.assistant-body .katex-display:first-child {
+  margin-top: 0;
+}
+
+.assistant-body .katex-display:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   GENERAL ADJUSTMENTS
+   ============================================ */
+
+/* Override white-space for markdown rendering */
+/* Need high specificity to override history.css rule */
+#history .message.assistant .assistant-body {
+  white-space: normal;  /* Allow normal text wrapping for markdown */
+}
+
+/* Ensure proper spacing between different block types */
+.assistant-body > *:first-child {
+  margin-top: 0 !important;
+}
+
+.assistant-body > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Keep code blocks as pre-formatted */
+.assistant-body pre {
+  white-space: pre;
+}

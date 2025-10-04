@@ -2,6 +2,8 @@
 import { escapeHtml } from '../../shared/util.js'
 import { flattenMessagesToParts } from './messageList.js'
 import { shouldUseMessageView } from './featureFlags.js'
+import { renderMarkdownInline, enhanceRenderedMessage } from '../formatting/markdownRenderer.js'
+import { getSettings } from '../../core/settings/index.js'
 
 // Regex to match code placeholders: [language-number] (language lowercase alphanum/underscore), e.g. [python-1], [code-2]
 const CODE_PLACEHOLDER_REGEX = /(\[[a-zA-Z0-9_]+-\d+\])/g;
@@ -49,6 +51,9 @@ export function createHistoryView({ store, onActivePartRendered }){
 	function renderMessages(messages){
 		if(!Array.isArray(messages)) { container.innerHTML=''; if(onActivePartRendered) onActivePartRendered(); return }
 		const tokens = []
+		// Get settings once for entire render
+		const settings = getSettings()
+		
 		for(const msg of messages){
 			if(!msg || !Array.isArray(msg.parts)) continue
 			const pairId = msg.id
@@ -73,11 +78,22 @@ export function createHistoryView({ store, onActivePartRendered }){
 					stateBadge = `<span class=\"badge state error\" title=\"${escapeHtml(pair.errorMessage||'error')}\">${label}</span>`
 					errActions = `<span class=\"err-actions\"><button class=\"btn btn-icon resend\" data-action=\"resend\" title=\"Re-ask: copy to input and resend (E key)\">↻</button><button class=\"btn btn-icon del\" data-action=\"delete\" title=\"Delete this error message (W key)\">✕</button></span>`
 				}
-				const processed = processCodePlaceholders(assistant.text||'')
-				tokens.push(`<div class="message assistant" data-message-id="${assistant.id}" data-part-id="${assistant.id}" data-pair-id="${assistant.pairId}" data-role="assistant"><div class="assistant-meta"><div class="meta-left"><span class="badge flag" data-flag="${pair ? pair.colorFlag : 'g'}" title="${pair && pair.colorFlag==='b'?'Flagged (blue)':'Unflagged (grey)'}"></span><span class="badge stars">${pair ? '★'.repeat(pair.star) + '☆'.repeat(Math.max(0,3-pair.star)) : '☆☆☆'}</span><span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span></div><div class="meta-right">${stateBadge}${errActions}<span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span><span class="badge model">${escapeHtml(modelName)}</span><span class="badge timestamp" data-ts="${pair ? pair.createdAt : ''}">${ts}</span></div></div><div class="assistant-body">${processed}</div></div>`)
+				// Feature flag: use inline markdown rendering or legacy placeholder processing
+				const bodyHtml = settings.useInlineFormatting 
+					? renderMarkdownInline(assistant.text || '')
+					: processCodePlaceholders(assistant.text || '')
+				tokens.push(`<div class="message assistant" data-message-id="${assistant.id}" data-part-id="${assistant.id}" data-pair-id="${assistant.pairId}" data-role="assistant"><div class="assistant-meta"><div class="meta-left"><span class="badge flag" data-flag="${pair ? pair.colorFlag : 'g'}" title="${pair && pair.colorFlag==='b'?'Flagged (blue)':'Unflagged (grey)'}"></span><span class="badge stars">${pair ? '★'.repeat(pair.star) + '☆'.repeat(Math.max(0,3-pair.star)) : '☆☆☆'}</span><span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span></div><div class="meta-right">${stateBadge}${errActions}<span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span><span class="badge model">${escapeHtml(modelName)}</span><span class="badge timestamp" data-ts="${pair ? pair.createdAt : ''}">${ts}</span></div></div><div class="assistant-body">${bodyHtml}</div></div>`)
 			}
 		}
 		container.innerHTML = tokens.join('')
+		
+		// Enhance rendered messages with lazy-loaded features (syntax highlighting, math)
+		if(settings.useInlineFormatting){
+			container.querySelectorAll('.message.assistant').forEach(msg => {
+				enhanceRenderedMessage(msg)
+			})
+		}
+		
 		if(onActivePartRendered) onActivePartRendered()
 	}
 	function classifyGap(prev, cur){

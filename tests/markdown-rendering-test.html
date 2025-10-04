@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Rendering Test</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #0d1117;
+      color: #c9d1d9;
+    }
+    h1 { color: #58a6ff; }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      background: #161b22;
+    }
+    .test-section h2 {
+      margin-top: 0;
+      color: #7ee787;
+    }
+    .output {
+      margin-top: 15px;
+      padding: 15px;
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 4px;
+    }
+    pre {
+      background: #0a0f16;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #7ee787;
+    }
+  </style>
+</head>
+<body>
+  <h1>MaiChat Markdown Rendering Test</h1>
+  
+  <div class="test-section">
+    <h2>Test 1: Basic Formatting</h2>
+    <pre id="test1-input">This is **bold text** and this is *italic text*.
+Here's some `inline code` too.</pre>
+    <div class="output" id="test1-output"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 2: Code Block</h2>
+    <pre id="test2-input">Here's some Python code:
+
+```python
+def hello(name):
+    print(f"Hello, {name}!")
+    return True
+```
+
+Pretty neat, right?</pre>
+    <div class="output" id="test2-output"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 3: Lists and Headers</h2>
+    <pre id="test3-input">## Features
+
+- **Easy** to use
+- *Fast* rendering
+- Supports `code`
+
+### Numbered List
+
+1. First item
+2. Second item
+3. Third item</pre>
+    <div class="output" id="test3-output"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 4: Blockquote and Link</h2>
+    <pre id="test4-input">> This is a blockquote.
+> It can span multiple lines.
+
+Check out [this link](https://example.com) for more info.</pre>
+    <div class="output" id="test4-output"></div>
+  </div>
+  
+  <script type="module">
+    import { renderMarkdownInline } from '../src/features/formatting/markdownRenderer.js';
+    
+    // Run tests
+    for (let i = 1; i <= 4; i++) {
+      const input = document.getElementById(`test${i}-input`).textContent;
+      const output = document.getElementById(`test${i}-output`);
+      
+      try {
+        const html = renderMarkdownInline(input);
+        output.innerHTML = html;
+        console.log(`Test ${i} passed`);
+      } catch (error) {
+        output.innerHTML = `<span style="color: #ff6b6b;">Error: ${error.message}</span>`;
+        console.error(`Test ${i} failed:`, error);
+      }
+    }
+  </script>
+</body>
+</html>

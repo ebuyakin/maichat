@@ -8,6 +8,8 @@ const REBUILD_KEYS = new Set([
   'partPadding',
   'userRequestAllowance',
   'charsPerToken',
+  // Formatting mode affects rendering
+  'useInlineFormatting',
 ])
 
 const RESTYLE_KEYS = new Set([

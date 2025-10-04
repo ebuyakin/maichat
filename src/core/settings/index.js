@@ -14,7 +14,10 @@ const DEFAULTS={ partFraction:0.2,
 	// Visual/fade/scroll/context
 	fadeMode:'binary', fadeHiddenOpacity:1, fadeInMs:120, fadeOutMs:120, fadeTransitionMs:120,
 	scrollAnimMs:240, scrollAnimEasing:'easeOutQuad', scrollAnimDynamic:true, scrollAnimMinMs:80, scrollAnimMaxMs:600,
-	assumedUserTokens:256, userRequestAllowance:600, assistantResponseAllowance:800, maxTrimAttempts:10, charsPerToken:4, showTrimNotice:false, topicOrderMode:'manual' }
+	assumedUserTokens:256, userRequestAllowance:600, assistantResponseAllowance:800, maxTrimAttempts:10, charsPerToken:4, showTrimNotice:false, topicOrderMode:'manual',
+	// Formatting
+	useInlineFormatting: false  // Feature flag for markdown rendering
+}
 const LS_KEY='maichat.settings.v1'
 let current=null; const listeners=new Set()
 export function loadSettings(){

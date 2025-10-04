@@ -60,6 +60,10 @@ export function openSettingsOverlay({ onClose }){
               <label>Fade Out (ms)
                 <input name="fadeOutMs" type="number" min="0" max="2000" step="10" value="${existing.fadeOutMs != null ? existing.fadeOutMs : (existing.fadeTransitionMs != null ? existing.fadeTransitionMs : 120)}" />
               </label>
+              <label>
+                <input type="checkbox" name="useInlineFormatting" ${existing.useInlineFormatting ? 'checked' : ''} />
+                Inline Markdown Formatting (experimental)
+              </label>
             </fieldset>
           </div>
           <div class="tab-section" data-tab-section="scroll" id="tab-scroll" hidden>
@@ -164,7 +168,8 @@ export function openSettingsOverlay({ onClose }){
   const assistantResponseAllowance = clampRange(parseInt(fd.get('assistantResponseAllowance')),0,500000)
   const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')),0,1000)
   const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')),1.0,10.0)
-  return { fadeZonePx, messageGapPx, assistantGapPx, messagePaddingPx, metaGapPx, gutterLPx, gutterRPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken }
+  const useInlineFormatting = fd.get('useInlineFormatting') === 'on'
+  return { fadeZonePx, messageGapPx, assistantGapPx, messagePaddingPx, metaGapPx, gutterLPx, gutterRPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken, useInlineFormatting }
   }
   function shallowEqual(a,b){
     if(a===b) return true
@@ -199,6 +204,8 @@ export function openSettingsOverlay({ onClose }){
     setNum('fadeHiddenOpacity', s.fadeHiddenOpacity)
     setNum('fadeInMs', s.fadeInMs ?? (s.fadeTransitionMs != null ? s.fadeTransitionMs : 120))
     setNum('fadeOutMs', s.fadeOutMs ?? (s.fadeTransitionMs != null ? s.fadeTransitionMs : 120))
+    const uif = form.querySelector('input[name="useInlineFormatting"]')
+    if(uif) uif.checked = !!s.useInlineFormatting
     // Scroll
     setNum('scrollAnimMs', s.scrollAnimMs)
     const sad = form.querySelector('select[name="scrollAnimDynamic"]')
