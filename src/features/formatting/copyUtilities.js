@@ -52,6 +52,56 @@ export function setupCopyShortcuts(activeParts) {
   }
   
   /**
+   * Copy equation by number (1-indexed)
+   * If no number specified, copies first/only equation
+   * @param {number|null} equationNumber - Equation number (1-indexed), or null for first equation
+   */
+  function copyEquation(equationNumber = null) {
+    const msgEl = getActiveMessageElement();
+    if (!msgEl) return false;
+    
+    const equations = msgEl.querySelectorAll('.assistant-body .katex-display.numbered');
+    if (equations.length === 0) return false;
+    
+    // If no number specified and only one equation, copy it
+    if (equationNumber === null) {
+      if (equations.length === 1) {
+        const latex = extractLatexFromEquation(equations[0]);
+        return copyToClipboard(latex, 'Equation copied');
+      } else {
+        // Multiple equations but no number specified - do nothing, wait for digit
+        return false;
+      }
+    }
+    
+    // Copy specific equation (1-indexed for user, 0-indexed for array)
+    const index = equationNumber - 1;
+    if (index < 0 || index >= equations.length) {
+      showToast(`Equation ${equationNumber} not found (1-${equations.length} available)`, true);
+      return false;
+    }
+    
+    const latex = extractLatexFromEquation(equations[index]);
+    return copyToClipboard(latex, `Equation ${equationNumber} copied`);
+  }
+  
+  /**
+   * Extract LaTeX source from a KaTeX-rendered equation
+   * @param {HTMLElement} equationElement - The .katex-display element
+   * @returns {string} - LaTeX source code
+   */
+  function extractLatexFromEquation(equationElement) {
+    // KaTeX stores original LaTeX in annotation tag
+    const annotation = equationElement.querySelector('annotation[encoding="application/x-tex"]');
+    if (annotation) {
+      return annotation.textContent;
+    }
+    
+    // Fallback: return visible text if annotation not found
+    return equationElement.textContent || '';
+  }
+
+  /**
    * Copy math expression at cursor
    * Looks for .katex elements
    */
@@ -167,6 +217,7 @@ export function setupCopyShortcuts(activeParts) {
   
   return {
     copyCode,
+    copyEquation,
     copyMath,
     copyMessage,
     copyTable

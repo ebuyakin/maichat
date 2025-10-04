@@ -128,6 +128,20 @@ export function createViewKeyHandler({
       window.__mcPendingCopy=null;
       return false;
     }
+    // Pending equation copy digit selection (y1, y2, etc.)
+    if(/^[1-9]$/.test(e.key) && window.__mcPendingCopyEq){
+      const act = activeParts.active();
+      const pending = window.__mcPendingCopyEq;
+      if(!(act && act.role==='assistant')){ window.__mcPendingCopyEq=null; return false }
+      if(act.pairId !== pending.pairId){ window.__mcPendingCopyEq=null; return false }
+      const eqNum = parseInt(e.key, 10);
+      if(window.copyEquation && window.copyEquation(eqNum)){
+        window.__mcPendingCopyEq=null;
+        return true;
+      }
+      window.__mcPendingCopyEq=null;
+      return false;
+    }
     // Pending code overlay digit selection must take precedence over star rating
     if(/^[1-9]$/.test(e.key) && window.__mcPendingCodeOpen){
       const act = activeParts.active();
@@ -188,6 +202,21 @@ export function createViewKeyHandler({
       return true;
     }
     
+    // Copy equations: y (single equation) or y1, y2, etc. (specific equation)
+    if(e.key==='y'){
+      const act = activeParts.active();
+      if(!(act && act.role==='assistant')) return false;
+      
+      // Try to copy equation (will handle single vs multiple equations)
+      if(window.copyEquation && window.copyEquation(null)){
+        return true;
+      }
+      
+      // If no equations or multiple equations, set up pending for y1, y2, etc.
+      window.__mcPendingCopyEq = { ts: Date.now(), pairId: act.pairId };
+      return true;
+    }
+    
     // Code overlay trigger logic (smart):
     if(e.key==='v'){
       const act = activeParts.active();
@@ -224,6 +253,10 @@ export function createViewKeyHandler({
     if(window.__mcPendingCopy){
       const isDigit = /^[1-9]$/.test(e.key);
       if(e.key!=='c' && !isDigit){ window.__mcPendingCopy=null }
+    }
+    if(window.__mcPendingCopyEq){
+      const isDigit = /^[1-9]$/.test(e.key);
+      if(e.key!=='y' && !isDigit){ window.__mcPendingCopyEq=null }
     }
     return false
   }

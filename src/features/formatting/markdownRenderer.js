@@ -155,8 +155,35 @@ export function enhanceRenderedMessage(messageElement) {
   // Check for math delimiters and lazy load KaTeX
   const textContent = messageElement.textContent || '';
   if (textContent.includes('$') || textContent.includes('\\[') || textContent.includes('\\(')) {
-    lazyLoadMathRendering(messageElement);
+    lazyLoadMathRendering(messageElement).then(() => {
+      // After KaTeX renders, number standalone display equations
+      numberStandaloneEquations(messageElement);
+    });
   }
+}
+
+/**
+ * Number standalone display equations
+ * Only equations that are alone in their paragraph get numbered
+ * @param {HTMLElement} messageElement - The message element
+ */
+function numberStandaloneEquations(messageElement) {
+  const displayEquations = messageElement.querySelectorAll('.katex-display');
+  
+  displayEquations.forEach(display => {
+    const parent = display.parentElement;
+    if (!parent) return;
+    
+    // Get all text content in the parent, excluding the equation itself
+    const allText = parent.textContent || '';
+    const equationText = display.textContent || '';
+    const otherText = allText.replace(equationText, '').trim();
+    
+    // If there's very little other text (less than 10 chars), consider it standalone
+    if (otherText.length < 10) {
+      display.classList.add('numbered');
+    }
+  });
 }
 
 /**
@@ -188,22 +215,24 @@ function lazyLoadSyntaxHighlighting(codeBlocks) {
 /**
  * Lazy load KaTeX for math rendering
  * @param {HTMLElement} element - Container element to search for math
+ * @returns {Promise} - Promise that resolves when rendering is complete
  */
 function lazyLoadMathRendering(element) {
   if (!katexLoadPromise) {
     katexLoadPromise = import('./mathRenderer.js')
       .then(module => {
-        module.renderMathInElement(element);
+        return module.renderMathInElement(element);
       })
       .catch(error => {
         console.warn('Failed to load math rendering:', error);
         katexLoadPromise = null; // Allow retry
       });
+    return katexLoadPromise;
   } else {
     // KaTeX already loaded or loading, just render this element
-    katexLoadPromise.then(() => {
+    return katexLoadPromise.then(() => {
       // Re-import and call render
-      import('./mathRenderer.js').then(m => m.renderMathInElement(element));
+      return import('./mathRenderer.js').then(m => m.renderMathInElement(element));
     });
   }
 }

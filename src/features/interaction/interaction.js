@@ -99,6 +99,7 @@ export function createInteraction({
   // Setup copy utilities and expose globally for view handler
   const copyUtils = setupCopyShortcuts(activeParts);
   window.copyCodeBlock = copyUtils.copyCode;
+  window.copyEquation = copyUtils.copyEquation;
 
   // VIEW handler extracted
   const getReadingMode = ()=> readingMode

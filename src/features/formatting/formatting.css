@@ -282,8 +282,13 @@
    MATH (KATEX)
    ============================================ */
 
+/* Counter for numbered equations within each message */
+.assistant-body {
+  counter-reset: equation;
+}
+
 .assistant-body .katex {
-  font-size: 1.1em;
+  font-size: 1.15em;  /* Increased from 1.1em to make equations larger */
   color: var(--text);
 }
 
@@ -300,6 +305,24 @@
 
 .assistant-body .katex-display:last-child {
   margin-bottom: 0;
+}
+
+/* Numbered equations (standalone display equations) */
+.assistant-body .katex-display.numbered {
+  counter-increment: equation;
+  display: flex;
+  justify-content: center;  /* Center the equation */
+  align-items: center;
+  position: relative;
+}
+
+.assistant-body .katex-display.numbered::after {
+  content: "(" counter(equation) ")";
+  position: absolute;
+  right: 0;
+  color: var(--text);  /* Same color as regular text */
+  font-family: var(--font-ui);
+  font-size: 1em;  /* Same size as regular text */
 }
 
 /* ============================================
