@@ -29,6 +29,7 @@ import { extractEquations } from '../codeDisplay/equationExtractor.js'
 import { createCodeOverlay } from '../codeDisplay/codeOverlay.js'
 import { createEquationOverlay } from '../codeDisplay/equationOverlay.js'
 import { openModal } from '../../shared/openModal.js'
+import { setupCopyShortcuts } from '../formatting/copyUtilities.js'
 import { createViewKeyHandler } from './viewKeys.js'
 import { createCommandKeyHandler } from './commandKeys.js'
 import { createInputKeyHandler } from './inputKeys.js'
@@ -94,6 +95,10 @@ export function createInteraction({
   // Create overlay instances (used by view handler and others)
   const codeOverlay = createCodeOverlay({ modeManager });
   const equationOverlay = createEquationOverlay({ modeManager });
+
+  // Setup copy utilities and expose globally for view handler
+  const copyUtils = setupCopyShortcuts(activeParts);
+  window.copyCodeBlock = copyUtils.copyCode;
 
   // VIEW handler extracted
   const getReadingMode = ()=> readingMode

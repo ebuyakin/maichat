@@ -191,7 +191,6 @@
   border-bottom: 1px solid var(--border);
   font-size: 0.75em;
   color: var(--text-dim);
-  text-transform: uppercase;
   font-family: var(--font-ui);
   letter-spacing: 0.5px;
 }

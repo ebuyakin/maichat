@@ -18,18 +18,37 @@ export function setupCopyShortcuts(activeParts) {
   }
   
   /**
-   * Copy code block at cursor
-   * Looks for <pre><code> in active message
+   * Copy code block by number (1-indexed)
+   * If no number specified, copies first/only code block
+   * @param {number|null} blockNumber - Block number (1-indexed), or null for first block
    */
-  function copyCode() {
+  function copyCode(blockNumber = null) {
     const msgEl = getActiveMessageElement();
     if (!msgEl) return false;
     
-    const codeBlock = msgEl.querySelector('pre code');
-    if (!codeBlock) return false;
+    const codeBlocks = msgEl.querySelectorAll('.assistant-body pre code');
+    if (codeBlocks.length === 0) return false;
     
-    const code = codeBlock.textContent;
-    return copyToClipboard(code, 'Code copied');
+    // If no number specified and only one block, copy it
+    if (blockNumber === null) {
+      if (codeBlocks.length === 1) {
+        const code = codeBlocks[0].textContent;
+        return copyToClipboard(code, 'Code copied');
+      } else {
+        // Multiple blocks but no number specified - do nothing, wait for digit
+        return false;
+      }
+    }
+    
+    // Copy specific block (1-indexed for user, 0-indexed for array)
+    const index = blockNumber - 1;
+    if (index < 0 || index >= codeBlocks.length) {
+      showToast(`Code block ${blockNumber} not found (1-${codeBlocks.length} available)`, true);
+      return false;
+    }
+    
+    const code = codeBlocks[index].textContent;
+    return copyToClipboard(code, `Code block ${blockNumber} copied`);
   }
   
   /**
@@ -104,11 +123,46 @@ export function setupCopyShortcuts(activeParts) {
   
   /**
    * Show temporary toast notification
-   * TODO: Replace with actual toast system
    */
   function showToast(message, isError = false) {
-    console.log(`[TOAST] ${message}`);
-    // Future: implement actual toast UI
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: ${isError ? '#f66' : '#5fa8ff'};
+      color: white;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: var(--font-ui);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    `;
+    
+    // Add animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateY(100px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 2 seconds
+    setTimeout(() => {
+      toast.style.animation = 'slideIn 0.3s ease reverse';
+      setTimeout(() => {
+        document.body.removeChild(toast);
+        document.head.removeChild(style);
+      }, 300);
+    }, 2000);
   }
   
   return {

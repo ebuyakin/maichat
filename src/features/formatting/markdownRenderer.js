@@ -30,9 +30,18 @@ export function renderMarkdownInline(markdown) {
   if (!markdown || typeof markdown !== 'string') return '';
   
   try {
+    // Step 0: Extract language info from code fences and store separately
+    const codeBlockLanguages = [];
+    let textWithPlaceholders = markdown;
+    
+    // Find all code blocks with language specs: ```python, ```java, etc.
+    textWithPlaceholders = textWithPlaceholders.replace(/```(\w+)\n/g, (match, lang) => {
+      codeBlockLanguages.push(lang);
+      return '```\n'; // Remove language from fence so marked doesn't process it
+    });
+    
     // Step 1: Extract and protect math expressions before markdown parsing
     const mathExpressions = [];
-    let textWithPlaceholders = markdown;
     
     // Extract display math: $$...$$ (must be done before inline to avoid conflicts)
     textWithPlaceholders = textWithPlaceholders.replace(/\$\$([\s\S]+?)\$\$/g, (match, content) => {
@@ -107,7 +116,20 @@ export function renderMarkdownInline(markdown) {
       }
     });
     
-    return finalHtml;
+    // Step 5: Post-process to add language attributes to <pre> tags
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = finalHtml;
+    
+    // Add language attributes from our extracted list
+    const allPreTags = tempDiv.querySelectorAll('pre');
+    allPreTags.forEach((pre, index) => {
+      if (index < codeBlockLanguages.length) {
+        const lang = codeBlockLanguages[index];
+        pre.setAttribute('data-language', lang);
+      }
+    });
+    
+    return tempDiv.innerHTML;
     
   } catch (error) {
     console.error('Markdown rendering error:', error);

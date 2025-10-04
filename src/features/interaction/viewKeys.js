@@ -114,6 +114,20 @@ export function createViewKeyHandler({
         return true
       }
     }
+    // Pending code copy digit selection (c1, c2, etc.)
+    if(/^[1-9]$/.test(e.key) && window.__mcPendingCopy){
+      const act = activeParts.active();
+      const pending = window.__mcPendingCopy;
+      if(!(act && act.role==='assistant')){ window.__mcPendingCopy=null; return false }
+      if(act.pairId !== pending.pairId){ window.__mcPendingCopy=null; return false }
+      const blockNum = parseInt(e.key, 10);
+      if(window.copyCodeBlock && window.copyCodeBlock(blockNum)){
+        window.__mcPendingCopy=null;
+        return true;
+      }
+      window.__mcPendingCopy=null;
+      return false;
+    }
     // Pending code overlay digit selection must take precedence over star rating
     if(/^[1-9]$/.test(e.key) && window.__mcPendingCodeOpen){
       const act = activeParts.active();
@@ -159,6 +173,21 @@ export function createViewKeyHandler({
     if(e.key==='e'){ if(handleEditIfErrorActive()) return true }
     if(e.key==='w'){ if(handleDeleteIfErrorActive()) return true }
     
+    // Copy code blocks: c (single block) or c1, c2, etc. (specific block)
+    if(e.key==='c'){
+      const act = activeParts.active();
+      if(!(act && act.role==='assistant')) return false;
+      
+      // Try to copy code (will handle single vs multiple blocks)
+      if(window.copyCodeBlock && window.copyCodeBlock(null)){
+        return true;
+      }
+      
+      // If no code blocks, set up pending for c1, c2, etc.
+      window.__mcPendingCopy = { ts: Date.now(), pairId: act.pairId };
+      return true;
+    }
+    
     // Code overlay trigger logic (smart):
     if(e.key==='v'){
       const act = activeParts.active();
@@ -191,6 +220,10 @@ export function createViewKeyHandler({
     if(window.__mcPendingEqOpen){
       const isDigit = /^[1-9]$/.test(e.key);
       if(e.key!=='m' && !isDigit){ window.__mcPendingEqOpen=null }
+    }
+    if(window.__mcPendingCopy){
+      const isDigit = /^[1-9]$/.test(e.key);
+      if(e.key!=='c' && !isDigit){ window.__mcPendingCopy=null }
     }
     return false
   }
