@@ -191,6 +191,7 @@
   border-bottom: 1px solid var(--border);
   font-size: 0.75em;
   color: var(--text-dim);
+  text-transform: uppercase;
   font-family: var(--font-ui);
   letter-spacing: 0.5px;
 }
@@ -293,17 +294,21 @@
 }
 
 .assistant-body .katex-display {
-  margin: 1em 0;
+  margin: 2em 0;  /* Generous spacing for visual separation */
   overflow-x: auto;
   overflow-y: hidden;
   text-align: center;
 }
 
-.assistant-body .katex-display:first-child {
+/* Only remove top margin if equation is first child of .assistant-body itself */
+.assistant-body > .katex-display:first-child,
+.assistant-body > *:first-child > .katex-display:first-child {
   margin-top: 0;
 }
 
-.assistant-body .katex-display:last-child {
+/* Only remove bottom margin if equation is last child of .assistant-body itself */
+.assistant-body > .katex-display:last-child,
+.assistant-body > *:last-child > .katex-display:last-child {
   margin-bottom: 0;
 }
 
