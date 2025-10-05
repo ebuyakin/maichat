@@ -1,6 +1,6 @@
 #statusRight > * { box-sizing:border-box; }
 #statusRight .mc, #statusRight .menu-btn { flex:0 0 auto; }
-#messageCount.mc { font:11px var(--font-mono); background:transparent; padding:6px 10px; border:1px solid #2a2a2a; border-radius:4px; color:#9ab; letter-spacing:.5px; display:flex; align-items:center; height:34px; }
+#messagePosition.mc, #messageCount.mc { font:11px var(--font-mono); background:transparent; padding:6px 10px; border:1px solid #2a2a2a; border-radius:4px; color:#9ab; letter-spacing:.5px; display:flex; align-items:center; height:34px; }
 .menu-btn { background:transparent; border:1px solid #2a2a2a; color:#ddd; padding:6px 10px; cursor:pointer; border-radius:4px; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; height:34px; }
 .menu-btn:focus, .menu-btn:hover { border-color:#3a3a3a; color:#fff; }
 .app-menu { position:absolute; top:100%; right:0; background:var(--bg-alt); border:1px solid #222; box-shadow:0 4px 18px rgba(0,0,0,0.5); padding:4px 0; border-radius:6px; min-width:200px; z-index:900; }

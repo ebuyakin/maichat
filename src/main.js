@@ -36,6 +36,7 @@ appEl.innerHTML = `
     </div>
     <div id="statusRight">
   <span id="commandError"></span>
+      <span id="messagePosition" title="Current message position" class="mc">-</span>
       <span id="messageCount" title="Visible message pairs" class="mc">0</span>
       <button id="appMenuBtn" aria-haspopup="true" aria-expanded="false" title="Menu (Ctrl+.)" class="menu-btn" tabindex="0">⋮</button>
       <div id="appMenu" class="app-menu" hidden>

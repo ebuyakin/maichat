@@ -208,6 +208,20 @@ export function createHistoryRuntime(ctx){
       el.classList.add('active')
       scrollController.setActiveIndex(activeParts.activeIndex)
       updateFadeVisibility()
+      updateMessagePosition()
+    }
+  }
+  function updateMessagePosition(){
+    const el = document.getElementById('messagePosition')
+    if(!el) return
+    const activeIdx = activeParts.activeIndex
+    const total = activeParts.parts.length
+    if(activeIdx !== null && activeIdx !== undefined && total > 0){
+      // Calculate pair number (each pair has 2 parts: user + assistant)
+      const pairNumber = Math.floor(activeIdx / 2) + 1
+      el.textContent = `${pairNumber}`
+    } else {
+      el.textContent = '-'
     }
   }
   function updateFadeVisibility(opts={}){
