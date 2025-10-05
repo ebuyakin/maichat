@@ -3,7 +3,7 @@
 
 scrolling/anchoring of the new message in case pre-sending is not G. [x]
 filtering upon changing the topic in the input box.[x]
-smooth scrolling for j/k 
+smooth scrolling for j/k [x]
 margin for the equations (top.bottom) [x]
 
 fade visibility code - remove - what is fade visibility?

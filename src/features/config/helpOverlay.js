@@ -21,7 +21,7 @@ export function openHelpOverlay({ onClose, modeManager }){
           <div class="help-k">Ctrl+D</div><div class="help-d">Switch to Command Mode</div>
           <div class="help-k">Ctrl+V</div><div class="help-d">Switch to View Mode</div>
           <div class="help-k">Ctrl+,</div><div class="help-d">Settings</div>
-          <div class="help-k">Ctrl+E</div><div class="help-d">Topic Editor</div>
+          <div class="help-k">Ctrl+Shift+T</div><div class="help-d">Topic Editor</div>
           <div class="help-k">Ctrl+Shift+M</div><div class="help-d">Model Editor</div>
           <div class="help-k">Ctrl+Shift+D</div><div class="help-d">Daily Stats</div>
           <div class="help-k">Ctrl+K</div><div class="help-d">API Keys</div>

@@ -276,7 +276,7 @@ export function createInteraction({
     scrollController: ctx.scrollController,
   })
   appMenu.handleGlobalClick()
-  function renderPendingMeta(){ const pm = document.getElementById('pendingModel'); const pt = document.getElementById('pendingTopic'); if(pm){ pm.textContent = pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'; if(!pm.textContent) pm.textContent='gpt-4o-mini'; pm.title = `Model: ${pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'} (Ctrl+M select (Input mode) · Ctrl+Shift+M manage (any mode))` } if(pt){ const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId); if(topic){ const path = formatTopicPath(topic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { const rootTopic = store.topics.get(store.rootTopicId); if(rootTopic){ const path = formatTopicPath(rootTopic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+E edit)` } else { pt.textContent='Select Topic'; pt.title='No topic found (Ctrl+T)' } } } }
+  function renderPendingMeta(){ const pm = document.getElementById('pendingModel'); const pt = document.getElementById('pendingTopic'); if(pm){ pm.textContent = pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'; if(!pm.textContent) pm.textContent='gpt-4o-mini'; pm.title = `Model: ${pendingMessageMeta.model || getActiveModel() || 'gpt-4o-mini'} (Ctrl+M select (Input mode) · Ctrl+Shift+M manage (any mode))` } if(pt){ const topic = store.topics.get(pendingMessageMeta.topicId || currentTopicId); if(topic){ const path = formatTopicPath(topic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+Shift+T edit)` } else { const rootTopic = store.topics.get(store.rootTopicId); if(rootTopic){ const path = formatTopicPath(rootTopic.id); pt.textContent = middleTruncate(path, 90); pt.title = `Topic: ${path} (Ctrl+T pick, Ctrl+Shift+T edit)` } else { pt.textContent='Select Topic'; pt.title='No topic found (Ctrl+T)' } } } }
   function formatTopicPath(id){ const parts = store.getTopicPath(id); if(parts[0]==='Root') parts.shift(); return parts.join(' > ') }
   function middleTruncate(str,max){ if(str.length<=max) return str; const keep=max-3; const head=Math.ceil(keep/2); const tail=Math.floor(keep/2); return str.slice(0,head)+'…'+str.slice(str.length-tail) }
   function updateSendDisabled(){
@@ -377,10 +377,11 @@ export function createInteraction({
     else if(k==='v'){ e.preventDefault(); modeManager.set('view') }
   else if(e.shiftKey && k==='h'){ e.preventDefault(); try { window.open(tutorialUrl, '_blank', 'noopener'); } catch { window.location.href = tutorialUrl } }
     else if(k==='t'){
-      if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openQuickTopicPicker({ prevMode }) }
-    }
-    else if(k==='e' && !e.shiftKey){
-      if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prevMode) } }) }
+      if(e.shiftKey){
+        if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openTopicEditor({ store, onClose:()=>{ modeManager.set(prevMode) } }) }
+      } else {
+        if(!document.getElementById('appLoading')){ e.preventDefault(); const prevMode = modeManager.mode; openQuickTopicPicker({ prevMode }) }
+      }
     }
   else if(k==='m'){
       if(e.shiftKey){
