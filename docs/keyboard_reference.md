@@ -70,12 +70,24 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | n | Jump to FIRST part of last message | Focuses first part; bottom-anchors end (last assistant or meta); clears badge |
 | e | Re-ask focused error message | Copies text to input; on Send, old error pair is deleted and a new message is created at the end (uses current context) |
 | d | Delete focused error message | Removes the error pair; focus moves to previous part |
+| c | Copy code block | Single block: copies immediately. Multiple blocks: wait for digit (c1, c2, c3...) |
+| y | Copy equation (yank) | Single equation: copies LaTeX immediately. Multiple equations: wait for digit (y1, y2, y3...) |
+| v | View code in overlay | Single block: opens immediately. Multiple blocks: wait for digit (v1, v2, v3...) |
+| m | View equation in overlay | Single equation: opens immediately. Multiple equations: wait for digit (m1, m2, m3...) |
 | * | Cycle star (0→1→2→3→0) | Affects active pair |
 | 1 / 2 / 3 | Set star to 1 / 2 / 3 | Direct rating |
 | Space | Set star to 0 | Clear rating |
 | a | Toggle color flag (blue↔grey) | Updates flag badge |
 | Enter | Switch to INPUT mode | Focus bottom input |
 | Escape | Switch to COMMAND mode | Focus top command input |
+
+**Note:** Digit keys (1-9) have context-dependent behavior:
+- After `c` press: Copy code block N
+- After `y` press: Copy equation N  
+- After `v` press: View code block N in overlay
+- After `m` press: View equation N in overlay
+- Without prefix: Set star rating (1/2/3 only)
+- Pending state clears after 3 seconds or unrelated keypress
 
 ## 4. INPUT Mode Keys
 | Key | Action | Notes |
