@@ -88,6 +88,21 @@ export function openSettingsOverlay({ onClose }){
                   ${['linear','easeOutQuad','easeInOutCubic','easeOutExpo'].map(m=>`<option value="${m}" ${m===existing.scrollAnimEasing?'selected':''}>${m}</option>`).join('')}
                 </select>
               </label>
+              <div style="border-top: 1px solid #333; margin: 16px 0 12px 0; padding-top: 12px;">
+                <div style="font-weight: 500; margin-bottom: 8px; color: var(--text);">Navigation Animation</div>
+                <label>
+                  <input type="checkbox" name="animateSmallSteps" ${existing.animateSmallSteps ? 'checked' : ''} />
+                  Animate j/k (small steps)
+                </label>
+                <label>
+                  <input type="checkbox" name="animateBigSteps" ${existing.animateBigSteps ? 'checked' : ''} />
+                  Animate J/K (big steps)
+                </label>
+                <label>
+                  <input type="checkbox" name="animateMessageJumps" ${existing.animateMessageJumps ? 'checked' : ''} />
+                  Animate u/d (message jumps)
+                </label>
+              </div>
             </fieldset>
           </div>
           <div class="tab-section" data-tab-section="context" id="tab-context" hidden>
@@ -164,12 +179,15 @@ export function openSettingsOverlay({ onClose }){
   const scrollAnimMinMs = clampRange(parseInt(fd.get('scrollAnimMinMs')),0,1000)
   const scrollAnimMaxMs = clampRange(parseInt(fd.get('scrollAnimMaxMs')),0,5000)
   const scrollAnimEasing = fd.get('scrollAnimEasing') || 'easeOutQuad'
+  const animateSmallSteps = fd.get('animateSmallSteps') === 'on'
+  const animateBigSteps = fd.get('animateBigSteps') === 'on'
+  const animateMessageJumps = fd.get('animateMessageJumps') === 'on'
   const userRequestAllowance = clampRange(parseInt(fd.get('userRequestAllowance')),0,500000)
   const assistantResponseAllowance = clampRange(parseInt(fd.get('assistantResponseAllowance')),0,500000)
   const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')),0,1000)
   const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')),1.0,10.0)
   const useInlineFormatting = fd.get('useInlineFormatting') === 'on'
-  return { fadeZonePx, messageGapPx, assistantGapPx, messagePaddingPx, metaGapPx, gutterLPx, gutterRPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken, useInlineFormatting }
+  return { fadeZonePx, messageGapPx, assistantGapPx, messagePaddingPx, metaGapPx, gutterLPx, gutterRPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, animateSmallSteps, animateBigSteps, animateMessageJumps, userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken, useInlineFormatting }
   }
   function shallowEqual(a,b){
     if(a===b) return true
@@ -213,6 +231,14 @@ export function openSettingsOverlay({ onClose }){
     setNum('scrollAnimMinMs', s.scrollAnimMinMs)
     setNum('scrollAnimMaxMs', s.scrollAnimMaxMs)
     const sae = form.querySelector('select[name="scrollAnimEasing"]')
+    if(sae) sae.value = s.scrollAnimEasing || 'easeOutQuad'
+    // Animation checkboxes
+    const ass = form.querySelector('input[name="animateSmallSteps"]')
+    if(ass) ass.checked = !!s.animateSmallSteps
+    const abs = form.querySelector('input[name="animateBigSteps"]')
+    if(abs) abs.checked = !!s.animateBigSteps
+    const amj = form.querySelector('input[name="animateMessageJumps"]')
+    if(amj) amj.checked = s.animateMessageJumps !== undefined ? !!s.animateMessageJumps : true
     if(sae) sae.value = s.scrollAnimEasing || 'easeOutQuad'
     // Context
   setNum('userRequestAllowance', s.userRequestAllowance)

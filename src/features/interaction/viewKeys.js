@@ -1,5 +1,7 @@
 // viewKeys.js
 // Factory that creates the VIEW mode key handler. Behavior is identical to the previous inline handler.
+import { getSettings } from '../../core/settings/index.js'
+
 export function createViewKeyHandler({
   modeManager,
   activeParts,
@@ -42,16 +44,40 @@ export function createViewKeyHandler({
     // Scrolling steps on messages
     if(e.key==='j' || e.key==='ArrowDown' || e.key==='J'){
       window.__lastKey = e.key
-      const s = (window.getSettings ? window.getSettings() : null) || (historyRuntime && historyRuntime.getSettings && historyRuntime.getSettings()) || {}
+      const s = getSettings()
       const step = (e.key==='J') ? (s.scrollBigStepPx||500) : (s.scrollStepPx||200)
-      if(scrollController && scrollController.stepScroll){ scrollController.stepScroll(step) }
+      const animate = (e.key==='J') ? (s.animateBigSteps || false) : (s.animateSmallSteps || false)
+      
+      if(animate && scrollController){
+        // Use animated scrolling
+        const historyEl = document.getElementById('history')
+        if(historyEl){
+          const currentScroll = historyEl.scrollTop
+          const targetScroll = currentScroll + step
+          scrollController.scrollToPosition(targetScroll, true)
+        }
+      } else if(scrollController && scrollController.stepScroll){
+        scrollController.stepScroll(step)
+      }
       return true
     }
     if(e.key==='k' || e.key==='ArrowUp' || e.key==='K'){
       window.__lastKey = e.key
-      const s = (window.getSettings ? window.getSettings() : null) || (historyRuntime && historyRuntime.getSettings && historyRuntime.getSettings()) || {}
+      const s = getSettings()
       const step = (e.key==='K') ? (s.scrollBigStepPx||500) : (s.scrollStepPx||200)
-      if(scrollController && scrollController.stepScroll){ scrollController.stepScroll(-step) }
+      const animate = (e.key==='K') ? (s.animateBigSteps || false) : (s.animateSmallSteps || false)
+      
+      if(animate && scrollController){
+        // Use animated scrolling
+        const historyEl = document.getElementById('history')
+        if(historyEl){
+          const currentScroll = historyEl.scrollTop
+          const targetScroll = currentScroll - step
+          scrollController.scrollToPosition(targetScroll, true)
+        }
+      } else if(scrollController && scrollController.stepScroll){
+        scrollController.stepScroll(-step)
+      }
       return true
     }
     
@@ -97,24 +123,30 @@ export function createViewKeyHandler({
     }
     // d/u: jump to next/prev message and align to top (last message aligns bottom)
     if(e.key==='d'){
+      const s = getSettings()
+      const animate = s.animateMessageJumps !== undefined ? s.animateMessageJumps : true
+      
       const curIdx = activeParts.activeIndex || 0
       const nextIdx = Math.min(curIdx+1, activeParts.parts.length-1)
       const next = activeParts.parts[nextIdx]
       if(next){
   activeParts.setActiveById(next.id); historyRuntime.applyActiveMessage()
         const isLast = nextIdx === activeParts.parts.length-1
-        if(scrollController && scrollController.jumpToMessage){ scrollController.jumpToMessage(next.id, isLast ? 'bottom' : 'top', true) }
+        if(scrollController && scrollController.jumpToMessage){ scrollController.jumpToMessage(next.id, isLast ? 'bottom' : 'top', animate) }
         setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
         return true
       }
     }
     if(e.key==='u'){
+      const s = getSettings()
+      const animate = s.animateMessageJumps !== undefined ? s.animateMessageJumps : true
+      
       const curIdx = activeParts.activeIndex || 0
       const prevIdx = Math.max(0, curIdx-1)
       const prev = activeParts.parts[prevIdx]
       if(prev){
   activeParts.setActiveById(prev.id); historyRuntime.applyActiveMessage()
-        if(scrollController && scrollController.jumpToMessage){ scrollController.jumpToMessage(prev.id, 'top', true) }
+        if(scrollController && scrollController.jumpToMessage){ scrollController.jumpToMessage(prev.id, 'top', animate) }
         setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
         return true
       }

@@ -295,5 +295,6 @@ export function createScrollController({ container, getParts }){
 	function indexByMessageId(messageId){ return findIndexById(messageId) }
 	function alignToMessage(messageId, anchor='top', animate=false){ alignTo(messageId, anchor, animate) }
 	function jumpToMessage(messageId, anchor='top', animate=false){ alignTo(messageId, anchor, animate) }
-	return { remeasure: measure, apply, setActiveIndex, debugInfo, setAnimationEnabled, suppressNextValidate, isProgrammaticScroll, alignTo, ensureVisible, stepScroll, indexByMessageId, alignToMessage, jumpToMessage }
+	function scrollToPosition(targetScroll, animate=false){ scrollTo(targetScroll, animate) }
+	return { remeasure: measure, apply, setActiveIndex, debugInfo, setAnimationEnabled, suppressNextValidate, isProgrammaticScroll, alignTo, ensureVisible, stepScroll, indexByMessageId, alignToMessage, jumpToMessage, scrollToPosition }
 }
