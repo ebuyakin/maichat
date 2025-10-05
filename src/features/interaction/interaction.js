@@ -9,9 +9,11 @@ import { splitFilterAndCommand } from '../command/colon/colonCommandSplitter.js'
 import { parseColonCommand } from '../command/colon/colonCommandParser.js'
 import { createCommandRegistry } from '../command/colon/colonCommandRegistry.js'
 import { resolveTopicFilter } from '../command/topicResolver.js'
+import { addToTopicHistory } from './inputKeys.js'
 import { openConfirmOverlay } from '../command/confirmOverlay.js'
 // Topics moved (Phase 6.4)
 import { createTopicPicker } from '../topics/topicPicker.js'
+import { createChronoTopicPicker } from '../topics/chronoTopicPicker.js'
 import { openTopicEditor } from '../topics/topicEditor.js'
 // Config overlays moved (Phase 6.6)
 import { openSettingsOverlay } from '../config/settingsOverlay.js'
@@ -163,6 +165,8 @@ export function createInteraction({
     sanitizeDisplayPreservingTokens,
     escapeHtmlAttr,
     escapeHtml,
+    renderPendingMeta,
+    openChronoTopicPicker,
   })
   function cycleStar(){
     const act = activeParts.active(); if(!act) return;
@@ -195,6 +199,9 @@ export function createInteraction({
           pendingMessageMeta.topicId=topicId; renderPendingMeta();
           try{ localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) }catch{}
           
+          // Add to topic history
+          addToTopicHistory(topicId)
+          
           // Auto-refresh history if filter contains unargumented 't'
           const currentFilter = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : '';
           if (currentFilter) {
@@ -218,6 +225,53 @@ export function createInteraction({
               updateMetaBadgesInline(pair.id, { topicId })
               // Preserve focus styling
               activeParts.setActiveById(act.id); historyRuntime.applyActiveMessage()
+            }
+          }
+        }
+        if(prevMode) modeManager.set(prevMode)
+      },
+      onCancel:()=>{ if(prevMode) modeManager.set(prevMode) }
+    })
+  }
+  
+  function openChronoTopicPicker({ prevMode, topicHistory, getTopicHistory }){
+    const openMode = prevMode || modeManager.mode;
+    const currentTopicId = pendingMessageMeta.topicId || currentTopicId;
+    const history = getTopicHistory ? getTopicHistory() : (topicHistory || []);
+    
+    createChronoTopicPicker({
+      store,
+      modeManager,
+      topicHistory: history,
+      currentTopicId: currentTopicId,
+      onSelect:(topicId)=>{
+        if(openMode==='input'){
+          pendingMessageMeta.topicId=topicId; 
+          renderPendingMeta();
+          try{ localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) }catch{}
+          
+          // Add to topic history
+          addToTopicHistory(topicId)
+          
+          // Auto-refresh history if filter contains unargumented 't'
+          const currentFilter = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : '';
+          if (currentFilter) {
+            try {
+              const ast = parse(currentFilter);
+              if (hasUnargumentedTopicFilter(ast)) {
+                // Re-apply filter with new topic - preserves active message if still present
+                historyRuntime.renderCurrentView({ preserveActive: true });
+                // Align focused message to bottom (like filter apply in command mode)
+                try {
+                  const act = activeParts && activeParts.active && activeParts.active();
+                  const id = act && act.id;
+                  if(id && ctx.scrollController && ctx.scrollController.alignTo){
+                    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
+                  }
+                } catch {}
+              }
+            } catch {
+              // Parse error - ignore, don't refresh
             }
           }
         }
@@ -515,5 +569,5 @@ export function createInteraction({
       // If no parts remain (empty history), no focus needed
     }
   }
-  return { keyRouter, updateSendDisabled, renderPendingMeta, openQuickTopicPicker, prepareEditResend, deletePairWithFocus, isErrorPair, restoreLastFilter }
+  return { keyRouter, updateSendDisabled, renderPendingMeta, openQuickTopicPicker, openChronoTopicPicker, prepareEditResend, deletePairWithFocus, isErrorPair, restoreLastFilter }
 }

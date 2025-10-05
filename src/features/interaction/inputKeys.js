@@ -7,6 +7,57 @@ import { sanitizeAssistantText } from './sanitizeAssistant.js'
 import { extractCodeBlocks } from '../codeDisplay/codeExtractor.js'
 import { extractEquations } from '../codeDisplay/equationExtractor.js'
 
+// Topic history management (MRU list)
+const TOPIC_HISTORY_KEY = 'maichat_topic_history'
+const MAX_TOPIC_HISTORY = 20
+let topicHistory = []
+let topicHistoryIndex = -1
+
+function loadTopicHistory() {
+  try {
+    const stored = localStorage.getItem(TOPIC_HISTORY_KEY)
+    if (stored) {
+      topicHistory = JSON.parse(stored)
+    }
+  } catch {
+    topicHistory = []
+  }
+}
+
+function saveTopicHistory() {
+  try {
+    localStorage.setItem(TOPIC_HISTORY_KEY, JSON.stringify(topicHistory))
+  } catch {}
+}
+
+function addToTopicHistory(topicId) {
+  if (!topicId) return
+  // Remove if already in history
+  topicHistory = topicHistory.filter(id => id !== topicId)
+  // Add to front
+  topicHistory.unshift(topicId)
+  // Trim to max size
+  if (topicHistory.length > MAX_TOPIC_HISTORY) {
+    topicHistory = topicHistory.slice(0, MAX_TOPIC_HISTORY)
+  }
+  saveTopicHistory()
+}
+
+function removeFromTopicHistory(topicId) {
+  topicHistory = topicHistory.filter(id => id !== topicId)
+  saveTopicHistory()
+}
+
+export { addToTopicHistory, removeFromTopicHistory }
+
+// Export getter for topic history
+export function getTopicHistory() {
+  return topicHistory.slice() // return copy
+}
+
+// Load history on module init
+loadTopicHistory()
+
 export function createInputKeyHandler({
   modeManager,
   inputField,
@@ -25,9 +76,25 @@ export function createInputKeyHandler({
   sanitizeDisplayPreservingTokens,
   escapeHtmlAttr,
   escapeHtml,
+  renderPendingMeta,
+  openChronoTopicPicker,
 }){
+  // Clean up deleted topics from history
+  store.on('topic:delete', (topicId) => {
+    removeFromTopicHistory(topicId)
+  })
+  
   return function inputHandler(e){
     if(window.modalIsActive && window.modalIsActive()) return false
+    // Topic history picker (Ctrl+P/N opens chrono picker)
+    if(e.ctrlKey && (e.key==='p' || e.key==='P' || e.key==='n' || e.key==='N')){ 
+      e.preventDefault(); 
+      openChronoTopicPicker && openChronoTopicPicker({ 
+        prevMode: 'input',
+        getTopicHistory: () => topicHistory
+      }); 
+      return true 
+    }
     // Emacs-like editing shortcuts in input (new message) box
     if(e.ctrlKey && (e.key==='u' || e.key==='U')){ e.preventDefault(); const el = inputField; const end = el.selectionEnd; const start = 0; el.setRangeText('', start, end, 'end'); return true }
     if(e.ctrlKey && (e.key==='w' || e.key==='W')){ e.preventDefault(); const el = inputField; const pos = el.selectionStart; const left = el.value.slice(0, pos); const right = el.value.slice(el.selectionEnd); const newLeft = left.replace(/\s*[^\s]+\s*$/, ''); const delStart = newLeft.length; el.value = newLeft + right; el.setSelectionRange(delStart, delStart); return true }
@@ -44,6 +111,11 @@ export function createInputKeyHandler({
         const editingId = window.__editingPairId;
         const topicId = pendingMessageMeta.topicId || getCurrentTopicId();
         const model = pendingMessageMeta.model || getActiveModel();
+        
+        // Add topic to history on send
+        addToTopicHistory(topicId)
+        topicHistoryIndex = -1  // Reset navigation index
+        
         boundaryMgr.updateVisiblePairs(store.getAllPairs().sort((a,b)=>a.createdAt-b.createdAt));
         boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel());
         boundaryMgr.applySettings(getSettings());
