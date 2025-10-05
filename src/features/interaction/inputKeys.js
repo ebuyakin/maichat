@@ -153,9 +153,11 @@ export function createInputKeyHandler({
   historyRuntime.applyActiveMessage();
         // One-shot: bottom-align the new user message as visual cue
         if(id && scrollController && scrollController.alignTo){
-          try { if(scrollController.remeasure) scrollController.remeasure() } catch {}
-          // In message-based view, anchor to user message (id:u)
-          scrollController.alignTo(`${id}:u`, 'bottom', false)
+          requestAnimationFrame(()=>{
+            try { if(scrollController.remeasure) scrollController.remeasure() } catch {}
+            // In message-based view, anchor to user message (id:u)
+            scrollController.alignTo(`${id}:u`, 'bottom', false)
+          })
         }
         updateSendDisabled()
       }

@@ -62,11 +62,32 @@
 /* History pane: top/bottom padding controlled in layout; ensure zero here */
 #historyPane{ padding-top: 0; padding-bottom: 0; box-shadow:inset 0 1px 0 #121212, inset 0 -1px 0 #121212; }
 
-/* Scrollbar minimal */
-#historyPane::-webkit-scrollbar { width:8px; }
-#historyPane::-webkit-scrollbar-track { background: var(--bg); }
-#historyPane::-webkit-scrollbar-thumb { background: var(--border); }
-#historyPane::-webkit-scrollbar-thumb:hover { background: var(--border-active); }
+/* Scrollbar minimal (on inner #history container, not outer #historyPane) */
+/* Hidden by default, appears on hover to mimic auto-hide behavior */
+#history::-webkit-scrollbar { 
+  width: 8px; 
+}
+
+#history::-webkit-scrollbar-track { 
+  background: transparent; /* Hidden by default */
+}
+
+#history::-webkit-scrollbar-thumb { 
+  background: transparent; /* Hidden by default */
+}
+
+/* Show scrollbar on hover over the history area */
+#history:hover::-webkit-scrollbar-track { 
+  background: var(--bg); 
+}
+
+#history:hover::-webkit-scrollbar-thumb { 
+  background: var(--border); 
+}
+
+#history:hover::-webkit-scrollbar-thumb:hover { 
+  background: var(--border-active); 
+}
 
 /* Code placeholders styling */
 .code-placeholder {
