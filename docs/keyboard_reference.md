@@ -48,10 +48,10 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+i | Switch to INPUT | Focuses bottom input |
 | Ctrl+d | Switch to COMMAND | Focuses command input |
 | Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection) (restores prev mode) |
+| Ctrl+Shift+T | Open topic editor | Overlay (Edit) (restores prev mode) |
 | Ctrl+K | Open API Keys overlay | Overlay (Edit) (restores prev mode) |
 | Ctrl+M | Open model selector (INPUT mode only; chooses pending message model) | Overlay (Selection) (restores prev mode) |
 | Ctrl+Shift+M | Open model editor (all modes) | Enable/disable models (j/k move · Space toggle · Enter/Esc close) (restores prev mode) |
-| Ctrl+E | Open topic editor | Overlay (Edit) (restores prev mode) |
 | Ctrl+, | Open settings overlay | Adjust preferences (restores prev mode) |
 | Ctrl+. | Open menu | Mode preserved (will migrate to helper) |
 | F1 | Help overlay | Esc / F1 close (restores prev mode) |
@@ -95,8 +95,12 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Enter | Send message & remain in INPUT | Ignored if previous send pending ("AI is thinking") |
 | Escape | Return to VIEW | Restores active selection |
 | Ctrl+v / Ctrl+d / Ctrl+i | Direct mode switch | Overrides cycle |
+| Ctrl+A | Move cursor to start of line | Emacs-style editing |
+| Ctrl+E | Move cursor to end of line | Emacs-style editing |
 | Ctrl+U | Delete from line start to cursor | Emacs-style editing |
 | Ctrl+W | Delete previous word | Emacs-style editing |
+| Ctrl+Shift+F | Move cursor forward one word | Emacs-style editing |
+| Ctrl+Shift+B | Move cursor backward one word | Emacs-style editing |
 
 (Star / include keys intentionally disabled while typing to avoid accidental edits. Future: enable when input empty.)
 
@@ -108,8 +112,12 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+P | Previous command in history | Persistent (survives reload, max 100) |
 | Ctrl+N | Next command in history | Clears to empty at end |
 | Ctrl+v / Ctrl+i / Ctrl+d | Direct mode switch | |
+| Ctrl+A | Move cursor to start of line | Emacs-style editing |
+| Ctrl+E | Move cursor to end of line | Emacs-style editing |
 | Ctrl+U | Delete from line start to cursor | Emacs-style editing |
 | Ctrl+W | Delete previous word | Emacs-style editing |
+| Ctrl+Shift+F | Move cursor forward one word | Emacs-style editing |
+| Ctrl+Shift+B | Move cursor backward one word | Emacs-style editing |
 
 ## 6. Topic Quick Picker (Ctrl+T)
 Hidden root: the conceptual root node is not displayed; top-level rows are its children.
@@ -126,7 +134,7 @@ Hidden root: the conceptual root node is not displayed; top-level rows are its c
 | Enter | Tree | Select highlighted topic (applies & closes) |
 | O | Anywhere | Toggle ordering mode: Manual ↔ Recent (persists) |
 
-## 7. Topic Editor (Ctrl+E)
+## 7. Topic Editor (Ctrl+Shift+T)
 Hidden root; operations occur on visible hierarchy.
 | Key | Layer | Action |
 |-----|-------|--------|

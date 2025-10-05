@@ -30,8 +30,12 @@ export function openHelpOverlay({ onClose, modeManager }){
           <div class="help-title">Input Mode</div>
           <div class="help-k">Enter</div><div class="help-d">Send message</div>
           <div class="help-k">Esc</div><div class="help-d">Back to View Mode</div>
+          <div class="help-k">Ctrl+A</div><div class="help-d">Start of line</div>
+          <div class="help-k">Ctrl+E</div><div class="help-d">End of line</div>
           <div class="help-k">Ctrl+U</div><div class="help-d">Clear to start</div>
           <div class="help-k">Ctrl+W</div><div class="help-d">Delete word left</div>
+          <div class="help-k">Ctrl+Shift+F</div><div class="help-d">Forward one word</div>
+          <div class="help-k">Ctrl+Shift+B</div><div class="help-d">Backward one word</div>
           <div class="help-k">Ctrl+M</div><div class="help-d">Model Selector</div>
           <div class="help-k">Ctrl+T</div><div class="help-d">Pick topic for next message</div>
         </section>
@@ -58,8 +62,12 @@ export function openHelpOverlay({ onClose, modeManager }){
           <div class="help-k">Esc</div><div class="help-d">Clear input and switch to View Mode</div>
           <div class="help-k">Ctrl+P</div><div class="help-d">Previous command</div>
           <div class="help-k">Ctrl+N</div><div class="help-d">Next command</div>
+          <div class="help-k">Ctrl+A</div><div class="help-d">Start of line</div>
+          <div class="help-k">Ctrl+E</div><div class="help-d">End of line</div>
           <div class="help-k">Ctrl+U</div><div class="help-d">Clear to start</div>
           <div class="help-k">Ctrl+W</div><div class="help-d">Delete word left</div>
+          <div class="help-k">Ctrl+Shift+F</div><div class="help-d">Forward one word</div>
+          <div class="help-k">Ctrl+Shift+B</div><div class="help-d">Backward one word</div>
         </section>
       </div>
       <div class="help-hint">Esc closes • F1 toggles</div>

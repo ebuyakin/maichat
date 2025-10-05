@@ -24,4 +24,4 @@ margins
 smooth scrolling
 refresh/re-rerender history on exit from settings.
 
-more text editing keybindings (emac style Ctrl-A/E Ctrl-R)
+more text editing keybindings (emac style Ctrl-A/E Ctrl-R) [x]
