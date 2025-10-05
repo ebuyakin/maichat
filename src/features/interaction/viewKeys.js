@@ -82,12 +82,17 @@ export function createViewKeyHandler({
     // Jump to first in-context (included) pair and center it (one-shot, does not toggle Reading Mode)
     if((e.key==='O' && e.shiftKey) || e.key==='o'){
       historyRuntime.jumpToBoundary();
-      try {
-        const act = activeParts.active();
-        if(act && scrollController && scrollController.alignToMessage){
-          scrollController.alignToMessage(act.id, 'center', false)
-        }
-      } catch {}
+      requestAnimationFrame(()=>{
+        try {
+          if(scrollController && scrollController.remeasure) {
+            scrollController.remeasure();
+          }
+          const act = activeParts.active();
+          if(act && scrollController && scrollController.alignToMessage){
+            scrollController.alignToMessage(act.id, 'center', false)
+          }
+        } catch {}
+      });
       return true
     }
     // d/u: jump to next/prev message and align to top (last message aligns bottom)
