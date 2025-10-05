@@ -73,3 +73,33 @@ export function parse(input){
   if(peek().type !== 'EOF') throw new Error('Unexpected trailing input')
   return ast
 }
+
+/**
+ * Check if the filter AST contains an unargumented 't' filter
+ * Used to detect if history should refresh when topic changes in INPUT mode
+ * @param {Object} ast - Parsed filter AST from parse()
+ * @returns {boolean} - True if contains 't' without arguments
+ */
+export function hasUnargumentedTopicFilter(ast) {
+  if (!ast) return false;
+  
+  function check(node) {
+    if (!node) return false;
+    
+    // Check if this is a 't' filter without value
+    if (node.type === 'FILTER' && node.kind === 't') {
+      // Check if args.value is null/undefined/empty (means unargumented)
+      return !node.args || !node.args.value;
+    }
+    
+    // Recursively check child nodes
+    if (node.type === 'NOT') return check(node.expr);
+    if (node.type === 'AND' || node.type === 'OR') {
+      return check(node.left) || check(node.right);
+    }
+    
+    return false;
+  }
+  
+  return check(ast);
+}

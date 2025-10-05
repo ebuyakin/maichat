@@ -1,6 +1,7 @@
 // interaction.js moved from ui/interaction/interaction.js (Phase 6.2 Interaction)
 // NOTE: Imports updated to new feature/ and core paths.
 import { parse } from '../command/parser.js'
+import { hasUnargumentedTopicFilter } from '../command/parser.js'
 import { evaluate } from '../command/evaluator.js'
 import { getSettings } from '../../core/settings/index.js'
 import { createKeyRouter } from './keyRouter.js'
@@ -193,6 +194,20 @@ export function createInteraction({
         if(openMode==='input'){
           pendingMessageMeta.topicId=topicId; renderPendingMeta();
           try{ localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) }catch{}
+          
+          // Auto-refresh history if filter contains unargumented 't'
+          const currentFilter = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : '';
+          if (currentFilter) {
+            try {
+              const ast = parse(currentFilter);
+              if (hasUnargumentedTopicFilter(ast)) {
+                // Re-apply filter with new topic - preserves active message
+                historyRuntime.renderCurrentView({ preserveActive: true });
+              }
+            } catch {
+              // Parse error - ignore, don't refresh
+            }
+          }
         } else if(openMode==='view'){
           const act = activeParts.active();
           if(act){
