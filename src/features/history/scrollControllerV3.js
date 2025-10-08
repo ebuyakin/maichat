@@ -220,28 +220,37 @@ export function createScrollController({ container, getParts }){
 
 	// No persistent policy or periodic enforcement in stateless model
 
-		// Stateless alignment API
-		function alignTo(partId, position='bottom', animate=false){
-			if(!metrics) measure()
-			if(!metrics || metrics.parts.length===0) return
-			
-			let targetPartId = partId
-			
-			// Special case: if bottom-aligning a user part, check if we should align its meta instead
-			/*if(position === 'bottom'){
-				targetPartId = getBottomAlignTarget(partId)
-			}*/
-			
-			const idx = typeof targetPartId === 'number' ? targetPartId : findIndexById(targetPartId)
-			if(idx < 0 || idx >= metrics.parts.length) return
-			const target = anchorScrollTop(idx, position)
-			if(Math.abs(container.scrollTop - target) > ADJUST_THRESHOLD){
-				scrollTo(target, !!animate && animationEnabled)
-			}
+	// Stateless alignment API
+	function alignTo(partId, position='bottom', animate=false){
+		if(!metrics) measure()
+		if(!metrics || metrics.parts.length===0) return
+		
+		let targetPartId = partId
+		
+		// Special case: if bottom-aligning a user part, check if we should align its meta instead
+		/*if(position === 'bottom'){
+			targetPartId = getBottomAlignTarget(partId)
+		}*/
+		
+		const idx = typeof targetPartId === 'number' ? targetPartId : findIndexById(targetPartId)
+		if(idx < 0 || idx >= metrics.parts.length) return
+		
+		// Special case: bottom-aligning the last part
+		// Just scroll to max to avoid measurement timing issues with embedded content
+		if(position === 'bottom' && idx === metrics.parts.length - 1){
+			const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight)
+			scrollTo(maxScroll, !!animate && animationEnabled)
 			scheduleValidate()
+			return
 		}
 		
-		function getBottomAlignTarget(partId){
+		// Regular alignment for all other cases
+		const target = anchorScrollTop(idx, position)
+		if(Math.abs(container.scrollTop - target) > ADJUST_THRESHOLD){
+			scrollTo(target, !!animate && animationEnabled)
+		}
+		scheduleValidate()
+	}		function getBottomAlignTarget(partId){
 			// Extract role from part ID
 			const parts = String(partId).split(':')
 			if(parts.length < 2) return partId // malformed ID, use as-is

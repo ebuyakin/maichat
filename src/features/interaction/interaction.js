@@ -208,8 +208,20 @@ export function createInteraction({
             try {
               const ast = parse(currentFilter);
               if (hasUnargumentedTopicFilter(ast)) {
-                // Re-apply filter with new topic - preserves active message
-                historyRuntime.renderCurrentView({ preserveActive: true });
+                // Re-apply filter with new topic - focus LAST message (like G key)
+                historyRuntime.renderCurrentView({ preserveActive: false });
+                
+                // Focus last message and align to bottom (command mode pattern)
+                try {
+                  activeParts.last()
+                  historyRuntime.applyActiveMessage()
+                  if(ctx.scrollController && ctx.scrollController.remeasure) ctx.scrollController.remeasure()
+                  const act = activeParts && activeParts.active && activeParts.active();
+                  const id = act && act.id;
+                  if(id && ctx.scrollController && ctx.scrollController.alignTo){
+                    ctx.scrollController.alignTo(id, 'bottom', false)
+                  }
+                } catch {}
               }
             } catch {
               // Parse error - ignore, don't refresh
@@ -259,14 +271,18 @@ export function createInteraction({
             try {
               const ast = parse(currentFilter);
               if (hasUnargumentedTopicFilter(ast)) {
-                // Re-apply filter with new topic - preserves active message if still present
-                historyRuntime.renderCurrentView({ preserveActive: true });
-                // Align focused message to bottom (like filter apply in command mode)
+                // Re-apply filter with new topic - focus LAST message (like G key)
+                historyRuntime.renderCurrentView({ preserveActive: false });
+                
+                // Focus last message and align to bottom (command mode pattern)
                 try {
+                  activeParts.last()
+                  historyRuntime.applyActiveMessage()
+                  if(ctx.scrollController && ctx.scrollController.remeasure) ctx.scrollController.remeasure()
                   const act = activeParts && activeParts.active && activeParts.active();
                   const id = act && act.id;
                   if(id && ctx.scrollController && ctx.scrollController.alignTo){
-                    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ctx.scrollController.alignTo(id, 'bottom', false) }) })
+                    ctx.scrollController.alignTo(id, 'bottom', false)
                   }
                 } catch {}
               }
