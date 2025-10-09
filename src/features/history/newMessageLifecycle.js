@@ -1,6 +1,6 @@
 // newMessageLifecycle moved from ui/newMessageLifecycle.js
 import { escapeHtml } from '../../shared/util.js'
-export function createNewMessageLifecycle({ store, activeParts, commandInput, renderHistory, applyActivePart, applyActiveMessage, alignTo }){
+export function createNewMessageLifecycle({ store, activeParts, commandInput, renderHistory, applyActivePart, applyActiveMessage, alignTo, scrollController }){
 	let pendingSend = false
 	let lastReplyPairId = null
 	let activeFilterQuery = ''
@@ -62,11 +62,17 @@ export function createNewMessageLifecycle({ store, activeParts, commandInput, re
 						raf3(()=> _applyActivePart())
 					}
 				} else if(currentMode === 'input' && inputEmpty && fits) {
-					// Remain in INPUT; focus first assistant; align last assistant to bottom via policy (no animation)
+					// Remain in INPUT; focus first assistant; scroll to bottom (no animation)
 					const firstId = first.getAttribute('data-part-id')
-					const lastId = last.getAttribute('data-part-id')
 					if(firstId){ activeParts.setActiveById(firstId) }
-	    if(lastId && alignTo){ alignTo(lastId, 'bottom', false) }
+					// Use scrollToBottom for short messages that fit
+					if(scrollController && scrollController.scrollToBottom){ 
+						scrollController.scrollToBottom(false) 
+					} else if(alignTo) {
+						// Fallback to bottom align if scrollToBottom not available
+						const lastId = last.getAttribute('data-part-id')
+						if(lastId) alignTo(lastId, 'bottom', false)
+					}
 					if(firstId){
 						_applyActivePart()
 						const raf3 = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame : (fn)=> setTimeout(fn,0)

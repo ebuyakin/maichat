@@ -152,6 +152,8 @@ export function createHistoryRuntime(ctx){
   requestAnimationFrame(()=>{ scrollController.remeasure(); applyActiveMessage() })
     lifecycle.updateNewReplyBadgeVisibility()
   }
+  
+
   function renderCurrentView(opts={}){
     const { preserveActive=false } = opts
     const prevActiveId = preserveActive && activeParts.active() ? activeParts.active().id : null
@@ -275,6 +277,13 @@ export function createHistoryRuntime(ctx){
     })
   }
   function jumpToBoundary(){ if(!lastContextIncludedIds || lastContextIncludedIds.size === 0) return; const idx = activeParts.parts.findIndex(pt=> lastContextIncludedIds.has(pt.pairId)); if(idx >= 0){ activeParts.activeIndex = idx; applyActiveMessage() } }
+
   try { lifecycle.bindApplyActivePart && lifecycle.bindApplyActivePart(applyActiveMessage) } catch {}
-  return { layoutHistoryPane, applySpacingStyles, renderHistory, renderCurrentView, applyActiveMessage, updateFadeVisibility, updateMessageCount, applyOutOfContextStyling, jumpToBoundary, renderStatus, setSendDebug, setContextStats, getContextStats: ()=> lastContextStats, getPredictedCount: ()=> lastPredictedCount, getTrimmedCount: ()=> lastTrimmedCount, getIncludedIds: ()=> new Set(lastContextIncludedIds) }
+  
+  // collection of function
+  return { layoutHistoryPane, applySpacingStyles, renderHistory, renderCurrentView, applyActiveMessage, updateFadeVisibility, updateMessageCount, applyOutOfContextStyling, jumpToBoundary, renderStatus, setSendDebug, setContextStats,
+    getContextStats: ()=> lastContextStats,
+    getPredictedCount: ()=> lastPredictedCount,
+    getTrimmedCount: ()=> lastTrimmedCount,
+    getIncludedIds: ()=> new Set(lastContextIncludedIds) }
 }

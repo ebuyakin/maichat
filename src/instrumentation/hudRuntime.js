@@ -9,7 +9,9 @@ export function createHudRuntime({ store, activeParts, scrollController, history
 	const hudEl = document.getElementById('hud') || (()=>{ const el = document.createElement('div'); el.id='hud'; document.body.appendChild(el); return el })()
 	try{ if(!hudEl.__exempt){ hudEl.__exempt = registerModalExemptRoot(hudEl) } }catch{}
 	let hudEnabled = false
-	const hudState = { layout:true, visibility:true, partition:true, meta:true }
+	const hudState = { layout:true, meta:true }
+	let lastUpdateTime = 0
+	const UPDATE_INTERVAL = 200 // Update HUD every 200ms instead of every frame (60fps)
 
 	if(!hudEl.__hudClickBound){
 		hudEl.addEventListener('click', (e)=>{
@@ -42,6 +44,15 @@ export function createHudRuntime({ store, activeParts, scrollController, history
 
 	function update(){
 		hudEl.style.display = hudEnabled ? 'block' : 'none'
+		
+		// Throttle updates to reduce CPU usage
+		const now = performance.now()
+		if(hudEnabled && now - lastUpdateTime < UPDATE_INTERVAL){
+			requestAnimationFrame(update)
+			return
+		}
+		lastUpdateTime = now
+		
 		if(!hudEnabled){ requestAnimationFrame(update); return }
 		const act = activeParts.active()
 		let pairInfo='(none)'
@@ -54,132 +65,69 @@ export function createHudRuntime({ store, activeParts, scrollController, history
 		}
 		const focusEl = document.activeElement
 		const focusDesc = focusEl ? `${focusEl.tagName.toLowerCase()}${focusEl.id?('#'+focusEl.id):''}` : 'none'
-		const dbg = scrollController.debugInfo && scrollController.debugInfo()
-		let n=1
+		
+		// Get the SCROLLABLE element (not the outer pane)
+		const historyEl = document.getElementById('history')
+		
+		// Core scroll debugging parameters
 		const layoutParams = []
+		let n=1
+		
+		// 1. Mode
 		layoutParams.push(`${n++}. Mode: ${modeManager.mode}`)
-		layoutParams.push(`${n++}. Reading position mode: ${dbg?dbg.mode:'?'}`)
-		const totalParts = activeParts.parts.length
-		const activeIdx1 = dbg && dbg.activeIndex!=null ? (dbg.activeIndex+1) : (act? activeParts.parts.indexOf(act)+1 : 0)
-		layoutParams.push(`${n++}. Active part / total parts: ${activeIdx1}/${totalParts}`)
-		let start_part_k = '?'
+		
+		// 2. Active message / total messages
+		const totalMessages = activeParts.parts.length
+		const activeIdx = act ? activeParts.parts.indexOf(act) + 1 : 0
+		layoutParams.push(`${n++}. Active message / total messages: ${activeIdx}/${totalMessages}`)
+		
+		// 3. Active message ID
+		const activeId = act ? act.id : '(none)'
+		layoutParams.push(`${n++}. Active message ID: ${activeId}`)
+		
+		// Get active message element for geometry
+		let activeOffsetTop = '?'
+		let activeHeight = '?'
+		let activeBottomOffset = '?'
 		if(act){
 			const el = document.querySelector(`[data-part-id="${act.id}"]`)
-			if(el) start_part_k = el.offsetTop
-		}
-		const T = historyPaneEl ? historyPaneEl.scrollHeight : '?'
-		layoutParams.push(`${n++}. Active part position / Total history length: ${start_part_k}/${T}`)
-		if(start_part_k !== '?' && dbg){
-			const S = dbg.scrollTop||0
-			const vTop = (typeof start_part_k === 'number'? start_part_k : parseFloat(start_part_k)) - S
-			layoutParams.push(`${n++}. Active part visual top (start_part_k - S): ${vTop}`)
-		}
-		const firstVisibleIndex = dbg? dbg.currentFirst : '?'
-		const visibleCount = dbg? dbg.shouldVisibleCount : '?'
-		layoutParams.push(`${n++}. First visible part index / total visible parts: ${firstVisibleIndex}/${visibleCount}`)
-		let start_part_k2 = '?'
-		if(firstVisibleIndex != null && firstVisibleIndex !== '?' && firstVisibleIndex >=0){
-			const el2 = document.querySelector(`[data-part-index="${firstVisibleIndex}"]`) || historyPaneEl.querySelectorAll('[data-part-id]')[firstVisibleIndex]
-			if(el2) start_part_k2 = el2.offsetTop
-		}
-		layoutParams.push(`${n++}. First visible position / Total history length: ${start_part_k2}/${T}`)
-		const scrollVal = dbg? Math.round(dbg.scrollTop):0
-		layoutParams.push(`${n++}. scrollTop: ${scrollVal}`)
-		const H_total = historyPaneEl? historyPaneEl.clientHeight : '?'
-		layoutParams.push(`${n++}. historyPane (H_total): ${H_total}`)
-		let Gval='?'; let H_usable='?'
-		if(historyPaneEl){
-			const csPane = getComputedStyle(historyPaneEl)
-			const padTop = parseFloat(csPane.paddingTop)||0
-			const padBottom = parseFloat(csPane.paddingBottom)||0
-			Gval = padTop
-			H_usable = H_total != null ? (H_total - padTop - padBottom) : '?'
-		}
-		layoutParams.push(`${n++}. outerGap (G): ${Gval}`)
-		layoutParams.push(`${n++}. Part space (H_usable): ${H_usable}`)
-		if(dbg){
-			layoutParams.push(`${n++}. rawAnchor (pre-clamp S): ${dbg.rawAnchor!=null?Math.round(dbg.rawAnchor):'-'}`)
-			layoutParams.push(`${n++}. maxScroll (T-D): ${dbg.maxScroll!=null?dbg.maxScroll:'-'}`)
-			if(dbg.gapBelow!=null) layoutParams.push(`${n++}. gapBelow (diagnostic): ${dbg.gapBelow}`)
-		}
-		const maskParams = []
-		if(dbg){
-			const partsList = historyPaneEl.querySelectorAll('#history > .part')
-			let hidden=0, partialTop=0, partialBottom=0
-			const S2 = historyPaneEl.scrollTop
-			const H2 = historyPaneEl.clientHeight
-			const G2 = parseFloat(getComputedStyle(historyPaneEl).paddingTop)||0
-			partsList.forEach(p=>{
-				const topRel = p.offsetTop - S2
-				const bottomRel = topRel + p.offsetHeight
-				const opVal = parseFloat(p.style.opacity||'1')
-				if(opVal === 0) hidden++
-				else {
-					if(topRel < G2) partialTop++
-					if((H2 - bottomRel) < G2) partialBottom++
-				}
-			})
-			maskParams.push(`${n++}. hidden parts: ${hidden}`)
-			maskParams.push(`${n++}. partialTop (within G): ${partialTop}`)
-			maskParams.push(`${n++}. partialBottom (within G): ${partialBottom}`)
-		}
-		const partitionParams = []
-		try {
-			const settings = getSettings && getSettings()
-			if(historyPaneEl && settings){
-				const pane = historyPaneEl
-				const csPane = window.getComputedStyle(pane)
-				const padTop = parseFloat(csPane.paddingTop)||0
-				const padBottom = parseFloat(csPane.paddingBottom)||0
-				const padLeft = parseFloat(csPane.paddingLeft)||0
-				const padRight = parseFloat(csPane.paddingRight)||0
-				const H_total = pane.clientHeight
-				const G = padTop
-				const H_usable = H_total - padTop - padBottom
-				const root = document.documentElement
-				let lineH = parseFloat(getComputedStyle(root).lineHeight) || parseFloat(getComputedStyle(root).fontSize) || 18
-				const actPartEl = document.querySelector('.part.active .part-inner')
-				if(actPartEl){
-					const lhCandidate = parseFloat(getComputedStyle(actPartEl).lineHeight)
-					if(lhCandidate && !isNaN(lhCandidate)) lineH = lhCandidate
-				}
-				const pf = settings.partFraction
-				const partPadding = settings.partPadding || 0
-				const targetPartHeightPx = pf * H_usable
-				const maxLines_target = Math.max(1, Math.floor((targetPartHeightPx - 2*partPadding)/lineH))
-				const wrapWidthUsed = (pane.clientWidth - padLeft - padRight) - 2*partPadding
-				const actPart = activeParts.active()
-				let maxLines_used='?', logicalLines='?', physLines='?'
-				let actTop='?', actHeight='?', actBottom='?'
-				if(actPart){
-					maxLines_used = actPart.maxLinesUsed != null ? actPart.maxLinesUsed : '?'
-					logicalLines = actPart.lineCount != null ? actPart.lineCount : '?'
-					const domEl = document.querySelector(`[data-part-id="${actPart.id}"] .part-inner`) || document.querySelector(`[data-part-id="${actPart.id}"]`)
-					if(domEl && lineH>0){
-						const h = domEl.getBoundingClientRect().height - 2*partPadding
-						physLines = Math.max(1, Math.round(h / lineH))
-					}
-					const outerEl = document.querySelector(`[data-part-id="${actPart.id}"]`)
-						if(outerEl){
-							const paneRect = pane.getBoundingClientRect()
-							const partRect = outerEl.getBoundingClientRect()
-							actTop = Math.round(partRect.top - paneRect.top)
-							actHeight = Math.round(partRect.height)
-							actBottom = actTop + actHeight
-						}
-				}
-				partitionParams.push(`${n++}. Part fraction (pf): ${pf.toFixed(2)}`)
-				partitionParams.push(`${n++}. Line height (lineH): ${Math.round(lineH*10)/10}`)
-				partitionParams.push(`${n++}. Inner padding (partPadding): ${partPadding}`)
-				partitionParams.push(`${n++}. targetPartHeight: ${Math.round(targetPartHeightPx)}`)
-				partitionParams.push(`${n++}. Actual part hight (p_k): ${actHeight}`)
-				partitionParams.push(`${n++}. maxLines (formula target): ${maxLines_target}`)
-				partitionParams.push(`${n++}. maxLines_used: ${maxLines_used}`)
-				partitionParams.push(`${n++}. logicalLines: ${logicalLines}`)
-				partitionParams.push(`${n++}. physicalLines: ${physLines}`)
-				partitionParams.push(`${n++}. wrapWidthUsed: ${Math.round(wrapWidthUsed)}`)
+			if(el){
+				activeOffsetTop = el.offsetTop
+				activeHeight = el.offsetHeight
+				activeBottomOffset = activeOffsetTop + activeHeight
 			}
-		} catch{}
+		}
+		
+		// 4. Active message offsetTop
+		layoutParams.push(`${n++}. Active message offsetTop: ${activeOffsetTop}`)
+		
+		// 5. Active message height
+		layoutParams.push(`${n++}. Active message height: ${activeHeight}`)
+		
+		// 6. Active message bottom offset
+		layoutParams.push(`${n++}. Active message bottom offset: ${activeBottomOffset}`)
+		
+		// Get container geometry from the SCROLLABLE element
+		const scrollTop = historyEl ? Math.round(historyEl.scrollTop) : '?'
+		const scrollHeight = historyEl ? historyEl.scrollHeight : '?'
+		const viewportHeight = historyEl ? historyEl.clientHeight : '?'
+		const maxScroll = (scrollHeight !== '?' && viewportHeight !== '?') ? (scrollHeight - viewportHeight) : '?'
+		
+		// 7. Current scrollTop
+		layoutParams.push(`${n++}. Current scrollTop: ${scrollTop}`)
+		
+		// 8. ScrollHeight (container total height)
+		layoutParams.push(`${n++}. ScrollHeight (total content): ${scrollHeight}`)
+		
+		// 9. Viewport height (clientHeight)
+		layoutParams.push(`${n++}. Viewport height: ${viewportHeight}`)
+		
+		// 10. MaxScroll (scrollHeight - clientHeight)
+		layoutParams.push(`${n++}. MaxScroll (scrollHeight - viewport): ${maxScroll}`)
+		
+		// Additional helpful info
+		layoutParams.push(`${n++}. Outer gap (paddingTop): ${historyEl ? (parseFloat(getComputedStyle(historyEl).paddingTop)||0) : '?'}`)
+		
 		const metaParams = []
 		metaParams.push(`focus: ${focusDesc}`)
 		try {
@@ -191,22 +139,30 @@ export function createHudRuntime({ store, activeParts, scrollController, history
 			const ml = ctxStats ? ctxStats.maxContext : null
 			const predictedHistoryTokens = (ctxStats ? ctxStats.totalIncludedTokens : null)
 			const predictedMessages = historyRuntime.getPredictedCount()
-			let predictedChars = 0
-			const includedIds = historyRuntime.getIncludedIds()
-			if(includedIds && includedIds.size){
-				for(const p of store.getAllPairs()){
-					if(includedIds.has(p.id)) predictedChars += (p.userText?p.userText.length:0) + (p.assistantText?p.assistantText.length:0)
-				}
-			}
-			metaParams.push(`PARAMETERS: URA=${ura!=null?ura:'-'} CPT=${cpt!=null?cpt:'-'} NTA=${nta!=null?nta:'-'} ML=${ml!=null?ml:'-'}`)
-			metaParams.push(`PREDICTED_HISTORY_CONTEXT: n_of_messages=${predictedMessages} n_of_characters=${predictedChars} n_of_tokens=${predictedHistoryTokens!=null?predictedHistoryTokens:'-'}`)
+			
+			// DISABLED: This was causing performance issues (iterating all pairs 60 times/sec)
+			// let predictedChars = 0
+			// const includedIds = historyRuntime.getIncludedIds()
+			// if(includedIds && includedIds.size){
+			//   for(const p of store.getAllPairs()){
+			//     if(includedIds.has(p.id)) predictedChars += (p.userText?p.userText.length:0) + (p.assistantText?p.assistantText.length:0)
+			//   }
+			// }
+			
+			metaParams.push(`PARAMETERS:`)
+			metaParams.push(`  URA: ${ura!=null?ura:'-'}`)
+			metaParams.push(`  CPT: ${cpt!=null?cpt:'-'}`)
+			metaParams.push(`  NTA: ${nta!=null?nta:'-'}`)
+			metaParams.push(`  ML: ${ml!=null?ml:'-'}`)
+			metaParams.push(`PREDICTED_HISTORY_CONTEXT:`)
+			metaParams.push(`  Messages: ${predictedMessages}`)
+			// metaParams.push(`  Characters: ${predictedChars}`)  // Disabled - performance issue
+			metaParams.push(`  Tokens: ${predictedHistoryTokens!=null?predictedHistoryTokens:'-'}`)
 		} catch{}
 
 		hudEl.innerHTML = [
-			sectionHTML('layout','Layout', layoutParams),
-			sectionHTML('visibility','Visibility', maskParams),
-			sectionHTML('partition','Partition', partitionParams),
-			sectionHTML('meta','Meta', metaParams),
+			sectionHTML('layout','Scroll & Layout', layoutParams),
+			sectionHTML('meta','Context Meta', metaParams),
 			`<div class='pairInfo'>${pairInfo}</div>`
 		].join('\n')
 		requestAnimationFrame(update)

@@ -67,8 +67,9 @@ export function initRuntime() {
     activeParts,
     commandInput: null, // assigned later by interaction module
     renderHistory: ()=> {},
-  applyActiveMessage: ()=> {},
-  alignTo: (id, pos, anim)=> scrollController.alignTo && scrollController.alignTo(id, pos, anim)
+    applyActiveMessage: ()=> {},
+    alignTo: (id, pos, anim)=> scrollController.alignTo && scrollController.alignTo(id, pos, anim),
+    scrollController // Pass the full controller so lifecycle can access scrollToBottom
   })
 
   const ctx = {

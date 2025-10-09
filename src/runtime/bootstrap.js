@@ -24,6 +24,11 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
   const { store, persistence, pendingMessageMeta } = ctx
   const { applySpacingStyles, renderCurrentView, applyActiveMessage, renderStatus, layoutHistoryPane } = historyRuntime
 
+  // Disable browser scroll restoration - we'll handle scroll position ourselves
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual'
+  }
+
   registerProvider('openai', createOpenAIAdapter())
   registerProvider('anthropic', createAnthropicAdapter())
   await persistence.init()
@@ -44,39 +49,7 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
   // Start focused at the last (newest) part on first load
   try { ctx.activeParts && ctx.activeParts.last && ctx.activeParts.last() } catch{}
   applyActiveMessage()
-  // One-shot alignment on open: bottom-align last assistant if present; else bottom-align last meta
-  try {
-    const sc = ctx.scrollController
-    const ap = ctx.activeParts
-    if(sc && ap && Array.isArray(ap.parts) && ap.parts.length){
-      requestAnimationFrame(()=>{
-        // Check if the LAST MESSAGE (last pair) has an assistant part
-        const tail = ap.parts[ap.parts.length-1]
-        const lastPairId = tail && tail.pairId
-        
-        // Find assistant parts that belong to the last pair only
-        let lastMessageAssistant = null
-        for(let i=ap.parts.length-1; i>=0; i--){
-          const p = ap.parts[i]
-          if(p && p.pairId === lastPairId && p.role === 'assistant'){ 
-            lastMessageAssistant = p; 
-            break 
-          }
-        }
-        
-        if(lastMessageAssistant && sc.alignTo){ 
-          sc.alignTo(lastMessageAssistant.id, 'bottom', false) 
-        }
-        else {
-          if(lastPairId && sc.alignTo){ 
-            // If no assistant yet, align to the last user message of that pair
-            sc.alignTo(`${lastPairId}:user`, 'bottom', false) 
-          }
-        }
-      })
-    }
-  } catch {}
-
+  
   if(!pendingMessageMeta.topicId){
     // Prefer 'General talk' if present on first load; else root
     try {
@@ -88,6 +61,20 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
 
   interaction.renderPendingMeta()
   layoutHistoryPane()
+  
+  // Scroll to bottom AFTER layout completes
+  try {
+    const sc = ctx.scrollController
+    if(sc && sc.scrollToBottom){
+      requestAnimationFrame(()=>{
+        sc.scrollToBottom(false)
+        // Additional delayed scroll to catch async KaTeX rendering
+        setTimeout(() => {
+          sc.scrollToBottom(false)
+        }, 100)
+      })
+    }
+  } catch {}
 
   if(loadingEl) loadingEl.remove()
 

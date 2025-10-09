@@ -211,15 +211,18 @@ export function createInteraction({
                 // Re-apply filter with new topic - focus LAST message (like G key)
                 historyRuntime.renderCurrentView({ preserveActive: false });
                 
-                // Focus last message and align to bottom (command mode pattern)
+                // Focus last message and scroll to bottom (command mode pattern)
                 try {
                   activeParts.last()
-                  historyRuntime.applyActiveMessage()
-                  if(ctx.scrollController && ctx.scrollController.remeasure) ctx.scrollController.remeasure()
-                  const act = activeParts && activeParts.active && activeParts.active();
-                  const id = act && act.id;
-                  if(id && ctx.scrollController && ctx.scrollController.alignTo){
-                    ctx.scrollController.alignTo(id, 'bottom', false)
+                  if(ctx.scrollController && ctx.scrollController.scrollToBottom){
+                    // Delayed scroll to catch async KaTeX rendering, then apply active styling
+                    setTimeout(() => {
+                      ctx.scrollController.scrollToBottom(false)
+                      // Apply active message styling AFTER scroll completes
+                      requestAnimationFrame(() => {
+                        historyRuntime.applyActiveMessage()
+                      })
+                    }, 100)
                   }
                 } catch {}
               }
@@ -274,15 +277,18 @@ export function createInteraction({
                 // Re-apply filter with new topic - focus LAST message (like G key)
                 historyRuntime.renderCurrentView({ preserveActive: false });
                 
-                // Focus last message and align to bottom (command mode pattern)
+                // Focus last message and scroll to bottom (command mode pattern)
                 try {
                   activeParts.last()
-                  historyRuntime.applyActiveMessage()
-                  if(ctx.scrollController && ctx.scrollController.remeasure) ctx.scrollController.remeasure()
-                  const act = activeParts && activeParts.active && activeParts.active();
-                  const id = act && act.id;
-                  if(id && ctx.scrollController && ctx.scrollController.alignTo){
-                    ctx.scrollController.alignTo(id, 'bottom', false)
+                  if(ctx.scrollController && ctx.scrollController.scrollToBottom){
+                    // Delayed scroll to catch async KaTeX rendering, then apply active styling
+                    setTimeout(() => {
+                      ctx.scrollController.scrollToBottom(false)
+                      // Apply active message styling AFTER scroll completes
+                      requestAnimationFrame(() => {
+                        historyRuntime.applyActiveMessage()
+                      })
+                    }, 100)
                   }
                 } catch {}
               }
@@ -504,26 +510,14 @@ export function createInteraction({
   window.addEventListener('keydown', e=>{ if(e.key==='F1'){ e.preventDefault(); openHelpOverlay({ modeManager, onClose:()=>{} }) } })
   if(sendBtn){ sendBtn.addEventListener('click', ()=>{ if(modeManager.mode!=='input') modeManager.set('input'); const text = inputField.value.trim(); if(!text) return; if(lifecycle.isPending()) return; lifecycle.beginSend(); const topicId = pendingMessageMeta.topicId || currentTopicId; const model = pendingMessageMeta.model || getActiveModel(); const editingId = window.__editingPairId; let id; if(editingId){ const old = store.pairs.get(editingId); if(old){ store.removePair(editingId) } id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' }); window.__editingPairId=null } else { id = store.addMessagePair({ topicId, model, userText:text, assistantText:'' }) } try{ localStorage.setItem('maichat_pending_topic', topicId) }catch{} ;(async()=>{ try { const currentPairs = activeParts.parts.map(pt=> store.pairs.get(pt.pairId)).filter(Boolean); const chrono = [...new Set(currentPairs)].sort((a,b)=> a.createdAt - b.createdAt); const { content } = await executeSend({ store, model, topicId, userText:text, signal: undefined, visiblePairs: chrono, onDebugPayload:(payload)=>{ requestDebug.setPayload(payload) } }); const clean = sanitizeAssistantText(content); store.updatePair(id, { assistantText: clean, lifecycleState:'complete', errorMessage:undefined }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }); lifecycle.handleNewAssistantReply(id) } catch(ex){ let errMsg = (ex && ex.message) ? ex.message : 'error'; if(errMsg==='missing_api_key') errMsg='API key missing (Ctrl+.) -> API Keys'; store.updatePair(id, { assistantText:'', lifecycleState:'error', errorMessage: errMsg }); lifecycle.completeSend(); updateSendDisabled(); historyRuntime.renderCurrentView({ preserveActive:true }) } finally { updateSendDisabled() } })(); inputField.value=''; historyRuntime.renderCurrentView({ preserveActive:true }); try { const pane = document.getElementById('historyPane'); const userEls = pane ? pane.querySelectorAll(`.message[data-pair-id="${id}"][data-role="user"], .part[data-pair-id="${id}"][data-role="user"]`) : null; const lastUserEl = userEls && userEls.length ? userEls[userEls.length-1] : null; if(lastUserEl){ const lastUserId = lastUserEl.getAttribute('data-part-id'); if(lastUserId){ activeParts.setActiveById(lastUserId) } } else { activeParts.last() } } catch { activeParts.last() } historyRuntime.applyActivePart(); updateSendDisabled() }); inputField.addEventListener('input', updateSendDisabled) }
   if(sendBtn){
-    // Also bottom-align meta after send via button (in addition to legacy policy anchor)
+    // Scroll to bottom after send
     sendBtn.addEventListener('click', ()=>{
       readingMode = false; hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
       try{
-        const lastPair = activeParts.parts.length ? store.pairs.get(activeParts.parts[activeParts.parts.length-1].pairId) : null
-        const id = lastPair ? lastPair.id : null
-        if(id && ctx.scrollController && ctx.scrollController.alignTo){
-          try { if(ctx.scrollController.remeasure) ctx.scrollController.remeasure() } catch {}
-          try {
-            // Lazy import to avoid cyclic deps; avoid await in non-async function
-            import('../history/featureFlags.js').then(mod=>{
-              const useMsg = mod && mod.shouldUseMessageView && mod.shouldUseMessageView()
-              const anchorId = useMsg ? `${id}:a` : `${id}:meta`
-              ctx.scrollController.alignTo(anchorId, 'bottom', false)
-            }).catch(()=>{
-              ctx.scrollController.alignTo(`${id}:meta`, 'bottom', false)
-            })
-          } catch {
-            ctx.scrollController.alignTo(`${id}:meta`, 'bottom', false)
-          }
+        if(ctx.scrollController && ctx.scrollController.scrollToBottom){
+          requestAnimationFrame(()=>{
+            ctx.scrollController.scrollToBottom(false)
+          })
         }
       } catch {}
     })

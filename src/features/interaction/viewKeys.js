@@ -98,8 +98,8 @@ export function createViewKeyHandler({
       activeParts.last();
       historyRuntime.applyActiveMessage();
       const act = activeParts.active();
-      if(act && scrollController && scrollController.alignToMessage){
-        scrollController.alignToMessage(act.id, 'bottom', false)}
+      if(scrollController && scrollController.scrollToBottom){
+        scrollController.scrollToBottom(false)}
       //setReadingMode(false);
       //hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
       return true
