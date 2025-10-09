@@ -9,6 +9,29 @@ import { getActiveModel } from '../../core/models/modelCatalog.js'
 import { applySpacingStyles as applySpacingStylesHelper } from './spacingStyles.js'
 import { applyFadeVisibility } from './fadeVisibility.js'
 
+/**
+ * Creates the history runtime controller - the main orchestrator for message history display.
+ * 
+ * This factory function sets up:
+ * - Message rendering pipeline (DOM construction, styling)
+ * - Active message tracking and highlighting
+ * - Scroll event handlers and viewport management
+ * - Context boundary visualization (off-context badges)
+ * - Status display (message counts, position indicators)
+ * - Filter-based view updates
+ * 
+ * Returns an API with functions for rendering, navigation, and display updates.
+ * 
+ * @param {Object} ctx - Runtime context with dependencies
+ * @param {Object} ctx.store - Message and topic data store
+ * @param {Object} ctx.activeParts - Active message tracking controller
+ * @param {Object} ctx.historyView - DOM rendering controller
+ * @param {Object} ctx.scrollController - Scroll position management
+ * @param {Object} ctx.boundaryMgr - Context boundary calculator
+ * @param {Object} ctx.lifecycle - New message lifecycle handler
+ * @param {Object} ctx.pendingMessageMeta - Pending message metadata (topic, model)
+ * @returns {Object} API with renderHistory, renderCurrentView, applyActiveMessage, etc.
+ */
 export function createHistoryRuntime(ctx) {
   const {
     store,
@@ -68,7 +91,7 @@ export function createHistoryRuntime(ctx) {
             })
           })
         }
-      } catch {}
+      } catch { }
     }
   })
   // Track scroll direction for viewport-based active switching
@@ -117,7 +140,7 @@ export function createHistoryRuntime(ctx) {
           const v = getComputedStyle(document.documentElement).getPropertyValue('--fade-zone')
           const n = parseFloat(v)
           if (Number.isFinite(n)) fadeZone = n
-        } catch {}
+        } catch { }
       }
       const topThreshold = S + fadeZone
       const bottomThreshold = S + H - fadeZone
@@ -161,25 +184,40 @@ export function createHistoryRuntime(ctx) {
           applyActiveMessage()
         }
       }
-    } catch {}
+    } catch { }
   }
   function applySpacingStyles(settings) {
     applySpacingStylesHelper(settings)
   }
+
+  /**
+   * Renders message history to the DOM with context boundary calculation and styling.
+   * 
+   * This is the main rendering pipeline that:
+   * 1. Sorts pairs chronologically
+   * 2. Calculates context boundary (which messages fit in LLM token budget)
+   * 3. Transforms pairs into messages and parts for rendering
+   * 4. Injects HTML into DOM via historyView
+   * 5. Applies visual styling (fade zones, off-context badges)
+   * 6. Updates active message highlighting and scroll measurements
+   * 
+   * @param {Array<id, userText, assistantText, createdAt, topicId, model, lifcycleState>} pairs - Message pairs to render (user + assistant exchanges)
+   * @returns {void}
+   */
   function renderHistory(pairs) {
     // section 1
-    pairs = [...pairs].sort((a, b) => a.createdAt - b.createdAt) // when it's called where is pairs coming from?
+    pairs = [...pairs].sort((a, b) => a.createdAt - b.createdAt) // pairs - coming from storage, indexDb
     const settings = getSettings()
     const cpt = settings.charsPerToken || 3.5
     const activeModel = pendingMessageMeta.model || getActiveModel() || 'gpt'
-    // section 2. boundary. 
+    // section 2. boundary.  
     boundaryMgr.applySettings({
       userRequestAllowance: settings.userRequestAllowance || 0,
       charsPerToken: cpt,
     })
     boundaryMgr.setModel(activeModel)
-    boundaryMgr.updateVisiblePairs(pairs) // what is this? 
-    const boundary = boundaryMgr.getBoundary() // what is this? 
+    boundaryMgr.updateVisiblePairs(pairs)
+    const boundary = boundaryMgr.getBoundary()
     lastContextStats = boundary.stats
     lastContextIncludedIds = new Set(boundary.included.map((p) => p.id))
     lastPredictedCount = boundary.included.length
@@ -189,15 +227,16 @@ export function createHistoryRuntime(ctx) {
     activeParts.setParts(parts) // this is
     try {
       ctx.__messages = messages
-    } catch {}
+    } catch { }
 
-    historyView.renderMessages(messages) // separate topic
+    historyView.renderMessages(messages) // builds HTML/DOM structure
 
     // section 4
     // Apply initial fade state before first paint to avoid bright-then-dim flicker on re-render
-    updateFadeVisibility({ initial: true })
+    // updateFadeVisibility({ initial: true }) // legacy
     applyOutOfContextStyling()
     updateMessageCount(boundary.included.length, pairs.length)
+
     requestAnimationFrame(() => {
       scrollController.remeasure()
       applyActiveMessage()
@@ -205,6 +244,26 @@ export function createHistoryRuntime(ctx) {
     lifecycle.updateNewReplyBadgeVisibility()
   }
 
+  /**
+   * Renders the current filtered view of message history.
+   * 
+   * Main entry point for displaying messages based on active filter command.
+   * Handles:
+   * - Filter parsing and evaluation (including 'o' modifier for off-context)
+   * - Getting all pairs from store and applying filter
+   * - Delegating to renderHistory() for actual rendering
+   * - Optionally preserving the currently active message
+   * 
+   * Called when:
+   * - User enters a filter command (e.g., "t starred:2+")
+   * - Topic changes
+   * - Window resizes
+   * - Initial app load
+   * 
+   * @param {Object} opts - Options for rendering
+   * @param {boolean} opts.preserveActive - Whether to keep current active message highlighted
+   * @returns {void}
+   */
   function renderCurrentView(opts = {}) {
     const { preserveActive = false } = opts
     const prevActiveId = preserveActive && activeParts.active() ? activeParts.active().id : null
@@ -298,7 +357,7 @@ export function createHistoryRuntime(ctx) {
     if (el) {
       el.classList.add('active')
       scrollController.setActiveIndex(activeParts.activeIndex)
-      updateFadeVisibility()
+      // updateFadeVisibility() // LEGACY: Replaced by CSS gradient overlays
       updateMessagePosition()
     }
   }
@@ -315,7 +374,23 @@ export function createHistoryRuntime(ctx) {
       el.textContent = '-'
     }
   }
+
+  /**
+   * LEGACY FUNCTION - Replaced by CSS gradient overlays.
+   * 
+   * This function dynamically changed individual message opacity based on scroll position
+   * to create a fade effect at top/bottom edges. Now replaced by static CSS gradients
+   * (.gradientOverlayTop and .gradientOverlayBottom) which are more performant.
+   * 
+   * Keeping code for reference but all calls are commented out.
+   * 
+   * @deprecated Use CSS gradient overlays instead (see layout.css)
+   * @param {Object} opts - Options object
+   * @param {boolean} opts.initial - Whether this is initial render (skips animation)
+   * @returns {void}
+   */
   function updateFadeVisibility(opts = {}) {
+    return // DISABLED - Legacy function, replaced by CSS gradients
     const initial = !!opts.initial
     const settings = getSettings()
     const pane = historyPaneEl
@@ -323,10 +398,12 @@ export function createHistoryRuntime(ctx) {
     const nodes = pane.querySelectorAll('#history > .message')
     applyFadeVisibility({ paneEl: pane, parts: nodes, settings, initial })
   }
+
   historyEl.addEventListener('scroll', () => {
-    updateFadeVisibility()
+    // updateFadeVisibility() // LEGACY: Replaced by CSS gradient overlays
     updateActiveOnScroll()
   })
+
   function renderStatus() {
     const modeEl = document.getElementById('modeIndicator')
     if (!modeEl) return
@@ -348,7 +425,7 @@ export function createHistoryRuntime(ctx) {
         const visiblePairIds = new Set(activeParts.parts.map((p) => p.pairId))
         if (!visiblePairIds.has(newest.id)) newestHidden = true
       }
-    } catch {}
+    } catch { }
     const prefix = newestHidden ? '(-) ' : ''
     let body
     if (lastTrimmedCount > 0 && lastPredictedCount === included) {
@@ -402,7 +479,7 @@ export function createHistoryRuntime(ctx) {
 
   try {
     lifecycle.bindApplyActivePart && lifecycle.bindApplyActivePart(applyActiveMessage)
-  } catch {}
+  } catch { }
 
   // 
   return {
@@ -411,7 +488,7 @@ export function createHistoryRuntime(ctx) {
     renderHistory, // 
     renderCurrentView,
     applyActiveMessage,
-    updateFadeVisibility,
+    // updateFadeVisibility, // LEGACY: Removed from exports, replaced by CSS gradients
     updateMessageCount,
     applyOutOfContextStyling,
     jumpToBoundary,

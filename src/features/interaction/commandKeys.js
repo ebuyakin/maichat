@@ -122,14 +122,14 @@ export function createCommandKeyHandler({
         commandInput.value = ''
         commandErrEl.textContent = ''
         historyRuntime.applySpacingStyles(getSettings())
-        historyRuntime.updateFadeVisibility()
+        // historyRuntime.updateFadeVisibility() // legacy code
         return true
       }
       if (q === ':maskdebug off') {
         commandInput.value = ''
         commandErrEl.textContent = ''
         historyRuntime.applySpacingStyles(getSettings())
-        historyRuntime.updateFadeVisibility()
+        // historyRuntime.updateFadeVisibility()
         return true
       }
       if (q === ':anim off' || q === ':noanim' || q === ':noanim on') {

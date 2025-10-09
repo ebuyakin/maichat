@@ -1,4 +1,5 @@
 // fadeVisibility.js — computes and applies per-part opacity based on scroll position and settings
+// legacy module. not used anywhere by now.
 export function applyFadeVisibility({ paneEl, parts, settings, initial = false }) {
   if (!paneEl || !parts) return
   const G = settings.fadeZonePx || 0

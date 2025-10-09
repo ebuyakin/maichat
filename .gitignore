@@ -25,3 +25,6 @@ dist-ssr
 .github/copilot-instructions.md
 # Private prompts (do not publish)
 .github/prompts/
+
+# Study/scratch files (personal learning)
+study/
