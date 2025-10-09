@@ -51,6 +51,18 @@ export function createHistoryView({ store, onActivePartRendered }) {
     if (onActivePartRendered) onActivePartRendered()
   }
 
+  /**
+   * Renders message history to the DOM by constructing HTML markup.
+   * 
+   * Builds HTML strings for user and assistant messages with metadata badges,
+   * then injects all markup at once (single DOM write for performance).
+   * Optionally enhances rendered content with syntax highlighting and math rendering.
+   * 
+   * @param {Array<Object>} messages - Array of message objects to render
+   * @param {string} messages[].id - Message ID (corresponds to pair ID)
+   * @param {Array<id, role, text, pairId>} messages[].parts - Message parts (role: user, meta, assistant)
+   * @returns {void}
+   */
   function renderMessages(messages) {
     if (!Array.isArray(messages)) {
       container.innerHTML = ''

@@ -167,20 +167,23 @@ export function createHistoryRuntime(ctx) {
     applySpacingStylesHelper(settings)
   }
   function renderHistory(pairs) {
-    pairs = [...pairs].sort((a, b) => a.createdAt - b.createdAt)
+    // section 1
+    pairs = [...pairs].sort((a, b) => a.createdAt - b.createdAt) // when it's called where is pairs coming from?
     const settings = getSettings()
     const cpt = settings.charsPerToken || 3.5
     const activeModel = pendingMessageMeta.model || getActiveModel() || 'gpt'
+    // section 2. boundary. 
     boundaryMgr.applySettings({
       userRequestAllowance: settings.userRequestAllowance || 0,
       charsPerToken: cpt,
     })
     boundaryMgr.setModel(activeModel)
-    boundaryMgr.updateVisiblePairs(pairs)
-    const boundary = boundaryMgr.getBoundary()
+    boundaryMgr.updateVisiblePairs(pairs) // what is this? 
+    const boundary = boundaryMgr.getBoundary() // what is this? 
     lastContextStats = boundary.stats
     lastContextIncludedIds = new Set(boundary.included.map((p) => p.id))
     lastPredictedCount = boundary.included.length
+    // section 3
     const messages = buildMessages(pairs)
     const parts = flattenMessagesToParts(messages)
     activeParts.setParts(parts) // this is
@@ -188,8 +191,9 @@ export function createHistoryRuntime(ctx) {
       ctx.__messages = messages
     } catch {}
 
-    historyView.renderMessages(messages)
+    historyView.renderMessages(messages) // separate topic
 
+    // section 4
     // Apply initial fade state before first paint to avoid bright-then-dim flicker on re-render
     updateFadeVisibility({ initial: true })
     applyOutOfContextStyling()
@@ -400,11 +404,11 @@ export function createHistoryRuntime(ctx) {
     lifecycle.bindApplyActivePart && lifecycle.bindApplyActivePart(applyActiveMessage)
   } catch {}
 
-  // collection of function
+  // 
   return {
     layoutHistoryPane,
     applySpacingStyles,
-    renderHistory,
+    renderHistory, // 
     renderCurrentView,
     applyActiveMessage,
     updateFadeVisibility,
