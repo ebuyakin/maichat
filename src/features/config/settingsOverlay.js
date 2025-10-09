@@ -2,8 +2,8 @@
 import { getSettings, saveSettings, getDefaultSettings } from '../../core/settings/index.js'
 import { openModal } from '../../shared/openModal.js'
 
-export function openSettingsOverlay({ onClose }){
-  if(document.getElementById('settingsOverlayRoot')) return
+export function openSettingsOverlay({ onClose }) {
+  if (document.getElementById('settingsOverlayRoot')) return
   const existing = getSettings()
   const root = document.createElement('div')
   root.id = 'settingsOverlayRoot'
@@ -12,7 +12,7 @@ export function openSettingsOverlay({ onClose }){
     <div class="overlay-panel settings-panel compact">
       <header>Settings</header>
       <div class="settings-tabs" role="tablist">
-  ${['spacing','visibility','scroll','context'].map((t,i)=>`<button type="button" class="tab-btn${i===0?' active':''}" data-tab="${t}" role="tab" aria-selected="${i===0}" aria-controls="tab-${t}">${t}</button>`).join('')}
+  ${['spacing', 'visibility', 'scroll', 'context'].map((t, i) => `<button type="button" class="tab-btn${i === 0 ? ' active' : ''}" data-tab="${t}" role="tab" aria-selected="${i === 0}" aria-controls="tab-${t}">${t}</button>`).join('')}
       </div>
       <div class="settings-body">
         <form id="settingsForm" autocomplete="off">
@@ -48,17 +48,17 @@ export function openSettingsOverlay({ onClose }){
               <legend>Visibility</legend>
               <label>Fade Mode
                 <select name="fadeMode">
-                  ${['binary','gradient'].map(m=>`<option value="${m}" ${m===existing.fadeMode?'selected':''}>${m}</option>`).join('')}
+                  ${['binary', 'gradient'].map((m) => `<option value="${m}" ${m === existing.fadeMode ? 'selected' : ''}>${m}</option>`).join('')}
                 </select>
               </label>
               <label>Hidden Opacity (binary)
                 <input name="fadeHiddenOpacity" type="number" min="0" max="1" step="0.05" value="${existing.fadeHiddenOpacity}" />
               </label>
               <label>Fade In (ms)
-                <input name="fadeInMs" type="number" min="0" max="2000" step="10" value="${existing.fadeInMs != null ? existing.fadeInMs : (existing.fadeTransitionMs != null ? existing.fadeTransitionMs : 120)}" />
+                <input name="fadeInMs" type="number" min="0" max="2000" step="10" value="${existing.fadeInMs != null ? existing.fadeInMs : existing.fadeTransitionMs != null ? existing.fadeTransitionMs : 120}" />
               </label>
               <label>Fade Out (ms)
-                <input name="fadeOutMs" type="number" min="0" max="2000" step="10" value="${existing.fadeOutMs != null ? existing.fadeOutMs : (existing.fadeTransitionMs != null ? existing.fadeTransitionMs : 120)}" />
+                <input name="fadeOutMs" type="number" min="0" max="2000" step="10" value="${existing.fadeOutMs != null ? existing.fadeOutMs : existing.fadeTransitionMs != null ? existing.fadeTransitionMs : 120}" />
               </label>
               <label>
                 <input type="checkbox" name="useInlineFormatting" ${existing.useInlineFormatting ? 'checked' : ''} />
@@ -74,7 +74,7 @@ export function openSettingsOverlay({ onClose }){
               </label>
               <label>Dynamic Scaling
                 <select name="scrollAnimDynamic">
-                  ${[true,false].map(v=>`<option value="${v}" ${(String(v)===String(existing.scrollAnimDynamic))?'selected':''}>${v?'on':'off'}</option>`).join('')}
+                  ${[true, false].map((v) => `<option value="${v}" ${String(v) === String(existing.scrollAnimDynamic) ? 'selected' : ''}>${v ? 'on' : 'off'}</option>`).join('')}
                 </select>
               </label>
               <label>Min Duration (ms)
@@ -85,7 +85,7 @@ export function openSettingsOverlay({ onClose }){
               </label>
               <label>Easing
                 <select name="scrollAnimEasing">
-                  ${['linear','easeOutQuad','easeInOutCubic','easeOutExpo'].map(m=>`<option value="${m}" ${m===existing.scrollAnimEasing?'selected':''}>${m}</option>`).join('')}
+                  ${['linear', 'easeOutQuad', 'easeInOutCubic', 'easeOutExpo'].map((m) => `<option value="${m}" ${m === existing.scrollAnimEasing ? 'selected' : ''}>${m}</option>`).join('')}
                 </select>
               </label>
               <div style="border-top: 1px solid #333; margin: 16px 0 12px 0; padding-top: 12px;">
@@ -134,240 +134,348 @@ export function openSettingsOverlay({ onClose }){
   document.body.appendChild(root)
   const panel = root.querySelector('.settings-panel')
   const form = root.querySelector('#settingsForm')
-  const modal = openModal({ modeManager: window.__modeManager, root, closeKeys:[], restoreMode:true, preferredFocus: ()=> form.querySelector('input,select') })
+  const modal = openModal({
+    modeManager: window.__modeManager,
+    root,
+    closeKeys: [],
+    restoreMode: true,
+    preferredFocus: () => form.querySelector('input,select'),
+  })
   const baseline = { ...existing }
   let isDirty = false
   let persistedThisSession = false
-  function updateButtons(){ /* static labels now; nothing to update */ }
-  function setDirty(v){ isDirty = !!v }
-  function close(){ modal.close('manual'); if(onClose) try{ onClose({ dirty: !!persistedThisSession }) }catch{} }
+  function updateButtons() {
+    /* static labels now; nothing to update */
+  }
+  function setDirty(v) {
+    isDirty = !!v
+  }
+  function close() {
+    modal.close('manual')
+    if (onClose)
+      try {
+        onClose({ dirty: !!persistedThisSession })
+      } catch {}
+  }
   const cancelBtn = form.querySelector('[data-action="cancelclose"]')
   const resetBtn = form.querySelector('[data-action="reset"]')
   const saveCloseBtn = form.querySelector('[data-action="saveclose"]')
   updateButtons()
 
-  cancelBtn.addEventListener('click', ()=> close())
-  saveCloseBtn.addEventListener('click', ()=> saveAndClose())
-  resetBtn.addEventListener('click', ()=> doReset())
+  cancelBtn.addEventListener('click', () => close())
+  saveCloseBtn.addEventListener('click', () => saveAndClose())
+  resetBtn.addEventListener('click', () => doReset())
 
-  root.addEventListener('keydown', e=>{
-    if(e.key === 'Escape'){
-      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
-      close();
-    } else if((e.key==='s' || e.key==='S') && (e.ctrlKey || e.metaKey)){
-      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
-      saveAndClose();
-    }
-  }, true)
+  root.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+        close()
+      } else if ((e.key === 's' || e.key === 'S') && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+        saveAndClose()
+      }
+    },
+    true
+  )
 
-  function readFormValues(){
+  function readFormValues() {
     const fd = new FormData(form)
-    const fadeZonePx = clampRange(parseInt(fd.get('fadeZonePx')),0,120)
-  const messageGapPx = clampRange(parseInt(fd.get('messageGapPx')),0,60)
-  const assistantGapPx = clampRange(parseInt(fd.get('assistantGapPx')),0,60)
-  const messagePaddingPx = clampRange(parseInt(fd.get('messagePaddingPx')),0,48)
-  const metaGapPx = clampRange(parseInt(fd.get('metaGapPx')),0,48)
-  const gutterLPx = clampRange(parseInt(fd.get('gutterLPx')),0,60)
-  const gutterRPx = clampRange(parseInt(fd.get('gutterRPx')),0,60)
-  // anchorMode / edgeAnchoringMode removed
+    const fadeZonePx = clampRange(parseInt(fd.get('fadeZonePx')), 0, 120)
+    const messageGapPx = clampRange(parseInt(fd.get('messageGapPx')), 0, 60)
+    const assistantGapPx = clampRange(parseInt(fd.get('assistantGapPx')), 0, 60)
+    const messagePaddingPx = clampRange(parseInt(fd.get('messagePaddingPx')), 0, 48)
+    const metaGapPx = clampRange(parseInt(fd.get('metaGapPx')), 0, 48)
+    const gutterLPx = clampRange(parseInt(fd.get('gutterLPx')), 0, 60)
+    const gutterRPx = clampRange(parseInt(fd.get('gutterRPx')), 0, 60)
+    // anchorMode / edgeAnchoringMode removed
     const fadeMode = fd.get('fadeMode') || 'binary'
-  const fadeHiddenOpacity = clampFloat(parseFloat(fd.get('fadeHiddenOpacity')),0,1)
-  const fadeInMs = clampRange(parseInt(fd.get('fadeInMs')),0,5000)
-  const fadeOutMs = clampRange(parseInt(fd.get('fadeOutMs')),0,5000)
-  const scrollAnimMs = clampRange(parseInt(fd.get('scrollAnimMs')),0,2000)
-  const scrollAnimDynamic = fd.get('scrollAnimDynamic') === 'true'
-  const scrollAnimMinMs = clampRange(parseInt(fd.get('scrollAnimMinMs')),0,1000)
-  const scrollAnimMaxMs = clampRange(parseInt(fd.get('scrollAnimMaxMs')),0,5000)
-  const scrollAnimEasing = fd.get('scrollAnimEasing') || 'easeOutQuad'
-  const animateSmallSteps = fd.get('animateSmallSteps') === 'on'
-  const animateBigSteps = fd.get('animateBigSteps') === 'on'
-  const animateMessageJumps = fd.get('animateMessageJumps') === 'on'
-  const userRequestAllowance = clampRange(parseInt(fd.get('userRequestAllowance')),0,500000)
-  const assistantResponseAllowance = clampRange(parseInt(fd.get('assistantResponseAllowance')),0,500000)
-  const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')),0,1000)
-  const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')),1.0,10.0)
-  const useInlineFormatting = fd.get('useInlineFormatting') === 'on'
-  return { fadeZonePx, messageGapPx, assistantGapPx, messagePaddingPx, metaGapPx, gutterLPx, gutterRPx, fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, scrollAnimMs, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs, scrollAnimEasing, animateSmallSteps, animateBigSteps, animateMessageJumps, userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken, useInlineFormatting }
+    const fadeHiddenOpacity = clampFloat(parseFloat(fd.get('fadeHiddenOpacity')), 0, 1)
+    const fadeInMs = clampRange(parseInt(fd.get('fadeInMs')), 0, 5000)
+    const fadeOutMs = clampRange(parseInt(fd.get('fadeOutMs')), 0, 5000)
+    const scrollAnimMs = clampRange(parseInt(fd.get('scrollAnimMs')), 0, 2000)
+    const scrollAnimDynamic = fd.get('scrollAnimDynamic') === 'true'
+    const scrollAnimMinMs = clampRange(parseInt(fd.get('scrollAnimMinMs')), 0, 1000)
+    const scrollAnimMaxMs = clampRange(parseInt(fd.get('scrollAnimMaxMs')), 0, 5000)
+    const scrollAnimEasing = fd.get('scrollAnimEasing') || 'easeOutQuad'
+    const animateSmallSteps = fd.get('animateSmallSteps') === 'on'
+    const animateBigSteps = fd.get('animateBigSteps') === 'on'
+    const animateMessageJumps = fd.get('animateMessageJumps') === 'on'
+    const userRequestAllowance = clampRange(parseInt(fd.get('userRequestAllowance')), 0, 500000)
+    const assistantResponseAllowance = clampRange(
+      parseInt(fd.get('assistantResponseAllowance')),
+      0,
+      500000
+    )
+    const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')), 0, 1000)
+    const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')), 1.0, 10.0)
+    const useInlineFormatting = fd.get('useInlineFormatting') === 'on'
+    return {
+      fadeZonePx,
+      messageGapPx,
+      assistantGapPx,
+      messagePaddingPx,
+      metaGapPx,
+      gutterLPx,
+      gutterRPx,
+      fadeMode,
+      fadeHiddenOpacity,
+      fadeInMs,
+      fadeOutMs,
+      scrollAnimMs,
+      scrollAnimDynamic,
+      scrollAnimMinMs,
+      scrollAnimMaxMs,
+      scrollAnimEasing,
+      animateSmallSteps,
+      animateBigSteps,
+      animateMessageJumps,
+      userRequestAllowance,
+      assistantResponseAllowance,
+      maxTrimAttempts,
+      charsPerToken,
+      useInlineFormatting,
+    }
   }
-  function shallowEqual(a,b){
-    if(a===b) return true
-    if(!a||!b) return false
-    const ka=Object.keys(a), kb=Object.keys(b)
-    if(ka.length!==kb.length) return false
-    for(const k of ka){ if(a[k]!==b[k]) return false }
+  function shallowEqual(a, b) {
+    if (a === b) return true
+    if (!a || !b) return false
+    const ka = Object.keys(a),
+      kb = Object.keys(b)
+    if (ka.length !== kb.length) return false
+    for (const k of ka) {
+      if (a[k] !== b[k]) return false
+    }
     return true
   }
-  function saveAndClose(){
+  function saveAndClose() {
     const values = readFormValues()
     // Only persist if changed vs baseline
-    if(!shallowEqual(values, baseline)){
+    if (!shallowEqual(values, baseline)) {
       saveSettings(values)
       persistedThisSession = true
     }
     close()
   }
-  function populateFormFromSettings(s){
+  function populateFormFromSettings(s) {
     // Spacing
-    const setNum = (name, v)=>{ const el=form.querySelector(`input[name="${name}"]`); if(el && v!=null) el.value = String(v) }
-  setNum('fadeZonePx', s.fadeZonePx)
-  setNum('messageGapPx', s.messageGapPx)
-  setNum('assistantGapPx', s.assistantGapPx)
-  setNum('messagePaddingPx', s.messagePaddingPx)
-  setNum('metaGapPx', s.metaGapPx)
-  setNum('gutterLPx', s.gutterLPx)
-  setNum('gutterRPx', s.gutterRPx)
+    const setNum = (name, v) => {
+      const el = form.querySelector(`input[name="${name}"]`)
+      if (el && v != null) el.value = String(v)
+    }
+    setNum('fadeZonePx', s.fadeZonePx)
+    setNum('messageGapPx', s.messageGapPx)
+    setNum('assistantGapPx', s.assistantGapPx)
+    setNum('messagePaddingPx', s.messagePaddingPx)
+    setNum('metaGapPx', s.metaGapPx)
+    setNum('gutterLPx', s.gutterLPx)
+    setNum('gutterRPx', s.gutterRPx)
     // Visibility
     const fm = form.querySelector('select[name="fadeMode"]')
-    if(fm) fm.value = s.fadeMode || 'binary'
+    if (fm) fm.value = s.fadeMode || 'binary'
     setNum('fadeHiddenOpacity', s.fadeHiddenOpacity)
     setNum('fadeInMs', s.fadeInMs ?? (s.fadeTransitionMs != null ? s.fadeTransitionMs : 120))
     setNum('fadeOutMs', s.fadeOutMs ?? (s.fadeTransitionMs != null ? s.fadeTransitionMs : 120))
     const uif = form.querySelector('input[name="useInlineFormatting"]')
-    if(uif) uif.checked = !!s.useInlineFormatting
+    if (uif) uif.checked = !!s.useInlineFormatting
     // Scroll
     setNum('scrollAnimMs', s.scrollAnimMs)
     const sad = form.querySelector('select[name="scrollAnimDynamic"]')
-    if(sad) sad.value = String(!!s.scrollAnimDynamic)
+    if (sad) sad.value = String(!!s.scrollAnimDynamic)
     setNum('scrollAnimMinMs', s.scrollAnimMinMs)
     setNum('scrollAnimMaxMs', s.scrollAnimMaxMs)
     const sae = form.querySelector('select[name="scrollAnimEasing"]')
-    if(sae) sae.value = s.scrollAnimEasing || 'easeOutQuad'
+    if (sae) sae.value = s.scrollAnimEasing || 'easeOutQuad'
     // Animation checkboxes
     const ass = form.querySelector('input[name="animateSmallSteps"]')
-    if(ass) ass.checked = !!s.animateSmallSteps
+    if (ass) ass.checked = !!s.animateSmallSteps
     const abs = form.querySelector('input[name="animateBigSteps"]')
-    if(abs) abs.checked = !!s.animateBigSteps
+    if (abs) abs.checked = !!s.animateBigSteps
     const amj = form.querySelector('input[name="animateMessageJumps"]')
-    if(amj) amj.checked = s.animateMessageJumps !== undefined ? !!s.animateMessageJumps : true
-    if(sae) sae.value = s.scrollAnimEasing || 'easeOutQuad'
+    if (amj) amj.checked = s.animateMessageJumps !== undefined ? !!s.animateMessageJumps : true
+    if (sae) sae.value = s.scrollAnimEasing || 'easeOutQuad'
     // Context
-  setNum('userRequestAllowance', s.userRequestAllowance)
-  setNum('assistantResponseAllowance', s.assistantResponseAllowance)
+    setNum('userRequestAllowance', s.userRequestAllowance)
+    setNum('assistantResponseAllowance', s.assistantResponseAllowance)
     setNum('maxTrimAttempts', s.maxTrimAttempts)
     const cpt = form.querySelector('input[name="charsPerToken"]')
-    if(cpt && s.charsPerToken != null) cpt.value = String(s.charsPerToken)
+    if (cpt && s.charsPerToken != null) cpt.value = String(s.charsPerToken)
   }
-  function doReset(){
+  function doReset() {
     const defs = getDefaultSettings()
     populateFormFromSettings(defs)
     updatePfHint()
     setDirty(true)
   }
-  function clampRange(v,min,max){ if(isNaN(v)) return min; return Math.min(max, Math.max(min,v)) }
-  function clampFloat(v,min,max){ if(isNaN(v)) return min; return Math.min(max, Math.max(min,v)) }
-  function markSaved(){ setDirty(false) }
-  function markDirty(){ setDirty(true) }
-  function focusables(){ return Array.from(form.querySelectorAll('input,select,button')).filter(el=> !el.disabled) }
-  function moveFocus(dir){
-    const list = focusables(); if(!list.length) return
+  function clampRange(v, min, max) {
+    if (isNaN(v)) return min
+    return Math.min(max, Math.max(min, v))
+  }
+  function clampFloat(v, min, max) {
+    if (isNaN(v)) return min
+    return Math.min(max, Math.max(min, v))
+  }
+  function markSaved() {
+    setDirty(false)
+  }
+  function markDirty() {
+    setDirty(true)
+  }
+  function focusables() {
+    return Array.from(form.querySelectorAll('input,select,button')).filter((el) => !el.disabled)
+  }
+  function moveFocus(dir) {
+    const list = focusables()
+    if (!list.length) return
     const idx = list.indexOf(document.activeElement)
     let next = 0
-    if(idx === -1){ next = 0 }
-    else { next = (idx + dir + list.length) % list.length }
+    if (idx === -1) {
+      next = 0
+    } else {
+      next = (idx + dir + list.length) % list.length
+    }
     list[next].focus()
   }
-  function adjustNumber(el, delta){
-    if(!el) return
+  function adjustNumber(el, delta) {
+    if (!el) return
     const name = el.name
-    if(name === 'fadeHiddenOpacity') {
-      const min = parseFloat(el.min); const max = parseFloat(el.max)
-      const base = parseFloat(el.step)||0.05
-      const step = base * (Math.abs(delta)===2?2:1) * (delta>0?1:-1)
-      let v = parseFloat(el.value); if(isNaN(v)) v = (isNaN(min)?0:min)
+    if (name === 'fadeHiddenOpacity') {
+      const min = parseFloat(el.min)
+      const max = parseFloat(el.max)
+      const base = parseFloat(el.step) || 0.05
+      const step = base * (Math.abs(delta) === 2 ? 2 : 1) * (delta > 0 ? 1 : -1)
+      let v = parseFloat(el.value)
+      if (isNaN(v)) v = isNaN(min) ? 0 : min
       v += step
-      if(!isNaN(min) && v < min) v = min
-      if(!isNaN(max) && v > max) v = max
+      if (!isNaN(min) && v < min) v = min
+      if (!isNaN(max) && v > max) v = max
       el.value = v.toFixed(2)
     } else {
-      const minAttr = parseInt(el.min,10); const maxAttr = parseInt(el.max,10)
-      const min = isNaN(minAttr)?0:minAttr
-      const max = isNaN(maxAttr)?Number.MAX_SAFE_INTEGER:maxAttr
-      const base = parseInt(el.step,10) || 1
-      const step = base * (Math.abs(delta)===2?2:1) * (delta>0?1:-1)
-      let v = parseInt(el.value,10); if(isNaN(v)) v = min
+      const minAttr = parseInt(el.min, 10)
+      const maxAttr = parseInt(el.max, 10)
+      const min = isNaN(minAttr) ? 0 : minAttr
+      const max = isNaN(maxAttr) ? Number.MAX_SAFE_INTEGER : maxAttr
+      const base = parseInt(el.step, 10) || 1
+      const step = base * (Math.abs(delta) === 2 ? 2 : 1) * (delta > 0 ? 1 : -1)
+      let v = parseInt(el.value, 10)
+      if (isNaN(v)) v = min
       v += step
-      if(v < min) v = min
-      if(v > max) v = max
+      if (v < min) v = min
+      if (v > max) v = max
       el.value = String(v)
     }
     markDirty()
   }
-  function cycleSelect(sel, dir){
-    if(!sel) return
+  function cycleSelect(sel, dir) {
+    if (!sel) return
     const opts = Array.from(sel.options)
     let i = sel.selectedIndex
     i = (i + dir + opts.length) % opts.length
     sel.selectedIndex = i
   }
-  form.addEventListener('keydown', e=>{
+  form.addEventListener('keydown', (e) => {
     const active = document.activeElement
-    const isNumber = active && active.tagName==='INPUT' && active.type==='number'
-    const isSelect = active && active.tagName==='SELECT'
-    if(e.key==='j'){ e.preventDefault(); moveFocus(1); return }
-    if(e.key==='k'){ e.preventDefault(); moveFocus(-1); return }
-    if(isNumber){
-      if(e.key==='+' || e.key==='=' ){
-        e.preventDefault(); adjustNumber(active, e.shiftKey?2:1); return
+    const isNumber = active && active.tagName === 'INPUT' && active.type === 'number'
+    const isSelect = active && active.tagName === 'SELECT'
+    if (e.key === 'j') {
+      e.preventDefault()
+      moveFocus(1)
+      return
+    }
+    if (e.key === 'k') {
+      e.preventDefault()
+      moveFocus(-1)
+      return
+    }
+    if (isNumber) {
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault()
+        adjustNumber(active, e.shiftKey ? 2 : 1)
+        return
       }
-      if(e.key==='-' || e.key==='_'){
-        e.preventDefault(); adjustNumber(active, e.shiftKey?-2:-1); return
+      if (e.key === '-' || e.key === '_') {
+        e.preventDefault()
+        adjustNumber(active, e.shiftKey ? -2 : -1)
+        return
       }
     }
-  if(isSelect && e.key===' '){ e.preventDefault(); cycleSelect(active, e.shiftKey?-1:1); markDirty(); return }
-    if(e.key==='Escape'){ e.preventDefault(); close(); return }
-    if(['j','k','+','-','_',' ','Escape','=',].includes(e.key)) e.stopPropagation()
+    if (isSelect && e.key === ' ') {
+      e.preventDefault()
+      cycleSelect(active, e.shiftKey ? -1 : 1)
+      markDirty()
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      close()
+      return
+    }
+    if (['j', 'k', '+', '-', '_', ' ', 'Escape', '='].includes(e.key)) e.stopPropagation()
   })
-  form.querySelectorAll('input,select').forEach(el=>{
-    el.addEventListener('change', ()=> markDirty())
-    el.addEventListener('input', ()=> markDirty())
+  form.querySelectorAll('input,select').forEach((el) => {
+    el.addEventListener('change', () => markDirty())
+    el.addEventListener('input', () => markDirty())
   })
-  window.addEventListener('keydown', function esc(e){ if(e.key==='Escape'){ e.preventDefault(); close(); window.removeEventListener('keydown', esc) } })
-  function placeCaretAtEnd(el){
+  window.addEventListener('keydown', function esc(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      close()
+      window.removeEventListener('keydown', esc)
+    }
+  })
+  function placeCaretAtEnd(el) {
     let attempts = 0
     const desired = el.value.length
-    function attempt(){
+    function attempt() {
       attempts++
       try {
-        el.focus({ preventScroll:true })
+        el.focus({ preventScroll: true })
         const origType = el.type
-        if(origType === 'number') el.type = 'text'
+        if (origType === 'number') el.type = 'text'
         el.setSelectionRange(desired, desired)
-        if(origType === 'text' || origType === 'number') el.type = origType
-        if(el.selectionStart === desired) return
-      } catch(_){ }
-      if(attempts < 5) setTimeout(attempt, 30)
+        if (origType === 'text' || origType === 'number') el.type = origType
+        if (el.selectionStart === desired) return
+      } catch (_) {}
+      if (attempts < 5) setTimeout(attempt, 30)
     }
     requestAnimationFrame(attempt)
   }
-  panel.addEventListener('focusin', (e)=>{
+  panel.addEventListener('focusin', (e) => {
     const t = e.target
-    if(t && t.matches && t.matches('input[type="number"]')){
+    if (t && t.matches && t.matches('input[type="number"]')) {
       placeCaretAtEnd(t)
     }
   })
   const firstNumeric = form.querySelector('input[type="number"][name="partFraction"]')
-  if(firstNumeric){ setTimeout(()=> placeCaretAtEnd(firstNumeric), 10) }
+  if (firstNumeric) {
+    setTimeout(() => placeCaretAtEnd(firstNumeric), 10)
+  }
   const pfInput = form.querySelector('input[name="partFraction"]')
   const pfHintEl = form.querySelector('.pf-hint')
-  function updatePfHint(){
-    if(!pfInput || !pfHintEl) return
+  function updatePfHint() {
+    if (!pfInput || !pfHintEl) return
     const v = clampPF(parseFloat(pfInput.value))
     try {
       const pane = document.getElementById('historyPane')
       const rootEl = document.documentElement
       let lineH = 18
-      if(rootEl){
+      if (rootEl) {
         const csR = window.getComputedStyle(rootEl)
-        const fs = parseFloat(csR.fontSize)||13
-        lineH = parseFloat(csR.lineHeight) || fs*1.45
+        const fs = parseFloat(csR.fontSize) || 13
+        lineH = parseFloat(csR.lineHeight) || fs * 1.45
       }
-      if(pane){
+      if (pane) {
         const cs = window.getComputedStyle(pane)
-        const padTop = parseFloat(cs.paddingTop)||0
-        const padBottom = parseFloat(cs.paddingBottom)||0
+        const padTop = parseFloat(cs.paddingTop) || 0
+        const padBottom = parseFloat(cs.paddingBottom) || 0
         const usableH = pane.clientHeight - padTop - padBottom
-        if(usableH>0){
-          const maxLines = Math.max(1, Math.floor((usableH * v)/lineH))
+        if (usableH > 0) {
+          const maxLines = Math.max(1, Math.floor((usableH * v) / lineH))
           pfHintEl.textContent = `(≈ ${maxLines} lines)`
           return
         }
@@ -375,62 +483,84 @@ export function openSettingsOverlay({ onClose }){
     } catch {}
     pfHintEl.textContent = ''
   }
-  if(pfInput){ pfInput.addEventListener('input', updatePfHint); updatePfHint() }
+  if (pfInput) {
+    pfInput.addEventListener('input', updatePfHint)
+    updatePfHint()
+  }
   const tabs = Array.from(panel.querySelectorAll('.settings-tabs .tab-btn'))
-  function activateTab(name){
-    tabs.forEach(btn=>{
-      const on = btn.getAttribute('data-tab')===name
+  function activateTab(name) {
+    tabs.forEach((btn) => {
+      const on = btn.getAttribute('data-tab') === name
       btn.classList.toggle('active', on)
       btn.setAttribute('aria-selected', on)
     })
-    panel.querySelectorAll('[data-tab-section]').forEach(sec=>{
-      const on = sec.getAttribute('data-tab-section')===name
+    panel.querySelectorAll('[data-tab-section]').forEach((sec) => {
+      const on = sec.getAttribute('data-tab-section') === name
       sec.hidden = !on
     })
-  panel.querySelectorAll('.tab-hint').forEach(h=>{ h.style.display = (h.getAttribute('data-tab-hint')===name)?'block':'none' })
-    const first = panel.querySelector(`[data-tab-section='${name}'] input, [data-tab-section='${name}'] select`)
-    if(first) first.focus()
+    panel.querySelectorAll('.tab-hint').forEach((h) => {
+      h.style.display = h.getAttribute('data-tab-hint') === name ? 'block' : 'none'
+    })
+    const first = panel.querySelector(
+      `[data-tab-section='${name}'] input, [data-tab-section='${name}'] select`
+    )
+    if (first) first.focus()
   }
-  tabs.forEach(btn=> btn.addEventListener('click', ()=> activateTab(btn.getAttribute('data-tab'))))
-  function cycleTab(dir){
-    const order = tabs.map(b=> b.getAttribute('data-tab'))
-    const current = order.findIndex(t=> panel.querySelector(`[data-tab-section='${t}']`).hidden===false)
+  tabs.forEach((btn) =>
+    btn.addEventListener('click', () => activateTab(btn.getAttribute('data-tab')))
+  )
+  function cycleTab(dir) {
+    const order = tabs.map((b) => b.getAttribute('data-tab'))
+    const current = order.findIndex(
+      (t) => panel.querySelector(`[data-tab-section='${t}']`).hidden === false
+    )
     const next = (current + dir + order.length) % order.length
     activateTab(order[next])
   }
-  panel.addEventListener('keydown', e=>{
-    if(e.target && e.target.matches('input,select,button')){
-      if(e.shiftKey && ['1','2','3','4'].includes(e.key)){
-        const idx = Number(e.key)-1
-        if(tabs[idx]){ e.preventDefault(); activateTab(tabs[idx].getAttribute('data-tab')) }
+  panel.addEventListener('keydown', (e) => {
+    if (e.target && e.target.matches('input,select,button')) {
+      if (e.shiftKey && ['1', '2', '3', '4'].includes(e.key)) {
+        const idx = Number(e.key) - 1
+        if (tabs[idx]) {
+          e.preventDefault()
+          activateTab(tabs[idx].getAttribute('data-tab'))
+        }
       }
-      if(e.key==='[' || (e.key==='h' && !e.metaKey && !e.altKey && !e.ctrlKey)) { e.preventDefault(); cycleTab(-1) }
-      if(e.key===']' || (e.key==='l' && !e.metaKey && !e.altKey && !e.ctrlKey)) { e.preventDefault(); cycleTab(1) }
+      if (e.key === '[' || (e.key === 'h' && !e.metaKey && !e.altKey && !e.ctrlKey)) {
+        e.preventDefault()
+        cycleTab(-1)
+      }
+      if (e.key === ']' || (e.key === 'l' && !e.metaKey && !e.altKey && !e.ctrlKey)) {
+        e.preventDefault()
+        cycleTab(1)
+      }
     }
   })
 
   // Constant-size panel: measure tallest tab then lock height (with 70vh cap) so switching tabs doesn't resize.
-  ;(function establishConstantHeight(){
+  ;(function establishConstantHeight() {
     try {
       const sections = Array.from(panel.querySelectorAll('.tab-section'))
-      if(!sections.length) return
-      const active = sections.find(s=> !s.hidden)
+      if (!sections.length) return
+      const active = sections.find((s) => !s.hidden)
       const activeName = active ? active.getAttribute('data-tab-section') : null
       let maxH = 0
       // Temporarily measure each tab in isolation for accurate outer height (header + tabs + buttons included)
-      sections.forEach(sec=>{
-        sections.forEach(s=> s.hidden = (s!==sec))
+      sections.forEach((sec) => {
+        sections.forEach((s) => (s.hidden = s !== sec))
         // Let height auto for measurement
         panel.style.height = 'auto'
         const h = panel.offsetHeight
-        if(h > maxH) maxH = h
+        if (h > maxH) maxH = h
       })
       // Restore original active tab visibility
-      sections.forEach(sec=> sec.hidden = (sec.getAttribute('data-tab-section') !== activeName))
+      sections.forEach((sec) => (sec.hidden = sec.getAttribute('data-tab-section') !== activeName))
       // Reactivate hint display (hidden states changed during measurement)
-      if(activeName){
-          panel.querySelectorAll('.tab-hint').forEach(h=>{ h.style.display = (h.getAttribute('data-tab-hint')===activeName)?'block':'none' })
-        }
+      if (activeName) {
+        panel.querySelectorAll('.tab-hint').forEach((h) => {
+          h.style.display = h.getAttribute('data-tab-hint') === activeName ? 'block' : 'none'
+        })
+      }
       const cap = Math.floor(window.innerHeight * 0.95)
       // Force a minimum height for spacing tab if it's too small
       const minDesiredHeight = 800
@@ -439,14 +569,18 @@ export function openSettingsOverlay({ onClose }){
       panel.style.height = finalH + 'px'
       panel.classList.add('fixed-height')
       const body = panel.querySelector('.settings-body')
-      if(body){ body.style.overflow = (Math.max(maxH, minDesiredHeight) > cap) ? 'auto' : 'hidden' }
+      if (body) {
+        body.style.overflow = Math.max(maxH, minDesiredHeight) > cap ? 'auto' : 'hidden'
+      }
       // On resize, keep constant measured height but re-clamp to current 95vh
-      window.addEventListener('resize', ()=>{
-        const stored = parseInt(panel.dataset.maxMeasuredHeight,10) || maxH
+      window.addEventListener('resize', () => {
+        const stored = parseInt(panel.dataset.maxMeasuredHeight, 10) || maxH
         const capNow = Math.floor(window.innerHeight * 0.95)
         const hNow = Math.min(stored, capNow)
         panel.style.height = hNow + 'px'
-        if(body){ body.style.overflow = (stored > capNow) ? 'auto' : 'hidden' }
+        if (body) {
+          body.style.overflow = stored > capNow ? 'auto' : 'hidden'
+        }
       })
     } catch {}
   })()

@@ -1,7 +1,7 @@
 // helpOverlay.js moved from ui/helpOverlay.js (Phase 6.6 Config)
 // Restored original (moved from src/ui/helpOverlay.js) - path adjusted only.
 import { openModal } from '../../shared/openModal.js'
-export function openHelpOverlay({ onClose, modeManager }){
+export function openHelpOverlay({ onClose, modeManager }) {
   const backdrop = document.createElement('div')
   backdrop.className = 'overlay-backdrop centered'
   const panel = document.createElement('div')
@@ -77,7 +77,21 @@ export function openHelpOverlay({ onClose, modeManager }){
     </div>`
   backdrop.appendChild(panel)
   document.body.appendChild(backdrop)
-  const { close } = openModal({ modeManager, root: backdrop, closeKeys:['Escape','F1'], restoreMode:true, beforeClose:()=>{ onClose && onClose() }, preferredFocus:()=> panel.querySelector('button[data-action="close"]') })
-  backdrop.addEventListener('click', e=>{ if(e.target===backdrop) close() })
-  panel.addEventListener('click', e=>{ const btn = e.target.closest('button[data-action="close"]'); if(btn) close() })
+  const { close } = openModal({
+    modeManager,
+    root: backdrop,
+    closeKeys: ['Escape', 'F1'],
+    restoreMode: true,
+    beforeClose: () => {
+      onClose && onClose()
+    },
+    preferredFocus: () => panel.querySelector('button[data-action="close"]'),
+  })
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) close()
+  })
+  panel.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action="close"]')
+    if (btn) close()
+  })
 }

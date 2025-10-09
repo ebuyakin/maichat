@@ -1,6 +1,6 @@
 import { formatLocalYYYYMMDD_HHMM } from './exportFormatting.js'
 
-export function buildTextExport({ pairs, meta }){
+export function buildTextExport({ pairs, meta }) {
   const header = [
     'Meta:',
     `  generatedAt: ${meta?.generatedAt || new Date().toISOString()}`,
@@ -9,12 +9,14 @@ export function buildTextExport({ pairs, meta }){
     `  orderApplied: ${meta?.orderApplied || 'time'}`,
     `  count: ${Array.isArray(pairs) ? pairs.length : 0}`,
     '',
-    '---'
-  ].filter(Boolean).join('\n')
+    '---',
+  ]
+    .filter(Boolean)
+    .join('\n')
 
   const blocks = []
   let idx = 0
-  for (const p of (pairs||[])){
+  for (const p of pairs || []) {
     idx++
     const time = formatLocalYYYYMMDD_HHMM(p.createdAt)
     const err = p.errorState ? ' [error]' : ''

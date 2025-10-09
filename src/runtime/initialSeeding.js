@@ -4,18 +4,30 @@ import { setActiveModel } from '../core/models/modelCatalog.js'
 const SEED_KEY = 'maichat.seed.version'
 export const SEED_VERSION = 1
 
-function getSeedVersion(){ try { return Number(localStorage.getItem(SEED_KEY)) || 0 } catch { return 0 } }
-function setSeedVersion(v){ try { localStorage.setItem(SEED_KEY, String(v)) } catch {} }
+function getSeedVersion() {
+  try {
+    return Number(localStorage.getItem(SEED_KEY)) || 0
+  } catch {
+    return 0
+  }
+}
+function setSeedVersion(v) {
+  try {
+    localStorage.setItem(SEED_KEY, String(v))
+  } catch {}
+}
 
-function onlyRootTopic(store){
+function onlyRootTopic(store) {
   try {
     const topics = store.getAllTopics ? store.getAllTopics() : Array.from(store.topics.values())
     return Array.isArray(topics) && topics.length === 1
-  } catch { return false }
+  } catch {
+    return false
+  }
 }
 
-function seedTopics(store){
-  if(!onlyRootTopic(store)) return null
+function seedTopics(store) {
+  if (!onlyRootTopic(store)) return null
   const rootId = store.rootTopicId
   const id = {}
   let t = Date.now()
@@ -43,7 +55,7 @@ function seedTopics(store){
   return id
 }
 
-function buildWelcomePair(){
+function buildWelcomePair() {
   const userText = 'Hello! What is MaiChat? How to use it?'
   const assistantText = `Welcome to MaiChat — a keyboard‑centric workspace for chatting with multiple AI models.
 
@@ -64,18 +76,22 @@ Ready when you are — type your first request below and press Enter.`
   return { userText, assistantText }
 }
 
-function seedWelcomeMessage(store, topicId){
+function seedWelcomeMessage(store, topicId) {
   const { userText, assistantText } = buildWelcomePair()
   store.addMessagePair({ topicId, model: 'gpt-4o-mini', userText, assistantText })
 }
 
-export function shouldRunInitialSeeding(store){
-  if(getSeedVersion() >= SEED_VERSION) return false
-  try { return (store.getAllPairs ? store.getAllPairs() : []).length === 0 } catch { return false }
+export function shouldRunInitialSeeding(store) {
+  if (getSeedVersion() >= SEED_VERSION) return false
+  try {
+    return (store.getAllPairs ? store.getAllPairs() : []).length === 0
+  } catch {
+    return false
+  }
 }
 
-export function runInitialSeeding({ store }){
-  if(!shouldRunInitialSeeding(store)) return false
+export function runInitialSeeding({ store }) {
+  if (!shouldRunInitialSeeding(store)) return false
   // Topics
   const ids = seedTopics(store) || {}
   // Models: prefer gpt-4o-mini as default

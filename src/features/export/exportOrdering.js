@@ -6,7 +6,9 @@
 export function orderPairs(pairs, { mode = 'time', topicIndex } = {}) {
   if (!Array.isArray(pairs)) return []
   if (mode === 'time') {
-    return [...pairs].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt) || (a.id > b.id ? 1 : -1))
+    return [...pairs].sort(
+      (a, b) => new Date(a.createdAt) - new Date(b.createdAt) || (a.id > b.id ? 1 : -1)
+    )
   }
   if (mode === 'topic') {
     if (!topicIndex || !topicIndex.rootId || !topicIndex.getChildren) {
@@ -21,7 +23,8 @@ export function orderPairs(pairs, { mode = 'time', topicIndex } = {}) {
       arr.push(p)
       byTopic.set(tid, arr)
     }
-    for (const arr of byTopic.values()) arr.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt) || (a.id > b.id ? 1 : -1))
+    for (const arr of byTopic.values())
+      arr.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt) || (a.id > b.id ? 1 : -1))
 
     // DFS pre-order traversal from root: include root pairs first, then children recursively
     const out = []
@@ -37,9 +40,13 @@ export function orderPairs(pairs, { mode = 'time', topicIndex } = {}) {
 
     // There may be pairs whose topicId nodes are not reachable (moved/deleted); append them at the end by time
     if (out.length !== pairs.length) {
-      const included = new Set(out.map(p => p.id))
-      const remaining = pairs.filter(p => !included.has(p.id))
-      out.push(...remaining.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt) || (a.id > b.id ? 1 : -1)))
+      const included = new Set(out.map((p) => p.id))
+      const remaining = pairs.filter((p) => !included.has(p.id))
+      out.push(
+        ...remaining.sort(
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt) || (a.id > b.id ? 1 : -1)
+        )
+      )
     }
     return out
   }

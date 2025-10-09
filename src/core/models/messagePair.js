@@ -26,6 +26,25 @@
  * @property {number} startPos - start position in original content
  * @property {number} endPos - end position in original content
  */
-export function createMessagePair({ id, topicId, model, userText, assistantText, createdAt = Date.now() }) {
-  return { id, createdAt, topicId, model, star:0, colorFlag:'b', userText, assistantText, lifecycleState:'idle', errorMessage:undefined, tokenLength:undefined }
+export function createMessagePair({
+  id,
+  topicId,
+  model,
+  userText,
+  assistantText,
+  createdAt = Date.now(),
+}) {
+  return {
+    id,
+    createdAt,
+    topicId,
+    model,
+    star: 0,
+    colorFlag: 'b',
+    userText,
+    assistantText,
+    lifecycleState: 'idle',
+    errorMessage: undefined,
+    tokenLength: undefined,
+  }
 }

@@ -2,4 +2,6 @@
 import { IndexedDbAdapter } from './adapters/indexedDb.js'
 export { IndexedDbAdapter }
 export default IndexedDbAdapter
-export function createIndexedDbAdapter(){ return new IndexedDbAdapter() }
+export function createIndexedDbAdapter() {
+  return new IndexedDbAdapter()
+}

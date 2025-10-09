@@ -27,16 +27,24 @@
 
 const registry = new Map()
 
-export function registerProvider(id, adapter){ registry.set(id, adapter) }
-export function getProvider(id){ return registry.get(id) }
-
-export class ProviderError extends Error {
-  constructor(message, kind, status){ super(message); this.kind=kind; this.status=status }
+export function registerProvider(id, adapter) {
+  registry.set(id, adapter)
+}
+export function getProvider(id) {
+  return registry.get(id)
 }
 
-export function classifyError(status){
-  if(status === 401 || status === 403) return 'auth'
-  if(status === 429) return 'rate'
-  if(status >= 500) return 'server'
+export class ProviderError extends Error {
+  constructor(message, kind, status) {
+    super(message)
+    this.kind = kind
+    this.status = status
+  }
+}
+
+export function classifyError(status) {
+  if (status === 401 || status === 403) return 'auth'
+  if (status === 429) return 'rate'
+  if (status >= 500) return 'server'
   return 'network'
 }

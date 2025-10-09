@@ -2,75 +2,97 @@
 import { lex } from './lexer.js'
 
 // AST node helpers
-const nFilter = (kind, args)=>({ type:'FILTER', kind, args })
-const nAnd = (left,right)=>({ type:'AND', left, right })
-const nOr = (left,right)=>({ type:'OR', left, right })
-const nNot = (expr)=>({ type:'NOT', expr })
+const nFilter = (kind, args) => ({ type: 'FILTER', kind, args })
+const nAnd = (left, right) => ({ type: 'AND', left, right })
+const nOr = (left, right) => ({ type: 'OR', left, right })
+const nNot = (expr) => ({ type: 'NOT', expr })
 
-export function parse(input){
+export function parse(input) {
   const tokens = lex(input)
   let pos = 0
-  const peek = ()=> tokens[pos]
-  const consume = ()=> tokens[pos++]
+  const peek = () => tokens[pos]
+  const consume = () => tokens[pos++]
 
-  function parsePrimary(){
+  function parsePrimary() {
     const t = peek()
-    if(t.type === 'OP' && t.value === '!'){ consume(); return nNot(parsePrimary()) }
-    if(t.type === 'PAREN' && t.value === '('){
-      consume(); const expr = parseExpr();
-      if(peek().type !== 'PAREN' || peek().value !== ')') throw new Error('Unclosed parenthesis')
-      consume(); return expr
+    if (t.type === 'OP' && t.value === '!') {
+      consume()
+      return nNot(parsePrimary())
     }
-    if(t.type === 'COMMAND'){
+    if (t.type === 'PAREN' && t.value === '(') {
+      consume()
+      const expr = parseExpr()
+      if (peek().type !== 'PAREN' || peek().value !== ')') throw new Error('Unclosed parenthesis')
+      consume()
+      return expr
+    }
+    if (t.type === 'COMMAND') {
       consume()
       // simplistic arg parse: optional OP + NUMBER or STRING or NUMBER alone for s / r
-      let op = null, value = null
-      if(peek().type === 'OP' && ['>','<','>=','<=','='].includes(peek().value)) op = consume().value
+      let op = null,
+        value = null
+      if (peek().type === 'OP' && ['>', '<', '>=', '<=', '='].includes(peek().value))
+        op = consume().value
       const nxt = peek()
-      if(nxt.type === 'NUMBER'){
+      if (nxt.type === 'NUMBER') {
         // combine with following STRING unit if present (e.g., 24h, 7d, 2w, 6mo, 1y)
         const numTok = consume()
         const after = peek()
-        if(after.type === 'STRING' && /^(min|m|h|d|w|mo|y)$/i.test(after.value || '')){
+        if (after.type === 'STRING' && /^(min|m|h|d|w|mo|y)$/i.test(after.value || '')) {
           const unitTok = consume()
           value = String(numTok.value) + String(unitTok.value)
         } else {
           value = numTok.value
         }
-      } else if(nxt.type === 'STRING'){ value = consume().value }
+      } else if (nxt.type === 'STRING') {
+        value = consume().value
+      }
       return nFilter(t.value, { op, value })
     }
-    throw new Error('Unexpected token: '+t.type+' '+t.value)
+    throw new Error('Unexpected token: ' + t.type + ' ' + t.value)
   }
 
-  function parseAnd(){
+  function parseAnd() {
     let left = parsePrimary()
-    while(true){
+    while (true) {
       const t = peek()
-      if(t.type === 'OP' && t.value === '&'){ consume(); left = nAnd(left, parsePrimary()); continue }
+      if (t.type === 'OP' && t.value === '&') {
+        consume()
+        left = nAnd(left, parsePrimary())
+        continue
+      }
       // implicit AND: COMMAND after FILTER/paren/NOT result
-      if(t.type === 'COMMAND' || (t.type === 'OP' && t.value === '!') || (t.type === 'PAREN' && t.value === '(')){
+      if (
+        t.type === 'COMMAND' ||
+        (t.type === 'OP' && t.value === '!') ||
+        (t.type === 'PAREN' && t.value === '(')
+      ) {
         // adjacency
-        left = nAnd(left, parsePrimary()); continue
+        left = nAnd(left, parsePrimary())
+        continue
       }
       break
     }
     return left
   }
 
-  function parseExpr(){
+  function parseExpr() {
     let left = parseAnd()
-    while(true){
+    while (true) {
       const t = peek()
-      if(t.type === 'OP' && (t.value === '|' || t.value === '+')){ consume(); left = nOr(left, parseAnd()); continue }
+      if (t.type === 'OP' && (t.value === '|' || t.value === '+')) {
+        consume()
+        left = nOr(left, parseAnd())
+        continue
+      }
       break
     }
     return left
   }
 
-  if(!input.trim()) return { type:'ALL' }
+  if (!input.trim()) return { type: 'ALL' }
   const ast = parseExpr()
-  if(peek().type !== 'EOF') throw new Error('Unexpected trailing input')
+  if (peek().type !== 'EOF') throw new Error('Unexpected trailing input')
   return ast
 }
 
@@ -81,25 +103,25 @@ export function parse(input){
  * @returns {boolean} - True if contains 't' without arguments
  */
 export function hasUnargumentedTopicFilter(ast) {
-  if (!ast) return false;
-  
+  if (!ast) return false
+
   function check(node) {
-    if (!node) return false;
-    
+    if (!node) return false
+
     // Check if this is a 't' filter without value
     if (node.type === 'FILTER' && node.kind === 't') {
       // Check if args.value is null/undefined/empty (means unargumented)
-      return !node.args || !node.args.value;
+      return !node.args || !node.args.value
     }
-    
+
     // Recursively check child nodes
-    if (node.type === 'NOT') return check(node.expr);
+    if (node.type === 'NOT') return check(node.expr)
     if (node.type === 'AND' || node.type === 'OR') {
-      return check(node.left) || check(node.right);
+      return check(node.left) || check(node.right)
     }
-    
-    return false;
+
+    return false
   }
-  
-  return check(ast);
+
+  return check(ast)
 }

@@ -6,36 +6,43 @@
 const STORAGE_KEY = 'maichat_api_keys'
 const LEGACY_OPENAI_KEY = 'maichat.openai.key'
 
-export function loadApiKeys(){
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {} } catch { return {} }
+export function loadApiKeys() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}
+  } catch {
+    return {}
+  }
 }
-export function saveApiKeys(obj){
+export function saveApiKeys(obj) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(obj || {}))
 }
 
-function migrateLegacy(){
+function migrateLegacy() {
   try {
     const legacy = localStorage.getItem(LEGACY_OPENAI_KEY)
-    if(legacy){
+    if (legacy) {
       const cur = loadApiKeys()
-      if(!cur.openai){
+      if (!cur.openai) {
         cur.openai = legacy
         saveApiKeys(cur)
       }
       // remove legacy key so mismatch bugs surface if code still references it
-      try { localStorage.removeItem(LEGACY_OPENAI_KEY) } catch{}
+      try {
+        localStorage.removeItem(LEGACY_OPENAI_KEY)
+      } catch {}
     }
-  } catch{}
+  } catch {}
 }
 
-export function getApiKey(provider){
+export function getApiKey(provider) {
   migrateLegacy()
   const keys = loadApiKeys()
   return keys[provider] || ''
 }
 
-export function setApiKey(provider, value){
+export function setApiKey(provider, value) {
   const keys = loadApiKeys()
-  if(value) keys[provider] = value; else delete keys[provider]
+  if (value) keys[provider] = value
+  else delete keys[provider]
   saveApiKeys(keys)
 }

@@ -9,7 +9,7 @@ import { applyEquationsToPair } from './equationExtractor.js'
 
 // Regex to match code blocks with optional language specifier
 /*const CODE_BLOCK_REGEX = /```(\w*)\n([\s\S]*?)```/g;*/
-const CODE_BLOCK_REGEX = /\s*```(\w*)\s*([\s\S]*?)```\s*/g;
+const CODE_BLOCK_REGEX = /\s*```(\w*)\s*([\s\S]*?)```\s*/g
 
 /**
  * Checks if content contains any code blocks
@@ -17,8 +17,8 @@ const CODE_BLOCK_REGEX = /\s*```(\w*)\s*([\s\S]*?)```\s*/g;
  * @returns {boolean} True if code blocks found
  */
 export function containsCodeBlocks(content) {
-  if (!content || typeof content !== 'string') return false;
-  return CODE_BLOCK_REGEX.test(content);
+  if (!content || typeof content !== 'string') return false
+  return CODE_BLOCK_REGEX.test(content)
 }
 
 /**
@@ -31,23 +31,23 @@ export function extractCodeBlocks(content) {
     return {
       hasCode: false,
       displayText: content,
-      codeBlocks: []
-    };
+      codeBlocks: [],
+    }
   }
 
-  const codeBlocks = [];
-  let blockIndex = 0;
-  
+  const codeBlocks = []
+  let blockIndex = 0
+
   // Reset regex state
-  CODE_BLOCK_REGEX.lastIndex = 0;
-  
+  CODE_BLOCK_REGEX.lastIndex = 0
+
   // Replace code blocks with placeholders and collect block data
   const displayText = content.replace(CODE_BLOCK_REGEX, (match, language, code, offset) => {
-    blockIndex++;
-    
+    blockIndex++
+
     // Clean up the extracted code (remove trailing/leading whitespace)
-    const cleanCode = code.trim();
-    
+    const cleanCode = code.trim()
+
     // Store block information
     codeBlocks.push({
       index: blockIndex,
@@ -55,21 +55,21 @@ export function extractCodeBlocks(content) {
       code: cleanCode,
       lineCount: cleanCode.split('\n').length,
       startPos: offset,
-      endPos: offset + match.length
-    });
-    
+      endPos: offset + match.length,
+    })
+
     // Generate placeholder
     // Contract: placeholders rendered inline as `[language-N]` (or `[code-N]` fallback)
     // Surrounded by single spaces to keep separation from adjacent words.
-    const langToken = (language && language.trim()) ? language.trim() : 'code'
-    return ` [${langToken}-${blockIndex}] `;
-  });
+    const langToken = language && language.trim() ? language.trim() : 'code'
+    return ` [${langToken}-${blockIndex}] `
+  })
 
   return {
     hasCode: codeBlocks.length > 0,
     displayText: displayText,
-    codeBlocks: codeBlocks
-  };
+    codeBlocks: codeBlocks,
+  }
 }
 
 /**
@@ -80,19 +80,21 @@ export function extractCodeBlocks(content) {
  */
 export function processMessagePair(messagePair) {
   if (!messagePair || !messagePair.assistantText) {
-    return messagePair;
+    return messagePair
   }
 
-  const extraction = extractCodeBlocks(messagePair.assistantText);
-  
+  const extraction = extractCodeBlocks(messagePair.assistantText)
+
   if (extraction.hasCode) {
-    messagePair.processedContent = extraction.displayText;
-    messagePair.codeBlocks = extraction.codeBlocks;
-    console.log(`[CodeExtractor] Processed message ${messagePair.id}: found ${extraction.codeBlocks.length} code blocks`);
+    messagePair.processedContent = extraction.displayText
+    messagePair.codeBlocks = extraction.codeBlocks
+    console.log(
+      `[CodeExtractor] Processed message ${messagePair.id}: found ${extraction.codeBlocks.length} code blocks`
+    )
   }
   // Equation extraction (hybrid simple/complex) builds on processedContent if present
-  applyEquationsToPair(messagePair);
-  return messagePair;
+  applyEquationsToPair(messagePair)
+  return messagePair
 }
 
 /**
@@ -102,21 +104,21 @@ export function processMessagePair(messagePair) {
  * @returns {string} Content to display (with placeholders if processed)
  */
 export function getDisplayContent(messagePair) {
-  if (!messagePair) return '';
-  
+  if (!messagePair) return ''
+
   // Use processed content if available, otherwise fall back to original
-  return messagePair.processedContent || messagePair.assistantText || '';
+  return messagePair.processedContent || messagePair.assistantText || ''
 }
 
 /**
  * Gets original content for context assembly
  * Always returns original content with code blocks intact
- * @param {object} messagePair - The message pair  
+ * @param {object} messagePair - The message pair
  * @returns {string} Original content for API context
  */
 export function getContextContent(messagePair) {
-  if (!messagePair) return '';
-  
+  if (!messagePair) return ''
+
   // Always use original content for API requests
-  return messagePair.assistantText || '';
+  return messagePair.assistantText || ''
 }

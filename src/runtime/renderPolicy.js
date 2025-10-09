@@ -14,9 +14,20 @@ const REBUILD_KEYS = new Set([
 
 const RESTYLE_KEYS = new Set([
   // Pure spacing/fade/animation UI knobs
-  'gapOuterPx', 'gapMetaPx', 'gapIntraPx', 'gapBetweenPx',
-  'fadeMode', 'fadeHiddenOpacity', 'fadeInMs', 'fadeOutMs', 'fadeTransitionMs',
-  'scrollAnimMs', 'scrollAnimEasing', 'scrollAnimDynamic', 'scrollAnimMinMs', 'scrollAnimMaxMs',
+  'gapOuterPx',
+  'gapMetaPx',
+  'gapIntraPx',
+  'gapBetweenPx',
+  'fadeMode',
+  'fadeHiddenOpacity',
+  'fadeInMs',
+  'fadeOutMs',
+  'fadeTransitionMs',
+  'scrollAnimMs',
+  'scrollAnimEasing',
+  'scrollAnimDynamic',
+  'scrollAnimMinMs',
+  'scrollAnimMaxMs',
   'showTrimNotice',
 ])
 
@@ -29,28 +40,31 @@ const IGNORE_KEYS = new Set([
   'maxTrimAttempts',
 ])
 
-export function diffChangedKeys(prev, next){
+export function diffChangedKeys(prev, next) {
   const changed = []
-  const keys = new Set([...Object.keys(prev||{}), ...Object.keys(next||{})])
-  for(const k of keys){
-    if(prev?.[k] !== next?.[k]) changed.push(k)
+  const keys = new Set([...Object.keys(prev || {}), ...Object.keys(next || {})])
+  for (const k of keys) {
+    if (prev?.[k] !== next?.[k]) changed.push(k)
   }
   return changed
 }
 
 // Returns one of: 'none' | 'restyle' | 'rebuild'
-export function decideRenderAction(prev, next){
-  const changed = diffChangedKeys(prev||{}, next||{})
-  if(changed.length === 0) return 'none'
+export function decideRenderAction(prev, next) {
+  const changed = diffChangedKeys(prev || {}, next || {})
+  if (changed.length === 0) return 'none'
   let needsRebuild = false
   let needsRestyle = false
-  for(const k of changed){
-    if(IGNORE_KEYS.has(k)) continue
-    if(REBUILD_KEYS.has(k)) { needsRebuild = true; break }
-    if(RESTYLE_KEYS.has(k)) needsRestyle = true
+  for (const k of changed) {
+    if (IGNORE_KEYS.has(k)) continue
+    if (REBUILD_KEYS.has(k)) {
+      needsRebuild = true
+      break
+    }
+    if (RESTYLE_KEYS.has(k)) needsRestyle = true
   }
-  if(needsRebuild) return 'rebuild'
-  if(needsRestyle) return 'restyle'
+  if (needsRebuild) return 'rebuild'
+  if (needsRestyle) return 'restyle'
   return 'none'
 }
 

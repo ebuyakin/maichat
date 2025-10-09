@@ -18,75 +18,81 @@ export function createViewKeyHandler({
   setStarRating,
   handleEditIfErrorActive,
   handleDeleteIfErrorActive,
-}){
-  return function viewHandler(e){
-    if(window.modalIsActive && window.modalIsActive()) return false
+}) {
+  return function viewHandler(e) {
+    if (window.modalIsActive && window.modalIsActive()) return false
     window.__lastKey = e.key
-    if(e.key==='Enter'){ modeManager.set('input'); return true }
-    if(e.key==='Escape'){ modeManager.set('command'); return true }
+    if (e.key === 'Enter') {
+      modeManager.set('input')
+      return true
+    }
+    if (e.key === 'Escape') {
+      modeManager.set('command')
+      return true
+    }
 
-    if(e.key==='r' && !e.ctrlKey && !e.metaKey && !e.altKey){
+    if (e.key === 'r' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       const readingMode = !getReadingMode()
       setReadingMode(readingMode)
       hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(readingMode)
       // When turning ON, immediately center the currently focused part
-      if(readingMode){
+      if (readingMode) {
         try {
-          const act = activeParts.active();
-          if(act && scrollController && scrollController.alignTo){
+          const act = activeParts.active()
+          if (act && scrollController && scrollController.alignTo) {
             scrollController.alignTo(act.id, 'center', false)
           }
-        } catch{}
+        } catch {}
       }
       return true
     }
 
     // Scrolling steps on messages
-    if(e.key==='j' || e.key==='ArrowDown' || e.key==='J'){
+    if (e.key === 'j' || e.key === 'ArrowDown' || e.key === 'J') {
       window.__lastKey = e.key
       const s = getSettings()
-      const step = (e.key==='J') ? (s.scrollBigStepPx||500) : (s.scrollStepPx||200)
-      const animate = (e.key==='J') ? (s.animateBigSteps || false) : (s.animateSmallSteps || false)
-      
-      if(animate && scrollController){
+      const step = e.key === 'J' ? s.scrollBigStepPx || 500 : s.scrollStepPx || 200
+      const animate = e.key === 'J' ? s.animateBigSteps || false : s.animateSmallSteps || false
+
+      if (animate && scrollController) {
         // Use animated scrolling
         const historyEl = document.getElementById('history')
-        if(historyEl){
+        if (historyEl) {
           const currentScroll = historyEl.scrollTop
           const targetScroll = currentScroll + step
           scrollController.scrollToPosition(targetScroll, true)
         }
-      } else if(scrollController && scrollController.stepScroll){
+      } else if (scrollController && scrollController.stepScroll) {
         scrollController.stepScroll(step)
       }
       return true
     }
-    if(e.key==='k' || e.key==='ArrowUp' || e.key==='K'){
+    if (e.key === 'k' || e.key === 'ArrowUp' || e.key === 'K') {
       window.__lastKey = e.key
       const s = getSettings()
-      const step = (e.key==='K') ? (s.scrollBigStepPx||500) : (s.scrollStepPx||200)
-      const animate = (e.key==='K') ? (s.animateBigSteps || false) : (s.animateSmallSteps || false)
-      
-      if(animate && scrollController){
+      const step = e.key === 'K' ? s.scrollBigStepPx || 500 : s.scrollStepPx || 200
+      const animate = e.key === 'K' ? s.animateBigSteps || false : s.animateSmallSteps || false
+
+      if (animate && scrollController) {
         // Use animated scrolling
         const historyEl = document.getElementById('history')
-        if(historyEl){
+        if (historyEl) {
           const currentScroll = historyEl.scrollTop
           const targetScroll = currentScroll - step
           scrollController.scrollToPosition(targetScroll, true)
         }
-      } else if(scrollController && scrollController.stepScroll){
+      } else if (scrollController && scrollController.stepScroll) {
         scrollController.stepScroll(-step)
       }
       return true
     }
-    
+
     // g/G processing
-    if(e.key==='g'){
-      activeParts.first();
-      historyRuntime.applyActiveMessage();
-      const act = activeParts.active();
-      if(act && scrollController && scrollController.alignToMessage){
+    if (e.key === 'g') {
+      activeParts.first()
+      historyRuntime.applyActiveMessage()
+      const act = activeParts.active()
+      if (act && scrollController && scrollController.alignToMessage) {
         scrollController.alignToMessage(act.id, 'top', false)
       }
       //setReadingMode(false);
@@ -94,206 +100,287 @@ export function createViewKeyHandler({
       return true
     }
 
-    if(e.key==='G'){
-      activeParts.last();
-      historyRuntime.applyActiveMessage();
-      const act = activeParts.active();
-      if(scrollController && scrollController.scrollToBottom){
-        scrollController.scrollToBottom(false)}
+    if (e.key === 'G') {
+      activeParts.last()
+      historyRuntime.applyActiveMessage()
+      const act = activeParts.active()
+      if (scrollController && scrollController.scrollToBottom) {
+        scrollController.scrollToBottom(false)
+      }
       //setReadingMode(false);
       //hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false);
       return true
     }
 
     // Jump to first in-context (included) pair and center it (one-shot, does not toggle Reading Mode)
-    if((e.key==='O' && e.shiftKey) || e.key==='o'){
-      historyRuntime.jumpToBoundary();
-      requestAnimationFrame(()=>{
+    if ((e.key === 'O' && e.shiftKey) || e.key === 'o') {
+      historyRuntime.jumpToBoundary()
+      requestAnimationFrame(() => {
         try {
-          if(scrollController && scrollController.remeasure) {
-            scrollController.remeasure();
+          if (scrollController && scrollController.remeasure) {
+            scrollController.remeasure()
           }
-          const act = activeParts.active();
-          if(act && scrollController && scrollController.alignToMessage){
+          const act = activeParts.active()
+          if (act && scrollController && scrollController.alignToMessage) {
             scrollController.alignToMessage(act.id, 'center', false)
           }
         } catch {}
-      });
+      })
       return true
     }
     // d/u: jump to next/prev message and align to top (last message aligns bottom)
-    if(e.key==='d'){
+    if (e.key === 'd') {
       const s = getSettings()
       const animate = s.animateMessageJumps !== undefined ? s.animateMessageJumps : true
-      
+
       const curIdx = activeParts.activeIndex || 0
-      const nextIdx = Math.min(curIdx+1, activeParts.parts.length-1)
+      const nextIdx = Math.min(curIdx + 1, activeParts.parts.length - 1)
       const next = activeParts.parts[nextIdx]
-      if(next){
-  activeParts.setActiveById(next.id); historyRuntime.applyActiveMessage()
-        const isLast = nextIdx === activeParts.parts.length-1
-        if(scrollController && scrollController.jumpToMessage){ scrollController.jumpToMessage(next.id, isLast ? 'bottom' : 'top', animate) }
-        setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
+      if (next) {
+        activeParts.setActiveById(next.id)
+        historyRuntime.applyActiveMessage()
+        const isLast = nextIdx === activeParts.parts.length - 1
+        if (scrollController && scrollController.jumpToMessage) {
+          scrollController.jumpToMessage(next.id, isLast ? 'bottom' : 'top', animate)
+        }
+        setReadingMode(false)
+        hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
         return true
       }
     }
-    if(e.key==='u'){
+    if (e.key === 'u') {
       const s = getSettings()
       const animate = s.animateMessageJumps !== undefined ? s.animateMessageJumps : true
-      
+
       const curIdx = activeParts.activeIndex || 0
-      const prevIdx = Math.max(0, curIdx-1)
+      const prevIdx = Math.max(0, curIdx - 1)
       const prev = activeParts.parts[prevIdx]
-      if(prev){
-  activeParts.setActiveById(prev.id); historyRuntime.applyActiveMessage()
-        if(scrollController && scrollController.jumpToMessage){ scrollController.jumpToMessage(prev.id, 'top', animate) }
-        setReadingMode(false); hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
+      if (prev) {
+        activeParts.setActiveById(prev.id)
+        historyRuntime.applyActiveMessage()
+        if (scrollController && scrollController.jumpToMessage) {
+          scrollController.jumpToMessage(prev.id, 'top', animate)
+        }
+        setReadingMode(false)
+        hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
         return true
       }
     }
     // Pending code copy digit selection (c1, c2, etc.)
-    if(/^[1-9]$/.test(e.key) && window.__mcPendingCopy){
-      const act = activeParts.active();
-      const pending = window.__mcPendingCopy;
-      if(!(act && act.role==='assistant')){ window.__mcPendingCopy=null; return false }
-      if(act.pairId !== pending.pairId){ window.__mcPendingCopy=null; return false }
-      const blockNum = parseInt(e.key, 10);
-      if(window.copyCodeBlock && window.copyCodeBlock(blockNum)){
-        window.__mcPendingCopy=null;
-        return true;
+    if (/^[1-9]$/.test(e.key) && window.__mcPendingCopy) {
+      const act = activeParts.active()
+      const pending = window.__mcPendingCopy
+      if (!(act && act.role === 'assistant')) {
+        window.__mcPendingCopy = null
+        return false
       }
-      window.__mcPendingCopy=null;
-      return false;
+      if (act.pairId !== pending.pairId) {
+        window.__mcPendingCopy = null
+        return false
+      }
+      const blockNum = parseInt(e.key, 10)
+      if (window.copyCodeBlock && window.copyCodeBlock(blockNum)) {
+        window.__mcPendingCopy = null
+        return true
+      }
+      window.__mcPendingCopy = null
+      return false
     }
     // Pending equation copy digit selection (y1, y2, etc.)
-    if(/^[1-9]$/.test(e.key) && window.__mcPendingCopyEq){
-      const act = activeParts.active();
-      const pending = window.__mcPendingCopyEq;
-      if(!(act && act.role==='assistant')){ window.__mcPendingCopyEq=null; return false }
-      if(act.pairId !== pending.pairId){ window.__mcPendingCopyEq=null; return false }
-      const eqNum = parseInt(e.key, 10);
-      if(window.copyEquation && window.copyEquation(eqNum)){
-        window.__mcPendingCopyEq=null;
-        return true;
+    if (/^[1-9]$/.test(e.key) && window.__mcPendingCopyEq) {
+      const act = activeParts.active()
+      const pending = window.__mcPendingCopyEq
+      if (!(act && act.role === 'assistant')) {
+        window.__mcPendingCopyEq = null
+        return false
       }
-      window.__mcPendingCopyEq=null;
-      return false;
+      if (act.pairId !== pending.pairId) {
+        window.__mcPendingCopyEq = null
+        return false
+      }
+      const eqNum = parseInt(e.key, 10)
+      if (window.copyEquation && window.copyEquation(eqNum)) {
+        window.__mcPendingCopyEq = null
+        return true
+      }
+      window.__mcPendingCopyEq = null
+      return false
     }
     // Pending code overlay digit selection must take precedence over star rating
-    if(/^[1-9]$/.test(e.key) && window.__mcPendingCodeOpen){
-      const act = activeParts.active();
-      const pending = window.__mcPendingCodeOpen;
-      if(!(act && act.role==='assistant')){ window.__mcPendingCodeOpen=null; return false }
-      const pair = store.pairs.get(act.pairId);
-      if(!pair || pair.id!==pending.pairId){ window.__mcPendingCodeOpen=null; return false }
-      const blocks = pair.codeBlocks;
-      if(!blocks || blocks.length<2){ window.__mcPendingCodeOpen=null; return false }
-      const idx = parseInt(e.key,10)-1;
-      if(idx>=0 && idx<blocks.length){ codeOverlay.show(blocks[idx], pair, { index: idx }); }
-      window.__mcPendingCodeOpen=null;
-      return true;
+    if (/^[1-9]$/.test(e.key) && window.__mcPendingCodeOpen) {
+      const act = activeParts.active()
+      const pending = window.__mcPendingCodeOpen
+      if (!(act && act.role === 'assistant')) {
+        window.__mcPendingCodeOpen = null
+        return false
+      }
+      const pair = store.pairs.get(act.pairId)
+      if (!pair || pair.id !== pending.pairId) {
+        window.__mcPendingCodeOpen = null
+        return false
+      }
+      const blocks = pair.codeBlocks
+      if (!blocks || blocks.length < 2) {
+        window.__mcPendingCodeOpen = null
+        return false
+      }
+      const idx = parseInt(e.key, 10) - 1
+      if (idx >= 0 && idx < blocks.length) {
+        codeOverlay.show(blocks[idx], pair, { index: idx })
+      }
+      window.__mcPendingCodeOpen = null
+      return true
     }
     // Pending equation overlay digit selection (parallel to code overlay)
-    if(/^[1-9]$/.test(e.key) && window.__mcPendingEqOpen){
-      const act = activeParts.active();
-      const pending = window.__mcPendingEqOpen;
-      if(!(act && act.role==='assistant')){ window.__mcPendingEqOpen=null; return false }
-      const pair = store.pairs.get(act.pairId);
-      if(!pair || pair.id!==pending.pairId){ window.__mcPendingEqOpen=null; return false }
-      const blocks = pair.equationBlocks;
-      if(!blocks || blocks.length<2){ window.__mcPendingEqOpen=null; return false }
-      const idx = parseInt(e.key,10)-1;
-      if(idx>=0 && idx<blocks.length){ equationOverlay.show(blocks[idx], pair, { index: idx }); }
-      window.__mcPendingEqOpen=null;
-      return true;
+    if (/^[1-9]$/.test(e.key) && window.__mcPendingEqOpen) {
+      const act = activeParts.active()
+      const pending = window.__mcPendingEqOpen
+      if (!(act && act.role === 'assistant')) {
+        window.__mcPendingEqOpen = null
+        return false
+      }
+      const pair = store.pairs.get(act.pairId)
+      if (!pair || pair.id !== pending.pairId) {
+        window.__mcPendingEqOpen = null
+        return false
+      }
+      const blocks = pair.equationBlocks
+      if (!blocks || blocks.length < 2) {
+        window.__mcPendingEqOpen = null
+        return false
+      }
+      const idx = parseInt(e.key, 10) - 1
+      if (idx >= 0 && idx < blocks.length) {
+        equationOverlay.show(blocks[idx], pair, { index: idx })
+      }
+      window.__mcPendingEqOpen = null
+      return true
     }
     // Passive expiry: if pending older than 3s, drop it before any further handling
-    if(window.__mcPendingCodeOpen){
-      if(Date.now() - window.__mcPendingCodeOpen.ts > 3000){ window.__mcPendingCodeOpen = null }
+    if (window.__mcPendingCodeOpen) {
+      if (Date.now() - window.__mcPendingCodeOpen.ts > 3000) {
+        window.__mcPendingCodeOpen = null
+      }
     }
-    if(window.__mcPendingEqOpen){
-      if(Date.now() - window.__mcPendingEqOpen.ts > 3000){ window.__mcPendingEqOpen = null }
+    if (window.__mcPendingEqOpen) {
+      if (Date.now() - window.__mcPendingEqOpen.ts > 3000) {
+        window.__mcPendingEqOpen = null
+      }
     }
-    if(e.key==='*'){ cycleStar(); return true }
-    if(e.key==='a'){ toggleFlag(); return true }
-    if(e.key==='1'){ setStarRating(1); return true }
-    if(e.key==='2'){ setStarRating(2); return true }
-    if(e.key==='3'){ setStarRating(3); return true }
-    if(e.key===' '){ setStarRating(0); return true }
+    if (e.key === '*') {
+      cycleStar()
+      return true
+    }
+    if (e.key === 'a') {
+      toggleFlag()
+      return true
+    }
+    if (e.key === '1') {
+      setStarRating(1)
+      return true
+    }
+    if (e.key === '2') {
+      setStarRating(2)
+      return true
+    }
+    if (e.key === '3') {
+      setStarRating(3)
+      return true
+    }
+    if (e.key === ' ') {
+      setStarRating(0)
+      return true
+    }
     // VIEW-only fast keys for error pairs
-    if(e.key==='e'){ if(handleEditIfErrorActive()) return true }
-    if(e.key==='w'){ if(handleDeleteIfErrorActive()) return true }
-    
+    if (e.key === 'e') {
+      if (handleEditIfErrorActive()) return true
+    }
+    if (e.key === 'w') {
+      if (handleDeleteIfErrorActive()) return true
+    }
+
     // Copy code blocks: c (single block) or c1, c2, etc. (specific block)
-    if(e.key==='c'){
-      const act = activeParts.active();
-      if(!(act && act.role==='assistant')) return false;
-      
+    if (e.key === 'c') {
+      const act = activeParts.active()
+      if (!(act && act.role === 'assistant')) return false
+
       // Try to copy code (will handle single vs multiple blocks)
-      if(window.copyCodeBlock && window.copyCodeBlock(null)){
-        return true;
+      if (window.copyCodeBlock && window.copyCodeBlock(null)) {
+        return true
       }
-      
+
       // If no code blocks, set up pending for c1, c2, etc.
-      window.__mcPendingCopy = { ts: Date.now(), pairId: act.pairId };
-      return true;
+      window.__mcPendingCopy = { ts: Date.now(), pairId: act.pairId }
+      return true
     }
-    
+
     // Copy equations: y (single equation) or y1, y2, etc. (specific equation)
-    if(e.key==='y'){
-      const act = activeParts.active();
-      if(!(act && act.role==='assistant')) return false;
-      
+    if (e.key === 'y') {
+      const act = activeParts.active()
+      if (!(act && act.role === 'assistant')) return false
+
       // Try to copy equation (will handle single vs multiple equations)
-      if(window.copyEquation && window.copyEquation(null)){
-        return true;
+      if (window.copyEquation && window.copyEquation(null)) {
+        return true
       }
-      
+
       // If no equations or multiple equations, set up pending for y1, y2, etc.
-      window.__mcPendingCopyEq = { ts: Date.now(), pairId: act.pairId };
-      return true;
+      window.__mcPendingCopyEq = { ts: Date.now(), pairId: act.pairId }
+      return true
     }
-    
+
     // Code overlay trigger logic (smart):
-    if(e.key==='v'){
-      const act = activeParts.active();
-      if(!(act && act.role==='assistant')) return false;
-      const pair = store.pairs.get(act.pairId);
-      const blocks = pair && pair.codeBlocks;
-      if(!blocks || blocks.length===0) return false;
-      if(blocks.length===1){
-        codeOverlay.show(blocks[0], pair, { index:0 }); return true;
+    if (e.key === 'v') {
+      const act = activeParts.active()
+      if (!(act && act.role === 'assistant')) return false
+      const pair = store.pairs.get(act.pairId)
+      const blocks = pair && pair.codeBlocks
+      if (!blocks || blocks.length === 0) return false
+      if (blocks.length === 1) {
+        codeOverlay.show(blocks[0], pair, { index: 0 })
+        return true
       }
-      window.__mcPendingCodeOpen = { ts: Date.now(), pairId: pair.id };
-      return true;
+      window.__mcPendingCodeOpen = { ts: Date.now(), pairId: pair.id }
+      return true
     }
     // Equation overlay trigger logic (smart, mirrors code overlay with 'm'):
-    if(e.key==='m'){
-      const act = activeParts.active();
-      if(!(act && act.role==='assistant')) return false;
-      const pair = store.pairs.get(act.pairId);
-      const blocks = pair && pair.equationBlocks;
-      if(!blocks || blocks.length===0) return false;
-      if(blocks.length===1){ equationOverlay.show(blocks[0], pair, { index:0 }); return true; }
-      window.__mcPendingEqOpen = { ts: Date.now(), pairId: pair.id };
-      return true;
+    if (e.key === 'm') {
+      const act = activeParts.active()
+      if (!(act && act.role === 'assistant')) return false
+      const pair = store.pairs.get(act.pairId)
+      const blocks = pair && pair.equationBlocks
+      if (!blocks || blocks.length === 0) return false
+      if (blocks.length === 1) {
+        equationOverlay.show(blocks[0], pair, { index: 0 })
+        return true
+      }
+      window.__mcPendingEqOpen = { ts: Date.now(), pairId: pair.id }
+      return true
     }
     // Broad cancel: clear pending on unrelated keys
-    if(window.__mcPendingCodeOpen){
-      const isDigit = /^[1-9]$/.test(e.key);
-      if(e.key!=='v' && !isDigit){ window.__mcPendingCodeOpen=null }
+    if (window.__mcPendingCodeOpen) {
+      const isDigit = /^[1-9]$/.test(e.key)
+      if (e.key !== 'v' && !isDigit) {
+        window.__mcPendingCodeOpen = null
+      }
     }
-    if(window.__mcPendingEqOpen){
-      const isDigit = /^[1-9]$/.test(e.key);
-      if(e.key!=='m' && !isDigit){ window.__mcPendingEqOpen=null }
+    if (window.__mcPendingEqOpen) {
+      const isDigit = /^[1-9]$/.test(e.key)
+      if (e.key !== 'm' && !isDigit) {
+        window.__mcPendingEqOpen = null
+      }
     }
-    if(window.__mcPendingCopy){
-      const isDigit = /^[1-9]$/.test(e.key);
-      if(e.key!=='c' && !isDigit){ window.__mcPendingCopy=null }
+    if (window.__mcPendingCopy) {
+      const isDigit = /^[1-9]$/.test(e.key)
+      if (e.key !== 'c' && !isDigit) {
+        window.__mcPendingCopy = null
+      }
     }
-    if(window.__mcPendingCopyEq){
-      const isDigit = /^[1-9]$/.test(e.key);
-      if(e.key!=='y' && !isDigit){ window.__mcPendingCopyEq=null }
+    if (window.__mcPendingCopyEq) {
+      const isDigit = /^[1-9]$/.test(e.key)
+      if (e.key !== 'y' && !isDigit) {
+        window.__mcPendingCopyEq = null
+      }
     }
     return false
   }

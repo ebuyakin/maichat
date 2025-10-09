@@ -20,9 +20,15 @@ import { openApiKeysOverlay } from '../features/config/apiKeysOverlay.js'
  * @param {Object} opts.interaction interaction module API
  * @param {HTMLElement} opts.loadingEl overlay element to remove when ready
  */
-export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl }){
+export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl }) {
   const { store, persistence, pendingMessageMeta } = ctx
-  const { applySpacingStyles, renderCurrentView, applyActiveMessage, renderStatus, layoutHistoryPane } = historyRuntime
+  const {
+    applySpacingStyles,
+    renderCurrentView,
+    applyActiveMessage,
+    renderStatus,
+    layoutHistoryPane,
+  } = historyRuntime
 
   // Disable browser scroll restoration - we'll handle scroll position ourselves
   if ('scrollRestoration' in history) {
@@ -38,35 +44,45 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
   // Restore persisted pending topic if available
   try {
     const savedPending = localStorage.getItem('maichat_pending_topic')
-    if(savedPending && store.topics.has(savedPending)) pendingMessageMeta.topicId = savedPending
-  } catch{}
+    if (savedPending && store.topics.has(savedPending)) pendingMessageMeta.topicId = savedPending
+  } catch {}
 
   // One-time onboarding seeding (replaces demo seeding)
-  try { if(shouldRunInitialSeeding(store)) runInitialSeeding({ store }) } catch {}
+  try {
+    if (shouldRunInitialSeeding(store)) runInitialSeeding({ store })
+  } catch {}
 
   renderCurrentView()
   renderStatus()
   // Start focused at the last (newest) part on first load
-  try { ctx.activeParts && ctx.activeParts.last && ctx.activeParts.last() } catch{}
+  try {
+    ctx.activeParts && ctx.activeParts.last && ctx.activeParts.last()
+  } catch {}
   applyActiveMessage()
-  
-  if(!pendingMessageMeta.topicId){
+
+  if (!pendingMessageMeta.topicId) {
     // Prefer 'General talk' if present on first load; else root
     try {
-      const match = Array.from(store.topics.values()).find(t=> t.parentId===store.rootTopicId && t.name==='General talk')
+      const match = Array.from(store.topics.values()).find(
+        (t) => t.parentId === store.rootTopicId && t.name === 'General talk'
+      )
       pendingMessageMeta.topicId = match ? match.id : store.rootTopicId
-    } catch { pendingMessageMeta.topicId = store.rootTopicId }
+    } catch {
+      pendingMessageMeta.topicId = store.rootTopicId
+    }
   }
-  try { localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId) } catch{}
+  try {
+    localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId)
+  } catch {}
 
   interaction.renderPendingMeta()
   layoutHistoryPane()
-  
+
   // Scroll to bottom AFTER layout completes
   try {
     const sc = ctx.scrollController
-    if(sc && sc.scrollToBottom){
-      requestAnimationFrame(()=>{
+    if (sc && sc.scrollToBottom) {
+      requestAnimationFrame(() => {
         sc.scrollToBottom(false)
         // Additional delayed scroll to catch async KaTeX rendering
         setTimeout(() => {
@@ -76,16 +92,22 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
     }
   } catch {}
 
-  if(loadingEl) loadingEl.remove()
+  if (loadingEl) loadingEl.remove()
 
   // Startup: if no OpenAI key present, open API Keys overlay automatically
   try {
     const hasOpenAI = typeof getApiKey === 'function' ? !!getApiKey('openai') : false
-    if(!hasOpenAI){
-      setTimeout(()=>{ try { openApiKeysOverlay({ onClose:()=>{} }) } catch {} }, 80)
+    if (!hasOpenAI) {
+      setTimeout(() => {
+        try {
+          openApiKeysOverlay({ onClose: () => {} })
+        } catch {}
+      }, 80)
     }
   } catch {}
 
   // Flush pending writes on unload (moved from main.js)
-  window.addEventListener('beforeunload', ()=>{ if(persistence && persistence.flush) persistence.flush() })
+  window.addEventListener('beforeunload', () => {
+    if (persistence && persistence.flush) persistence.flush()
+  })
 }

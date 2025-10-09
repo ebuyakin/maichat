@@ -1,3 +1,64 @@
 // Moved from src/store/indexes.js (Phase 5 core move)
-export class Indexes { constructor(store){ this.store=store; this.byTopic=new Map(); this.byModel=new Map(); this.byStar=[[],[],[],[]]; this.blue=[]; this.grey=[]; this._subscriptions=[]; this._buildAll(); this._wire() } dispose(){ this._subscriptions.forEach(off=>off()) } _wire(){ this._subscriptions.push(this.store.on('pair:add', p=> this._addPair(p)), this.store.on('pair:update', p=> this._updatePair(p)), this.store.on('topic:add', _t=>{}) ) } _buildAll(){ const pairs=this.store.getAllPairs(); for(const p of pairs) this._addPair(p) } _addPair(p){ if(!this.byTopic.has(p.topicId)) this.byTopic.set(p.topicId, []); this.byTopic.get(p.topicId).push(p); const mk=p.model.toLowerCase(); if(!this.byModel.has(mk)) this.byModel.set(mk, []); this.byModel.get(mk).push(p); if(this.byStar[p.star]) this.byStar[p.star].push(p); if(p.colorFlag==='b') this.blue.push(p); else this.grey.push(p) } _updatePair(p){ this.byTopic.clear(); this.byModel.clear(); this.byStar=[[],[],[],[]]; this.blue=[]; this.grey=[]; this._buildAll() } getByTopic(topicId){ return this.byTopic.get(topicId)||[] } getByModel(model){ return this.byModel.get(model.toLowerCase())||[] } getByStar(star){ return this.byStar[star]||[] } getBlue(){ return this.blue } getGrey(){ return this.grey } }
-export function attachIndexes(store){ return new Indexes(store) }
+export class Indexes {
+  constructor(store) {
+    this.store = store
+    this.byTopic = new Map()
+    this.byModel = new Map()
+    this.byStar = [[], [], [], []]
+    this.blue = []
+    this.grey = []
+    this._subscriptions = []
+    this._buildAll()
+    this._wire()
+  }
+  dispose() {
+    this._subscriptions.forEach((off) => off())
+  }
+  _wire() {
+    this._subscriptions.push(
+      this.store.on('pair:add', (p) => this._addPair(p)),
+      this.store.on('pair:update', (p) => this._updatePair(p)),
+      this.store.on('topic:add', (_t) => {})
+    )
+  }
+  _buildAll() {
+    const pairs = this.store.getAllPairs()
+    for (const p of pairs) this._addPair(p)
+  }
+  _addPair(p) {
+    if (!this.byTopic.has(p.topicId)) this.byTopic.set(p.topicId, [])
+    this.byTopic.get(p.topicId).push(p)
+    const mk = p.model.toLowerCase()
+    if (!this.byModel.has(mk)) this.byModel.set(mk, [])
+    this.byModel.get(mk).push(p)
+    if (this.byStar[p.star]) this.byStar[p.star].push(p)
+    if (p.colorFlag === 'b') this.blue.push(p)
+    else this.grey.push(p)
+  }
+  _updatePair(p) {
+    this.byTopic.clear()
+    this.byModel.clear()
+    this.byStar = [[], [], [], []]
+    this.blue = []
+    this.grey = []
+    this._buildAll()
+  }
+  getByTopic(topicId) {
+    return this.byTopic.get(topicId) || []
+  }
+  getByModel(model) {
+    return this.byModel.get(model.toLowerCase()) || []
+  }
+  getByStar(star) {
+    return this.byStar[star] || []
+  }
+  getBlue() {
+    return this.blue
+  }
+  getGrey() {
+    return this.grey
+  }
+}
+export function attachIndexes(store) {
+  return new Indexes(store)
+}

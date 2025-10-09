@@ -13,33 +13,42 @@ import { createHistoryView, bindHistoryErrorActions } from '../features/history/
 
 // Minimal active controller compatible with message ids (pairId:u / pairId:a)
 class ActivePartController {
-  constructor(){
-    this.parts=[];
-    this.activeIndex=0
+  constructor() {
+    this.parts = []
+    this.activeIndex = 0
   }
-  setParts(parts){
-    const prev=this.active();
-    this.parts=parts || [];
+  setParts(parts) {
+    const prev = this.active()
+    this.parts = parts || []
     if (prev) {
-      const idx=this.parts.findIndex(p=>p.id===prev.id);
-      if (idx!==-1)
-        this.activeIndex=idx;
-      else
-        if (this.activeIndex>=this.parts.length)
-          this.activeIndex = this.parts.length?this.parts.length-1:0
+      const idx = this.parts.findIndex((p) => p.id === prev.id)
+      if (idx !== -1) this.activeIndex = idx
+      else if (this.activeIndex >= this.parts.length)
+        this.activeIndex = this.parts.length ? this.parts.length - 1 : 0
     } else {
-      if (this.activeIndex>=this.parts.length) this.activeIndex=this.parts.length?this.parts.length-1:0
-      }
+      if (this.activeIndex >= this.parts.length)
+        this.activeIndex = this.parts.length ? this.parts.length - 1 : 0
+    }
   }
-  setActiveById(id){
-    const i = this.parts.findIndex(p=>p.id===id);
-    if(i!==-1) this.activeIndex=i
+  setActiveById(id) {
+    const i = this.parts.findIndex((p) => p.id === id)
+    if (i !== -1) this.activeIndex = i
   }
-  active() {return this.parts[this.activeIndex]}
-  first() {if(this.parts.length) this.activeIndex = 0}
-  last() {if(this.parts.length) this.activeIndex = this.parts.length-1}
-  next() {if(this.activeIndex < this.parts.length-1) this.activeIndex++}
-  prev() {if(this.activeIndex > 0) this.activeIndex--}
+  active() {
+    return this.parts[this.activeIndex]
+  }
+  first() {
+    if (this.parts.length) this.activeIndex = 0
+  }
+  last() {
+    if (this.parts.length) this.activeIndex = this.parts.length - 1
+  }
+  next() {
+    if (this.activeIndex < this.parts.length - 1) this.activeIndex++
+  }
+  prev() {
+    if (this.activeIndex > 0) this.activeIndex--
+  }
 }
 
 import { createScrollController } from '../features/history/scrollControllerV3.js'
@@ -55,7 +64,7 @@ export function initRuntime() {
   const historyEl = document.getElementById('history')
   const activeParts = new ActivePartController() // controls active message
   const scrollController = createScrollController({ container: historyEl })
-  const historyView = createHistoryView({ store, onActivePartRendered: ()=> {} })
+  const historyView = createHistoryView({ store, onActivePartRendered: () => {} })
   const boundaryMgr = createBoundaryManager()
 
   // Pending message metadata (topic + model) initially set after catalog load; fallback model default.
@@ -66,10 +75,10 @@ export function initRuntime() {
     store,
     activeParts,
     commandInput: null, // assigned later by interaction module
-    renderHistory: ()=> {},
-    applyActiveMessage: ()=> {},
-    alignTo: (id, pos, anim)=> scrollController.alignTo && scrollController.alignTo(id, pos, anim),
-    scrollController // Pass the full controller so lifecycle can access scrollToBottom
+    renderHistory: () => {},
+    applyActiveMessage: () => {},
+    alignTo: (id, pos, anim) => scrollController.alignTo && scrollController.alignTo(id, pos, anim),
+    scrollController, // Pass the full controller so lifecycle can access scrollToBottom
   })
 
   const ctx = {
@@ -82,7 +91,7 @@ export function initRuntime() {
     lifecycle,
     pendingMessageMeta,
     getSettings,
-    getActiveModel
+    getActiveModel,
   }
 
   // Expose for diagnostics in development when explicitly enabled via URL flag.
