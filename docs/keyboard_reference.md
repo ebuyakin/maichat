@@ -47,7 +47,8 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+v | Switch to VIEW | Blurs inputs |
 | Ctrl+i | Switch to INPUT | Focuses bottom input |
 | Ctrl+d | Switch to COMMAND | Focuses command input |
-| Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Overlay (Selection) (restores prev mode) |
+| Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Full topic tree overlay (restores prev mode) |
+| Ctrl+P | Open chrono topic picker (VIEW/INPUT: quick access to recent topics) | Recent topics list overlay (restores prev mode) |
 | Ctrl+Shift+T | Open topic editor | Overlay (Edit) (restores prev mode) |
 | Ctrl+K | Open API Keys overlay | Overlay (Edit) (restores prev mode) |
 | Ctrl+M | Open model selector (INPUT mode only; chooses pending message model) | Overlay (Selection) (restores prev mode) |
@@ -72,6 +73,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | d | Delete focused error message | Removes the error pair; focus moves to previous part |
 | c | Copy code block | Single block: copies immediately. Multiple blocks: wait for digit (c1, c2, c3...) |
 | y | Copy equation (yank) | Single equation: copies LaTeX immediately. Multiple equations: wait for digit (y1, y2, y3...) |
+| Y | Copy entire message (Shift+y) | Copies raw message text (user input or assistant response) from data model |
 | v | View code in overlay | Single block: opens immediately. Multiple blocks: wait for digit (v1, v2, v3...) |
 | m | View equation in overlay | Single equation: opens immediately. Multiple equations: wait for digit (m1, m2, m3...) |
 | * | Cycle star (0→1→2→3→0) | Affects active pair |
@@ -89,12 +91,15 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 - Without prefix: Set star rating (1/2/3 only)
 - Pending state clears after 3 seconds or unrelated keypress
 
+**Note:** Chrono Topic Picker (Ctrl+P) displays 6 items (1 current + 5 previous), scrollable for older history (up to 20 stored).
+
 ## 4. INPUT Mode Keys
 | Key | Action | Notes |
 |-----|--------|-------|
 | Enter | Send message & remain in INPUT | Ignored if previous send pending ("AI is thinking") |
 | Escape | Return to VIEW | Restores active selection |
 | Ctrl+v / Ctrl+d / Ctrl+i | Direct mode switch | Overrides cycle |
+| Ctrl+P | Open chrono topic picker | Quick access to recent topics; sets pending topic for next message |
 | Ctrl+A | Move cursor to start of line | Emacs-style editing |
 | Ctrl+E | Move cursor to end of line | Emacs-style editing |
 | Ctrl+U | Delete from line start to cursor | Emacs-style editing |

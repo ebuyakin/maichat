@@ -37,7 +37,8 @@ export function openHelpOverlay({ onClose, modeManager }) {
           <div class="help-k">Ctrl+Shift+F</div><div class="help-d">Forward one word</div>
           <div class="help-k">Ctrl+Shift+B</div><div class="help-d">Backward one word</div>
           <div class="help-k">Ctrl+M</div><div class="help-d">Model Selector</div>
-          <div class="help-k">Ctrl+T</div><div class="help-d">Pick topic for next message</div>
+          <div class="help-k">Ctrl+T</div><div class="help-d">Topic picker (full tree)</div>
+          <div class="help-k">Ctrl+P</div><div class="help-d">Recent topics picker</div>
         </section>
         <section class="help-col">
           <div class="help-title">View Mode</div>
@@ -49,12 +50,17 @@ export function openHelpOverlay({ onClose, modeManager }) {
           <div class="help-k">G</div><div class="help-d">Move to last message part</div>
           <div class="help-k">o / Shift+O</div><div class="help-d">Jump to context boundary</div>
           <div class="help-k">r</div><div class="help-d">Toggle Reading Mode</div>
+          <div class="help-k">c / c1-9</div><div class="help-d">Copy code block(s)</div>
+          <div class="help-k">y / y1-9</div><div class="help-d">Copy equation(s)</div>
+          <div class="help-k">Y</div><div class="help-d">Copy entire message</div>
+          <div class="help-k">v / v1-9</div><div class="help-d">View code in overlay</div>
+          <div class="help-k">m / m1-9</div><div class="help-d">View equation in overlay</div>
           <div class="help-k">1 / 2 / 3</div><div class="help-d">Set star rating of the message</div>
           <div class="help-k">Space</div><div class="help-d">Clear star rating</div>
           <div class="help-k">a</div><div class="help-d">Toggle color code</div>
           <div class="help-k">e</div><div class="help-d">Edit & resend (error row)</div>
           <div class="help-k">d</div><div class="help-d">Delete (error row)</div>
-          <div class="help-k">Ctrl+T</div><div class="help-d">Change topic of active message</div>
+          <div class="help-k">Ctrl+T</div><div class="help-d">Topic picker (full tree)</div>
         </section>
         <section class="help-col">
           <div class="help-title">Command Mode</div>
@@ -87,6 +93,9 @@ export function openHelpOverlay({ onClose, modeManager }) {
     },
     preferredFocus: () => panel.querySelector('button[data-action="close"]'),
   })
+  
+  // Ensure scroll position starts at top (important shortcuts first)
+  panel.querySelector('.help-body').scrollTop = 0
   backdrop.addEventListener('click', (e) => {
     if (e.target === backdrop) close()
   })
