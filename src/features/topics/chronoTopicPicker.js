@@ -27,11 +27,11 @@ export function createChronoTopicPicker({
 
   const title = document.createElement('div')
   title.textContent = 'Recent Topics'
-  title.style.cssText = 'font-size:16px;font-weight:500;margin-bottom:12px;color:var(--text);'
+  title.style.cssText = 'font-size:13px;font-weight:400;margin-bottom:12px;color:#888;'
 
   const listContainer = document.createElement('div')
   listContainer.className = 'chrono-topic-list-container'
-  listContainer.style.cssText = 'flex:1;overflow-y:auto;min-height:200px;'
+  listContainer.style.cssText = 'flex:1;overflow-y:auto;max-height:200px;' // ~6 items (1 current + 5 previous)
   listContainer.setAttribute('role', 'listbox')
   listContainer.setAttribute('tabindex', '0')
 
@@ -52,7 +52,7 @@ export function createChronoTopicPicker({
     item.setAttribute('data-topic-id', topicId)
     item.setAttribute('data-index', index)
     item.style.cssText =
-      'padding:8px 12px;border-radius:4px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;'
+      'padding:6px 12px;border-radius:4px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;'
 
     const path = store.getTopicPath(topicId)
     if (path[0] === 'Root') path.shift()
@@ -86,7 +86,7 @@ export function createChronoTopicPicker({
     items.forEach((item, i) => {
       if (i === index) {
         item.style.background = '#1e3a5a'
-        item.style.outline = '2px solid var(--focus-ring)'
+        item.style.outline = 'none' // Removed outline/border
         item.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
       } else {
         item.style.background = 'transparent'

@@ -1,12 +1,26 @@
 # History Scroll & Alignment Refactoring
 
-**Date**: October 6, 2025  
-**Status**: Analysis & Implementation Plan  
+**Date**: October 6-10, 2025  
+**Status**: ✅ COMPLETE (Implemented October 10, 2025)  
 **Context**: Post-migration from part-based to message-based navigation
 
 ---
 
-## Problem Statement
+## Completion Summary
+
+**Problem Solved:** Eliminated async measurement timing issues by adding dedicated `scrollToBottom()` function that doesn't depend on element measurements.
+
+**Implementation:**
+- Added `scrollToBottom()` - calculates max scroll position from container dimensions only
+- Added `expectScrollToBottom()` - defers scroll until after KaTeX/layout settles  
+- Deployed in 12 locations: bootstrap, G key, topic switch, new messages, filter application
+- Original `alignTo()` preserved for top/center alignment scenarios (g, u/d, o keys)
+
+**Result:** Reliable bottom-scrolling regardless of async content rendering. All navigation patterns preserved (j/k, u/d, g/G, o).
+
+---
+
+## Problem Statement (Original Analysis)
 
 After migrating from part-based to message-based navigation and eliminating partitioning, we discovered a critical issue: **bottom-aligning the last message with embedded content (KaTeX equations) fails due to measurement timing**.
 
@@ -66,7 +80,7 @@ stepScroll(deltaPx)
 8. **Re-ask** - focus shifts to last message
 9. **D key special case** - when the focused message is the last message and it's less than a screen height
 10. **Settings change** - when user changes settings and closes settings overlay - triggers re-rendering/re-positioning
-11. **Refresh** - user-triggered re-rendering (Ctrl-r) from any mode - if the current active survives - no scrolling, if it doesn't - scroll to the bottom.
+11. **Refresh** - user-triggered re-rendering (Ctrl-r) from any mode - if the current active survives - no scrolling, if it doesn't - scroll to the bottom. - deferred (unclear if it's really necessary)
 
 **Scenarios requiring top/center alignment:**
 1. **g key** - First message, align to top

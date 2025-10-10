@@ -86,8 +86,8 @@ export function createInputKeyHandler({
 
   return function inputHandler(e) {
     if (window.modalIsActive && window.modalIsActive()) return false
-    // Topic history picker (Ctrl+P/N opens chrono picker)
-    if (e.ctrlKey && (e.key === 'p' || e.key === 'P' || e.key === 'n' || e.key === 'N')) {
+    // Topic history picker (Ctrl+P opens chrono picker)
+    if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
       e.preventDefault()
       openChronoTopicPicker &&
         openChronoTopicPicker({

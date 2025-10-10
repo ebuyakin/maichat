@@ -329,6 +329,38 @@ export function createViewKeyHandler({
       return true
     }
 
+    // Copy entire message: Y (Shift+y)
+    if (e.key === 'Y') {
+      const act = activeParts.active()
+      if (!act) return false
+
+      const pair = store.pairs.get(act.pairId)
+      if (!pair) return false
+
+      // Copy raw text from data model (not DOM-rendered text)
+      const text = act.role === 'user' ? pair.userText : pair.assistantText
+      
+      try {
+        navigator.clipboard.writeText(text).then(() => {
+          // Show toast notification
+          const toast = document.createElement('div')
+          toast.textContent = 'Message copied'
+          toast.style.cssText = `
+            position: fixed; bottom: 20px; right: 20px;
+            background: #5fa8ff; color: white; padding: 12px 20px;
+            border-radius: 4px; font-size: 13px; z-index: 10000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          `
+          document.body.appendChild(toast)
+          setTimeout(() => document.body.removeChild(toast), 2000)
+        })
+        return true
+      } catch (err) {
+        console.error('Copy failed:', err)
+        return false
+      }
+    }
+
     // Code overlay trigger logic (smart):
     if (e.key === 'v') {
       const act = activeParts.active()

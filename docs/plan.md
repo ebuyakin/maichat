@@ -65,7 +65,7 @@ M23. History export in different formats [x]
 
 M24. Multiple providers (+Claude+Gemini) [~]
 
-M25. Message formatting (markdown parsing, LaTeX parsing, code snippets) [ ]
+M25. Message formatting (markdown parsing, LaTeX parsing, code snippets) [x]
     This needs a separate discussion, what is possible and how difficult it is to implement. I suspect this is the biggest task as the ergonomic presentation of the content is one of the pillars of the app, so we need to make it really well and make sure all content (e.g. equations) is presented beautifully and reliably. Again, first task is to evaluate how this will be done architecturally and how will it affect other components of the app.
 
 M26. Large history virtualization [ ]

@@ -131,6 +131,7 @@ export function createInteraction({
   const copyUtils = setupCopyShortcuts(activeParts)
   window.copyCodeBlock = copyUtils.copyCode
   window.copyEquation = copyUtils.copyEquation
+  window.copyMessage = copyUtils.copyMessage
 
   // VIEW handler extracted
   const getReadingMode = () => readingMode
