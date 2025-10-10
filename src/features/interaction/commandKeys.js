@@ -277,18 +277,31 @@ export function createCommandKeyHandler({
           registry
             .run(cmd)
             .then(() => {
+              // Handle different command types
+              if (cmd.name === 'export') {
+                // Export: no changes, file already downloaded
+                commandErrEl.textContent = ''
+                commandInput.value = filterStr
+                pushCommandHistory(`${filterStr}`)
+                setFilterActive(!!filterStr)
+                modeManager.set('view')
+                return
+              }
+              
+              if (cmd.name === 'tchange') {
+                // Topic change: re-render to update badges, preserve scroll
+                historyRuntime.renderCurrentView({ preserveActive: true })
+                // No scroll - preserveActive maintains position
+                commandErrEl.textContent = ''
+                commandInput.value = filterStr
+                pushCommandHistory(`${filterStr}`)
+                setFilterActive(!!filterStr)
+                modeManager.set('view')
+                return
+              }
+              
+              // Other commands (future): default behavior
               historyRuntime.renderCurrentView({ preserveActive: true })
-              try {
-                const act = activeParts && activeParts.active && activeParts.active()
-                const id = act && act.id
-                if (id && scrollController && scrollController.alignTo) {
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      scrollController.alignTo(id, 'bottom', false)
-                    })
-                  })
-                }
-              } catch {}
               commandErrEl.textContent = ''
               commandInput.value = filterStr
               pushCommandHistory(`${filterStr}`)
@@ -431,16 +444,23 @@ export function createCommandKeyHandler({
           } catch {}
         }
         historyRuntime.applyActiveMessage()
-        try {
-          if (scrollController && scrollController.remeasure) scrollController.remeasure()
-        } catch {}
-        try {
+        
+        // Scroll logic based on whether active message survived filtering
+        if (preserved) {
+          // Active survived - align it to top for consistent positioning
           const act = activeParts.active()
-          const targetId = anchorTargetId || (act && act.id)
-          if (targetId && scrollController && scrollController.alignTo) {
-            scrollController.alignTo(targetId, 'bottom', false)
+          if (act && act.id && scrollController && scrollController.alignTo) {
+            setTimeout(() => {
+              scrollController.alignTo(act.id, 'top', false)
+            }, 100)
           }
-        } catch {}
+        } else if (anchorTargetId && scrollController && scrollController.scrollToBottom) {
+          // Active didn't survive - scroll to bottom to show last message
+          setTimeout(() => {
+            scrollController.scrollToBottom(false)
+          }, 100)
+        }
+        
         pushCommandHistory(q)
         setFilterActive(!!q)
         modeManager.set('view')
