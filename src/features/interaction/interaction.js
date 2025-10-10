@@ -843,22 +843,19 @@ export function createInteraction({
     if (!pair) return
     inputField.value = pair.userText || ''
     pendingMessageMeta.topicId = pair.topicId
-    pendingMessageMeta.model = pair.model
+    // Model intentionally NOT copied - preserve user's current model selection
     renderPendingMeta()
     // Delete the original pair after copying its content
     store.removePair(pair.id)
     historyRuntime.renderCurrentView({ preserveActive: true })
-    // Focus on last message and bottom align
+    // Focus on last message and scroll to bottom
     try {
       activeParts.last()
       historyRuntime.applyActiveMessage()
-      const act = activeParts.active()
-      const id = act && act.id
-      if (id && ctx.scrollController && ctx.scrollController.alignTo) {
-        if (ctx.scrollController.remeasure) ctx.scrollController.remeasure()
-        requestAnimationFrame(() => {
-          ctx.scrollController.alignTo(id, 'bottom', false)
-        })
+      if (ctx.scrollController && ctx.scrollController.scrollToBottom) {
+        setTimeout(() => {
+          ctx.scrollController.scrollToBottom(false)
+        }, 100)
       }
     } catch {}
     modeManager.set('input')
@@ -868,17 +865,14 @@ export function createInteraction({
   function deletePairWithFocus(pairId) {
     store.removePair(pairId)
     historyRuntime.renderCurrentView({ preserveActive: true })
-    // Always focus on last message and bottom align after deletion
+    // Always focus on last message and scroll to bottom after deletion
     try {
       activeParts.last()
       historyRuntime.applyActiveMessage()
-      const act = activeParts.active()
-      const id = act && act.id
-      if (id && ctx.scrollController && ctx.scrollController.alignTo) {
-        if (ctx.scrollController.remeasure) ctx.scrollController.remeasure()
-        requestAnimationFrame(() => {
-          ctx.scrollController.alignTo(id, 'bottom', false)
-        })
+      if (ctx.scrollController && ctx.scrollController.scrollToBottom) {
+        setTimeout(() => {
+          ctx.scrollController.scrollToBottom(false)
+        }, 100)
       }
     } catch {
       // If no parts remain (empty history), no focus needed

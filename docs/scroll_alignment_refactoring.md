@@ -51,11 +51,22 @@ stepScroll(deltaPx)
 3. **New message sent** - anchor the sent user request to the bottom
 4. **New message arrival** - After assistant response (`interaction.js`)
 5. **Topic switch with filter `t`** - Focus last in filtered set (`interaction.js`)
-6. **Filter application** - Command mode (`commandKeys.js`) - ONLY when the active message does not survive the filtering (if it survives, no scroll or activation change occurs)
+6. **Filter application** - Command mode (`commandKeys.js`)
+   
+   **6a. Pure filter (no colon commands):**
+   - **Active message survives filtering** → Preserve active message AND scroll position (no scroll)
+   - **Active message doesn't survive** → Focus last message, scroll to bottom
+   
+   **6b. Colon commands with filter:**
+   - **`:export`** → No data changes, no re-render, no scroll (just download file)
+   - **`:tchange` (topic change)** → Re-render with `preserveActive: true` to update topic badges, preserve scroll position, no re-filtering
+   - Future commands → Decide behavior per command
+
 7. **Delete message** - Focus shifts to next/last 
 8. **Re-ask** - focus shifts to last message
 9. **D key special case** - when the focused message is the last message and it's less than a screen height
 10. **Settings change** - when user changes settings and closes settings overlay - triggers re-rendering/re-positioning
+11. **Refresh** - user-triggered re-rendering (Ctrl-r) from any mode - if the current active survives - no scrolling, if it doesn't - scroll to the bottom.
 
 **Scenarios requiring top/center alignment:**
 1. **g key** - First message, align to top
@@ -218,9 +229,19 @@ The new version is **clearer** - we're scrolling to bottom, not aligning somethi
    - Testing: Use re-ask feature
 
 9. **commandKeys.js** - filter application
-   - Scenario: Apply filter in command mode (active doesn't survive)
    - Priority: MEDIUM
-   - Testing: Apply various filters
+   - Testing: Apply various filters and colon commands
+   
+   **9a. Pure filter (no colon commands):**
+   - Scenario: Apply filter like `t` or `s2` or `t'Study>Computer science'`
+   - Active survives → Preserve scroll position (no scroll)
+   - Active doesn't survive → Scroll to bottom
+   - Testing: Apply filters with/without active surviving
+   
+   **9b. Colon commands with filter:**
+   - **`:export`** → No re-render, no scroll (just download)
+   - **`:tchange`** → Re-render with preserveActive (update badges, preserve position)
+   - Testing: Export messages, change topics, verify no unwanted scrolling
 
 10. **settings overlay** - settings change handler
     - Scenario: Change settings, close overlay
