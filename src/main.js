@@ -197,6 +197,7 @@ const __initialSettings = getSettings()
 let __prevSettings = { ...__initialSettings }
 let __lastPF = __prevSettings.partFraction
 let __lastPadding = __prevSettings.partPadding
+
 subscribeSettings((s) => {
   const action = decideRenderAction(__prevSettings, s)
   // Maintain previous snapshot for next diff
@@ -214,18 +215,14 @@ subscribeSettings((s) => {
     layoutHistoryPane()
     // Rebuild while preserving active
     renderCurrentView({ preserveActive: true })
-    // After rebuild completes and parts are measured, bottom-align the focused part once
+    // Align active message to top (like filter survival - predictable position after layout change)
     try {
       const act =
         __runtime.activeParts && __runtime.activeParts.active && __runtime.activeParts.active()
-      const id = act && act.id
-      if (id) {
-        // Wait for remeasure in renderHistory's rAF, then align
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            __runtime.scrollController && __runtime.scrollController.alignTo(id, 'bottom', false)
-          })
-        })
+      if (act && act.id && __runtime.scrollController && __runtime.scrollController.alignTo) {
+        setTimeout(() => {
+          __runtime.scrollController.alignTo(act.id, 'top', false)
+        }, 100)
       }
     } catch {}
   } else if (action === 'restyle') {

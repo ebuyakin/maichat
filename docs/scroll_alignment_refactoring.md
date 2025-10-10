@@ -54,7 +54,7 @@ stepScroll(deltaPx)
 6. **Filter application** - Command mode (`commandKeys.js`)
    
    **6a. Pure filter (no colon commands):**
-   - **Active message survives filtering** → Preserve active message AND scroll position (no scroll)
+   - **Active message survives filtering** → Preserve active message AND scroll the active message to top
    - **Active message doesn't survive** → Focus last message, scroll to bottom
    
    **6b. Colon commands with filter:**
@@ -234,8 +234,8 @@ The new version is **clearer** - we're scrolling to bottom, not aligning somethi
    
    **9a. Pure filter (no colon commands):**
    - Scenario: Apply filter like `t` or `s2` or `t'Study>Computer science'`
-   - Active survives → Preserve scroll position (no scroll)
-   - Active doesn't survive → Scroll to bottom
+   - Active survives → scroll active to top.
+   - Active doesn't survive → Scroll to bottom (make last message active)
    - Testing: Apply filters with/without active surviving
    
    **9b. Colon commands with filter:**
