@@ -362,9 +362,257 @@ function generateControlsForTab(tabName) {
 
 ---
 
-## Implementation Plan
+## Implementation Plan - FINALIZED
 
-### Phase 1: Audit & Document (COMPLETED)
+### Overview
+We'll implement schema-first, then clean up legacy. This approach:
+- Establishes single source of truth immediately
+- Tests schema with all current settings (including legacy)
+- Removes legacy in one clean sweep after schema proven
+- Minimizes risk - each phase independently testable
+
+---
+
+### Phase 1: Audit & Document (COMPLETED ✅)
+- ✅ Identified all discrepancies
+- ✅ Documented current architecture
+- ✅ Created this refactoring plan
+- ✅ Committed to git
+
+---
+
+### Phase 2: Implement Schema (Foundation)
+**Goal:** Create single source of truth for all settings
+
+**Tasks:**
+1. Create `core/settings/schema.js` with complete schema
+2. Define all **current** settings (including legacy for now)
+3. Include metadata: defaultValue, renderAction, control, ui
+4. Auto-generate: DEFAULTS, REBUILD_KEYS, RESTYLE_KEYS, IGNORE_KEYS
+5. Update `core/settings/index.js` to use schema-generated DEFAULTS
+
+**Schema structure:**
+```javascript
+export const SETTINGS_SCHEMA = {
+  messageGapPx: {
+    defaultValue: 10,
+    renderAction: 'restyle',  // 'rebuild' | 'restyle' | 'none'
+    control: { type: 'number', min: 0, max: 60, step: 1 },
+    ui: { label: 'Message Gap (px)', tab: 'spacing' },
+  },
+  // ... all settings (23 total after we remove legacy)
+}
+
+// Auto-generated:
+export const DEFAULTS = Object.fromEntries(
+  Object.entries(SETTINGS_SCHEMA).map(([k, v]) => [k, v.defaultValue])
+)
+
+export const REBUILD_KEYS = new Set(
+  Object.entries(SETTINGS_SCHEMA)
+    .filter(([_, v]) => v.renderAction === 'rebuild')
+    .map(([k]) => k)
+)
+// ... RESTYLE_KEYS, IGNORE_KEYS
+```
+
+**Settings to include (23 active):**
+- Spacing (7): messageGapPx, assistantGapPx, messagePaddingPx, metaGapPx, gutterLPx, gutterRPx, fadeZonePx
+- Scroll Animation Base (5): scrollAnimMs, scrollAnimEasing, scrollAnimDynamic, scrollAnimMinMs, scrollAnimMaxMs
+- Navigation Animation (3): animateSmallSteps, animateBigSteps, animateMessageJumps
+- Context (5): userRequestAllowance, assistantResponseAllowance, maxTrimAttempts, charsPerToken, assumedUserTokens
+- Other (3): topicOrderMode, useInlineFormatting, charsPerToken
+
+**Tab organization (3 tabs, not 4):**
+- `'spacing'` - All spacing + useInlineFormatting (8 settings)
+- `'scroll'` - All scroll + navigation animation (8 settings)
+- `'context'` - All context assembly (5 settings)
+
+**Testing:**
+- Verify DEFAULTS object matches current values
+- Verify app loads without errors
+- Verify settings load from localStorage correctly
+- Verify all existing behavior unchanged
+
+**Time:** 2-3 hours
+
+---
+
+### Phase 3: Update renderPolicy to Use Schema
+**Goal:** Eliminate manual key lists in renderPolicy.js
+
+**Tasks:**
+1. Import schema-generated sets from `schema.js`
+2. Remove hardcoded REBUILD_KEYS, RESTYLE_KEYS, IGNORE_KEYS
+3. Test render behavior unchanged
+
+**Before:**
+```javascript
+// renderPolicy.js
+const REBUILD_KEYS = new Set(['partFraction', 'partPadding', ...])
+const RESTYLE_KEYS = new Set(['gapOuterPx', 'fadeMode', ...])
+```
+
+**After:**
+```javascript
+// renderPolicy.js
+import { REBUILD_KEYS, RESTYLE_KEYS, IGNORE_KEYS } from '../core/settings/schema.js'
+// Use imported sets directly
+```
+
+**Testing:**
+- Change spacing setting → verify 'restyle' action
+- Change useInlineFormatting → verify 'rebuild' action
+- Change context setting → verify 'none' action
+- All settings changes take effect immediately
+
+**Time:** 30 minutes
+
+---
+
+### Phase 4: Clean Up Legacy Settings
+**Goal:** Remove unused settings from schema and localStorage
+
+**Tasks:**
+1. Remove legacy settings from SETTINGS_SCHEMA:
+   - fadeMode, fadeHiddenOpacity, fadeInMs, fadeOutMs, fadeTransitionMs (5)
+   - partFraction, partPadding (2)
+   - showTrimNotice (1)
+   - Total: 8 settings removed → 23 remain
+
+2. Add migration logic in `loadSettings()`:
+```javascript
+// core/settings/index.js - in loadSettings()
+const LEGACY_KEYS = [
+  'fadeMode', 'fadeHiddenOpacity', 'fadeInMs', 'fadeOutMs', 'fadeTransitionMs',
+  'partFraction', 'partPadding', 'showTrimNotice',
+]
+
+if (parsed) {
+  // Remove legacy keys if present (cleaned on every load after update)
+  LEGACY_KEYS.forEach(key => delete parsed[key])
+}
+```
+
+3. Remove legacy controls from settingsOverlay.js form
+4. Update renderPolicy.js (remove legacy key references if any remain)
+
+**Testing:**
+- Verify app loads with old localStorage (legacy keys present)
+- Verify legacy keys removed from localStorage after first load
+- Verify new localStorage only has 23 active settings
+- Verify settings overlay doesn't show removed settings
+- All existing behavior unchanged
+
+**Time:** 45 minutes
+
+---
+
+### Phase 5: Hybrid Form Generation
+**Goal:** Auto-generate form controls while preserving all styling
+
+**Tasks:**
+1. Create `generateControlsForTab(tabName)` function
+2. Update settingsOverlay.js to use generation for controls only
+3. Keep manual: structure, CSS, tabs, keyboard shortcuts, buttons
+
+**Implementation:**
+```javascript
+// settingsOverlay.js
+import { SETTINGS_SCHEMA } from '../../core/settings/schema.js'
+
+function generateControlsForTab(tabName) {
+  return Object.entries(SETTINGS_SCHEMA)
+    .filter(([_, config]) => config.ui.tab === tabName)
+    .map(([key, config]) => {
+      const value = existing[key] ?? config.defaultValue
+      
+      if (config.control.type === 'number') {
+        return `<label>${config.ui.label}
+          <input name="${key}" type="number" 
+                 step="${config.control.step}" 
+                 min="${config.control.min}" 
+                 max="${config.control.max}" 
+                 value="${value}" />
+        </label>`
+      }
+      
+      if (config.control.type === 'checkbox') {
+        return `<label>
+          <input type="checkbox" name="${key}" ${value ? 'checked' : ''} />
+          ${config.ui.label}
+        </label>`
+      }
+      
+      if (config.control.type === 'select') {
+        const options = config.control.options
+          .map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`)
+          .join('')
+        return `<label>${config.ui.label}
+          <select name="${key}">${options}</select>
+        </label>`
+      }
+    })
+    .join('\n')
+}
+
+// In form HTML:
+<fieldset class="spacing-fieldset">
+  <legend>Spacing</legend>
+  ${generateControlsForTab('spacing')}
+</fieldset>
+```
+
+**What stays manual:**
+- Overall panel structure
+- All CSS classes and styling
+- Tab buttons and navigation
+- Keyboard shortcuts (j/k, +/-, etc.)
+- Form validation logic
+- Button handlers
+
+**Testing:**
+- All controls appear correctly
+- All styling identical to before
+- All keyboard shortcuts work
+- All tabs work
+- All settings save/load correctly
+- No visual differences
+
+**Time:** 2-3 hours
+
+---
+
+### Phase 6: Final Cleanup & Documentation
+**Goal:** Polish and document
+
+**Tasks:**
+1. Remove any remaining hardcoded setting references
+2. Add JSDoc comments to schema
+3. Update ARCHITECTURE.md if needed
+4. Final comprehensive testing
+5. Commit with detailed message
+
+**Testing:**
+- Full regression test of all settings
+- Test with fresh localStorage (new user)
+- Test with existing localStorage (migration)
+- Test all navigation and interactions
+
+**Time:** 1 hour
+
+---
+
+## Total Time Estimate
+- Phase 2: 2-3 hours
+- Phase 3: 30 minutes  
+- Phase 4: 45 minutes
+- Phase 5: 2-3 hours
+- Phase 6: 1 hour
+
+**Total: 7-9 hours** spread across multiple sessions
+
+---
 - ✅ Identify all discrepancies
 - ✅ Document current architecture
 - ✅ Create this refactoring plan

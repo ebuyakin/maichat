@@ -32,8 +32,14 @@ See also
 - Files: `pipeline.js` (attempts + trimming loop); provider registry/adapters under `infrastructure/provider`.
 
 5. Configuration management
-- Where: `src/features/config/`, `src/infrastructure/api/`
+- Where: `src/features/config/`, `src/infrastructure/api/`, `src/core/settings/`
 - Files: `settingsOverlay.js`, `modelSelector.js`, `modelEditor.js`, `apiKeysOverlay.js`, `helpOverlay.js`; keys boundary: `infrastructure/api/keys.js`.
+- Settings architecture (refactored 2025-10-10): Schema-driven with single source of truth
+  - `src/core/settings/schema.js` — complete settings definition with metadata (defaultValue, renderAction, control type, UI labels)
+  - `src/core/settings/index.js` — load/save/subscribe API, localStorage persistence, legacy key migration
+  - `src/runtime/renderPolicy.js` — auto-generated render action classification from schema (rebuild/restyle/none)
+  - `src/features/config/settingsOverlay.js` — auto-generated form controls from schema (hybrid approach: structure manual, controls generated)
+  - See `docs/settings_refactoring.md` for complete refactoring details
 
 Cross-cutting enablers
 - Runtime: `src/runtime/runtimeSetup.js`, `src/runtime/bootstrap.js`
@@ -57,7 +63,7 @@ Cross-cutting enablers
   - `src/core/models/` — factories: MessagePair, Topic.
   - `src/core/store/` — memory store (mutations/events), derived indexes, IndexedDB adapter (impl under `adapters/indexedDb.js`, public export/factory at `indexedDbAdapter.js`).
   - `src/core/persistence/contentPersistence.js` — debounced save/load orchestration.
-  - `src/core/settings/` — settings API and migrations.
+  - `src/core/settings/` — schema-driven settings system (schema.js = single source of truth, index.js = API, see settings_refactoring.md).
   - `src/core/context/` — token estimator and boundary manager (for predicted inclusion).
 
 - Features (user-facing capabilities)

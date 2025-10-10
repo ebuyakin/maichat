@@ -1,44 +1,9 @@
 // Centralized policy for deciding whether a settings change requires
 // a history rebuild, a restyle-only update, or no action.
 // This is intentionally a pure function to allow easy unit testing.
+// REFACTORED (2025-10-10): Keys now imported from schema.js (single source of truth)
 
-const REBUILD_KEYS = new Set([
-  // Composition/layout impacting keys
-  'partFraction',
-  'partPadding',
-  'userRequestAllowance',
-  'charsPerToken',
-  // Formatting mode affects rendering
-  'useInlineFormatting',
-])
-
-const RESTYLE_KEYS = new Set([
-  // Pure spacing/fade/animation UI knobs
-  'gapOuterPx',
-  'gapMetaPx',
-  'gapIntraPx',
-  'gapBetweenPx',
-  'fadeMode',
-  'fadeHiddenOpacity',
-  'fadeInMs',
-  'fadeOutMs',
-  'fadeTransitionMs',
-  'scrollAnimMs',
-  'scrollAnimEasing',
-  'scrollAnimDynamic',
-  'scrollAnimMinMs',
-  'scrollAnimMaxMs',
-  'showTrimNotice',
-])
-
-// Keys that are explicitly ignored with respect to view updates
-const IGNORE_KEYS = new Set([
-  // Overlay-only preferences that should not trigger re-render
-  'topicOrderMode',
-  // Misc not impacting the view
-  'assumedUserTokens',
-  'maxTrimAttempts',
-])
+import { REBUILD_KEYS, RESTYLE_KEYS, IGNORE_KEYS } from '../core/settings/schema.js'
 
 export function diffChangedKeys(prev, next) {
   const changed = []

@@ -2,66 +2,58 @@
 // Removed legacy anchorMode / edgeAnchoringMode (stateless scroll now always explicit). Fallback is 'bottom'.
 // Updated spacing defaults (2025-09-11): gapOuterPx 15 (was 6), gapMetaPx 4 (was 6), gapIntraPx 4 (was 6)
 // Removed unused topZoneLines / bottomZoneLines (2025-09-11) — never implemented in scrollControllerV3; legacy keys are ignored if present in stored JSON.
-const DEFAULTS = {
-  partFraction: 0.2,
-  // New geometry defaults (user-facing)
-  fadeZonePx: 20,
-  messageGapPx: 10,
-  assistantGapPx: 5,
-  messagePaddingPx: 10,
-  metaGapPx: 5,
-  gutterLPx: 10,
-  gutterRPx: 10,
-  // Visual/fade/scroll/context
-  fadeMode: 'binary',
-  fadeHiddenOpacity: 1,
-  fadeInMs: 120,
-  fadeOutMs: 120,
-  fadeTransitionMs: 120,
-  scrollAnimMs: 240,
-  scrollAnimEasing: 'easeOutQuad',
-  scrollAnimDynamic: true,
-  scrollAnimMinMs: 80,
-  scrollAnimMaxMs: 600,
-  // Scroll animation preferences
-  animateSmallSteps: false, // j/k navigation
-  animateBigSteps: false, // J/K navigation
-  animateMessageJumps: true, // u/d navigation
-  assumedUserTokens: 256,
-  userRequestAllowance: 600,
-  assistantResponseAllowance: 800,
-  maxTrimAttempts: 10,
-  charsPerToken: 4,
-  showTrimNotice: false,
-  topicOrderMode: 'manual',
-  // Formatting
-  useInlineFormatting: false, // Feature flag for markdown rendering
-}
+// REFACTORED (2025-10-10): Settings now defined in schema.js (single source of truth)
+
+import { DEFAULTS } from './schema.js'
+
 const LS_KEY = 'maichat.settings.v1'
 let current = null
 const listeners = new Set()
+
+// Legacy keys to remove from localStorage (cleaned on every load)
+const LEGACY_KEYS = [
+  // Fade system (replaced by CSS gradients)
+  'fadeMode',
+  'fadeHiddenOpacity',
+  'fadeInMs',
+  'fadeOutMs',
+  'fadeTransitionMs',
+  // Partition system (replaced by message-based rendering)
+  'partFraction',
+  'partPadding',
+  // Old spacing keys (replaced by new spacing system)
+  'gapOuterPx',
+  'gapMetaPx',
+  'gapIntraPx',
+  'gapBetweenPx',
+  // Deprecated zone keys
+  'topZoneLines',
+  'bottomZoneLines',
+  // Unused settings
+  'showTrimNotice',
+]
+
+/**
+ * Load settings from localStorage with defaults fallback
+ * Automatically cleans legacy keys on every load
+ * @returns {Object} Complete settings object
+ */
 export function loadSettings() {
   if (current) return current
   try {
     const raw = localStorage.getItem(LS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      // Drop legacy spacing keys if present (no backward compatibility)
-      delete parsed.partPadding
-      delete parsed.gapOuterPx
-      delete parsed.gapMetaPx
-      delete parsed.gapIntraPx
-      delete parsed.gapBetweenPx
-      // Legacy fade transition single value → split
+      
+      // Remove all legacy keys if present
+      LEGACY_KEYS.forEach((key) => delete parsed[key])
+      
+      // Legacy fade transition single value → split (for backwards compatibility)
       if (parsed && parsed.fadeTransitionMs != null) {
         if (parsed.fadeInMs == null) parsed.fadeInMs = parsed.fadeTransitionMs
         if (parsed.fadeOutMs == null) parsed.fadeOutMs = parsed.fadeTransitionMs
       }
-      // Remove deprecated zone line keys if present
-      if (parsed) {
-        delete parsed.topZoneLines
-        delete parsed.bottomZoneLines
-      }
+      
       current = { ...DEFAULTS, ...parsed }
     } else {
       current = { ...DEFAULTS }
@@ -71,6 +63,12 @@ export function loadSettings() {
   }
   return current
 }
+
+/**
+ * Save settings patch to localStorage and notify all listeners
+ * @param {Object} patch - Settings to update (merged with existing)
+ * @returns {Object} Updated complete settings object
+ */
 export function saveSettings(patch) {
   current = { ...loadSettings(), ...patch }
   try {
@@ -79,17 +77,37 @@ export function saveSettings(patch) {
   for (const fn of listeners) fn(current)
   return current
 }
+
+/**
+ * Get current settings (loads if not already loaded)
+ * @returns {Object} Complete settings object
+ */
 export function getSettings() {
   return loadSettings()
 }
+
+/**
+ * Subscribe to settings changes
+ * @param {Function} fn - Callback function(settings)
+ * @returns {Function} Unsubscribe function
+ */
 export function subscribeSettings(fn) {
   listeners.add(fn)
   return () => listeners.delete(fn)
 }
+
+/**
+ * Reset all settings to defaults
+ */
 export function resetSettings() {
   current = { ...DEFAULTS }
   saveSettings({})
 }
+
+/**
+ * Get default settings (from schema)
+ * @returns {Object} Default settings object
+ */
 export function getDefaultSettings() {
   return { ...DEFAULTS }
 }

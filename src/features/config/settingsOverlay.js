@@ -1,6 +1,58 @@
 // Restored original (moved from src/ui/settingsOverlay.js) - path adjusted only.
+// REFACTORED (2025-10-10): Form controls now auto-generated from schema (Phase 5)
 import { getSettings, saveSettings, getDefaultSettings } from '../../core/settings/index.js'
+import { SETTINGS_SCHEMA } from '../../core/settings/schema.js'
 import { openModal } from '../../shared/openModal.js'
+
+/**
+ * Generate form controls for a specific tab from schema
+ * @param {string} tabName - The tab name ('spacing', 'scroll', 'context')
+ * @param {object} existing - Current settings values
+ * @returns {string} HTML string for all controls in the tab
+ */
+function generateControlsForTab(tabName, existing) {
+  return Object.entries(SETTINGS_SCHEMA)
+    .filter(([_, config]) => config.ui.tab === tabName)
+    .map(([key, config]) => {
+      const value = existing[key] ?? config.defaultValue
+      
+      if (config.control.type === 'number') {
+        return `<label>${config.ui.label}
+                <input name="${key}" type="number" 
+                       step="${config.control.step}" 
+                       min="${config.control.min}" 
+                       max="${config.control.max}" 
+                       value="${value}" />
+              </label>`
+      }
+      
+      if (config.control.type === 'checkbox') {
+        return `<label>
+                <input type="checkbox" name="${key}" ${value ? 'checked' : ''} /> ${config.ui.label}
+              </label>`
+      }
+      
+      if (config.control.type === 'select') {
+        const options = config.control.options
+          .map(opt => {
+            // Handle boolean options (convert to string for comparison)
+            const optValue = typeof opt === 'boolean' ? String(opt) : opt
+            const currentValue = typeof value === 'boolean' ? String(value) : value
+            const selected = optValue === currentValue ? 'selected' : ''
+            // Display value: for booleans show "on"/"off", otherwise show value
+            const displayValue = typeof opt === 'boolean' ? (opt ? 'on' : 'off') : opt
+            return `<option value="${optValue}" ${selected}>${displayValue}</option>`
+          })
+          .join('')
+        return `<label>${config.ui.label}
+                <select name="${key}">${options}</select>
+              </label>`
+      }
+      
+      return '' // Unknown control type
+    })
+    .join('\n              ')
+}
 
 export function openSettingsOverlay({ onClose }) {
   if (document.getElementById('settingsOverlayRoot')) return
@@ -12,116 +64,20 @@ export function openSettingsOverlay({ onClose }) {
     <div class="overlay-panel settings-panel compact">
       <header>Settings</header>
       <div class="settings-tabs" role="tablist">
-  ${['spacing', 'visibility', 'scroll', 'context'].map((t, i) => `<button type="button" class="tab-btn${i === 0 ? ' active' : ''}" data-tab="${t}" role="tab" aria-selected="${i === 0}" aria-controls="tab-${t}">${t}</button>`).join('')}
+  ${['spacing', 'scroll', 'context'].map((t, i) => `<button type="button" class="tab-btn${i === 0 ? ' active' : ''}" data-tab="${t}" role="tab" aria-selected="${i === 0}" aria-controls="tab-${t}">${t}</button>`).join('')}
       </div>
       <div class="settings-body">
         <form id="settingsForm" autocomplete="off">
           <div class="tab-section" data-tab-section="spacing" id="tab-spacing">
-            <fieldset class="spacing-fieldset">
-              <legend>Spacing</legend>
-              <label>Fade Zone (px)
-                <input name="fadeZonePx" type="number" step="1" min="0" max="120" value="${existing.fadeZonePx != null ? existing.fadeZonePx : 20}" />
-              </label>
-              <label>Message Gap (px)
-                <input name="messageGapPx" type="number" step="1" min="0" max="60" value="${existing.messageGapPx != null ? existing.messageGapPx : 10}" />
-              </label>
-              <label>Assistant Gap (px)
-                <input name="assistantGapPx" type="number" step="1" min="0" max="60" value="${existing.assistantGapPx != null ? existing.assistantGapPx : 5}" />
-              </label>
-              <label>Message Padding (px)
-                <input name="messagePaddingPx" type="number" step="1" min="0" max="48" value="${existing.messagePaddingPx != null ? existing.messagePaddingPx : 10}" />
-              </label>
-              <label>Meta Gap (px)
-                <input name="metaGapPx" type="number" step="1" min="0" max="48" value="${existing.metaGapPx != null ? existing.metaGapPx : 5}" />
-              </label>
-              <label>Gutter Left (px)
-                <input name="gutterLPx" type="number" step="1" min="0" max="60" value="${existing.gutterLPx != null ? existing.gutterLPx : 10}" />
-              </label>
-              <label>Gutter Right (px)
-                <input name="gutterRPx" type="number" step="1" min="0" max="60" value="${existing.gutterRPx != null ? existing.gutterRPx : 10}" />
-              </label>
-            </fieldset>
-            <div class="tab-hint" data-tab-hint="spacing">Shift+1..4 switch tabs • h/l or [ ] cycle • j/k move • +/- adjust • Ctrl+S - Save & Close • Esc - Cancel & Close</div>
-          </div>
-          <div class="tab-section" data-tab-section="visibility" id="tab-visibility" hidden>
-            <fieldset class="spacing-fieldset visibility-fieldset">
-              <legend>Visibility</legend>
-              <label>Fade Mode
-                <select name="fadeMode">
-                  ${['binary', 'gradient'].map((m) => `<option value="${m}" ${m === existing.fadeMode ? 'selected' : ''}>${m}</option>`).join('')}
-                </select>
-              </label>
-              <label>Hidden Opacity (binary)
-                <input name="fadeHiddenOpacity" type="number" min="0" max="1" step="0.05" value="${existing.fadeHiddenOpacity}" />
-              </label>
-              <label>Fade In (ms)
-                <input name="fadeInMs" type="number" min="0" max="2000" step="10" value="${existing.fadeInMs != null ? existing.fadeInMs : existing.fadeTransitionMs != null ? existing.fadeTransitionMs : 120}" />
-              </label>
-              <label>Fade Out (ms)
-                <input name="fadeOutMs" type="number" min="0" max="2000" step="10" value="${existing.fadeOutMs != null ? existing.fadeOutMs : existing.fadeTransitionMs != null ? existing.fadeTransitionMs : 120}" />
-              </label>
-              <label>
-                <input type="checkbox" name="useInlineFormatting" ${existing.useInlineFormatting ? 'checked' : ''} />
-                Inline Markdown Formatting (experimental)
-              </label>
-            </fieldset>
+            ${generateControlsForTab('spacing', existing)}
+            <div class="tab-hint" data-tab-hint="spacing">Shift+1..3 switch tabs • h/l or [ ] cycle • j/k move • +/- adjust • Ctrl+S - Save & Close • Esc - Cancel & Close</div>
           </div>
           <div class="tab-section" data-tab-section="scroll" id="tab-scroll" hidden>
-            <fieldset class="spacing-fieldset scroll-fieldset">
-              <legend>Scrolling</legend>
-              <label>Base Duration (ms)
-                <input name="scrollAnimMs" type="number" min="0" max="1200" step="20" value="${existing.scrollAnimMs}" />
-              </label>
-              <label>Dynamic Scaling
-                <select name="scrollAnimDynamic">
-                  ${[true, false].map((v) => `<option value="${v}" ${String(v) === String(existing.scrollAnimDynamic) ? 'selected' : ''}>${v ? 'on' : 'off'}</option>`).join('')}
-                </select>
-              </label>
-              <label>Min Duration (ms)
-                <input name="scrollAnimMinMs" type="number" min="0" max="1000" step="10" value="${existing.scrollAnimMinMs}" />
-              </label>
-              <label>Max Duration (ms)
-                <input name="scrollAnimMaxMs" type="number" min="0" max="2000" step="20" value="${existing.scrollAnimMaxMs}" />
-              </label>
-              <label>Easing
-                <select name="scrollAnimEasing">
-                  ${['linear', 'easeOutQuad', 'easeInOutCubic', 'easeOutExpo'].map((m) => `<option value="${m}" ${m === existing.scrollAnimEasing ? 'selected' : ''}>${m}</option>`).join('')}
-                </select>
-              </label>
-              <div style="border-top: 1px solid #333; margin: 16px 0 12px 0; padding-top: 12px;">
-                <div style="font-weight: 500; margin-bottom: 8px; color: var(--text);">Navigation Animation</div>
-                <label>
-                  <input type="checkbox" name="animateSmallSteps" ${existing.animateSmallSteps ? 'checked' : ''} />
-                  Animate j/k (small steps)
-                </label>
-                <label>
-                  <input type="checkbox" name="animateBigSteps" ${existing.animateBigSteps ? 'checked' : ''} />
-                  Animate J/K (big steps)
-                </label>
-                <label>
-                  <input type="checkbox" name="animateMessageJumps" ${existing.animateMessageJumps ? 'checked' : ''} />
-                  Animate u/d (message jumps)
-                </label>
-              </div>
-            </fieldset>
+            ${generateControlsForTab('scroll', existing)}
           </div>
           <div class="tab-section" data-tab-section="context" id="tab-context" hidden>
-            <fieldset class="spacing-fieldset context-fieldset">
-              <legend>Context Assembly</legend>
-              <label>User Request Allowance (URA)
-                <input name="userRequestAllowance" type="number" min="0" max="500000" step="10" value="${existing.userRequestAllowance != null ? existing.userRequestAllowance : 600}" />
-              </label>
-              <label>Assistant Response Allowance (ARA)
-                <input name="assistantResponseAllowance" type="number" min="0" max="500000" step="10" value="${existing.assistantResponseAllowance != null ? existing.assistantResponseAllowance : 800}" />
-              </label>
-              <label>Max Trim Attempts (NTA)
-                <input name="maxTrimAttempts" type="number" min="0" max="100" step="1" value="${existing.maxTrimAttempts != null ? existing.maxTrimAttempts : 10}" />
-              </label>
-              <label>Chars Per Token (CPT)
-                <input name="charsPerToken" type="number" min="1.5" max="8" step="0.1" value="${existing.charsPerToken != null ? existing.charsPerToken : 3.5}" />
-              </label>
-              <div style="font-size:11px;opacity:.7;line-height:1.3;margin-top:4px;">Prediction reserves URA for the *next* user message and ARA (provider-specific) for expected assistant output. Final trimming ensures history fits. ARA currently only influences future budget math phases.</div>
-            </fieldset>
+            ${generateControlsForTab('context', existing)}
+            <div class="context-hint">Prediction reserves URA for the *next* user message and ARA (provider-specific) for expected assistant output. Final trimming ensures history fits. ARA currently only influences future budget math phases.</div>
           </div>
           <div class="buttons">
             <button type="button" data-action="reset" title="Restore defaults in the form (no save)">Reset</button>
@@ -193,11 +149,6 @@ export function openSettingsOverlay({ onClose }) {
     const metaGapPx = clampRange(parseInt(fd.get('metaGapPx')), 0, 48)
     const gutterLPx = clampRange(parseInt(fd.get('gutterLPx')), 0, 60)
     const gutterRPx = clampRange(parseInt(fd.get('gutterRPx')), 0, 60)
-    // anchorMode / edgeAnchoringMode removed
-    const fadeMode = fd.get('fadeMode') || 'binary'
-    const fadeHiddenOpacity = clampFloat(parseFloat(fd.get('fadeHiddenOpacity')), 0, 1)
-    const fadeInMs = clampRange(parseInt(fd.get('fadeInMs')), 0, 5000)
-    const fadeOutMs = clampRange(parseInt(fd.get('fadeOutMs')), 0, 5000)
     const scrollAnimMs = clampRange(parseInt(fd.get('scrollAnimMs')), 0, 2000)
     const scrollAnimDynamic = fd.get('scrollAnimDynamic') === 'true'
     const scrollAnimMinMs = clampRange(parseInt(fd.get('scrollAnimMinMs')), 0, 1000)
@@ -214,6 +165,8 @@ export function openSettingsOverlay({ onClose }) {
     )
     const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')), 0, 1000)
     const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')), 1.0, 10.0)
+    const assumedUserTokens = clampRange(parseInt(fd.get('assumedUserTokens')), 0, 10000)
+    const topicOrderMode = fd.get('topicOrderMode') || 'manual'
     const useInlineFormatting = fd.get('useInlineFormatting') === 'on'
     return {
       fadeZonePx,
@@ -223,10 +176,6 @@ export function openSettingsOverlay({ onClose }) {
       metaGapPx,
       gutterLPx,
       gutterRPx,
-      fadeMode,
-      fadeHiddenOpacity,
-      fadeInMs,
-      fadeOutMs,
       scrollAnimMs,
       scrollAnimDynamic,
       scrollAnimMinMs,
@@ -239,6 +188,8 @@ export function openSettingsOverlay({ onClose }) {
       assistantResponseAllowance,
       maxTrimAttempts,
       charsPerToken,
+      assumedUserTokens,
+      topicOrderMode,
       useInlineFormatting,
     }
   }
@@ -275,12 +226,6 @@ export function openSettingsOverlay({ onClose }) {
     setNum('metaGapPx', s.metaGapPx)
     setNum('gutterLPx', s.gutterLPx)
     setNum('gutterRPx', s.gutterRPx)
-    // Visibility
-    const fm = form.querySelector('select[name="fadeMode"]')
-    if (fm) fm.value = s.fadeMode || 'binary'
-    setNum('fadeHiddenOpacity', s.fadeHiddenOpacity)
-    setNum('fadeInMs', s.fadeInMs ?? (s.fadeTransitionMs != null ? s.fadeTransitionMs : 120))
-    setNum('fadeOutMs', s.fadeOutMs ?? (s.fadeTransitionMs != null ? s.fadeTransitionMs : 120))
     const uif = form.querySelector('input[name="useInlineFormatting"]')
     if (uif) uif.checked = !!s.useInlineFormatting
     // Scroll
@@ -298,13 +243,15 @@ export function openSettingsOverlay({ onClose }) {
     if (abs) abs.checked = !!s.animateBigSteps
     const amj = form.querySelector('input[name="animateMessageJumps"]')
     if (amj) amj.checked = s.animateMessageJumps !== undefined ? !!s.animateMessageJumps : true
-    if (sae) sae.value = s.scrollAnimEasing || 'easeOutQuad'
     // Context
     setNum('userRequestAllowance', s.userRequestAllowance)
     setNum('assistantResponseAllowance', s.assistantResponseAllowance)
     setNum('maxTrimAttempts', s.maxTrimAttempts)
     const cpt = form.querySelector('input[name="charsPerToken"]')
     if (cpt && s.charsPerToken != null) cpt.value = String(s.charsPerToken)
+    setNum('assumedUserTokens', s.assumedUserTokens)
+    const tom = form.querySelector('select[name="topicOrderMode"]')
+    if (tom) tom.value = s.topicOrderMode || 'manual'
   }
   function doReset() {
     const defs = getDefaultSettings()
