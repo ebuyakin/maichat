@@ -125,3 +125,27 @@ export function hasUnargumentedTopicFilter(ast) {
 
   return check(ast)
 }
+
+export function hasUnargumentedModelFilter(ast) {
+  if (!ast) return false
+
+  function check(node) {
+    if (!node) return false
+
+    // Check if this is an 'm' filter without value
+    if (node.type === 'FILTER' && node.kind === 'm') {
+      // Check if args.value is null/undefined/empty (means unargumented)
+      return !node.args || !node.args.value
+    }
+
+    // Recursively check child nodes
+    if (node.type === 'NOT') return check(node.expr)
+    if (node.type === 'AND' || node.type === 'OR') {
+      return check(node.left) || check(node.right)
+    }
+
+    return false
+  }
+
+  return check(ast)
+}

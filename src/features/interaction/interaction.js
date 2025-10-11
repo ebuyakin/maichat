@@ -1,7 +1,7 @@
 // interaction.js moved from ui/interaction/interaction.js (Phase 6.2 Interaction)
 // NOTE: Imports updated to new feature/ and core paths.
 import { parse } from '../command/parser.js'
-import { hasUnargumentedTopicFilter } from '../command/parser.js'
+import { hasUnargumentedTopicFilter, hasUnargumentedModelFilter } from '../command/parser.js'
 import { evaluate } from '../command/evaluator.js'
 import { getSettings } from '../../core/settings/index.js'
 import { createKeyRouter } from './keyRouter.js'
@@ -637,18 +637,8 @@ export function createInteraction({
             pendingMessageMeta.model = getActiveModel()
             renderPendingMeta()
             if (dirty) {
+              // Re-render to update model badges in history (no scrolling needed)
               historyRuntime.renderCurrentView({ preserveActive: true })
-              try {
-                const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active()
-                const id = act && act.id
-                if (id && ctx.scrollController && ctx.scrollController.alignTo) {
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      ctx.scrollController.alignTo(id, 'bottom', false)
-                    })
-                  })
-                }
-              } catch {}
             }
             modeManager.set(prevMode)
           },
@@ -662,18 +652,32 @@ export function createInteraction({
             pendingMessageMeta.model = getActiveModel()
             renderPendingMeta()
             if (dirty) {
-              historyRuntime.renderCurrentView({ preserveActive: true })
-              try {
-                const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active()
-                const id = act && act.id
-                if (id && ctx.scrollController && ctx.scrollController.alignTo) {
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      ctx.scrollController.alignTo(id, 'bottom', false)
-                    })
-                  })
+              // Check if there's an unargumented 'm' filter active
+              const currentFilter = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : ''
+              if (currentFilter) {
+                try {
+                  const ast = parse(currentFilter)
+                  if (hasUnargumentedModelFilter(ast)) {
+                    // Re-apply filter with new model - focus LAST message
+                    historyRuntime.renderCurrentView({ preserveActive: false })
+                    
+                    // Focus last message and scroll to bottom
+                    try {
+                      activeParts.last()
+                      if (ctx.scrollController && ctx.scrollController.scrollToBottom) {
+                        setTimeout(() => {
+                          ctx.scrollController.scrollToBottom(false)
+                          requestAnimationFrame(() => {
+                            historyRuntime.applyActiveMessage()
+                          })
+                        }, 100)
+                      }
+                    } catch {}
+                  }
+                } catch {
+                  // Parse error - ignore, don't refresh
                 }
-              } catch {}
+              }
             }
             modeManager.set(prevMode)
           },

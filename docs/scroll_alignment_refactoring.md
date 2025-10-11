@@ -219,32 +219,32 @@ The new version is **clearer** - we're scrolling to bottom, not aligning somethi
    - Priority: HIGH - same file as #2
    - Testing: Test D key on last vs non-last messages
 
-4. **interaction.js** - new message sent
+4. **interaction.js** - new message sent [x]
    - Scenario: Send a message from input
    - Priority: MEDIUM
    - Testing: Send message, check user message alignment
 
-5. **interaction.js** - new message arrival  
+5. **interaction.js** - new message arrival [x] 
    - Scenario: Receive assistant response
    - Priority: MEDIUM - same file as #4
    - Testing: Complete send→receive cycle
 
-6. **interaction.js** - topic switch with filter `t`
+6. **interaction.js** - topic switch with filter `t` [x]
    - Scenario: Ctrl+T, select topic
    - Priority: MEDIUM - same file as #4-5
    - Testing: Switch between topics
 
-7. **interaction.js** - delete handlers
+7. **interaction.js** - delete handlers [x]
    - Scenario: Delete message, focus shifts to last
    - Priority: MEDIUM - same file as #4-6
    - Testing: Delete various messages
 
-8. **interaction.js** - re-ask handler
+8. **interaction.js** - re-ask handler [x]
    - Scenario: Re-ask previous question
    - Priority: MEDIUM - same file as #4-7
    - Testing: Use re-ask feature
 
-9. **commandKeys.js** - filter application
+9. **commandKeys.js** - filter application [x]
    - Priority: MEDIUM
    - Testing: Apply various filters and colon commands
    
@@ -259,7 +259,7 @@ The new version is **clearer** - we're scrolling to bottom, not aligning somethi
    - **`:tchange`** → Re-render with preserveActive (update badges, preserve position)
    - Testing: Export messages, change topics, verify no unwanted scrolling
 
-10. **settings overlay** - settings change handler
+10. **settings overlay** - settings change handler [x]
     - Scenario: Change settings, close overlay
     - Priority: LOW
     - Testing: Change different settings, verify re-positioning
