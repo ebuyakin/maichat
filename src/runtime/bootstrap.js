@@ -6,6 +6,7 @@
 import { registerProvider } from '../infrastructure/provider/adapter.js'
 import { createOpenAIAdapter } from '../infrastructure/provider/openaiAdapter.js'
 import { createAnthropicAdapter } from '../infrastructure/provider/anthropicAdapter.js'
+import { createGeminiAdapter } from '../infrastructure/provider/geminiAdapter.js'
 import { ensureCatalogLoaded } from '../core/models/modelCatalog.js'
 import { runInitialSeeding, shouldRunInitialSeeding } from './initialSeeding.js'
 import { getSettings } from '../core/settings/index.js'
@@ -37,6 +38,7 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
 
   registerProvider('openai', createOpenAIAdapter())
   registerProvider('anthropic', createAnthropicAdapter())
+  registerProvider('gemini', createGeminiAdapter())
   await persistence.init()
   ensureCatalogLoaded()
   applySpacingStyles(getSettings())

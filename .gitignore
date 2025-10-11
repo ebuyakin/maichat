@@ -1,4 +1,4 @@
-# Logs
+g Logs
 logs
 *.log
 npm-debug.log*
@@ -28,3 +28,7 @@ dist-ssr
 
 # Study/scratch files (personal learning)
 study/
+
+# legacy docs
+docs/legacy_docs
+

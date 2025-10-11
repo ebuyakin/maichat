@@ -29,6 +29,31 @@ const BASE_MODELS = [
     rpm: 60,
     tpd: 2000000,
   },
+  // Gemini models (Google AI Studio pricing - Oct 2025)
+  {
+    id: 'gemini-2.5-flash',
+    provider: 'gemini',
+    contextWindow: 1000000,
+    tpm: 4000000,
+    rpm: 2000,
+    tpd: 10000000,
+  },
+  {
+    id: 'gemini-2.5-pro',
+    provider: 'gemini',
+    contextWindow: 2000000,
+    tpm: 4000000,
+    rpm: 1000,
+    tpd: 10000000,
+  },
+  {
+    id: 'gemini-2.0-flash',
+    provider: 'gemini',
+    contextWindow: 1000000,
+    tpm: 4000000,
+    rpm: 2000,
+    tpd: 10000000,
+  },
 ]
 function loadState() {
   try {

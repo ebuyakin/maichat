@@ -76,7 +76,7 @@ export function openHelpOverlay({ onClose, modeManager }) {
           <div class="help-k">Ctrl+Shift+B</div><div class="help-d">Backward one word</div>
         </section>
       </div>
-      <div class="help-hint">Esc closes • F1 toggles</div>
+        <div class="keys-footnote">OpenAI, Anthropic, and Gemini are supported. Shortcuts: Enter — save; Esc — close.</div>
       <div class="help-buttons">
         <button class="btn" data-action="close">Close</button>
       </div>
