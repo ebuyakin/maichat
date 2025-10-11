@@ -196,6 +196,13 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     treeEl.innerHTML =
       flat.map((row, i) => renderRow(row, i === activeIndex)).join('') +
       (editing && editing.mode === 'create' ? renderCreateRow() : '')
+    
+    // Scroll active row into view
+    const activeRow = treeEl.querySelector('.te-row.active')
+    if (activeRow) {
+      activeRow.scrollIntoView({ block: 'nearest', behavior: 'auto' })
+    }
+    
     renderDetails()
     // Update order hints (three-line wording)
     if (hintsEl) {

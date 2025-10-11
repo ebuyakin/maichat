@@ -612,11 +612,14 @@ export function createInteraction({
       if (e.shiftKey) {
         if (!document.getElementById('appLoading')) {
           e.preventDefault()
-          const prevMode = modeManager.mode
           openTopicEditor({
             store,
-            onClose: () => {
-              modeManager.set(prevMode)
+            onClose: ({ dirty } = {}) => {
+              if (dirty) {
+                // Re-render to update topic badges in history (no scrolling needed)
+                historyRuntime.renderCurrentView({ preserveActive: true })
+              }
+              // Mode restoration handled by modal's restoreMode: true
             },
           })
         }
