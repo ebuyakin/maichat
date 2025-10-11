@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MaiChat</title>
+  </head>
+  <body style="background:#0c0c0c;color:#e6e6e6;margin:0;">
+    <div id="app" style="min-height:100vh;background:#0c0c0c;">Loading…</div>
+    <script>
+      window.addEventListener('error', (e)=>{
+        const el = document.getElementById('app');
+        if(el && !el.__bootFailed){ el.__bootFailed=true; el.innerHTML = '<pre style="font:12px monospace;color:#c00;white-space:pre-wrap;">Boot error: '+(e.error && e.error.message || e.message)+'</pre>'; }
+      });
+    </script>
+    <script type="module" src="./src/main.js"></script>
+    <noscript><div style="font:14px monospace;padding:1rem;">JavaScript disabled – MaiChat requires JS.</div></noscript>
+  </body>
+</html>
