@@ -1,4 +1,9 @@
 ## current problem notes and comments.
+- topic editor - formatting (topic panel expanding infinitely)
+
+alignToBottom() in strange cases:
+- model selector, model editor
+- topic editor
 
 
 scrolling/anchoring of the new message in case pre-sending is not G. [x]

@@ -199,6 +199,13 @@ const BASE_MODELS = [
 - ✅ Reasonable performance
 - ✅ Documentation complete
 
+**Future Enhancements (Deferred):**
+- Add topP and topK support for finer generation control
+- Multimodal support (images, audio, video)
+- Function calling integration
+- Google Search grounding
+- Context caching for long conversations
+
 ---
 
 ## Implementation Timeline

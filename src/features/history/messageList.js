@@ -25,9 +25,9 @@ export function buildMessages(pairs) {
     parts.push({ id: `${id}:u`, role: 'user', pairId: id, text: safe(p.userText || '') })
     // meta
     parts.push({ id: `${id}:meta`, role: 'meta', pairId: id })
-    // assistant (may be empty during sending)
+    // assistant (only show when complete or error, not during idle state)
     const aText = safe(p.assistantText || '')
-    if (aText || p.lifecycleState) {
+    if (aText || p.lifecycleState === 'complete' || p.lifecycleState === 'error') {
       parts.push({ id: `${id}:a`, role: 'assistant', pairId: id, text: aText })
     }
     out.push({ id, parts })

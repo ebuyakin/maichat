@@ -123,10 +123,6 @@ export function createNewMessageLifecycle({
           // Use scrollToBottom for short messages that fit
           if (scrollController && scrollController.scrollToBottom) {
             scrollController.scrollToBottom(false)
-          } else if (alignTo) {
-            // Fallback to bottom align if scrollToBottom not available
-            const lastId = last.getAttribute('data-part-id')
-            if (lastId) alignTo(lastId, 'bottom', false)
           }
           if (firstId) {
             _applyActivePart()

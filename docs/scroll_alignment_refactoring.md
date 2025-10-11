@@ -57,7 +57,7 @@ stepScroll(deltaPx)
 2. `anchorScrollTop(idx, position)` - Calculates scroll position
 3. `scrollTo(target, animate)` - Sets scrollTop
 
-### Current Usage Patterns
+# Current Usage Patterns
 
 **Scenarios requiring "scroll to bottom":**
 1. **Bootstrap/Reload** - `bootstrap.js` line ~60
@@ -202,17 +202,19 @@ The new version is **clearer** - we're scrolling to bottom, not aligning somethi
 
 **Order of implementation** (grouped by call site when same function):
 
-1. **bootstrap.js** (line ~60)
+# Scenarios Implementation (NB)
+
+1. **bootstrap.js** (line ~60) [x]
    - Scenario: Reload with filter showing message with equations
    - Priority: HIGH - fixes primary bug
    - Testing: Reload multiple times, check alignment
    
-2. **viewKeys.js** - G key handler
+2. **viewKeys.js** - G key handler [x]
    - Scenario: Press G key from any position
    - Priority: HIGH - common operation
    - Testing: Navigate away, press G, check alignment
    
-3. **viewKeys.js** - D key handler (last message special case)
+3. **viewKeys.js** - D key handler (last message special case) [x]
    - Scenario: Focus last message (shorter than screen), press D
    - Priority: HIGH - same file as #2
    - Testing: Test D key on last vs non-last messages

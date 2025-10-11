@@ -194,6 +194,7 @@ export function createInputKeyHandler({
           id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
         }
 
+        // new message treatment.
         ;(async () => {
           try {
             const currentPairs = activeParts.parts
@@ -287,11 +288,10 @@ export function createInputKeyHandler({
                 if (assistantId) {
                   activeParts.setActiveById(assistantId)
                   historyRuntime.applyActiveMessage()
-                  // Anchor error message to bottom
-                  if (scrollController && scrollController.alignTo) {
+                  // Scroll to bottom to show error message
+                  if (scrollController && scrollController.scrollToBottom) {
                     requestAnimationFrame(() => {
-                      if (scrollController.remeasure) scrollController.remeasure()
-                      scrollController.alignTo(assistantId, 'bottom', false)
+                      scrollController.scrollToBottom(false)
                     })
                   }
                 }
@@ -339,14 +339,10 @@ export function createInputKeyHandler({
           activeParts.last()
         }
         historyRuntime.applyActiveMessage()
-        // One-shot: bottom-align the new user message as visual cue
-        if (id && scrollController && scrollController.alignTo) {
+        // Scroll to bottom to show the newly sent user message
+        if (scrollController && scrollController.scrollToBottom) {
           requestAnimationFrame(() => {
-            try {
-              if (scrollController.remeasure) scrollController.remeasure()
-            } catch {}
-            // In message-based view, anchor to user message (id:u)
-            scrollController.alignTo(`${id}:u`, 'bottom', false)
+            scrollController.scrollToBottom(false)
           })
         }
         updateSendDisabled()
