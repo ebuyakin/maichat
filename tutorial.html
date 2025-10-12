@@ -21,7 +21,7 @@
   --success: #4ade80;
   --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', 'Source Code Pro', monospace;
-  --sidebar-width: 320px;
+  --sidebar-width: 360px;
 }
 
 * { 
@@ -81,6 +81,13 @@ body {
 
 .sidebar-nav {
   list-style: none;
+  padding-right: 15px;
+}
+
+/* Top link styling */
+.nav-top a {
+  font-weight: 600;
+  color: var(--text);
 }
 
 /* Nav items */
@@ -242,7 +249,7 @@ h1 {
 }
 
 h2 { 
-  margin-top: 96px; 
+  margin-top: 60px; 
   padding-top: 40px; 
   border-top: 2px solid var(--border); 
   font-size: 1.75rem; 
@@ -250,7 +257,7 @@ h2 {
   scroll-margin-top: 24px;
 }
 
-h2:first-of-type { 
+section:first-of-type h2 { 
   margin-top: 0;
   border-top: none;
   padding-top: 0;
@@ -442,6 +449,9 @@ th {
     </div>
     
 <ul class="sidebar-nav">
+  <li class="nav-item nav-top">
+    <a href="#top">↑ Top</a>
+  </li>
   <li class="nav-item">
     <a href="#overview">What is MaiChat</a>
   </li>
@@ -493,7 +503,7 @@ th {
         <a href="#message-counter-top-right">Message counter (top-right)</a>
       </li>
       <li class="nav-item">
-        <a href="#off-context-visualization-model-dependent">Off‑context visualization (model‑dependent)</a>
+        <a href="#offcontext-visualization-modeldependent">Off‑context visualization (model‑dependent)</a>
       </li>
     </ul>
   </li>
@@ -517,7 +527,7 @@ th {
   
   <!-- Main Content -->
   <div class="main-content">
-    <main class="container">
+    <main class="container" id="top">
       <header>
         <a href="index.html" class="back-link">← Back to Home</a>
         <h1>MaiChat Tutorial</h1>
@@ -605,14 +615,14 @@ th {
         <li><strong>Parentheses:</strong> <code>( ... )</code> to control order</li>
         <li><strong>Precedence:</strong> <code>()</code> &gt; <code>!</code> &gt; <code>&</code> (and adjacency) &gt; <code>|</code> and <code>+</code></li>
         </ul>
-        <h3 id="topic-patterns-case-insensitive-">Topic patterns (case-insensitive)</h3>
+        <h3 id="topic-patterns-case-insensitive">Topic patterns (case-insensitive)</h3>
         <ul>
         <li>Exact name or path: <code>t'AI'</code>, <code>t'AI > Transformers > GPT'</code></li>
         <li>Descendants: <code>t'AI...'</code> (AI and all children)</li>
         <li>Wildcards: <code>t'*Learning'</code>, <code>t'Machine*'</code>, <code>t'*Neural*'</code>, combinations like <code>t"*AI*..."</code></li>
         <li>Bare <kbd>t</kbd> uses the currently selected topic from the input bar</li>
         </ul>
-        <h3 id="model-patterns-case-insensitive-">Model patterns (case-insensitive)</h3>
+        <h3 id="model-patterns-case-insensitive">Model patterns (case-insensitive)</h3>
         <ul>
         <li>Exact ID: <code>m'gpt-4o'</code>, <code>m'claude-3.5'</code></li>
         <li>Wildcards: <code>m'gpt*'</code>, <code>m'*mini*'</code>, combinations like <code>(m'gpt-4*' | m'claude*')</code></li>
@@ -648,14 +658,14 @@ th {
         </ul>
         <p><strong>Reading Mode</strong> (toggle with <kbd>r</kbd>) is independent of the boundary; when enabled, each <kbd>j</kbd>/<kbd>k</kbd> navigation recenters the active part for sustained focus. Use it when reading long replies; turn it off to keep minimal scroll movement.</p>
         <p>This helps you see which parts of the conversation will be sent to the model and quickly adjust your focus.</p>
-        <h3 id="message-counter-top-right-">Message counter (top-right)</h3>
+        <h3 id="message-counter-top-right">Message counter (top-right)</h3>
         <ul>
         <li>Format <code>X/Y</code> — Predicted included / Visible pairs. X is what would go into the next request; Y is what&#39;s currently visible after filtering.</li>
         <li>Prefix <code>(-) </code> — The newest message is hidden by your current filter.</li>
         <li>Trim indicator: <code>[S-T]/Y</code> — S pairs sent after trimming, T pairs trimmed out (when the initial prediction didn&#39;t fit the model limit). Can combine with the <code>(-) </code> prefix.</li>
         <li>Tooltip shows extra details: predicted tokens, whether URA-model is active, and how many pairs were trimmed on the last send.</li>
         </ul>
-        <h3 id="off-context-visualization-model-dependent-">Off‑context visualization (model‑dependent)</h3>
+        <h3 id="offcontext-visualization-modeldependent">Off‑context visualization (model‑dependent)</h3>
         <ul>
         <li>Parts beyond the current context boundary are dimmed and show an &quot;off&quot; badge in the meta line.</li>
         <li>The boundary is computed from model limits (max context) and settings (e.g., chars‑per‑token, user request allowance). Switching models can change how many pairs are &quot;in&quot; vs &quot;off&quot;.</li>
@@ -782,31 +792,47 @@ th {
         }
       });
       
-      // Highlight active section on scroll
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const id = entry.target.getAttribute('id');
-            navLinks.forEach(link => {
-              link.classList.remove('active');
-              if (link.getAttribute('href') === `#${id}`) {
-                link.classList.add('active');
-                
-                // Auto-expand parent items when navigating to a section
-                let parentItem = link.closest('.nav-item.has-children.collapsed');
-                while (parentItem) {
-                  parentItem.classList.remove('collapsed');
-                  parentItem = parentItem.parentElement.closest('.nav-item.has-children.collapsed');
-                }
-              }
-            });
+      // Improved scroll spy - find the closest visible header
+      let activeId = null;
+      
+      const updateActiveNav = () => {
+        const scrollPos = window.scrollY + 150; // Offset for fixed header
+        let currentId = null;
+        let closestTop = -1;
+        
+        // Find the header closest to (but above) scroll position
+        sections.forEach(section => {
+          const top = section.offsetTop;
+          if (top <= scrollPos && top > closestTop) {
+            currentId = section.getAttribute('id');
+            closestTop = top;
           }
         });
-      }, {
-        rootMargin: '-100px 0px -80% 0px'
-      });
+        
+        // Only update if changed
+        if (currentId && currentId !== activeId) {
+          activeId = currentId;
+          
+          navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${currentId}`) {
+              link.classList.add('active');
+              
+              // Auto-expand parent items when navigating to a section
+              let parentItem = link.closest('.nav-item.has-children.collapsed');
+              while (parentItem) {
+                parentItem.classList.remove('collapsed');
+                parentItem = parentItem.parentElement.closest('.nav-item.has-children.collapsed');
+              }
+            }
+          });
+        }
+      };
       
-      sections.forEach(section => observer.observe(section));
+      // Update on scroll
+      window.addEventListener('scroll', updateActiveNav);
+      // Update on load
+      updateActiveNav();
       
       // Mobile menu toggle
       const menuBtn = document.querySelector('.mobile-menu-btn');

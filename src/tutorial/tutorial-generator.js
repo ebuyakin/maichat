@@ -23,11 +23,13 @@ const contentPath = path.join(__dirname, 'tutorial-content.md');
 const stylesPath = path.join(__dirname, 'tutorial-styles.css');
 const outputPath = path.join(rootDir, 'tutorial.html');
 
-// Helper to generate ID from title
+// Helper to generate ID from title - replicates marked's default slugger
 function generateId(title) {
   return title.toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+    .trim()
+    .replace(/<[!/a-z].*?>/ig, '') // remove html tags
+    .replace(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,.\/:;<=>?@\[\]^`{|}~']/g, '') // remove punctuation
+    .replace(/\s/g, '-'); // replace spaces with hyphens
 }
 
 // Parse markdown structure to extract headers
@@ -98,8 +100,8 @@ const renderer = {
       return `<h${level} id="${id}">${cleanText}</h${level}>\n`;
     }
     
-    // Default behavior - auto-generate ID from text
-    const id = text.toLowerCase().replace(/[^\w]+/g, '-');
+    // Default behavior - use our generateId function for consistency
+    const id = generateId(text);
     return `<h${level} id="${id}">${text}</h${level}>\n`;
   },
   
@@ -124,6 +126,11 @@ marked.use({ renderer });
 // Generate navigation HTML from structure
 function generateNav(structure) {
   let html = '<ul class="sidebar-nav">\n';
+  
+  // Add "Top" link first (hardcoded, doesn't correspond to content)
+  html += '  <li class="nav-item nav-top">\n';
+  html += '    <a href="#top">↑ Top</a>\n';
+  html += '  </li>\n';
   
   structure.forEach(item => {
     const hasChildren = item.children && item.children.length > 0;
@@ -208,7 +215,7 @@ ${nav}
   
   <!-- Main Content -->
   <div class="main-content">
-    <main class="container">
+    <main class="container" id="top">
       <header>
         <a href="index.html" class="back-link">← Back to Home</a>
         <h1>MaiChat Tutorial</h1>
@@ -262,31 +269,47 @@ ${content}
         }
       });
       
-      // Highlight active section on scroll
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const id = entry.target.getAttribute('id');
-            navLinks.forEach(link => {
-              link.classList.remove('active');
-              if (link.getAttribute('href') === \`#\${id}\`) {
-                link.classList.add('active');
-                
-                // Auto-expand parent items when navigating to a section
-                let parentItem = link.closest('.nav-item.has-children.collapsed');
-                while (parentItem) {
-                  parentItem.classList.remove('collapsed');
-                  parentItem = parentItem.parentElement.closest('.nav-item.has-children.collapsed');
-                }
-              }
-            });
+      // Improved scroll spy - find the closest visible header
+      let activeId = null;
+      
+      const updateActiveNav = () => {
+        const scrollPos = window.scrollY + 150; // Offset for fixed header
+        let currentId = null;
+        let closestTop = -1;
+        
+        // Find the header closest to (but above) scroll position
+        sections.forEach(section => {
+          const top = section.offsetTop;
+          if (top <= scrollPos && top > closestTop) {
+            currentId = section.getAttribute('id');
+            closestTop = top;
           }
         });
-      }, {
-        rootMargin: '-100px 0px -80% 0px'
-      });
+        
+        // Only update if changed
+        if (currentId && currentId !== activeId) {
+          activeId = currentId;
+          
+          navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === \`#\${currentId}\`) {
+              link.classList.add('active');
+              
+              // Auto-expand parent items when navigating to a section
+              let parentItem = link.closest('.nav-item.has-children.collapsed');
+              while (parentItem) {
+                parentItem.classList.remove('collapsed');
+                parentItem = parentItem.parentElement.closest('.nav-item.has-children.collapsed');
+              }
+            }
+          });
+        }
+      };
       
-      sections.forEach(section => observer.observe(section));
+      // Update on scroll
+      window.addEventListener('scroll', updateActiveNav);
+      // Update on load
+      updateActiveNav();
       
       // Mobile menu toggle
       const menuBtn = document.querySelector('.mobile-menu-btn');
