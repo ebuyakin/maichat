@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write \"src/**/*.js\" \"*.js\"",
-    "format:check": "prettier --check \"src/**/*.js\" \"*.js\""
+    "format:check": "prettier --check \"src/**/*.js\" \"*.js\"",
+    "tutorial:build": "node src/tutorial/tutorial-generator.js",
+    "tutorial:watch": "nodemon --watch src/tutorial/tutorial-content.md --watch src/tutorial/tutorial-styles.css --exec 'npm run tutorial:build'"
   },
   "devDependencies": {
     "jsdom": "^26.1.0",
