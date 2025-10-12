@@ -82,6 +82,7 @@ body {
 .sidebar-nav {
   list-style: none;
   padding-right: 15px;
+  margin-left: 12px;
 }
 
 /* Top link styling */
@@ -98,7 +99,7 @@ body {
 /* Items without children - simple link */
 .nav-item:not(.has-children) > a {
   display: block;
-  padding: 6px 24px;
+  padding: 2px 12px;
   color: var(--text-dim);
   text-decoration: none;
   font-size: 0.95rem;
@@ -122,7 +123,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 24px 6px 16px;
+  padding: 2px 12px 2px 8px;
   transition: background 0.2s;
 }
 
@@ -183,7 +184,7 @@ body {
   overflow: hidden;
   transition: max-height 0.3s ease-out, opacity 0.3s;
   opacity: 1;
-  padding-left: 16px;
+  padding-left: 12px;
 }
 
 .nav-item.collapsed > .nav-sub-items {
@@ -193,12 +194,12 @@ body {
 
 /* Nested sub-items styling */
 .nav-sub-items .nav-item:not(.has-children) > a {
-  padding: 5px 24px;
+  padding: 2px 12px;
   font-size: 0.9rem;
 }
 
 .nav-sub-items .nav-sub-items .nav-item > a {
-  padding: 4px 24px;
+  padding: 2px 12px;
   font-size: 0.85rem;
   color: var(--text-dim);
 }
@@ -455,55 +456,225 @@ th {
   <li class="nav-item">
     <a href="#overview">What is MaiChat</a>
   </li>
-  <li class="nav-item">
-    <a href="#quickstart">Quickstart (60 seconds)</a>
-  </li>
-  <li class="nav-item">
-    <a href="#modes">Modes and where to look</a>
-  </li>
-  <li class="nav-item">
-    <a href="#keyboard">Keyboard essentials</a>
-  </li>
-  <li class="nav-item">
-    <a href="#topics">Topics and the topic tree</a>
-  </li>
   <li class="nav-item has-children">
     <div class="nav-item-header">
       <span class="nav-item-toggle">›</span>
-      <a href="#filtering">Command language (CLI filters)</a>
+      <a href="#quickstart">Quickstart (5 minutes)</a>
     </div>
     <ul class="nav-sub-items">
       <li class="nav-item">
-        <a href="#filter-basics">Basic filters</a>
+        <a href="#step-1-set-up-your-api-key">Step 1: Set up your API key</a>
       </li>
       <li class="nav-item">
-        <a href="#filter-operators">Operators and grouping</a>
+        <a href="#step-2-choose-a-model">Step 2: Choose a model</a>
       </li>
       <li class="nav-item">
-        <a href="#topic-patterns-case-insensitive">Topic patterns (case-insensitive)</a>
+        <a href="#step-3-send-your-first-message">Step 3: Send your first message</a>
       </li>
       <li class="nav-item">
-        <a href="#model-patterns-case-insensitive">Model patterns (case-insensitive)</a>
+        <a href="#step-4-navigate-the-response">Step 4: Navigate the response</a>
       </li>
       <li class="nav-item">
-        <a href="#date-forms">Date forms</a>
+        <a href="#step-5-organize-with-topics">Step 5: Organize with topics</a>
       </li>
       <li class="nav-item">
-        <a href="#filter-examples">Examples you can paste</a>
+        <a href="#step-6-filter-your-history">Step 6: Filter your history</a>
+      </li>
+      <li class="nav-item">
+        <a href="#whats-next">What's next?</a>
       </li>
     </ul>
   </li>
   <li class="nav-item has-children">
     <div class="nav-item-header">
       <span class="nav-item-toggle">›</span>
-      <a href="#context">Context management: boundary & Reading Mode</a>
+      <a href="#modes">Navigation: Understanding the Three Modes</a>
     </div>
     <ul class="nav-sub-items">
       <li class="nav-item">
-        <a href="#message-counter-top-right">Message counter (top-right)</a>
+        <a href="#the-three-modes">The Three Modes</a>
       </li>
       <li class="nav-item">
-        <a href="#offcontext-visualization-modeldependent">Off‑context visualization (model‑dependent)</a>
+        <a href="#switching-between-modes">Switching Between Modes</a>
+      </li>
+      <li class="nav-item">
+        <a href="#view-mode-navigation">View Mode Navigation</a>
+      </li>
+      <li class="nav-item">
+        <a href="#view-mode-actions">View Mode Actions</a>
+      </li>
+      <li class="nav-item">
+        <a href="#input-mode-shortcuts">Input Mode Shortcuts</a>
+      </li>
+      <li class="nav-item">
+        <a href="#command-mode-usage">Command Mode Usage</a>
+      </li>
+      <li class="nav-item">
+        <a href="#mousetouchpad-behavior">Mouse/Touchpad Behavior</a>
+      </li>
+      <li class="nav-item">
+        <a href="#startup-behavior">Startup Behavior</a>
+      </li>
+      <li class="nav-item">
+        <a href="#common-patterns">Common Patterns</a>
+      </li>
+    </ul>
+  </li>
+  <li class="nav-item has-children">
+    <div class="nav-item-header">
+      <span class="nav-item-toggle">›</span>
+      <a href="#topics">Topics and the Topic Tree</a>
+    </div>
+    <ul class="nav-sub-items">
+      <li class="nav-item">
+        <a href="#why-use-topics">Why Use Topics?</a>
+      </li>
+      <li class="nav-item">
+        <a href="#the-default-topic-tree">The Default Topic Tree</a>
+      </li>
+      <li class="nav-item">
+        <a href="#creating-and-managing-topics">Creating and Managing Topics</a>
+      </li>
+      <li class="nav-item">
+        <a href="#reassigning-messages-to-topics">Reassigning Messages to Topics</a>
+      </li>
+      <li class="nav-item">
+        <a href="#topic-hierarchy-best-practices">Topic Hierarchy Best Practices</a>
+      </li>
+      <li class="nav-item">
+        <a href="#topic-naming-tips">Topic Naming Tips</a>
+      </li>
+      <li class="nav-item">
+        <a href="#filtering-by-topics">Filtering by Topics</a>
+      </li>
+      <li class="nav-item">
+        <a href="#archive-pattern">Archive Pattern</a>
+      </li>
+      <li class="nav-item">
+        <a href="#when-to-split-topics">When to Split Topics</a>
+      </li>
+      <li class="nav-item">
+        <a href="#topic-metadata-advanced">Topic Metadata (Advanced)</a>
+      </li>
+      <li class="nav-item">
+        <a href="#common-questions">Common Questions</a>
+      </li>
+    </ul>
+  </li>
+  <li class="nav-item has-children">
+    <div class="nav-item-header">
+      <span class="nav-item-toggle">›</span>
+      <a href="#filtering">Search and Filtering Language</a>
+    </div>
+    <ul class="nav-sub-items">
+      <li class="nav-item">
+        <a href="#why-filter">Why Filter?</a>
+      </li>
+      <li class="nav-item">
+        <a href="#basic-filters">Basic Filters</a>
+      </li>
+      <li class="nav-item">
+        <a href="#combining-filters">Combining Filters</a>
+      </li>
+      <li class="nav-item">
+        <a href="#topic-patterns-case-insensitive">Topic Patterns (Case-Insensitive)</a>
+      </li>
+      <li class="nav-item">
+        <a href="#model-patterns-case-insensitive">Model Patterns (Case-Insensitive)</a>
+      </li>
+      <li class="nav-item">
+        <a href="#date-filters">Date Filters</a>
+      </li>
+      <li class="nav-item">
+        <a href="#filter-examples">Practical Examples</a>
+      </li>
+      <li class="nav-item">
+        <a href="#workflow-tips">Workflow Tips</a>
+      </li>
+      <li class="nav-item">
+        <a href="#command-mode-shortcuts">Command Mode Shortcuts</a>
+      </li>
+      <li class="nav-item">
+        <a href="#common-mistakes">Common Mistakes</a>
+      </li>
+    </ul>
+  </li>
+  <li class="nav-item has-children">
+    <div class="nav-item-header">
+      <span class="nav-item-toggle">›</span>
+      <a href="#context">Context Management</a>
+    </div>
+    <ul class="nav-sub-items">
+      <li class="nav-item">
+        <a href="#why-context-matters">Why Context Matters</a>
+      </li>
+      <li class="nav-item">
+        <a href="#what-gets-sent">What Gets Sent?</a>
+      </li>
+      <li class="nav-item">
+        <a href="#the-context-boundary">The Context Boundary</a>
+      </li>
+      <li class="nav-item">
+        <a href="#the-message-counter-top-right">The Message Counter (Top-Right)</a>
+      </li>
+      <li class="nav-item">
+        <a href="#how-context-is-computed">How Context is Computed</a>
+      </li>
+      <li class="nav-item">
+        <a href="#context-control-strategies">Context Control Strategies</a>
+      </li>
+      <li class="nav-item">
+        <a href="#understanding-token-trimming">Understanding Token Trimming</a>
+      </li>
+      <li class="nav-item">
+        <a href="#practical-examples">Practical Examples</a>
+      </li>
+      <li class="nav-item">
+        <a href="#common-patterns">Common Patterns</a>
+      </li>
+      <li class="nav-item">
+        <a href="#advanced-context-and-system-messages">Advanced: Context and System Messages</a>
+      </li>
+      <li class="nav-item">
+        <a href="#troubleshooting">Troubleshooting</a>
+      </li>
+      <li class="nav-item">
+        <a href="#key-takeaways">Key Takeaways</a>
+      </li>
+    </ul>
+  </li>
+  <li class="nav-item has-children">
+    <div class="nav-item-header">
+      <span class="nav-item-toggle">›</span>
+      <a href="#models">API Keys and Model Catalogue</a>
+    </div>
+    <ul class="nav-sub-items">
+      <li class="nav-item">
+        <a href="#setting-up-api-keys">Setting Up API Keys</a>
+      </li>
+      <li class="nav-item">
+        <a href="#understanding-the-model-catalogue">Understanding the Model Catalogue</a>
+      </li>
+      <li class="nav-item">
+        <a href="#managing-models">Managing Models</a>
+      </li>
+      <li class="nav-item">
+        <a href="#adding-custom-models">Adding Custom Models</a>
+      </li>
+      <li class="nav-item">
+        <a href="#how-context-window-affects-your-work">How Context Window Affects Your Work</a>
+      </li>
+      <li class="nav-item">
+        <a href="#model-selection-strategy">Model Selection Strategy</a>
+      </li>
+      <li class="nav-item">
+        <a href="#troubleshooting-api-and-model-issues">Troubleshooting API and Model Issues</a>
+      </li>
+      <li class="nav-item">
+        <a href="#related-settings">Related Settings</a>
+      </li>
+      <li class="nav-item">
+        <a href="#best-practices">Best Practices</a>
       </li>
     </ul>
   </li>
@@ -512,9 +683,6 @@ th {
   </li>
   <li class="nav-item">
     <a href="#settings">Settings and tools</a>
-  </li>
-  <li class="nav-item">
-    <a href="#models">Model Editor and usage limits</a>
   </li>
   <li class="nav-item">
     <a href="#troubleshooting">Troubleshooting</a>
@@ -536,141 +704,1242 @@ th {
 
       <section id="overview">
 <h2 id="overview">What is MaiChat</h2>
-        <p>MaiChat is a keyboard-centric client for working with multiple LLMs in a single, unified UI. It organizes conversations into a topic tree, supports a CLI-like filtering language, and gives you precise control over the context sent to a model.</p>
-        <p>Core ideas:</p>
-        <ul>
-        <li>User interacts with the app in 3 different modes: Input, View, Command — each mode maps to a screen area and a set of keys.</li>
-        <li>Tree-structured topics for every message, editable anytime.</li>
-        <li>CLI filters for slicing history by topic, model, date, rating, color coding, errors, and content.</li>
-        <li>Context management: choose exactly what the model sees.</li>
-        </ul>
+        <p>MaiChat is a keyboard-centric interface for ChatGPT, Claude, and Gemini that puts you in control. Unlike standard chat interfaces, MaiChat organizes your conversations into a hierarchical topic tree, lets you filter message history with a powerful CLI-like language, and gives you precise control over what context gets sent to each model. It&#39;s designed for power users who want to work faster, stay organized, and maintain complete control over their AI interactions.</p>
       </section>
 
       <section id="quickstart">
-<h2 id="quickstart">Quickstart (60 seconds)</h2>
+<h2 id="quickstart">Quickstart (5 minutes)</h2>
+        <p>Get MaiChat running and send your first message. This guide covers everything you need to start using the app effectively.</p>
+        <blockquote>
+        <p><strong>Important:</strong> MaiChat is designed for keyboard-first navigation with Vim-style commands (<kbd>j</kbd>/<kbd>k</kbd> for scrolling, <kbd>u</kbd>/<kbd>d</kbd> for jumping between messages, etc.). While you can use your mouse, learning the keyboard shortcuts will make you much more efficient. Press <kbd>F1</kbd> anytime to see the full reference.</p>
+        </blockquote>
+        <h3 id="step-1-set-up-your-api-key">Step 1: Set up your API key</h3>
+        <p>MaiChat needs API keys to connect to LLM providers (OpenAI, Anthropic, Google).</p>
         <ol>
-        <li><strong>First run:</strong> set your API key(s). Press <kbd>Ctrl+K</kbd> or open the menu (<kbd>Ctrl+.</kbd>) → API Keys. Keys are stored locally in your browser.</li>
-        <li>You start in Input Mode with the cursor in the message box (<kbd>F1</kbd> anytime for shortcuts). Type your request.</li>
-        <li>Use previously set topic and model or use <kbd>Ctrl+M</kbd> to pick a model; <kbd>Ctrl+T</kbd> to pick a topic for this message.</li>
-        <li>Press <kbd>Enter</kbd> to send. The reply appears at the end of the history.</li>
-        <li>Press <kbd>Esc</kbd> to switch to View Mode and browse. Use <kbd>j</kbd>/<kbd>k</kbd> to move between message parts, <kbd>g</kbd>/<kbd>G</kbd> to jump to first/last, <kbd>o</kbd> (or <kbd>Shift+O</kbd>) to jump to the context boundary, and <kbd>r</kbd> to toggle Reading Mode (centers navigation when on).</li>
-        <li>Press <kbd>Enter</kbd> to switch back to Input Mode and continue typing.</li>
+        <li>Press <kbd>Ctrl+K</kbd> to open API Keys settings</li>
+        <li>Enter your API key for at least one provider:<ul>
+        <li><strong>OpenAI</strong>: Get your key at <a href="https://platform.openai.com/api-keys">platform.openai.com/api-keys</a></li>
+        <li><strong>Anthropic</strong>: Get your key at <a href="https://console.anthropic.com">console.anthropic.com</a></li>
+        <li><strong>Google</strong>: Get your key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a></li>
+        </ul>
+        </li>
+        <li>Click Save</li>
         </ol>
+        <blockquote>
+        <p><strong>Note:</strong> API keys are stored locally in your browser and never leave your device.</p>
+        </blockquote>
+        <h3 id="step-2-choose-a-model">Step 2: Choose a model</h3>
+        <p>Before sending your first message, select which AI model to use:</p>
+        <ol>
+        <li>Press <kbd>Ctrl+M</kbd> to open the model selector</li>
+        <li>Browse the available models based on your API keys:<ul>
+        <li><strong>OpenAI</strong>: GPT-5, GPT-5 mini, GPT-5 nano, o4-mini</li>
+        <li><strong>Anthropic</strong>: Claude Sonnet 4.5, Claude Opus 4.1, Claude 3.5 Haiku</li>
+        <li><strong>Google</strong>: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite</li>
+        </ul>
+        </li>
+        <li>Select a model and press <kbd>Enter</kbd></li>
+        </ol>
+        <p>The selected model will be used for all messages until you change it.</p>
+        <blockquote>
+        <p><strong>Tip:</strong> Not sure which to choose? Start with GPT-5 nano (OpenAI), Claude Sonnet 4.5 (Anthropic), or Gemini 2.5 Flash-Lite (Google) — they&#39;re fast and cost-effective.</p>
+        </blockquote>
+        <h3 id="step-3-send-your-first-message">Step 3: Send your first message</h3>
+        <p>You start in <strong>Input Mode</strong> with the cursor already in the message box.</p>
+        <ol>
+        <li>Type your message (e.g., &quot;Explain what MaiChat is in one sentence&quot;)</li>
+        <li>Press <kbd>Enter</kbd> to send</li>
+        <li>Watch the response appear in the history area above</li>
+        </ol>
+        <h3 id="step-4-navigate-the-response">Step 4: Navigate the response</h3>
+        <p>After the response arrives, switch to <strong>View Mode</strong> to read and navigate:</p>
+        <ol>
+        <li>Press <kbd>Esc</kbd> to enter View Mode</li>
+        <li>Use <kbd>j</kbd> and <kbd>k</kbd> to scroll the conversation history up and down (like Vim)</li>
+        <li>Use <kbd>u</kbd> and <kbd>d</kbd> to scroll to the beginning of the previous/next message</li>
+        <li>Press <kbd>g</kbd> to jump to the first message, <kbd>G</kbd> for the last</li>
+        </ol>
+        <h3 id="step-5-organize-with-topics">Step 5: Organize with topics</h3>
+        <p>MaiChat comes with a starter topic tree (General, Work, Personal, Research) that you can use immediately:</p>
+        <ol>
+        <li>Press <kbd>Ctrl+T</kbd> in Input Mode to see the topic selector</li>
+        <li>Use search box to filter the topic list or press <kbd>Ctrl+J</kbd> to navigate the tree using <code>h``j``k``l</code> keys (vim-style).</li>
+        <li>Select a topic from the list and press <kbd>Enter</kbd>, the selected topic will be displayed at the bottom of the input zone.</li>
+        <li>Type a message and send it</li>
+        </ol>
+        <p>All future messages will use this topic until you change it. You can reassign messages to different topics anytime.</p>
+        <blockquote>
+        <p><strong>Learn more:</strong> See the <a href="#topics">Topics</a> section to learn how to customize your topic tree structure and use to manage the context of your requests.</p>
+        </blockquote>
+        <h3 id="step-6-filter-your-history">Step 6: Filter your history</h3>
+        <p>As your history grows, use filters to find messages:</p>
+        <ol>
+        <li><p>Press <kbd>Ctrl+D</kbd> or (<kbd>Esc</kbd> from the View mode) to enter Command Mode (top bar)</p>
+        </li>
+        <li><p>In the filter input box you can type various filters and commands controlling your conversation</p>
+        </li>
+        <li><p>Try these filters:</p>
+        <ul>
+        <li><code>r10</code> — show last 10 message pairs (request and response)</li>
+        <li><kbd>t</kbd> - show only current topic messages</li>
+        <li><code>t'Learning...'</code> — show all messages in &quot;Learning MaiChat&quot; topic and subtopics</li>
+        <li><code>d<7</code> - show all messages of the last 7 days</li>
+        <li><code>c'happy'</code> - show all messages with word &#39;happy&#39; in them.</li>
+        </ul>
+        </li>
+        <li><p>Press <kbd>Enter</kbd> to apply the filter. The conversation history will be filtered and display only messages matching the filter.</p>
+        </li>
+        </ol>
+        <p>Press <kbd>Esc</kbd> in Command Mode to clear filters and see all history.</p>
+        <h3 id="whats-next">What's next?</h3>
+        <p>You now know the basics! Here&#39;s what to explore next:</p>
+        <ul>
+        <li><strong><a href="#modes">Navigation</a></strong> — understand the three modes and how to switch between them</li>
+        <li><strong><a href="#topics">Topics</a></strong> — learn to structure your conversations with topic trees</li>
+        <li><strong><a href="#filtering">Search &amp; Filtering</a></strong> — master the powerful CLI filter language</li>
+        <li><strong><a href="#context">Context Management</a></strong> — control what the model sees in each request</li>
+        </ul>
+        <blockquote>
+        <p><strong>Quick reference:</strong> Press <kbd>F1</kbd> anytime to see all keyboard shortcuts.</p>
+        </blockquote>
       </section>
 
       <section id="modes">
-<h2 id="modes">Modes and where to look</h2>
+<h2 id="modes">Navigation: Understanding the Three Modes</h2>
+        <p>MaiChat organizes your interaction into <strong>three distinct modes</strong>, each with its own screen area and keyboard commands. Understanding these modes is essential to using the app efficiently.</p>
+        <blockquote>
+        <p><strong>Visual indicator:</strong> The current mode is always shown in a badge at the bottom-left corner of the screen (Vim-style), displaying &quot;INPUT&quot;, &quot;VIEW&quot;, or &quot;COMMAND&quot;.</p>
+        </blockquote>
+        <h3 id="the-three-modes">The Three Modes</h3>
+        <p><strong>Input Mode</strong> (bottom area)</p>
         <ul>
-        <li><strong>View Mode</strong> (middle zone): browsing history, rating/editing messages, jumping within the conversation.</li>
-        <li><strong>Input Mode</strong> (bottom zone): composing a new message.</li>
-        <li><strong>Command Mode</strong> (top zone): typing CLI filters and commands.</li>
+        <li><strong>Purpose:</strong> Compose and send messages to AI models</li>
+        <li><strong>Screen:</strong> Message input box with model and topic selectors</li>
+        <li><strong>Main actions:</strong> Type, send messages, select model/topic</li>
+        <li><strong>Visual cue:</strong> Cursor in the input box, input area highlighted</li>
         </ul>
-        <p><strong>Switching:</strong><br><kbd>Enter</kbd>/<kbd>Esc</kbd> cycle modes contextually; <kbd>Ctrl+V</kbd>/<kbd>I</kbd>/<kbd>D</kbd> jump directly to View/Input/Command.</p>
-        <p><strong>Startup behavior:</strong><br>On open/reload, MaiChat starts in Input Mode and focuses the last (newest) message part in history.</p>
-      </section>
-
-      <section id="keyboard">
-<h2 id="keyboard">Keyboard essentials</h2>
+        <p><strong>View Mode</strong> (middle area)</p>
         <ul>
-        <li><strong>Global:</strong> <kbd>F1</kbd> (Help), <kbd>Ctrl+.</kbd> (Menu), <kbd>Ctrl+E</kbd> (Topic Editor), <kbd>Ctrl+Shift+M</kbd> (Model Editor), <kbd>Ctrl+Shift+D</kbd> (Daily Stats), <kbd>Ctrl+,</kbd> (Settings), <kbd>Ctrl+K</kbd> (API Keys).</li>
-        <li><strong>View Mode navigation:</strong> <kbd>j</kbd>/<kbd>k</kbd> next/prev part; <kbd>g</kbd>/<kbd>G</kbd> first/last; <kbd>o</kbd> / <kbd>Shift+O</kbd> jump to context boundary; <kbd>r</kbd> toggle Reading Mode (center on j/k).</li>
-        <li><strong>View Mode actions:</strong> <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> set star rating; <kbd>Space</kbd> clear star rating; <kbd>a</kbd> toggle color code; <kbd>e</kbd> edit &amp; resend (error row); <kbd>d</kbd> delete (error row); <kbd>Ctrl+T</kbd> change topic of active message.</li>
-        <li><strong>Input Mode:</strong> <kbd>Enter</kbd> send; <kbd>Esc</kbd> back to View; <kbd>Ctrl+U</kbd> clear to start; <kbd>Ctrl+W</kbd> delete word left; <kbd>Ctrl+M</kbd> model selector; <kbd>Ctrl+T</kbd> pick topic for next message.</li>
-        <li><strong>Command Mode:</strong> <kbd>Enter</kbd> apply and switch to View; <kbd>Esc</kbd> clear input; <kbd>Ctrl+P</kbd>/<kbd>N</kbd> prev/next command; <kbd>Ctrl+U</kbd> clear to start; <kbd>Ctrl+W</kbd> delete word left.</li>
+        <li><strong>Purpose:</strong> Read, navigate, and manage your message history</li>
+        <li><strong>Screen:</strong> Conversation history display</li>
+        <li><strong>Main actions:</strong> Scroll, jump between messages, rate messages, change topics, copy message content</li>
+        <li><strong>Visual cue:</strong> Active message highlighted in history</li>
+        </ul>
+        <p><strong>Command Mode</strong> (top area)</p>
+        <ul>
+        <li><strong>Purpose:</strong> Filter and search your message history</li>
+        <li><strong>Screen:</strong> Command input bar at the top</li>
+        <li><strong>Main actions:</strong> Type filter commands, navigate command history</li>
+        <li><strong>Visual cue:</strong> Cursor in the command bar, command area highlighted</li>
+        </ul>
+        <h3 id="switching-between-modes">Switching Between Modes</h3>
+        <p><strong>Contextual switching with Enter/Esc:</strong></p>
+        <ul>
+        <li><kbd>Enter</kbd> — Generally moves you &quot;into&quot; action (View → Input, Command → View)</li>
+        <li><kbd>Esc</kbd> — Generally moves you &quot;out&quot; or &quot;up&quot; (Input → View, View stays in View, Command → clears)</li>
+        </ul>
+        <p><strong>Direct mode jumps:</strong></p>
+        <ul>
+        <li><kbd>Ctrl+I</kbd> — Jump directly to Input Mode</li>
+        <li><kbd>Ctrl+V</kbd> — Jump directly to View Mode  </li>
+        <li><kbd>Ctrl+D</kbd> — Jump directly to Command Mode</li>
         </ul>
         <blockquote>
-        <p><strong>Tip:</strong> Mouse/touchpad interactions respect modes; focusing a control will switch to the correct mode to avoid conflicts.</p>
+        <p><strong>Tip:</strong> <kbd>Enter</kbd> and <kbd>Esc</kbd> are your primary navigation keys. Learn these first, use the Ctrl shortcuts when you need to jump quickly.</p>
+        </blockquote>
+        <h3 id="view-mode-navigation">View Mode Navigation</h3>
+        <p>This is where you&#39;ll spend most of your reading time. View Mode uses Vim-inspired keys:</p>
+        <p><strong>Basic scrolling:</strong></p>
+        <ul>
+        <li><kbd>j</kbd> — Scroll down (toward newer messages)</li>
+        <li><kbd>k</kbd> — Scroll up (toward older messages)</li>
+        </ul>
+        <p><strong>Jump to message boundaries:</strong></p>
+        <ul>
+        <li><kbd>u</kbd> — Jump to the start of the previous message</li>
+        <li><kbd>d</kbd> — Jump to the start of the next message</li>
+        </ul>
+        <p><strong>Jump to extremes:</strong></p>
+        <ul>
+        <li><kbd>g</kbd> — Jump to the very first message in history</li>
+        <li><kbd>G</kbd> — Jump to the last (newest) message</li>
+        </ul>
+        <p><strong>Context navigation:</strong></p>
+        <ul>
+        <li><kbd>o</kbd> — Jump to the context boundary (first message that will be sent to the model)</li>
+        <li><kbd>Shift+O</kbd> — Also jumps to context boundary (same as <kbd>o</kbd>)</li>
+        </ul>
+        <blockquote>
+        <p><strong>Why u/d instead of arrows?</strong> Keeping your hands on the home row is faster. You&#39;ll appreciate it after a few sessions!</p>
+        </blockquote>
+        <h3 id="view-mode-actions">View Mode Actions</h3>
+        <p>Beyond navigation, View Mode lets you manage your messages:</p>
+        <p><strong>Rating messages:</strong></p>
+        <ul>
+        <li><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> — Set star rating (1-3 stars)</li>
+        <li><kbd>Space</kbd> — Clear star rating</li>
+        <li><kbd>a</kbd> — Toggle color flag (blue square or grey circle)</li>
+        </ul>
+        <p><strong>Managing messages:</strong></p>
+        <ul>
+        <li><kbd>Ctrl+T</kbd> — Change the topic of the active message</li>
+        <li><kbd>e</kbd> — Edit and resend (only works on error messages)</li>
+        <li><kbd>d</kbd> — Delete message (only works on error messages)</li>
+        </ul>
+        <h3 id="input-mode-shortcuts">Input Mode Shortcuts</h3>
+        <p>When composing messages, these editing shortcuts speed up your workflow:</p>
+        <p><strong>Basic actions:</strong></p>
+        <ul>
+        <li><kbd>Enter</kbd> — Send the message</li>
+        <li><kbd>Esc</kbd> — Return to View Mode (without sending)</li>
+        <li><kbd>Ctrl+M</kbd> — Open model selector</li>
+        <li><kbd>Ctrl+T</kbd> — Open topic selector</li>
+        </ul>
+        <p><strong>Emacs-style text editing:</strong></p>
+        <ul>
+        <li><kbd>Ctrl+A</kbd> — Move cursor to start of line</li>
+        <li><kbd>Ctrl+E</kbd> — Move cursor to end of line</li>
+        <li><kbd>Ctrl+U</kbd> — Delete from cursor to start of line</li>
+        <li><kbd>Ctrl+W</kbd> — Delete word to the left</li>
+        <li><kbd>Ctrl+Shift+F</kbd> — Move cursor forward one word</li>
+        <li><kbd>Ctrl+Shift+B</kbd> — Move cursor backward one word</li>
+        </ul>
+        <blockquote>
+        <p><strong>Note:</strong> These same Emacs-style shortcuts work in Command Mode too!</p>
+        </blockquote>
+        <h3 id="command-mode-usage">Command Mode Usage</h3>
+        <p>Command Mode is for searching and filtering. See the <a href="#filtering">Search &amp; Filtering</a> section for detailed filter syntax.</p>
+        <p><strong>Filter actions:</strong></p>
+        <ul>
+        <li><kbd>Enter</kbd> — Apply filter and switch to View Mode</li>
+        <li><kbd>Esc</kbd> — Clear the command input (stays in Command Mode)</li>
+        <li><kbd>Ctrl+P</kbd> — Previous command (command history)</li>
+        <li><kbd>Ctrl+N</kbd> — Next command (command history)</li>
+        </ul>
+        <p><strong>Emacs-style text editing:</strong></p>
+        <ul>
+        <li><kbd>Ctrl+A</kbd> — Move cursor to start of line</li>
+        <li><kbd>Ctrl+E</kbd> — Move cursor to end of line</li>
+        <li><kbd>Ctrl+U</kbd> — Delete from cursor to start of line</li>
+        <li><kbd>Ctrl+W</kbd> — Delete word to the left</li>
+        <li><kbd>Ctrl+Shift+F</kbd> — Move cursor forward one word</li>
+        <li><kbd>Ctrl+Shift+B</kbd> — Move cursor backward one word</li>
+        </ul>
+        <h3 id="mousetouchpad-behavior">Mouse/Touchpad Behavior</h3>
+        <p>You can use your mouse, but it respects the mode system:</p>
+        <ul>
+        <li><strong>Clicking the input box</strong> → switches to Input Mode</li>
+        <li><strong>Clicking a message in history</strong> → switches to View Mode and makes that message active</li>
+        <li><strong>Clicking the command bar</strong> → switches to Command Mode</li>
+        </ul>
+        <p>The app automatically switches modes to avoid conflicts with keyboard shortcuts.</p>
+        <h3 id="startup-behavior">Startup Behavior</h3>
+        <p>When you open or reload MaiChat:</p>
+        <ol>
+        <li>App starts in <strong>Input Mode</strong></li>
+        <li>The newest (last) message is scrolled into view</li>
+        <li>Cursor is ready in the input box</li>
+        </ol>
+        <p>This lets you immediately continue your conversation.</p>
+        <h3 id="common-patterns">Common Patterns</h3>
+        <p><strong>Quick send workflow:</strong></p>
+        <ol>
+        <li>Type message (already in Input Mode)</li>
+        <li><kbd>Enter</kbd> to send</li>
+        <li><kbd>Esc</kbd> to read response in View Mode</li>
+        <li><kbd>Enter</kbd> when ready to reply</li>
+        </ol>
+        <p><strong>Search and respond:</strong></p>
+        <ol>
+        <li><kbd>Ctrl+D</kbd> to enter Command Mode</li>
+        <li>Type filter (e.g., <code>t'Work' & d<7d</code>)</li>
+        <li><kbd>Enter</kbd> to see filtered messages</li>
+        <li><kbd>Ctrl+I</kbd> to jump to Input and compose new message</li>
+        </ol>
+        <p><strong>Review and rate:</strong></p>
+        <ol>
+        <li><kbd>g</kbd> to jump to first message</li>
+        <li>Read and use <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> to rate</li>
+        <li><kbd>d</kbd> to jump to next message</li>
+        <li>Repeat</li>
+        </ol>
+        <blockquote>
+        <p><strong>Learn more:</strong> Press <kbd>F1</kbd> anytime to see the complete keyboard reference with all shortcuts.</p>
         </blockquote>
       </section>
 
       <section id="topics">
-<h2 id="topics">Topics and the topic tree</h2>
+<h2 id="topics">Topics and the Topic Tree</h2>
+        <p>Topics are MaiChat&#39;s core organizational feature. Every message belongs to exactly one topic in a hierarchical tree structure, letting you organize thousands of messages without chaos.</p>
+        <h3 id="why-use-topics">Why Use Topics?</h3>
+        <p>Unlike standard chat interfaces where conversations become one endless scroll, topics give you:</p>
         <ul>
-        <li>Every message belongs to exactly one topic node in a hierarchical tree.</li>
-        <li>You can reassign the topic of any message later (View Mode: <kbd>Ctrl+T</kbd>).</li>
-        <li>Use the Topic Editor (<kbd>Ctrl+E</kbd>) to create and organize topics.</li>
-        <li><strong>Strategy:</strong> start with a few broad topics (e.g., Work/Personal/Research). Split further as conversations grow.</li>
+        <li><strong>Logical grouping:</strong> Keep related conversations together (e.g., all Python questions under &quot;Coding &gt; Python&quot;)</li>
+        <li><strong>Easy filtering:</strong> Show only messages from one topic or branch with a simple <kbd>t</kbd> command</li>
+        <li><strong>Context control:</strong> Filter by topic before sending to include only relevant history</li>
+        <li><strong>Quick navigation:</strong> Jump between different conversation threads without scrolling</li>
+        <li><strong>Retrospective organization:</strong> Reassign messages to different topics as your needs evolve</li>
         </ul>
+        <h3 id="the-default-topic-tree">The Default Topic Tree</h3>
+        <p>MaiChat starts with a simple topic tree to get you going:</p>
+        <pre><code>
+        General
+        Work
+        Personal
+        Research
+        </code></pre>
+        <p>These are intentionally broad. Start using them immediately, then create subtopics as patterns emerge.</p>
+        <h3 id="creating-and-managing-topics">Creating and Managing Topics</h3>
+        <p><strong>Quick topic picker (during composition):</strong></p>
+        <ol>
+        <li>Press <kbd>Ctrl+T</kbd> in Input Mode</li>
+        <li>Search for existing topics or press <kbd>n</kbd> to create a new one</li>
+        <li>Select a topic — all future messages use it until you change it</li>
+        </ol>
+        <p><strong>Topic Editor (full management):</strong></p>
+        <ol>
+        <li>Press <kbd>Ctrl+Shift+T</kbd> from any mode to open the Topic Editor</li>
+        <li>Use keyboard navigation:<ul>
+        <li><kbd>j</kbd>/<kbd>k</kbd> — Move down/up the tree</li>
+        <li><kbd>h</kbd>/<kbd>l</kbd> — Collapse/expand branches</li>
+        <li><kbd>n</kbd> — Create new child topic</li>
+        <li><kbd>N</kbd> — Create new root-level topic</li>
+        <li><kbd>r</kbd> — Rename focused topic</li>
+        <li><kbd>d</kbd> — Delete topic (requires confirmation)</li>
+        </ul>
+        </li>
+        <li>Press <kbd>Ctrl+S</kbd> to save changes</li>
+        </ol>
+        <blockquote>
+        <p><strong>Tip:</strong> The Topic Editor shows keyboard hints at the top. It&#39;s a powerful interface once you learn the keys!</p>
+        </blockquote>
+        <h3 id="reassigning-messages-to-topics">Reassigning Messages to Topics</h3>
+        <p>Made a mistake? Want to reorganize? You can change any message&#39;s topic:</p>
+        <ol>
+        <li>Navigate to the message in View Mode</li>
+        <li>Press <kbd>Ctrl+T</kbd> to open the topic picker</li>
+        <li>Select the new topic</li>
+        </ol>
+        <p>The message immediately moves to the new topic. This works on both user requests and assistant responses.</p>
+        <h3 id="topic-hierarchy-best-practices">Topic Hierarchy Best Practices</h3>
+        <p><strong>Start broad, go deep gradually:</strong></p>
+        <pre><code>✓ Good progression:
+          Work
+          Work &gt; Client Projects
+          Work &gt; Client Projects &gt; Acme Corp
+          Work &gt; Client Projects &gt; Acme Corp &gt; Q4 Campaign
+
+        ✗ Avoid premature detail:
+          Work &gt; Client Projects &gt; Acme Corp &gt; Q4 Campaign &gt; Week 1 &gt; Monday
+        </code></pre>
+        <p><strong>Use 2-4 levels typically:</strong></p>
+        <ul>
+        <li><strong>Level 1:</strong> Major life areas (Work, Personal, Learning)</li>
+        <li><strong>Level 2:</strong> Broad categories (Coding, Writing, Research)</li>
+        <li><strong>Level 3:</strong> Specific projects or themes (Python, Blog Posts, AI Papers)</li>
+        <li><strong>Level 4:</strong> Occasional subcategories (only when clearly needed)</li>
+        </ul>
+        <p><strong>Common patterns:</strong></p>
+        <p><strong>By domain:</strong></p>
+        <pre><code>
+        Work
+          ├─ Projects
+          ├─ Meetings
+          └─ Documentation
+        Personal
+          ├─ Health
+          ├─ Finance
+          └─ Travel
+        Learning
+          ├─ Programming
+          ├─ Languages
+          └─ History
+        </code></pre>
+        <p><strong>By project:</strong></p>
+        <pre><code>
+        Projects
+          ├─ Website Redesign
+          │   ├─ Frontend
+          │   ├─ Backend
+          │   └─ Content
+          └─ Mobile App
+              ├─ iOS
+              └─ Android
+        </code></pre>
+        <p><strong>By technology:</strong></p>
+        <pre><code>
+        Coding
+          ├─ Python
+          ├─ JavaScript
+          ├─ SQL
+          └─ DevOps
+        </code></pre>
+        <h3 id="topic-naming-tips">Topic Naming Tips</h3>
+        <ul>
+        <li><strong>Be specific but not too narrow:</strong> &quot;Python Web Scraping&quot; is better than just &quot;Python&quot; or &quot;BeautifulSoup Tutorial Chapter 3&quot;</li>
+        <li><strong>Use consistent patterns:</strong> If you abbreviate, do it consistently (e.g., &quot;JS&quot; vs &quot;JavaScript&quot;)</li>
+        <li><strong>Keep names short:</strong> Long names clutter the UI and are harder to filter</li>
+        <li><strong>Avoid dates in names:</strong> Use date filters (<code>d<7d</code>) instead of &quot;January 2025 Work&quot;</li>
+        </ul>
+        <h3 id="filtering-by-topics">Filtering by Topics</h3>
+        <p>Once you have topics organized, filtering becomes powerful:</p>
+        <p><strong>Show single topic:</strong></p>
+        <ul>
+        <li><code>t'Work'</code> — Only &quot;Work&quot; topic (exact match)</li>
+        <li><kbd>t</kbd> — Current topic (whatever&#39;s selected in Input Mode)</li>
+        </ul>
+        <p><strong>Show topic branch:</strong></p>
+        <ul>
+        <li><code>t'Work...'</code> — &quot;Work&quot; and all subtopics (recursive)</li>
+        <li><code>t'Coding...'</code> — Everything under &quot;Coding&quot;</li>
+        </ul>
+        <p><strong>Wildcards:</strong></p>
+        <ul>
+        <li><code>t'*Python*'</code> — Any topic containing &quot;Python&quot;</li>
+        <li><code>t'Work > *'</code> — Direct children of &quot;Work&quot; only</li>
+        </ul>
+        <p><strong>Combine with other filters:</strong></p>
+        <ul>
+        <li><code>t'Coding...' & d<7d</code> — Recent coding conversations</li>
+        <li><code>t'Work...' & s>=2</code> — Important work messages</li>
+        <li><code>(t'Python...' | t'JavaScript...') & c'error'</code> — Errors in either language</li>
+        </ul>
+        <p>See the <a href="#filtering">Search &amp; Filtering</a> section for complete filter syntax.</p>
+        <h3 id="archive-pattern">Archive Pattern</h3>
+        <p>Create an &quot;Archive&quot; topic for old conversations you want to keep but rarely need:</p>
+        <pre><code>
+        Archive
+          ├─ 2024
+          └─ 2025
+        </code></pre>
+        <p>Then filter them out by default: <code>!t'Archive...'</code></p>
+        <h3 id="when-to-split-topics">When to Split Topics</h3>
+        <p>Consider creating a subtopic when:</p>
+        <ul>
+        <li>A topic has 50+ messages and distinct themes emerge</li>
+        <li>You find yourself wanting to filter within a topic</li>
+        <li>Multiple unrelated conversations share a topic</li>
+        <li>A project or theme becomes significant enough to track separately</li>
+        </ul>
+        <p>Don&#39;t create subtopics prematurely. Let your usage patterns guide the structure.</p>
+        <h3 id="topic-metadata-advanced">Topic Metadata (Advanced)</h3>
+        <p>Topics can have additional settings:</p>
+        <p><strong>System message:</strong></p>
+        <ul>
+        <li>Custom instructions for that topic branch</li>
+        <li>Press <kbd>Ctrl+E</kbd> on a topic in the Topic Editor</li>
+        <li>Inherited by child topics unless overridden</li>
+        </ul>
+        <p><strong>Temperature:</strong></p>
+        <ul>
+        <li>Control creativity (0.0-2.0)</li>
+        <li>Press <kbd>Ctrl+T</kbd> on a topic in the Topic Editor</li>
+        </ul>
+        <p><strong>Max response length:</strong></p>
+        <ul>
+        <li>Limit assistant response tokens</li>
+        <li>Press <kbd>Ctrl+L</kbd> on a topic in the Topic Editor</li>
+        </ul>
+        <p>These are optional and most users can ignore them initially.</p>
+        <h3 id="common-questions">Common Questions</h3>
+        <p><strong>Q: Can a message belong to multiple topics?</strong><br>A: No. Each message has exactly one topic. This keeps things simple and unambiguous.</p>
+        <p><strong>Q: What happens if I delete a topic with messages?</strong><br>A: MaiChat requires you to reassign those messages first. No accidental data loss.</p>
+        <p><strong>Q: Can I export/import topic structures?</strong><br>A: Yes! See the <a href="#settings">Settings &amp; Tools</a> section for export/import options.</p>
+        <p><strong>Q: Do topics affect what&#39;s sent to the model?</strong><br>A: Not directly. But you can filter by topic before sending to control context. The topic&#39;s system message (if set) is also included.</p>
       </section>
 
       <section id="filtering">
-<h2 id="filtering">Command language (CLI filters)</h2>
-        <p>Use the top bar (Command Mode) to filter history. Filters are terse and quoted where needed.</p>
-        <h3 id="filter-basics">Basic filters</h3>
+<h2 id="filtering">Search and Filtering Language</h2>
+        <p>MaiChat&#39;s filtering language is one of its most powerful features. It lets you slice your message history by any combination of topic, model, date, content, ratings, and more — all with terse, keyboard-friendly commands.</p>
+        <h3 id="why-filter">Why Filter?</h3>
+        <p>Filtering serves three main purposes:</p>
+        <ol>
+        <li><strong>Find specific conversations:</strong> Quickly locate messages about a topic, from a date, or containing keywords</li>
+        <li><strong>Focus your view:</strong> See only what matters right now, reducing clutter</li>
+        <li><strong>Control context:</strong> Filter before sending a new message to include only relevant history</li>
+        </ol>
+        <blockquote>
+        <p><strong>Quick tip:</strong> Press <kbd>Ctrl+D</kbd> (or <kbd>Esc</kbd> from View Mode) to enter Command Mode and start filtering.</p>
+        </blockquote>
+        <h3 id="basic-filters">Basic Filters</h3>
+        <p>Each filter targets a specific attribute of your message pairs (user request + assistant response).</p>
+        <p><strong>Topic:</strong> <code>t'work'</code></p>
         <ul>
-        <li><strong>Topic:</strong> <code>t'work'</code> — topic match (supports paths, wildcards, descendants via …)</li>
-        <li><strong>Content:</strong> <code>c'error budget'</code> — substring search; <code>*</code> is a wildcard</li>
-        <li><strong>Model:</strong> <code>m'gpt-4o-mini'</code> — filter by model; wildcards allowed; bare <kbd>m</kbd> uses current model</li>
-        <li><strong>Date:</strong> <code>d2025-09-08</code> — exact calendar day; or <code>d<7d</code> for relative ages (h/d/w/mo/y)</li>
-        <li><strong>Recent count:</strong> <code>r30</code> — last 30 pairs by absolute recency (also <code>r1</code>, <code>r10</code>, <code>r50</code>).</li>
-        <li><strong>Stars:</strong> <code>s3</code> or <code>s>=2</code> — star rating equals 3, or rating at least 2 (0..3)</li>
-        <li><strong>Flagged:</strong> <kbd>b</kbd> — only pairs marked with the blue (square) flag, <kbd>g</kbd> - grey (round) flag.</li>
-        <li><strong>Errors:</strong> <kbd>e</kbd> — show only rows where assistant response errored.</li>
+        <li>Match messages by topic name</li>
+        <li>Case-insensitive</li>
+        <li>Supports paths, wildcards, and descendants (see <a href="#topic-patterns-case-insensitive">Topic Patterns</a>)</li>
         </ul>
-        <h3 id="filter-operators">Operators and grouping</h3>
+        <p><strong>Content:</strong> <code>c'error budget'</code></p>
         <ul>
-        <li><strong>AND:</strong> space adjacency or <code>&</code> (<code>r20 s>=2</code> ≡ <code>r20 & s>=2</code>)</li>
-        <li><strong>OR:</strong> <code>|</code> or <code>+</code> (<code>m'gpt*' | m'claude*'</code>)</li>
-        <li><strong>NOT:</strong> <code>!</code> (exclude) (<code>!t'Archive...'</code> or <code>!s0</code>)</li>
-        <li><strong>Parentheses:</strong> <code>( ... )</code> to control order</li>
-        <li><strong>Precedence:</strong> <code>()</code> &gt; <code>!</code> &gt; <code>&</code> (and adjacency) &gt; <code>|</code> and <code>+</code></li>
+        <li>Search for text within messages</li>
+        <li>Searches both user requests and assistant responses</li>
+        <li>Use <code>*</code> as wildcard: <code>c'*error*'</code></li>
         </ul>
-        <h3 id="topic-patterns-case-insensitive">Topic patterns (case-insensitive)</h3>
+        <p><strong>Model:</strong> <code>m'gpt-4o-mini'</code></p>
         <ul>
-        <li>Exact name or path: <code>t'AI'</code>, <code>t'AI > Transformers > GPT'</code></li>
-        <li>Descendants: <code>t'AI...'</code> (AI and all children)</li>
-        <li>Wildcards: <code>t'*Learning'</code>, <code>t'Machine*'</code>, <code>t'*Neural*'</code>, combinations like <code>t"*AI*..."</code></li>
-        <li>Bare <kbd>t</kbd> uses the currently selected topic from the input bar</li>
+        <li>Filter by which model generated the response</li>
+        <li>Wildcards supported: <code>m'gpt*'</code> matches all GPT models</li>
+        <li>Bare <kbd>m</kbd> (no quotes) uses your currently selected model</li>
         </ul>
-        <h3 id="model-patterns-case-insensitive">Model patterns (case-insensitive)</h3>
+        <p><strong>Date:</strong> <code>d2025-10-08</code></p>
         <ul>
-        <li>Exact ID: <code>m'gpt-4o'</code>, <code>m'claude-3.5'</code></li>
-        <li>Wildcards: <code>m'gpt*'</code>, <code>m'*mini*'</code>, combinations like <code>(m'gpt-4*' | m'claude*')</code></li>
-        <li>Bare <kbd>m</kbd> uses the currently selected model from the input bar</li>
+        <li>Exact calendar day in your local timezone</li>
+        <li>Or relative age: <code>d<7d</code> (last 7 days)</li>
+        <li>Units: <kbd>h</kbd> (hours), <kbd>d</kbd> (days), <kbd>w</kbd> (weeks), <code>mo</code> (months), <kbd>y</kbd> (years)</li>
         </ul>
-        <h3 id="date-forms">Date forms</h3>
+        <p><strong>Recent count:</strong> <code>r30</code></p>
         <ul>
-        <li>Absolute: <code>d2025-09-08</code> (exact local calendar day), <code>d>=2025-01-01</code></li>
-        <li>Relative ages: <code>d<24h</code>, <code>d<=7d</code>, <code>d<2w</code>, <code>d<6mo</code>, <code>d<1y</code></li>
-        <li>Omitted unit defaults to days: <code>d<3</code> ≡ <code>d<3d</code>, <code>d>=14</code> ≡ <code>d>=14d</code></li>
-        <li>Closed interval (absolute, inclusive): <code>d>=2025-09-01 & d<=2025-09-09</code></li>
-        <li>Closed interval (relative age): <code>d>=3d & d<=14d</code> (between 3 and 14 days ago, inclusive)</li>
-        <li>Half-open ranges: <code>d>=2025-01-01 & d<2025-02-01</code>; <code>d<30d & d>=7d</code></li>
+        <li>Show last N message pairs by absolute recency</li>
+        <li>Common shortcuts: <code>r1</code>, <code>r10</code>, <code>r50</code></li>
+        <li>Ignores all other context; just gives you the most recent</li>
         </ul>
-        <h3 id="filter-examples">Examples you can paste</h3>
+        <p><strong>Stars:</strong> <code>s3</code> or <code>s>=2</code></p>
         <ul>
-        <li><code>r30 & s>=2</code> — last 30 pairs and at least 2 stars</li>
-        <li><code>(b | s3) & t'Research...'</code> — flagged or 3★ under Research</li>
-        <li><code>(m'gpt-4*' | m'claude*') & t'Coding...'</code> — compare models for Coding</li>
-        <li><code>t'AI...' & d<7d & !e</code> — recent AI threads excluding errors</li>
-        <li><code>c'bug' & c'fix' & t'Code'</code> — both words appear (use two <code>c'…'</code>) in Code</li>
+        <li>Filter by your star ratings (0-3)</li>
+        <li><code>s3</code> — exactly 3 stars</li>
+        <li><code>s>=2</code> — 2 or 3 stars</li>
+        <li><code>s0</code> — unrated messages</li>
+        </ul>
+        <p><strong>Flagged:</strong> <kbd>b</kbd> or <kbd>g</kbd></p>
+        <ul>
+        <li><kbd>b</kbd> — blue square flag</li>
+        <li><kbd>g</kbd> — grey circle flag</li>
+        <li>Use flags for quick visual organization</li>
+        </ul>
+        <p><strong>Errors:</strong> <kbd>e</kbd></p>
+        <ul>
+        <li>Show only message pairs where the assistant response failed</li>
+        <li>Useful for troubleshooting API issues</li>
         </ul>
         <blockquote>
-        <p><strong>Tip:</strong> Press <kbd>F1</kbd> for the Help overlay. It includes the full key list and a compact CLI cheatsheet.<br><strong>Tip:</strong> Most interactive elements show tooltips; overlays include inline hints for their controls.</p>
+        <p><strong>Tip:</strong> The simplest and most common filter is just <kbd>t</kbd> (without quotes) — it shows only messages from your currently selected topic. This is a quick way to focus on one conversation thread.</p>
+        </blockquote>
+        <h3 id="combining-filters">Combining Filters</h3>
+        <p>The real power comes from combining filters with logical operators.</p>
+        <p><strong>AND (space or &amp;):</strong></p>
+        <pre><code>r20 s&gt;=2
+        </code></pre>
+        <p>Last 20 pairs that are rated 2+ stars. Space means AND.</p>
+        <pre><code>t&#39;Work&#39; d&lt;7d
+        </code></pre>
+        <p>Work messages from the last 7 days.</p>
+        <p><strong>OR (| or +):</strong></p>
+        <pre><code>m&#39;gpt*&#39; | m&#39;claude*&#39;
+        </code></pre>
+        <p>Messages from either GPT or Claude models.</p>
+        <pre><code>s3 | b
+        </code></pre>
+        <p>3-star messages OR blue-flagged messages.</p>
+        <p><strong>NOT (!):</strong></p>
+        <pre><code>!t&#39;Archive...&#39;
+        </code></pre>
+        <p>Everything EXCEPT Archive topic and its subtopics.</p>
+        <pre><code>d&lt;30d &amp; !e
+        </code></pre>
+        <p>Last 30 days, excluding errors.</p>
+        <p><strong>Parentheses for grouping:</strong></p>
+        <pre><code>(t&#39;Python...&#39; | t&#39;JavaScript...&#39;) &amp; c&#39;error&#39;
+        </code></pre>
+        <p>Errors in either Python or JavaScript topics.</p>
+        <pre><code>t&#39;Coding...&#39; &amp; (s3 | b)
+        </code></pre>
+        <p>Coding messages that are either 3-starred OR blue-flagged.</p>
+        <p><strong>Operator precedence:</strong></p>
+        <ul>
+        <li><code>()</code> — Parentheses (highest priority)</li>
+        <li><code>!</code> — NOT</li>
+        <li><code>&</code> and adjacency (space) — AND</li>
+        <li><code>|</code> and <code>+</code> — OR (lowest priority)</li>
+        </ul>
+        <h3 id="topic-patterns-case-insensitive">Topic Patterns (Case-Insensitive)</h3>
+        <p>Topics support powerful pattern matching:</p>
+        <p><strong>Exact match:</strong></p>
+        <ul>
+        <li><code>t'AI'</code> — Only the &quot;AI&quot; topic (not children)</li>
+        <li><code>t'AI > Transformers > GPT'</code> — Full path match</li>
+        </ul>
+        <p><strong>Descendants (...):</strong></p>
+        <ul>
+        <li><code>t'AI...'</code> — AI topic AND all its subtopics (recursive)</li>
+        <li><code>t'Work...'</code> — Everything under Work</li>
+        </ul>
+        <p><strong>Wildcards (*):</strong></p>
+        <ul>
+        <li><code>t'*Learning'</code> — Any topic ending with &quot;Learning&quot;</li>
+        <li><code>t'Machine*'</code> — Any topic starting with &quot;Machine&quot;</li>
+        <li><code>t'*Neural*'</code> — Any topic containing &quot;Neural&quot;</li>
+        </ul>
+        <p><strong>Combinations:</strong></p>
+        <ul>
+        <li><code>t'*AI*...'</code> — Topics containing &quot;AI&quot; and all their descendants</li>
+        <li><code>t'Work > *'</code> — Direct children of Work only (not recursive)</li>
+        </ul>
+        <p><strong>Bare t:</strong></p>
+        <ul>
+        <li><kbd>t</kbd> — Use currently selected topic from Input Mode</li>
+        </ul>
+        <h3 id="model-patterns-case-insensitive">Model Patterns (Case-Insensitive)</h3>
+        <p>Similar to topics, model filters support patterns:</p>
+        <p><strong>Exact ID:</strong></p>
+        <ul>
+        <li><code>m'gpt-4o'</code></li>
+        <li><code>m'claude-3.5-sonnet'</code></li>
+        </ul>
+        <p><strong>Wildcards:</strong></p>
+        <ul>
+        <li><code>m'gpt*'</code> — All GPT models</li>
+        <li><code>m'*mini*'</code> — Any model with &quot;mini&quot; in the name</li>
+        <li><code>m'claude*'</code> — All Claude models</li>
+        </ul>
+        <p><strong>Bare m:</strong></p>
+        <ul>
+        <li><kbd>m</kbd> — Use currently selected model from Input Mode</li>
+        </ul>
+        <p><strong>Common comparisons:</strong></p>
+        <pre><code>(m&#39;gpt-4*&#39; | m&#39;claude*&#39;) &amp; t&#39;Coding...&#39;
+        </code></pre>
+        <p>Compare GPT-4 vs Claude on coding questions.</p>
+        <h3 id="date-filters">Date Filters</h3>
+        <p>Dates are flexible and support both absolute and relative forms.</p>
+        <p><strong>Absolute dates:</strong></p>
+        <ul>
+        <li><code>d2025-10-08</code> — Exact day (local timezone)</li>
+        <li><code>d>=2025-01-01</code> — On or after January 1</li>
+        <li><code>d<2025-12-31</code> — Before December 31</li>
+        </ul>
+        <p><strong>Relative ages:</strong></p>
+        <ul>
+        <li><code>d<24h</code> — Last 24 hours</li>
+        <li><code>d<7d</code> — Last 7 days (omit unit = days by default)</li>
+        <li><code>d<=2w</code> — Last 2 weeks or less</li>
+        <li><code>d<6mo</code> — Last 6 months</li>
+        <li><code>d<1y</code> — Last year</li>
+        </ul>
+        <p><strong>Date ranges (AND two filters):</strong></p>
+        <p>Closed interval (inclusive):</p>
+        <pre><code>d&gt;=2025-09-01 &amp; d&lt;=2025-09-30
+        </code></pre>
+        <p>All of September 2025.</p>
+        <p>Relative age range:</p>
+        <pre><code>d&gt;=3d &amp; d&lt;=14d
+        </code></pre>
+        <p>Messages between 3 and 14 days old.</p>
+        <p>Half-open range:</p>
+        <pre><code>d&gt;=2025-01-01 &amp; d&lt;2025-02-01
+        </code></pre>
+        <p>January 2025 (excludes February 1).</p>
+        <p><strong>Default unit is days:</strong></p>
+        <ul>
+        <li><code>d<7</code> ≡ <code>d<7d</code></li>
+        <li><code>d>=30</code> ≡ <code>d>=30d</code></li>
+        </ul>
+        <h3 id="filter-examples">Practical Examples</h3>
+        <p>Here are real-world filtering scenarios you can copy and adapt:</p>
+        <p><strong>Review recent important conversations:</strong></p>
+        <pre><code>r30 &amp; s&gt;=2
+        </code></pre>
+        <p>Last 30 pairs that you rated highly.</p>
+        <p><strong>Find all discussions about a bug:</strong></p>
+        <pre><code>c&#39;authentication&#39; &amp; c&#39;bug&#39; &amp; t&#39;Work...&#39;
+        </code></pre>
+        <p>Work messages containing both &quot;authentication&quot; and &quot;bug&quot;.</p>
+        <p><strong>Compare model outputs on a topic:</strong></p>
+        <pre><code>(m&#39;gpt-4*&#39; | m&#39;claude*&#39;) &amp; t&#39;Writing...&#39;
+        </code></pre>
+        <p>See which model you used for writing tasks.</p>
+        <p><strong>Recent conversations excluding archives:</strong></p>
+        <pre><code>d&lt;14d &amp; !t&#39;Archive...&#39;
+        </code></pre>
+        <p>Last 2 weeks of active conversations.</p>
+        <p><strong>Flagged or highly-rated research:</strong></p>
+        <pre><code>(b | s3) &amp; t&#39;Research...&#39;
+        </code></pre>
+        <p>Your marked or 3-starred research messages.</p>
+        <p><strong>Debug recent API errors:</strong></p>
+        <pre><code>e &amp; d&lt;7d
+        </code></pre>
+        <p>Failed requests from the last week.</p>
+        <p><strong>Find conversations about Python errors:</strong></p>
+        <pre><code>t&#39;Python...&#39; &amp; c&#39;error&#39; &amp; !e
+        </code></pre>
+        <p>Python discussions mentioning &quot;error&quot; but not actual API failures.</p>
+        <p><strong>Weekly review of all topics:</strong></p>
+        <pre><code>d&gt;=7d &amp; d&lt;14d
+        </code></pre>
+        <p>Messages from 1-2 weeks ago (last week).</p>
+        <p><strong>Current topic, recent, highly rated:</strong></p>
+        <pre><code>t &amp; d&lt;30d &amp; s&gt;=2
+        </code></pre>
+        <p>Great recent messages in your active topic.</p>
+        <h3 id="workflow-tips">Workflow Tips</h3>
+        <p><strong>Start broad, then narrow:</strong></p>
+        <ol>
+        <li><code>t'Coding...'</code> — See all coding</li>
+        <li><code>t'Coding...' & d<30d</code> — Add time constraint</li>
+        <li><code>t'Coding...' & d<30d & m'gpt*'</code> — Narrow to GPT models</li>
+        </ol>
+        <p><strong>Save common filters as commands:</strong>
+        The command input has history (<kbd>Ctrl+P</kbd>/<kbd>Ctrl+N</kbd>). Your frequent filters are remembered.</p>
+        <p><strong>Filter before sending:</strong>
+        Apply a filter, verify your visible context, then <kbd>Ctrl+I</kbd> to compose a message with that context.</p>
+        <p><strong>Use filters for retrospective organization:</strong>
+        Find unrated messages: <code>s0 & d<7d</code> — rate them while fresh.</p>
+        <p><strong>Combine with View Mode actions:</strong>
+        Filter to a set, then navigate (<kbd>j</kbd>/<kbd>k</kbd>) and rate (<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>) or flag (<kbd>a</kbd>) them.</p>
+        <h3 id="command-mode-shortcuts">Command Mode Shortcuts</h3>
+        <p>When typing filters in Command Mode:</p>
+        <ul>
+        <li><kbd>Enter</kbd> — Apply filter and switch to View Mode</li>
+        <li><kbd>Esc</kbd> — Clear input (stays in Command Mode)</li>
+        <li><kbd>Ctrl+P</kbd> — Previous command from history</li>
+        <li><kbd>Ctrl+N</kbd> — Next command from history</li>
+        <li><kbd>Ctrl+A</kbd> — Move to start of line</li>
+        <li><kbd>Ctrl+E</kbd> — Move to end of line</li>
+        <li><kbd>Ctrl+U</kbd> — Delete from cursor to start</li>
+        <li><kbd>Ctrl+W</kbd> — Delete previous word</li>
+        </ul>
+        <h3 id="common-mistakes">Common Mistakes</h3>
+        <p><strong>Forgetting quotes:</strong></p>
+        <ul>
+        <li>✗ <code>t'work</code> — Missing closing quote</li>
+        <li>✓ <code>t'work'</code></li>
+        </ul>
+        <p><strong>Using commas instead of operators:</strong></p>
+        <ul>
+        <li>✗ <code>t'work', d<7d</code> — Comma doesn&#39;t work</li>
+        <li>✓ <code>t'work' & d<7d</code> or just <code>t'work' d<7d</code></li>
+        </ul>
+        <p><strong>Wrong wildcard syntax:</strong></p>
+        <ul>
+        <li>✗ <code>t'work*...'</code> — Wildcard and dots don&#39;t mix well</li>
+        <li>✓ <code>t'work...'</code> — Just use dots for descendants</li>
+        </ul>
+        <p><strong>Confusing NOT with exclusion:</strong></p>
+        <ul>
+        <li>✗ <code>!s3</code> alone often too broad</li>
+        <li>✓ <code>r50 & !s0</code> — Recent non-zero-rated (more useful)</li>
+        </ul>
+        <blockquote>
+        <p><strong>Quick reference:</strong> Press <kbd>F1</kbd> anytime to see the compact filter syntax cheatsheet in the help overlay.</p>
         </blockquote>
       </section>
 
       <section id="context">
-<h2 id="context">Context management: boundary & Reading Mode</h2>
-        <p>MaiChat splits long exchanges into parts for precise navigation and context selection.</p>
+<h2 id="context">Context Management</h2>
+        <p>One of MaiChat&#39;s most important features is giving you <strong>precise control over what context gets sent to the AI model</strong>. Unlike standard chat interfaces where you can&#39;t see how far back the model&#39;s &quot;memory&quot; extends, MaiChat shows you exactly which messages are in-context and lets you control the selection.</p>
+        <h3 id="why-context-matters">Why Context Matters</h3>
+        <p>The context you send affects:</p>
+        <ol>
+        <li><strong>Response quality:</strong> Relevant history helps the model understand your needs</li>
+        <li><strong>Token costs:</strong> Less context = lower API costs</li>
+        <li><strong>Response time:</strong> Smaller requests are faster</li>
+        <li><strong>Focus:</strong> Too much irrelevant context can confuse the model</li>
+        </ol>
+        <p><strong>MaiChat&#39;s approach: Visible, flexible control</strong></p>
+        <p>MaiChat gives you:</p>
         <ul>
-        <li><kbd>o</kbd> / <kbd>Shift+O</kbd> (View Mode): jump to the current context boundary (first in‑context pair) and center it.</li>
+        <li><strong>Flexible composition:</strong> Use filters + metadata (topics, stars, flags) to select which messages are candidates for context</li>
+        <li><strong>Visual feedback:</strong> See exactly what&#39;s in-context and what&#39;s not</li>
+        <li><strong>Direct control:</strong> What you choose to filter is what gets sent (as long as it fits the model&#39;s limits)</li>
+        <li><strong>Multiple strategies:</strong> Filter by topic, date, rating, model, content — or any combination</li>
         </ul>
-        <p><strong>Reading Mode</strong> (toggle with <kbd>r</kbd>) is independent of the boundary; when enabled, each <kbd>j</kbd>/<kbd>k</kbd> navigation recenters the active part for sustained focus. Use it when reading long replies; turn it off to keep minimal scroll movement.</p>
-        <p>This helps you see which parts of the conversation will be sent to the model and quickly adjust your focus.</p>
-        <h3 id="message-counter-top-right">Message counter (top-right)</h3>
+        <p><strong>Example:</strong> Send only your highly-rated Python conversations from the last month:</p>
+        <pre><code>t&#39;Python...&#39; &amp; s&gt;=2 &amp; d&lt;30d
+        </code></pre>
+        <p>This level of control helps you balance quality, cost, and relevance for every request.</p>
+        <h3 id="what-gets-sent">What Gets Sent?</h3>
+        <p>When you send a message, MaiChat includes three things:</p>
+        <ol>
+        <li><strong>Your new user request</strong> — what you just typed</li>
+        <li><strong>The topic&#39;s system message</strong> — if your current topic has one configured (custom instructions)</li>
+        <li><strong>Selected conversation history</strong> — the messages you&#39;ve chosen through filtering</li>
+        </ol>
+        <p><strong>How history selection works:</strong></p>
         <ul>
-        <li>Format <code>X/Y</code> — Predicted included / Visible pairs. X is what would go into the next request; Y is what&#39;s currently visible after filtering.</li>
-        <li>Prefix <code>(-) </code> — The newest message is hidden by your current filter.</li>
-        <li>Trim indicator: <code>[S-T]/Y</code> — S pairs sent after trimming, T pairs trimmed out (when the initial prediction didn&#39;t fit the model limit). Can combine with the <code>(-) </code> prefix.</li>
-        <li>Tooltip shows extra details: predicted tokens, whether URA-model is active, and how many pairs were trimmed on the last send.</li>
+        <li>You use <strong>filters</strong> to select which messages are candidates (e.g., <code>t'Python...'</code>, <code>d<7d</code>, <code>s>=2</code>)</li>
+        <li>MaiChat takes your <strong>filtered/visible messages</strong> and includes as many as fit the model&#39;s context window</li>
+        <li>Newest messages are included first, working backward in time</li>
+        <li>The app shows you <strong>visually</strong> which messages are in-context (will be sent) and which are off-context (won&#39;t be sent)</li>
         </ul>
-        <h3 id="offcontext-visualization-modeldependent">Off‑context visualization (model‑dependent)</h3>
+        <p><strong>Typical workflow:</strong></p>
+        <p>In most cases, your filtered history will <strong>fit completely</strong> into the context. For example:</p>
         <ul>
-        <li>Parts beyond the current context boundary are dimmed and show an &quot;off&quot; badge in the meta line.</li>
-        <li>The boundary is computed from model limits (max context) and settings (e.g., chars‑per‑token, user request allowance). Switching models can change how many pairs are &quot;in&quot; vs &quot;off&quot;.</li>
-        <li>Use <kbd>o</kbd> / <kbd>Shift+O</kbd> to jump to the first in‑context pair.</li>
+        <li>Filter to current topic: <kbd>t</kbd> → 25 messages → all 25 fit ✓</li>
+        <li>Filter to recent starred: <code>s>=2 & d<30d</code> → 15 messages → all 15 fit ✓</li>
+        <li>Filter to specific project: <code>t'Project X...'</code> → 40 messages → all 40 fit ✓</li>
         </ul>
+        <p><strong>When trimming occurs:</strong></p>
+        <p>If your filtered history is very large (hundreds of messages) or you&#39;re using a small context model, MaiChat may need to trim older messages to fit the token limit. You&#39;ll see this happen and can:</p>
+        <ul>
+        <li>Apply a more restrictive filter to focus on what matters most</li>
+        <li>Switch to a larger context model (e.g., Claude 3.5 Sonnet with 200K tokens)</li>
+        <li>Accept the automatic trimming (often the best choice — newest messages usually matter most)</li>
+        </ul>
+        <p>The key point: <strong>You see what gets sent</strong>. The app marks which messages are in-context, so there are no surprises.</p>
+        <h3 id="the-context-boundary">The Context Boundary</h3>
+        <p>The <strong>context boundary</strong> is the dividing line between messages that will be sent to the model (in-context) and messages that won&#39;t be sent (off-context).</p>
+        <p><strong>Why you need to see this:</strong></p>
+        <p>Knowing where the boundary is lets you:</p>
+        <ul>
+        <li>Verify that important messages are included</li>
+        <li>Understand if you need to filter more restrictively</li>
+        <li>See at a glance how much context you&#39;re sending</li>
+        <li>Make informed decisions about whether to adjust your filter</li>
+        </ul>
+        <p><strong>How MaiChat shows you the boundary:</strong></p>
+        <ul>
+        <li><strong>In-context messages</strong> appear at normal brightness</li>
+        <li><strong>Off-context messages</strong> are dimmed (grayed out) with an &quot;off&quot; badge in their meta line</li>
+        <li>This visual distinction makes it instantly clear what the model will see</li>
+        </ul>
+        <p><strong>Checking the boundary:</strong></p>
+        <p>Press <kbd>o</kbd> or <kbd>Shift+O</kbd> in View Mode to jump directly to the first in-context message (the boundary point). The view centers on this message so you can easily review what&#39;s included.</p>
+        <h3 id="the-message-counter-top-right">The Message Counter (Top-Right)</h3>
+        <p>The message counter shows context status at a glance:</p>
+        <p><strong>Basic format: <code>X/Y</code></strong></p>
+        <ul>
+        <li><kbd>X</kbd> = Predicted in-context pairs (will be sent)</li>
+        <li><kbd>Y</kbd> = Currently visible pairs (after filtering)</li>
+        </ul>
+        <p><strong>Example:</strong> <code>15/42</code> means 15 pairs will be sent out of 42 visible.</p>
+        <p><strong>Prefix: <code>(-) </code></strong></p>
+        <ul>
+        <li>Means your newest message is hidden by the current filter</li>
+        <li><strong>Warning:</strong> You won&#39;t be able to send with this filter active!</li>
+        </ul>
+        <p><strong>Trim indicator: <code>[S-T]/Y</code></strong></p>
+        <ul>
+        <li><kbd>S</kbd> = Pairs actually sent (after trimming)</li>
+        <li><kbd>T</kbd> = Pairs trimmed out (didn&#39;t fit)</li>
+        <li><kbd>Y</kbd> = Visible pairs</li>
+        </ul>
+        <p><strong>Example:</strong> <code>[12-3]/42</code> means 12 pairs sent, 3 were trimmed, 42 visible.</p>
+        <p><strong>Hover for details:</strong>
+        The counter&#39;s tooltip shows:</p>
+        <ul>
+        <li>Predicted token count</li>
+        <li>Whether URA (User Request Allowance) is active</li>
+        <li>How many pairs were trimmed on the last send</li>
+        <li>Current model&#39;s context window size</li>
+        </ul>
+        <h3 id="how-context-is-computed">How Context is Computed</h3>
+        <p>MaiChat uses a <strong>prediction algorithm</strong> before you send:</p>
+        <ol>
+        <li><strong>Start with visible history</strong> (after any filters)</li>
+        <li><strong>Count tokens</strong> for each pair (user + assistant)</li>
+        <li><strong>Reserve URA tokens</strong> for your new request + expected response (default: 600)</li>
+        <li><strong>Include pairs from newest to oldest</strong> until space runs out</li>
+        <li><strong>Mark the boundary</strong> and dim older messages</li>
+        </ol>
+        <p><strong>Model-dependent:</strong></p>
+        <ul>
+        <li>Each model has a different context window (tokens it can handle)</li>
+        <li>GPT-4o: 128K tokens</li>
+        <li>Claude 3.5 Sonnet: 200K tokens</li>
+        <li>Switching models changes the boundary!</li>
+        </ul>
+        <p><strong>Settings that affect context:</strong></p>
+        <ul>
+        <li><strong>userRequestAllowance (URA):</strong> Default 600. Higher = more room for your new message, but less history included</li>
+        <li><strong>charsPerToken (CPT):</strong> Default 4. Estimation factor (4 chars ≈ 1 token)</li>
+        <li><strong>maxTrimAttempts:</strong> How many times to retry if the initial prediction is too large</li>
+        </ul>
+        <h3 id="context-control-strategies">Context Control Strategies</h3>
+        <p><strong>1. Use filters before sending:</strong></p>
+        <pre><code>t&#39;Python...&#39; &amp; d&lt;7d
+        </code></pre>
+        <p>Only include recent Python conversations, then send your question.</p>
+        <p><strong>2. Switch to a larger context model:</strong></p>
+        <p>Press <kbd>Ctrl+M</kbd> and choose a model with a bigger window if you need more history.</p>
+        <p><strong>3. Adjust URA in settings:</strong></p>
+        <ul>
+        <li><strong>Lower URA</strong> (e.g., 400) = more history fits, less room for your new message</li>
+        <li><strong>Higher URA</strong> (e.g., 800) = fewer history pairs, more room for complex prompts</li>
+        </ul>
+        <p><strong>4. Star and filter important messages:</strong></p>
+        <p>Rate key messages with <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>, then filter by <code>s>=2</code> to include only high-quality context.</p>
+        <p><strong>5. Review the boundary:</strong></p>
+        <p>Press <kbd>o</kbd> before sending to see what&#39;s included. If something important is off-context, apply a filter to bring it in.</p>
+        <h3 id="understanding-token-trimming">Understanding Token Trimming</h3>
+        <p>Sometimes MaiChat&#39;s prediction is slightly off (different models count tokens differently). When this happens:</p>
+        <ol>
+        <li><strong>Initial send fails</strong> (too many tokens)</li>
+        <li><strong>MaiChat trims</strong> the oldest included pair</li>
+        <li><strong>Retries</strong> up to <code>maxTrimAttempts</code> times</li>
+        <li><strong>Updates the counter</strong> to show <code>[S-T]/Y</code> format</li>
+        </ol>
+        <p><strong>Example scenario:</strong></p>
+        <ul>
+        <li>Predicted: 15 pairs would fit</li>
+        <li>Actual: Only 12 pairs fit</li>
+        <li>Result: <code>[12-3]/42</code> (3 pairs trimmed)</li>
+        </ul>
+        <p>This is normal and automatic. You&#39;ll see the trim indicator briefly after sending.</p>
+        <h3 id="practical-examples">Practical Examples</h3>
+        <p><strong>Review before sending:</strong></p>
+        <ol>
+        <li>Type your message in Input Mode</li>
+        <li>Press <kbd>Esc</kbd> to enter View Mode</li>
+        <li>Press <kbd>o</kbd> to jump to context boundary</li>
+        <li>Review what&#39;s in-context</li>
+        <li>Apply filters if needed: <kbd>Ctrl+D</kbd>, type filter, <kbd>Enter</kbd></li>
+        <li>Press <kbd>Ctrl+I</kbd> to return to Input Mode and send</li>
+        </ol>
+        <p><strong>Focus on recent conversations:</strong></p>
+        <pre><code>d&lt;7d
+        </code></pre>
+        <p>Only include messages from the last week, reducing noise from old conversations.</p>
+        <p><strong>Include only important messages:</strong></p>
+        <pre><code>s&gt;=2 &amp; t&#39;Work...&#39;
+        </code></pre>
+        <p>Only highly-rated work messages.</p>
+        <p><strong>Deep context for complex questions:</strong></p>
+        <ol>
+        <li>Switch to Claude 3.5 Sonnet (200K context)</li>
+        <li>Filter to relevant topic: <code>t'Project X...'</code></li>
+        <li>Check counter: <kbd>o</kbd> to see boundary</li>
+        <li>Send complex question requiring lots of context</li>
+        </ol>
+        <p><strong>Minimal context for quick questions:</strong></p>
+        <pre><code>r5
+        </code></pre>
+        <p>Only last 5 pairs — fast and cheap for simple follow-ups.</p>
+        <h3 id="common-patterns">Common Patterns</h3>
+        <p><strong>Daily workflow:</strong></p>
+        <ul>
+        <li>Use <kbd>t</kbd> filter to focus on current topic</li>
+        <li>Check counter occasionally to ensure context size is reasonable</li>
+        <li>Press <kbd>o</kbd> when you want to verify what&#39;s being sent</li>
+        </ul>
+        <p><strong>Research/analysis:</strong></p>
+        <ul>
+        <li>Filter by topic and date: <code>t'Research...' & d<30d</code></li>
+        <li>Use larger context models</li>
+        <li>Review boundary before sending complex queries</li>
+        </ul>
+        <p><strong>Cost optimization:</strong></p>
+        <ul>
+        <li>Use smaller models (mini/flash) with filtered context</li>
+        <li>Check counter to avoid sending unnecessary history</li>
+        <li>Star important messages, filter by stars before sending</li>
+        </ul>
+        <p><strong>Debugging context issues:</strong></p>
+        <ul>
+        <li>Hover over message counter for token details</li>
+        <li>Press <kbd>o</kbd> to see boundary</li>
+        <li>Check if important messages are dimmed</li>
+        <li>Adjust filter or URA settings</li>
+        </ul>
+        <h3 id="advanced-context-and-system-messages">Advanced: Context and System Messages</h3>
+        <p>If your current topic (or any ancestor) has a <strong>system message</strong> set:</p>
+        <ul>
+        <li>It&#39;s automatically included in every request</li>
+        <li>It doesn&#39;t count against your URA</li>
+        <li>It appears at the beginning of the context</li>
+        <li>Useful for role-setting or custom instructions</li>
+        </ul>
+        <p>Set system messages in the Topic Editor (<kbd>Ctrl+Shift+T</kbd>), then press <kbd>Ctrl+E</kbd> on a topic.</p>
+        <h3 id="troubleshooting">Troubleshooting</h3>
+        <p><strong>&quot;My important message isn&#39;t being sent!&quot;</strong></p>
+        <ul>
+        <li>Check if it&#39;s dimmed (off-context)</li>
+        <li>Press <kbd>o</kbd> to see the boundary</li>
+        <li>Apply a filter to bring it into context, or increase URA</li>
+        </ul>
+        <p><strong>&quot;Counter shows (-) prefix&quot;</strong></p>
+        <ul>
+        <li>Your newest message is hidden by your filter</li>
+        <li>Clear the filter (<kbd>Esc</kbd> in Command Mode) before sending</li>
+        </ul>
+        <p><strong>&quot;Trim indicator keeps appearing&quot;</strong></p>
+        <ul>
+        <li>Your messages are close to the token limit</li>
+        <li>Use a larger context model, or filter more aggressively</li>
+        </ul>
+        <p><strong>&quot;Context seems wrong after filtering&quot;</strong></p>
+        <ul>
+        <li>Remember: filters affect what&#39;s visible AND what&#39;s sent</li>
+        <li>Clear filters to reset: <kbd>Esc</kbd> in Command Mode</li>
+        </ul>
+        <p><strong>&quot;How do I know exact token count?&quot;</strong></p>
+        <ul>
+        <li>Hover over the message counter tooltip</li>
+        <li>Or append <code>?reqdbg=1</code> to URL for Request Debug overlay</li>
+        </ul>
+        <h3 id="key-takeaways">Key Takeaways</h3>
+        <p>✓ <strong>The context boundary</strong> determines what gets sent — press <kbd>o</kbd> to see it<br>✓ <strong>The message counter</strong> (<code>X/Y</code>) shows predicted context size<br>✓ <strong>Filters control context</strong> — apply them before sending<br>✓ <strong>Different models</strong> have different context windows<br>✓ <strong>URA setting</strong> balances new message space vs history inclusion<br>✓ <strong>Visual dimming</strong> shows off-context messages clearly<br>✓ <strong>Token trimming</strong> is automatic when predictions are slightly off</p>
+      </section>
+
+      <section id="models">
+<h2 id="models">API Keys and Model Catalogue</h2>
+        <p>MaiChat connects to AI providers through their APIs. To use the app, you need to set up API keys and understand how to manage your model catalog.</p>
+        <h3 id="setting-up-api-keys">Setting Up API Keys</h3>
+        <p><strong>Important: Bring Your Own Key (BYOK)</strong></p>
+        <p>MaiChat is <strong>completely free</strong> — you pay nothing to use the app itself. Instead, you use your own API keys from AI providers, and you pay them directly based on your usage.</p>
+        <ul>
+        <li><strong>You register</strong> with OpenAI, Anthropic, and/or Google (see details below)</li>
+        <li><strong>You obtain</strong> your own API keys from their platforms</li>
+        <li><strong>You pay</strong> the providers directly for API usage</li>
+        <li><strong>MaiChat cost:</strong> $0 (the app is free)</li>
+        <li><strong>AI provider cost:</strong> Pay-as-you-go or subscription plans</li>
+        </ul>
+        <p><strong>Free tiers and costs:</strong></p>
+        <ul>
+        <li><strong>OpenAI:</strong> No free tier; pay per token (roughly $2-20 per 1M tokens depending on model. 1M tokens corresponds to 1200-1500 typical chat messages)</li>
+        <li><strong>Anthropic:</strong> Some credits for new users; similar pricing to OpenAI</li>
+        <li><strong>Google (Gemini):</strong> Generous free tier (15 requests/min, 1M tokens/day for Gemini 1.5 Flash)</li>
+        <li><strong>Typical usage:</strong> Light use might cost $5-20/month; heavy use $50-100+/month</li>
+        </ul>
+        <p>Check each provider&#39;s website for current pricing and free tier details.</p>
+        <p>MaiChat supports three major AI providers. You need at least one API key to use the app.</p>
+        <p><strong>Opening API Keys settings:</strong></p>
+        <ul>
+        <li>Press <kbd>Ctrl+K</kbd> from any mode</li>
+        <li>Or use the menu: <kbd>Ctrl+.</kbd> → API Keys</li>
+        </ul>
+        <p><strong>Supported providers:</strong></p>
+        <ol>
+        <li><p><strong>OpenAI</strong> (ChatGPT models)</p>
+        <ul>
+        <li>Get your key at <a href="https://platform.openai.com/api-keys">platform.openai.com/api-keys</a></li>
+        <li>Models: GPT-5, GPT-5 mini, GPT-5 nano, o4-mini</li>
+        </ul>
+        </li>
+        <li><p><strong>Anthropic</strong> (Claude models)</p>
+        <ul>
+        <li>Get your key at <a href="https://console.anthropic.com">console.anthropic.com</a></li>
+        <li>Models: Claude Sonnet 4.5, Claude Opus 4.1, Claude 3.5 Haiku</li>
+        </ul>
+        </li>
+        <li><p><strong>Google</strong> (Gemini models)</p>
+        <ul>
+        <li>Get your key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a></li>
+        <li>Models: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite</li>
+        </ul>
+        </li>
+        </ol>
+        <p><strong>Security and privacy:</strong></p>
+        <ul>
+        <li>API keys are stored <strong>locally</strong> in your browser&#39;s localStorage</li>
+        <li><strong>OpenAI and Google:</strong> Keys are sent directly from your browser to their APIs</li>
+        <li><strong>Anthropic (Claude):</strong> Requests go through a MaiChat proxy server (required due to browser CORS restrictions). The proxy forwards your key and request to Anthropic but doesn&#39;t store or log either</li>
+        <li>Your conversation data stays between you and the AI providers</li>
+        <li>Use your browser&#39;s private/incognito mode if on a shared computer</li>
+        </ul>
+        <h3 id="understanding-the-model-catalogue">Understanding the Model Catalogue</h3>
+        <p>MaiChat comes with a pre-configured catalog of popular models. You can enable/disable models and add custom ones.</p>
+        <p><strong>Opening the Model Editor:</strong></p>
+        <ul>
+        <li>Press <kbd>Ctrl+Shift+M</kbd> from any mode</li>
+        <li>Or use the menu: <kbd>Ctrl+.</kbd> → Model Editor</li>
+        </ul>
+        <p><strong>What you see:</strong></p>
+        <p>A table showing all available models with:</p>
+        <ul>
+        <li><strong>Model ID</strong> — The unique identifier (e.g., <code>gpt-5</code>, <code>claude-sonnet-4-5-20250929</code>)</li>
+        <li><strong>Enabled</strong> — Whether the model appears in the model selector (<kbd>Ctrl+M</kbd>)</li>
+        <li><strong>Context Window</strong> — Maximum tokens the model can handle</li>
+        <li><strong>TPM/RPM/TPD</strong> — Tokens/Requests per Minute, Tokens per Day limits</li>
+        </ul>
+        <p><strong>Model categories:</strong></p>
+        <p><strong>High-performance models</strong> (expensive, powerful):</p>
+        <ul>
+        <li>GPT-5 (OpenAI) — 128K context</li>
+        <li>Claude Opus 4.1 (Anthropic) — 200K context</li>
+        <li>Claude Sonnet 4.5 (Anthropic) — 200K context (1M beta)</li>
+        <li>Gemini 2.5 Pro (Google) — 2M context</li>
+        </ul>
+        <p><strong>Balanced models</strong> (mid-tier):</p>
+        <ul>
+        <li>GPT-5 mini (OpenAI) — 128K context</li>
+        <li>Gemini 2.5 Flash (Google) — 1M context</li>
+        </ul>
+        <p><strong>Fast/economical models</strong> (cheap, quick):</p>
+        <ul>
+        <li>GPT-5 nano (OpenAI) — 128K context</li>
+        <li>Claude 3.5 Haiku (Anthropic) — 200K context</li>
+        <li>Gemini 2.5 Flash-Lite (Google) — 1M context</li>
+        </ul>
+        <p><strong>Reasoning models</strong> (specialized):</p>
+        <ul>
+        <li>o4-mini (OpenAI) — Extended thinking time</li>
+        </ul>
+        <h3 id="managing-models">Managing Models</h3>
+        <p><strong>Enable/disable models:</strong></p>
+        <ol>
+        <li>Open Model Editor (<kbd>Ctrl+Shift+M</kbd>)</li>
+        <li>Click the checkbox next to a model to toggle</li>
+        <li>Only enabled models appear in the model selector (<kbd>Ctrl+M</kbd>)</li>
+        <li>Tip: Disable models you don&#39;t have API keys for to declutter the selector</li>
+        </ol>
+        <p><strong>Why disable models:</strong></p>
+        <ul>
+        <li>No API key for that provider</li>
+        <li>Don&#39;t want to accidentally use expensive models</li>
+        <li>Simplify the model selector</li>
+        <li>Testing with specific model subset</li>
+        </ul>
+        <p><strong>Editing model parameters:</strong></p>
+        <p>Click on any field to edit:</p>
+        <ul>
+        <li><strong>Context Window:</strong> Match provider specifications (in tokens)</li>
+        <li><strong>TPM:</strong> Tokens per minute limit (enforced - MaiChat won&#39;t include context exceeding this)</li>
+        <li><strong>RPM:</strong> Requests per minute limit (not yet enforced)</li>
+        <li><strong>TPD:</strong> Total tokens per day limit (not yet enforced)</li>
+        </ul>
+        <p><strong>Why set limits:</strong></p>
+        <ul>
+        <li><strong>TPM enforcement:</strong> MaiChat uses this to limit context size per message</li>
+        <li>Future rate limiting (RPM/TPD)</li>
+        <li>Usage tracking and monitoring</li>
+        <li>Cost awareness and control</li>
+        </ul>
+        <h3 id="adding-custom-models">Adding Custom Models</h3>
+        <p>Providers regularly release new models. You can add them yourself:</p>
+        <ol>
+        <li>Open Model Editor (<kbd>Ctrl+Shift+M</kbd>)</li>
+        <li>Use the <strong>Add</strong> row at the bottom</li>
+        <li>Enter:<ul>
+        <li><strong>Model ID</strong> — Exact API identifier (check provider docs)</li>
+        <li><strong>Context Window</strong> — Maximum tokens (from provider specs)</li>
+        <li><strong>TPM/RPM/TPD</strong> — Your rate limits</li>
+        </ul>
+        </li>
+        <li>Press Enter or click Save</li>
+        <li>The model immediately appears in your selector</li>
+        </ol>
+        <p><strong>When to add custom models:</strong></p>
+        <ul>
+        <li>Provider releases a new model</li>
+        <li>You have access to a beta model</li>
+        <li>You want to use a fine-tuned model</li>
+        <li>Testing with model variants</li>
+        </ul>
+        <p><strong>Removing custom models:</strong></p>
+        <ul>
+        <li>Click the delete icon next to custom models</li>
+        <li>Base models (pre-configured) can&#39;t be deleted, only disabled</li>
+        </ul>
+        <h3 id="how-context-window-affects-your-work">How Context Window Affects Your Work</h3>
+        <p>The <strong>context window</strong> is the most important model parameter because it determines how much history you can include.</p>
+        <p><strong>Small context (8K-32K tokens):</strong></p>
+        <ul>
+        <li>Limits conversation depth</li>
+        <li>Forces aggressive filtering</li>
+        <li>Lower cost per request</li>
+        <li>Faster responses</li>
+        </ul>
+        <p><strong>Medium context (128K-200K tokens):</strong></p>
+        <ul>
+        <li>Most modern models (GPT-5, Claude Sonnet 4.5)</li>
+        <li>Comfortable for most use cases</li>
+        <li>Balances depth and cost</li>
+        </ul>
+        <p><strong>Large context (1M-2M tokens):</strong></p>
+        <ul>
+        <li>Gemini models (massive windows!)</li>
+        <li>Claude Sonnet 4.5 with beta header (1M)</li>
+        <li>Include entire project histories</li>
+        <li>Expensive per request</li>
+        <li>Use when deep context is critical</li>
+        </ul>
+        <p><strong>Switching models changes the boundary:</strong></p>
+        <p>MaiChat recalculates the context boundary when you switch models:</p>
+        <ul>
+        <li>Larger window → More messages fit → Boundary moves back</li>
+        <li>Smaller window → Fewer messages fit → Boundary moves forward</li>
+        <li>You see this instantly (dimming updates in real-time)</li>
+        </ul>
+        <p>Press <kbd>o</kbd> after switching models to see the new boundary.</p>
+        <h3 id="model-selection-strategy">Model Selection Strategy</h3>
+        <p><strong>Daily workflow:</strong></p>
+        <ul>
+        <li>Use <strong>mini/flash/nano models</strong> (GPT-5 nano, Gemini 2.5 Flash-Lite, Claude 3.5 Haiku)</li>
+        <li>Fast, cheap, good enough for most tasks</li>
+        <li>Switch to larger models only when needed</li>
+        </ul>
+        <p><strong>Complex questions:</strong></p>
+        <ul>
+        <li>Use <strong>flagship models</strong> (GPT-5, Claude Sonnet 4.5, Gemini 2.5 Pro)</li>
+        <li>Better reasoning and understanding</li>
+        <li>Worth the cost for important tasks</li>
+        </ul>
+        <p><strong>Deep context needs:</strong></p>
+        <ul>
+        <li>Use <strong>Claude Sonnet 4.5</strong> (200K, 1M beta) or <strong>Gemini 2.5 Pro</strong> (2M)</li>
+        <li>When you need lots of conversation history</li>
+        <li>Research, analysis, long-form content</li>
+        </ul>
+        <p><strong>Cost optimization:</strong></p>
+        <ul>
+        <li>Filter aggressively with nano/flash-lite models</li>
+        <li>Check message counter before sending</li>
+        <li>Use <code>r10</code> or <code>r20</code> filters for quick questions</li>
+        <li>Reserve flagship models for complex work</li>
+        </ul>
+        <p><strong>Speed optimization:</strong></p>
+        <ul>
+        <li>Flash-lite/nano models are significantly faster</li>
+        <li>Use them for rapid iteration</li>
+        <li>Switch to larger models only for final versions</li>
+        </ul>
+        <h3 id="troubleshooting-api-and-model-issues">Troubleshooting API and Model Issues</h3>
+        <p><strong>&quot;Invalid API key&quot; error:</strong></p>
+        <ul>
+        <li>Open API Keys (<kbd>Ctrl+K</kbd>)</li>
+        <li>Verify the key is entered correctly (no extra spaces)</li>
+        <li>Check that the key is active on the provider&#39;s website</li>
+        <li>Some providers require billing to be set up</li>
+        </ul>
+        <p><strong>&quot;Model not found&quot; error:</strong></p>
+        <ul>
+        <li>Check that the model ID exactly matches provider docs</li>
+        <li>Some models require special access or beta enrollment</li>
+        <li>Verify you have the right API key for that provider</li>
+        </ul>
+        <p><strong>&quot;Rate limit exceeded&quot; error:</strong></p>
+        <ul>
+        <li>You&#39;ve hit your provider&#39;s rate limit</li>
+        <li>Wait a minute and try again</li>
+        <li>Upgrade your plan on the provider&#39;s website</li>
+        <li>Or use a different model from the same provider</li>
+        </ul>
+        <p><strong>&quot;Context too large&quot; error:</strong></p>
+        <ul>
+        <li>Your request exceeds the model&#39;s context window</li>
+        <li>Apply a more restrictive filter</li>
+        <li>Or switch to a model with a larger context window</li>
+        </ul>
+        <p><strong>Models not appearing in selector:</strong></p>
+        <ul>
+        <li>Check that they&#39;re enabled in Model Editor</li>
+        <li>Verify you have an API key for that provider</li>
+        <li>Refresh the page if you just added a key</li>
+        </ul>
+        <h3 id="related-settings">Related Settings</h3>
+        <p>Some app-wide settings affect how models work:</p>
+        <p><strong>userRequestAllowance (URA):</strong> <kbd>Ctrl+,</kbd> → Settings</p>
+        <ul>
+        <li>Default: 600 tokens</li>
+        <li>Space reserved for your new message + expected response</li>
+        <li>Higher = more room for complex prompts, but less history fits</li>
+        <li>Lower = more history, but less room for long messages</li>
+        </ul>
+        <p><strong>charsPerToken (CPT):</strong> <kbd>Ctrl+,</kbd> → Settings</p>
+        <ul>
+        <li>Default: 4 characters per token</li>
+        <li>Estimation factor for token counting</li>
+        <li>Higher = more aggressive (includes more history)</li>
+        <li>Lower = more conservative (includes less history)</li>
+        </ul>
+        <p><strong>maxTrimAttempts:</strong> <kbd>Ctrl+,</kbd> → Settings</p>
+        <ul>
+        <li>Default: 10</li>
+        <li>How many times to retry trimming if initial send fails</li>
+        <li>Rarely needs adjustment</li>
+        </ul>
+        <h3 id="best-practices">Best Practices</h3>
+        <p>✓ <strong>Set up all three providers</strong> if possible — gives you flexibility and backup options<br>✓ <strong>Start with free tier</strong> (Gemini) to experiment before committing budget<br>✓ <strong>Monitor your costs</strong> using provider dashboards and Daily Stats (<kbd>Ctrl+Shift+D</kbd>)<br>✓ <strong>Disable models you don&#39;t use</strong> — keeps the selector clean<br>✓ <strong>Start with mini/flash models</strong> — upgrade to flagship only when needed<br>✓ <strong>Check the message counter</strong> before sending expensive flagship models<br>✓ <strong>Add custom models</strong> as providers release new ones<br>✓ <strong>Set realistic TPM limits</strong> to control context size per message<br>✓ <strong>Press <kbd>o</kbd> after switching models</strong> to see the new context boundary</p>
       </section>
 
       <section id="workflow">
@@ -687,39 +1956,10 @@ th {
 <h2 id="settings">Settings and tools</h2>
         <ul>
         <li><strong>Settings</strong> (<kbd>Ctrl+,</kbd>): general app preferences.</li>
-        <li><strong>Topic Editor</strong> (<kbd>Ctrl+E</kbd>): manage the topic hierarchy.</li>
+        <li><strong>Topic Editor</strong> (<kbd>Ctrl+Shift+T</kbd>): manage the topic hierarchy.</li>
         <li><strong>Model Editor</strong> (<kbd>Ctrl+Shift+M</kbd>): curate models, TPM/RPM, etc.</li>
         <li><strong>API Keys</strong> (<kbd>Ctrl+K</kbd>): manage keys.</li>
         <li><strong>Daily Stats</strong> (<kbd>Ctrl+Shift+D</kbd>): daily breakdown of message stats.</li>
-        </ul>
-      </section>
-
-      <section id="models">
-<h2 id="models">Model Editor and usage limits</h2>
-        <p>Open the Model Editor (<kbd>Ctrl+Shift+M</kbd>) to manage your model catalog and limits.</p>
-        <p><strong>What you can edit per model:</strong></p>
-        <ul>
-        <li><strong>Enabled:</strong> include/exclude a model from the selector (<kbd>Ctrl+M</kbd>). Disabling the active model auto-switches to the next enabled one.</li>
-        <li><strong>Context Window (tokens):</strong> max context size for that model (from provider docs). This drives the context boundary and trimming.</li>
-        <li><strong>TPM / RPM / TPD:</strong> tokens per minute, requests per minute, tokens per day. Set these to match your subscription/plan. They&#39;re recorded for budgeting/diagnostics and future rate limiting.</li>
-        </ul>
-        <p><strong>Add custom models:</strong> use the Add row to define an ID and numeric limits. Base models can be disabled but not deleted; custom models can be removed.</p>
-        <p><strong>How limits affect context:</strong></p>
-        <ul>
-        <li>The boundary is computed per active model: predicted history tokens + reserved new‑request tokens (URA) must fit the model&#39;s context window. If not, MaiChat trims oldest included pairs iteratively.</li>
-        <li>Switching models can expand or shrink what&#39;s &quot;in‑context&quot; (dim/off markers update accordingly).</li>
-        </ul>
-        <p><strong>Related Settings</strong> (<kbd>Ctrl+,</kbd>):</p>
-        <ul>
-        <li><strong>userRequestAllowance (URA):</strong> total new‑message allowance (user prompt + expected assistant response). Default 600. Increase for longer prompts/replies; decrease to include more history.</li>
-        <li><strong>charsPerToken (CPT):</strong> estimation factor (default 4). Higher CPT estimates fewer tokens per char → includes more history.</li>
-        <li><strong>maxTrimAttempts (NTA):</strong> number of iterative trims before giving up.</li>
-        </ul>
-        <p><strong>Tips:</strong></p>
-        <ul>
-        <li>Use the message counter to spot trimming: <code>[S-T]/Y</code> means S pairs sent after trimming T pairs; <code>(-) </code> prefix means the newest pair is hidden by your filter.</li>
-        <li>For deep context, pick a model with a larger context window or lower URA. For fewer trims, refine your filter (Command Mode) to include only relevant pairs.</li>
-        <li>Optional: append <code>?reqdbg=1</code> to the URL to open the Request Debug overlay and inspect predicted tokens, attempts, and included pairs.</li>
         </ul>
       </section>
 
@@ -767,15 +2007,23 @@ th {
         toggle.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const navItem = toggle.closest('.nav-item');
-          navItem.classList.toggle('collapsed');
           
-          // Save state to localStorage
-          const link = navItem.querySelector('a');
-          if (link) {
-            const id = link.getAttribute('href').substring(1);
-            const isCollapsed = navItem.classList.contains('collapsed');
-            localStorage.setItem(`nav-collapsed-${id}`, isCollapsed);
+          // Get the parent nav-item-header first, then its parent nav-item
+          // This ensures we only toggle the item that owns this toggle
+          const header = toggle.parentElement;
+          const navItem = header.parentElement;
+          
+          // Only toggle if this is actually a nav-item with children
+          if (navItem && navItem.classList.contains('nav-item') && navItem.classList.contains('has-children')) {
+            navItem.classList.toggle('collapsed');
+            
+            // Save state to localStorage
+            const link = navItem.querySelector(':scope > .nav-item-header > a');
+            if (link) {
+              const id = link.getAttribute('href').substring(1);
+              const isCollapsed = navItem.classList.contains('collapsed');
+              localStorage.setItem(`nav-collapsed-${id}`, isCollapsed);
+            }
           }
         });
       });
@@ -813,19 +2061,62 @@ th {
         if (currentId && currentId !== activeId) {
           activeId = currentId;
           
-          navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === `#${currentId}`) {
-              link.classList.add('active');
+          // Clear all active states first
+          navLinks.forEach(link => link.classList.remove('active'));
+          
+          // Find the link for the current section
+          const activeLink = Array.from(navLinks).find(
+            link => link.getAttribute('href') === `#${currentId}`
+          );
+          
+          if (activeLink) {
+            // Check if the active link is inside .nav-sub-items of a collapsed parent
+            // (Links in .nav-item-header are always visible, even if that item is collapsed)
+            const subItemsList = activeLink.closest('.nav-sub-items');
+            
+            if (subItemsList) {
+              // This link is a sub-item (h3/h4) - check if its parent section is collapsed
+              const collapsedParent = subItemsList.closest('.nav-item.has-children.collapsed');
               
-              // Auto-expand parent items when navigating to a section
-              let parentItem = link.closest('.nav-item.has-children.collapsed');
-              while (parentItem) {
-                parentItem.classList.remove('collapsed');
-                parentItem = parentItem.parentElement.closest('.nav-item.has-children.collapsed');
+              if (collapsedParent) {
+                // Link is hidden inside collapsed sub-items - find the nearest visible parent link
+                let parentNavItem = collapsedParent;
+                let parentLink = null;
+                
+                // Walk up the tree to find the first visible parent nav item
+                while (parentNavItem) {
+                  if (parentNavItem.classList.contains('nav-item') && 
+                      parentNavItem.classList.contains('has-children')) {
+                    parentLink = parentNavItem.querySelector(':scope > .nav-item-header > a');
+                    if (parentLink) {
+                      // Check if this parent's link is also hidden in collapsed sub-items
+                      const parentSubItems = parentLink.closest('.nav-sub-items');
+                      if (parentSubItems) {
+                        const parentCollapsed = parentSubItems.closest('.nav-item.has-children.collapsed');
+                        if (!parentCollapsed) {
+                          // Found a visible parent - highlight it
+                          parentLink.classList.add('active');
+                          break;
+                        }
+                      } else {
+                        // Parent link is in a header (always visible) - highlight it
+                        parentLink.classList.add('active');
+                        break;
+                      }
+                    }
+                  }
+                  // Move up to the next parent
+                  parentNavItem = parentNavItem.parentElement?.closest('.nav-item.has-children');
+                }
+              } else {
+                // Sub-item link is visible (parent is expanded) - highlight it normally
+                activeLink.classList.add('active');
               }
+            } else {
+              // Link is in a header (h2 level) - always visible, highlight it normally
+              activeLink.classList.add('active');
             }
-          });
+          }
         }
       };
       
@@ -833,6 +2124,29 @@ th {
       window.addEventListener('scroll', updateActiveNav);
       // Update on load
       updateActiveNav();
+      
+      // Auto-expand when clicking nav links
+      navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          // Don't prevent default - we want the anchor scroll behavior
+          
+          // Expand all parent collapsed items for this link
+          let parentItem = link.closest('.nav-item.has-children.collapsed');
+          while (parentItem) {
+            parentItem.classList.remove('collapsed');
+            
+            // Update localStorage to reflect the expansion
+            const parentLink = parentItem.querySelector(':scope > .nav-item-header > a');
+            if (parentLink) {
+              const id = parentLink.getAttribute('href').substring(1);
+              localStorage.setItem(`nav-collapsed-${id}`, false);
+            }
+            
+            // Move up to the next collapsed parent
+            parentItem = parentItem.parentElement.closest('.nav-item.has-children.collapsed');
+          }
+        });
+      });
       
       // Mobile menu toggle
       const menuBtn = document.querySelector('.mobile-menu-btn');

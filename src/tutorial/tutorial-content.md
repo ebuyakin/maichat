@@ -1,130 +1,1302 @@
 ## What is MaiChat {#overview}
 
-MaiChat is a keyboard-centric client for working with multiple LLMs in a single, unified UI. It organizes conversations into a topic tree, supports a CLI-like filtering language, and gives you precise control over the context sent to a model.
+MaiChat is a keyboard-centric interface for ChatGPT, Claude, and Gemini that puts you in control. Unlike standard chat interfaces, MaiChat organizes your conversations into a hierarchical topic tree, lets you filter message history with a powerful CLI-like language, and gives you precise control over what context gets sent to each model. It's designed for power users who want to work faster, stay organized, and maintain complete control over their AI interactions.
 
-Core ideas:
+## Quickstart (5 minutes) {#quickstart}
 
-- User interacts with the app in 3 different modes: Input, View, Command — each mode maps to a screen area and a set of keys.
-- Tree-structured topics for every message, editable anytime.
-- CLI filters for slicing history by topic, model, date, rating, color coding, errors, and content.
-- Context management: choose exactly what the model sees.
+Get MaiChat running and send your first message. This guide covers everything you need to start using the app effectively.
 
-## Quickstart (60 seconds) {#quickstart}
+> **Important:** MaiChat is designed for keyboard-first navigation with Vim-style commands (`j`/`k` for scrolling, `u`/`d` for jumping between messages, etc.). While you can use your mouse, learning the keyboard shortcuts will make you much more efficient. Press `F1` anytime to see the full reference.
 
-1. **First run:** set your API key(s). Press `Ctrl+K` or open the menu (`Ctrl+.`) → API Keys. Keys are stored locally in your browser.
-2. You start in Input Mode with the cursor in the message box (`F1` anytime for shortcuts). Type your request.
-3. Use previously set topic and model or use `Ctrl+M` to pick a model; `Ctrl+T` to pick a topic for this message.
-4. Press `Enter` to send. The reply appears at the end of the history.
-5. Press `Esc` to switch to View Mode and browse. Use `j`/`k` to move between message parts, `g`/`G` to jump to first/last, `o` (or `Shift+O`) to jump to the context boundary, and `r` to toggle Reading Mode (centers navigation when on).
-6. Press `Enter` to switch back to Input Mode and continue typing.
+### Step 1: Set up your API key
 
-## Modes and where to look {#modes}
+MaiChat needs API keys to connect to LLM providers (OpenAI, Anthropic, Google).
 
-- **View Mode** (middle zone): browsing history, rating/editing messages, jumping within the conversation.
-- **Input Mode** (bottom zone): composing a new message.
-- **Command Mode** (top zone): typing CLI filters and commands.
+1. Press `Ctrl+K` to open API Keys settings
+2. Enter your API key for at least one provider:
+   - **OpenAI**: Get your key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+   - **Anthropic**: Get your key at [console.anthropic.com](https://console.anthropic.com)
+   - **Google**: Get your key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+3. Click Save
 
-**Switching:**  
-`Enter`/`Esc` cycle modes contextually; `Ctrl+V`/`I`/`D` jump directly to View/Input/Command.
+> **Note:** API keys are stored locally in your browser and never leave your device.
 
-**Startup behavior:**  
-On open/reload, MaiChat starts in Input Mode and focuses the last (newest) message part in history.
+### Step 2: Choose a model
 
-## Keyboard essentials {#keyboard}
+Before sending your first message, select which AI model to use:
 
-- **Global:** `F1` (Help), `Ctrl+.` (Menu), `Ctrl+E` (Topic Editor), `Ctrl+Shift+M` (Model Editor), `Ctrl+Shift+D` (Daily Stats), `Ctrl+,` (Settings), `Ctrl+K` (API Keys).
-- **View Mode navigation:** `j`/`k` next/prev part; `g`/`G` first/last; `o` / `Shift+O` jump to context boundary; `r` toggle Reading Mode (center on j/k).
-- **View Mode actions:** `1`/`2`/`3` set star rating; `Space` clear star rating; `a` toggle color code; `e` edit & resend (error row); `d` delete (error row); `Ctrl+T` change topic of active message.
-- **Input Mode:** `Enter` send; `Esc` back to View; `Ctrl+U` clear to start; `Ctrl+W` delete word left; `Ctrl+M` model selector; `Ctrl+T` pick topic for next message.
-- **Command Mode:** `Enter` apply and switch to View; `Esc` clear input; `Ctrl+P`/`N` prev/next command; `Ctrl+U` clear to start; `Ctrl+W` delete word left.
+1. Press `Ctrl+M` to open the model selector
+2. Browse the available models based on your API keys:
+   - **OpenAI**: GPT-5, GPT-5 mini, GPT-5 nano, o4-mini
+   - **Anthropic**: Claude Sonnet 4.5, Claude Opus 4.1, Claude 3.5 Haiku
+   - **Google**: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite
+3. Select a model and press `Enter`
 
-> **Tip:** Mouse/touchpad interactions respect modes; focusing a control will switch to the correct mode to avoid conflicts.
+The selected model will be used for all messages until you change it.
 
-## Topics and the topic tree {#topics}
+> **Tip:** Not sure which to choose? Start with GPT-5 nano (OpenAI), Claude Sonnet 4.5 (Anthropic), or Gemini 2.5 Flash-Lite (Google) — they're fast and cost-effective.
 
-- Every message belongs to exactly one topic node in a hierarchical tree.
-- You can reassign the topic of any message later (View Mode: `Ctrl+T`).
-- Use the Topic Editor (`Ctrl+E`) to create and organize topics.
-- **Strategy:** start with a few broad topics (e.g., Work/Personal/Research). Split further as conversations grow.
+### Step 3: Send your first message
 
-## Command language (CLI filters) {#filtering}
+You start in **Input Mode** with the cursor already in the message box.
 
-Use the top bar (Command Mode) to filter history. Filters are terse and quoted where needed.
+1. Type your message (e.g., "Explain what MaiChat is in one sentence")
+2. Press `Enter` to send
+3. Watch the response appear in the history area above
 
-### Basic filters {#filter-basics}
+### Step 4: Navigate the response
 
-- **Topic:** `t'work'` — topic match (supports paths, wildcards, descendants via …)
-- **Content:** `c'error budget'` — substring search; `*` is a wildcard
-- **Model:** `m'gpt-4o-mini'` — filter by model; wildcards allowed; bare `m` uses current model
-- **Date:** `d2025-09-08` — exact calendar day; or `d<7d` for relative ages (h/d/w/mo/y)
-- **Recent count:** `r30` — last 30 pairs by absolute recency (also `r1`, `r10`, `r50`).
-- **Stars:** `s3` or `s>=2` — star rating equals 3, or rating at least 2 (0..3)
-- **Flagged:** `b` — only pairs marked with the blue (square) flag, `g` - grey (round) flag.
-- **Errors:** `e` — show only rows where assistant response errored.
+After the response arrives, switch to **View Mode** to read and navigate:
 
-### Operators and grouping {#filter-operators}
+1. Press `Esc` to enter View Mode
+2. Use `j` and `k` to scroll the conversation history up and down (like Vim)
+3. Use `u` and `d` to scroll to the beginning of the previous/next message
+4. Press `g` to jump to the first message, `G` for the last
 
-- **AND:** space adjacency or `&` (`r20 s>=2` ≡ `r20 & s>=2`)
-- **OR:** `|` or `+` (`m'gpt*' | m'claude*'`)
-- **NOT:** `!` (exclude) (`!t'Archive...'` or `!s0`)
-- **Parentheses:** `( ... )` to control order
-- **Precedence:** `()` > `!` > `&` (and adjacency) > `|` and `+`
+### Step 5: Organize with topics
 
-### Topic patterns (case-insensitive)
+MaiChat comes with a starter topic tree (General, Work, Personal, Research) that you can use immediately:
 
-- Exact name or path: `t'AI'`, `t'AI > Transformers > GPT'`
-- Descendants: `t'AI...'` (AI and all children)
-- Wildcards: `t'*Learning'`, `t'Machine*'`, `t'*Neural*'`, combinations like `t"*AI*..."`
-- Bare `t` uses the currently selected topic from the input bar
+1. Press `Ctrl+T` in Input Mode to see the topic selector
+2. Use search box to filter the topic list or press `Ctrl+J` to navigate the tree using `h``j``k``l` keys (vim-style).
+3. Select a topic from the list and press `Enter`, the selected topic will be displayed at the bottom of the input zone.
+4. Type a message and send it
 
-### Model patterns (case-insensitive)
+All future messages will use this topic until you change it. You can reassign messages to different topics anytime.
 
-- Exact ID: `m'gpt-4o'`, `m'claude-3.5'`
-- Wildcards: `m'gpt*'`, `m'*mini*'`, combinations like `(m'gpt-4*' | m'claude*')`
-- Bare `m` uses the currently selected model from the input bar
+> **Learn more:** See the [Topics](#topics) section to learn how to customize your topic tree structure and use to manage the context of your requests.
 
-### Date forms
+### Step 6: Filter your history
 
-- Absolute: `d2025-09-08` (exact local calendar day), `d>=2025-01-01`
-- Relative ages: `d<24h`, `d<=7d`, `d<2w`, `d<6mo`, `d<1y`
-- Omitted unit defaults to days: `d<3` ≡ `d<3d`, `d>=14` ≡ `d>=14d`
-- Closed interval (absolute, inclusive): `d>=2025-09-01 & d<=2025-09-09`
-- Closed interval (relative age): `d>=3d & d<=14d` (between 3 and 14 days ago, inclusive)
-- Half-open ranges: `d>=2025-01-01 & d<2025-02-01`; `d<30d & d>=7d`
+As your history grows, use filters to find messages:
 
-### Examples you can paste {#filter-examples}
+1. Press `Ctrl+D` or (`Esc` from the View mode) to enter Command Mode (top bar)
+2. In the filter input box you can type various filters and commands controlling your conversation
+3. Try these filters:
+   - `r10` — show last 10 message pairs (request and response)
+   - `t` - show only current topic messages
+   - `t'Learning...'` — show all messages in "Learning MaiChat" topic and subtopics
+   - `d<7` - show all messages of the last 7 days
+   - `c'happy'` - show all messages with word 'happy' in them.
 
-- `r30 & s>=2` — last 30 pairs and at least 2 stars
-- `(b | s3) & t'Research...'` — flagged or 3★ under Research
-- `(m'gpt-4*' | m'claude*') & t'Coding...'` — compare models for Coding
-- `t'AI...' & d<7d & !e` — recent AI threads excluding errors
-- `c'bug' & c'fix' & t'Code'` — both words appear (use two `c'…'`) in Code
+4. Press `Enter` to apply the filter. The conversation history will be filtered and display only messages matching the filter.
 
-> **Tip:** Press `F1` for the Help overlay. It includes the full key list and a compact CLI cheatsheet.  
-> **Tip:** Most interactive elements show tooltips; overlays include inline hints for their controls.
+Press `Esc` in Command Mode to clear filters and see all history.
 
-## Context management: boundary & Reading Mode {#context}
+### What's next?
 
-MaiChat splits long exchanges into parts for precise navigation and context selection.
+You now know the basics! Here's what to explore next:
 
-- `o` / `Shift+O` (View Mode): jump to the current context boundary (first in‑context pair) and center it.
+- **[Navigation](#modes)** — understand the three modes and how to switch between them
+- **[Topics](#topics)** — learn to structure your conversations with topic trees
+- **[Search & Filtering](#filtering)** — master the powerful CLI filter language
+- **[Context Management](#context)** — control what the model sees in each request
 
-**Reading Mode** (toggle with `r`) is independent of the boundary; when enabled, each `j`/`k` navigation recenters the active part for sustained focus. Use it when reading long replies; turn it off to keep minimal scroll movement.
+> **Quick reference:** Press `F1` anytime to see all keyboard shortcuts.
 
-This helps you see which parts of the conversation will be sent to the model and quickly adjust your focus.
+## Navigation: Understanding the Three Modes {#modes}
 
-### Message counter (top-right)
+MaiChat organizes your interaction into **three distinct modes**, each with its own screen area and keyboard commands. Understanding these modes is essential to using the app efficiently.
 
-- Format `X/Y` — Predicted included / Visible pairs. X is what would go into the next request; Y is what's currently visible after filtering.
-- Prefix `(-) ` — The newest message is hidden by your current filter.
-- Trim indicator: `[S-T]/Y` — S pairs sent after trimming, T pairs trimmed out (when the initial prediction didn't fit the model limit). Can combine with the `(-) ` prefix.
-- Tooltip shows extra details: predicted tokens, whether URA-model is active, and how many pairs were trimmed on the last send.
+> **Visual indicator:** The current mode is always shown in a badge at the bottom-left corner of the screen (Vim-style), displaying "INPUT", "VIEW", or "COMMAND".
 
-### Off‑context visualization (model‑dependent)
+### The Three Modes
 
-- Parts beyond the current context boundary are dimmed and show an "off" badge in the meta line.
-- The boundary is computed from model limits (max context) and settings (e.g., chars‑per‑token, user request allowance). Switching models can change how many pairs are "in" vs "off".
-- Use `o` / `Shift+O` to jump to the first in‑context pair.
+**Input Mode** (bottom area)
+- **Purpose:** Compose and send messages to AI models
+- **Screen:** Message input box with model and topic selectors
+- **Main actions:** Type, send messages, select model/topic
+- **Visual cue:** Cursor in the input box, input area highlighted
+
+**View Mode** (middle area)
+- **Purpose:** Read, navigate, and manage your message history
+- **Screen:** Conversation history display
+- **Main actions:** Scroll, jump between messages, rate messages, change topics, copy message content
+- **Visual cue:** Active message highlighted in history
+
+**Command Mode** (top area)
+- **Purpose:** Filter and search your message history
+- **Screen:** Command input bar at the top
+- **Main actions:** Type filter commands, navigate command history
+- **Visual cue:** Cursor in the command bar, command area highlighted
+
+### Switching Between Modes
+
+**Contextual switching with Enter/Esc:**
+- `Enter` — Generally moves you "into" action (View → Input, Command → View)
+- `Esc` — Generally moves you "out" or "up" (Input → View, View stays in View, Command → clears)
+
+**Direct mode jumps:**
+- `Ctrl+I` — Jump directly to Input Mode
+- `Ctrl+V` — Jump directly to View Mode  
+- `Ctrl+D` — Jump directly to Command Mode
+
+> **Tip:** `Enter` and `Esc` are your primary navigation keys. Learn these first, use the Ctrl shortcuts when you need to jump quickly.
+
+### View Mode Navigation
+
+This is where you'll spend most of your reading time. View Mode uses Vim-inspired keys:
+
+**Basic scrolling:**
+- `j` — Scroll down (toward newer messages)
+- `k` — Scroll up (toward older messages)
+
+**Jump to message boundaries:**
+- `u` — Jump to the start of the previous message
+- `d` — Jump to the start of the next message
+
+**Jump to extremes:**
+- `g` — Jump to the very first message in history
+- `G` — Jump to the last (newest) message
+
+**Context navigation:**
+- `o` — Jump to the context boundary (first message that will be sent to the model)
+- `Shift+O` — Also jumps to context boundary (same as `o`)
+
+> **Why u/d instead of arrows?** Keeping your hands on the home row is faster. You'll appreciate it after a few sessions!
+
+### View Mode Actions
+
+Beyond navigation, View Mode lets you manage your messages:
+
+**Rating messages:**
+- `1` / `2` / `3` — Set star rating (1-3 stars)
+- `Space` — Clear star rating
+- `a` — Toggle color flag (blue square or grey circle)
+
+**Managing messages:**
+- `Ctrl+T` — Change the topic of the active message
+- `e` — Edit and resend (only works on error messages)
+- `d` — Delete message (only works on error messages)
+
+### Input Mode Shortcuts
+
+When composing messages, these editing shortcuts speed up your workflow:
+
+**Basic actions:**
+- `Enter` — Send the message
+- `Esc` — Return to View Mode (without sending)
+- `Ctrl+M` — Open model selector
+- `Ctrl+T` — Open topic selector
+
+**Emacs-style text editing:**
+- `Ctrl+A` — Move cursor to start of line
+- `Ctrl+E` — Move cursor to end of line
+- `Ctrl+U` — Delete from cursor to start of line
+- `Ctrl+W` — Delete word to the left
+- `Ctrl+Shift+F` — Move cursor forward one word
+- `Ctrl+Shift+B` — Move cursor backward one word
+
+> **Note:** These same Emacs-style shortcuts work in Command Mode too!
+
+### Command Mode Usage
+
+Command Mode is for searching and filtering. See the [Search & Filtering](#filtering) section for detailed filter syntax.
+
+**Filter actions:**
+- `Enter` — Apply filter and switch to View Mode
+- `Esc` — Clear the command input (stays in Command Mode)
+- `Ctrl+P` — Previous command (command history)
+- `Ctrl+N` — Next command (command history)
+
+**Emacs-style text editing:**
+- `Ctrl+A` — Move cursor to start of line
+- `Ctrl+E` — Move cursor to end of line
+- `Ctrl+U` — Delete from cursor to start of line
+- `Ctrl+W` — Delete word to the left
+- `Ctrl+Shift+F` — Move cursor forward one word
+- `Ctrl+Shift+B` — Move cursor backward one word
+
+### Mouse/Touchpad Behavior
+
+You can use your mouse, but it respects the mode system:
+
+- **Clicking the input box** → switches to Input Mode
+- **Clicking a message in history** → switches to View Mode and makes that message active
+- **Clicking the command bar** → switches to Command Mode
+
+The app automatically switches modes to avoid conflicts with keyboard shortcuts.
+
+### Startup Behavior
+
+When you open or reload MaiChat:
+1. App starts in **Input Mode**
+2. The newest (last) message is scrolled into view
+3. Cursor is ready in the input box
+
+This lets you immediately continue your conversation.
+
+### Common Patterns
+
+**Quick send workflow:**
+1. Type message (already in Input Mode)
+2. `Enter` to send
+3. `Esc` to read response in View Mode
+4. `Enter` when ready to reply
+
+**Search and respond:**
+1. `Ctrl+D` to enter Command Mode
+2. Type filter (e.g., `t'Work' & d<7d`)
+3. `Enter` to see filtered messages
+4. `Ctrl+I` to jump to Input and compose new message
+
+**Review and rate:**
+1. `g` to jump to first message
+2. Read and use `1`/`2`/`3` to rate
+3. `d` to jump to next message
+4. Repeat
+
+> **Learn more:** Press `F1` anytime to see the complete keyboard reference with all shortcuts.
+
+## Topics and the Topic Tree {#topics}
+
+Topics are MaiChat's core organizational feature. Every message belongs to exactly one topic in a hierarchical tree structure, letting you organize thousands of messages without chaos.
+
+### Why Use Topics?
+
+Unlike standard chat interfaces where conversations become one endless scroll, topics give you:
+
+- **Logical grouping:** Keep related conversations together (e.g., all Python questions under "Coding > Python")
+- **Easy filtering:** Show only messages from one topic or branch with a simple `t` command
+- **Context control:** Filter by topic before sending to include only relevant history
+- **Quick navigation:** Jump between different conversation threads without scrolling
+- **Retrospective organization:** Reassign messages to different topics as your needs evolve
+
+### The Default Topic Tree
+
+MaiChat starts with a simple topic tree to get you going:
+
+```
+
+General
+Work
+Personal
+Research
+```
+
+These are intentionally broad. Start using them immediately, then create subtopics as patterns emerge.
+
+### Creating and Managing Topics
+
+**Quick topic picker (during composition):**
+1. Press `Ctrl+T` in Input Mode
+2. Search for existing topics or press `n` to create a new one
+3. Select a topic — all future messages use it until you change it
+
+**Topic Editor (full management):**
+1. Press `Ctrl+Shift+T` from any mode to open the Topic Editor
+2. Use keyboard navigation:
+   - `j`/`k` — Move down/up the tree
+   - `h`/`l` — Collapse/expand branches
+   - `n` — Create new child topic
+   - `N` — Create new root-level topic
+   - `r` — Rename focused topic
+   - `d` — Delete topic (requires confirmation)
+3. Press `Ctrl+S` to save changes
+
+> **Tip:** The Topic Editor shows keyboard hints at the top. It's a powerful interface once you learn the keys!
+
+### Reassigning Messages to Topics
+
+Made a mistake? Want to reorganize? You can change any message's topic:
+
+1. Navigate to the message in View Mode
+2. Press `Ctrl+T` to open the topic picker
+3. Select the new topic
+
+The message immediately moves to the new topic. This works on both user requests and assistant responses.
+
+### Topic Hierarchy Best Practices
+
+**Start broad, go deep gradually:**
+```
+✓ Good progression:
+  Work
+  Work > Client Projects
+  Work > Client Projects > Acme Corp
+  Work > Client Projects > Acme Corp > Q4 Campaign
+
+✗ Avoid premature detail:
+  Work > Client Projects > Acme Corp > Q4 Campaign > Week 1 > Monday
+```
+
+**Use 2-4 levels typically:**
+- **Level 1:** Major life areas (Work, Personal, Learning)
+- **Level 2:** Broad categories (Coding, Writing, Research)
+- **Level 3:** Specific projects or themes (Python, Blog Posts, AI Papers)
+- **Level 4:** Occasional subcategories (only when clearly needed)
+
+**Common patterns:**
+
+**By domain:**
+```
+
+Work
+  ├─ Projects
+  ├─ Meetings
+  └─ Documentation
+Personal
+  ├─ Health
+  ├─ Finance
+  └─ Travel
+Learning
+  ├─ Programming
+  ├─ Languages
+  └─ History
+```
+
+**By project:**
+```
+
+Projects
+  ├─ Website Redesign
+  │   ├─ Frontend
+  │   ├─ Backend
+  │   └─ Content
+  └─ Mobile App
+      ├─ iOS
+      └─ Android
+```
+
+**By technology:**
+```
+
+Coding
+  ├─ Python
+  ├─ JavaScript
+  ├─ SQL
+  └─ DevOps
+```
+
+### Topic Naming Tips
+
+- **Be specific but not too narrow:** "Python Web Scraping" is better than just "Python" or "BeautifulSoup Tutorial Chapter 3"
+- **Use consistent patterns:** If you abbreviate, do it consistently (e.g., "JS" vs "JavaScript")
+- **Keep names short:** Long names clutter the UI and are harder to filter
+- **Avoid dates in names:** Use date filters (`d<7d`) instead of "January 2025 Work"
+
+### Filtering by Topics
+
+Once you have topics organized, filtering becomes powerful:
+
+**Show single topic:**
+- `t'Work'` — Only "Work" topic (exact match)
+- `t` — Current topic (whatever's selected in Input Mode)
+
+**Show topic branch:**
+- `t'Work...'` — "Work" and all subtopics (recursive)
+- `t'Coding...'` — Everything under "Coding"
+
+**Wildcards:**
+- `t'*Python*'` — Any topic containing "Python"
+- `t'Work > *'` — Direct children of "Work" only
+
+**Combine with other filters:**
+- `t'Coding...' & d<7d` — Recent coding conversations
+- `t'Work...' & s>=2` — Important work messages
+- `(t'Python...' | t'JavaScript...') & c'error'` — Errors in either language
+
+See the [Search & Filtering](#filtering) section for complete filter syntax.
+
+### Archive Pattern
+
+Create an "Archive" topic for old conversations you want to keep but rarely need:
+
+```
+
+Archive
+  ├─ 2024
+  └─ 2025
+```
+
+Then filter them out by default: `!t'Archive...'`
+
+### When to Split Topics
+
+Consider creating a subtopic when:
+- A topic has 50+ messages and distinct themes emerge
+- You find yourself wanting to filter within a topic
+- Multiple unrelated conversations share a topic
+- A project or theme becomes significant enough to track separately
+
+Don't create subtopics prematurely. Let your usage patterns guide the structure.
+
+### Topic Metadata (Advanced)
+
+Topics can have additional settings:
+
+**System message:**
+- Custom instructions for that topic branch
+- Press `Ctrl+E` on a topic in the Topic Editor
+- Inherited by child topics unless overridden
+
+**Temperature:**
+- Control creativity (0.0-2.0)
+- Press `Ctrl+T` on a topic in the Topic Editor
+
+**Max response length:**
+- Limit assistant response tokens
+- Press `Ctrl+L` on a topic in the Topic Editor
+
+These are optional and most users can ignore them initially.
+
+### Common Questions
+
+**Q: Can a message belong to multiple topics?**  
+A: No. Each message has exactly one topic. This keeps things simple and unambiguous.
+
+**Q: What happens if I delete a topic with messages?**  
+A: MaiChat requires you to reassign those messages first. No accidental data loss.
+
+**Q: Can I export/import topic structures?**  
+A: Yes! See the [Settings & Tools](#settings) section for export/import options.
+
+**Q: Do topics affect what's sent to the model?**  
+A: Not directly. But you can filter by topic before sending to control context. The topic's system message (if set) is also included.
+
+## Search and Filtering Language {#filtering}
+
+MaiChat's filtering language is one of its most powerful features. It lets you slice your message history by any combination of topic, model, date, content, ratings, and more — all with terse, keyboard-friendly commands.
+
+### Why Filter?
+
+Filtering serves three main purposes:
+
+1. **Find specific conversations:** Quickly locate messages about a topic, from a date, or containing keywords
+2. **Focus your view:** See only what matters right now, reducing clutter
+3. **Control context:** Filter before sending a new message to include only relevant history
+
+> **Quick tip:** Press `Ctrl+D` (or `Esc` from View Mode) to enter Command Mode and start filtering.
+
+### Basic Filters
+
+Each filter targets a specific attribute of your message pairs (user request + assistant response).
+
+**Topic:** `t'work'`
+- Match messages by topic name
+- Case-insensitive
+- Supports paths, wildcards, and descendants (see [Topic Patterns](#topic-patterns-case-insensitive))
+
+**Content:** `c'error budget'`
+- Search for text within messages
+- Searches both user requests and assistant responses
+- Use `*` as wildcard: `c'*error*'`
+
+**Model:** `m'gpt-4o-mini'`
+- Filter by which model generated the response
+- Wildcards supported: `m'gpt*'` matches all GPT models
+- Bare `m` (no quotes) uses your currently selected model
+
+**Date:** `d2025-10-08`
+- Exact calendar day in your local timezone
+- Or relative age: `d<7d` (last 7 days)
+- Units: `h` (hours), `d` (days), `w` (weeks), `mo` (months), `y` (years)
+
+**Recent count:** `r30`
+- Show last N message pairs by absolute recency
+- Common shortcuts: `r1`, `r10`, `r50`
+- Ignores all other context; just gives you the most recent
+
+**Stars:** `s3` or `s>=2`
+- Filter by your star ratings (0-3)
+- `s3` — exactly 3 stars
+- `s>=2` — 2 or 3 stars
+- `s0` — unrated messages
+
+**Flagged:** `b` or `g`
+- `b` — blue square flag
+- `g` — grey circle flag
+- Use flags for quick visual organization
+
+**Errors:** `e`
+- Show only message pairs where the assistant response failed
+- Useful for troubleshooting API issues
+
+> **Tip:** The simplest and most common filter is just `t` (without quotes) — it shows only messages from your currently selected topic. This is a quick way to focus on one conversation thread.
+
+### Combining Filters
+
+The real power comes from combining filters with logical operators.
+
+**AND (space or &):**
+```
+r20 s>=2
+```
+Last 20 pairs that are rated 2+ stars. Space means AND.
+
+```
+t'Work' d<7d
+```
+Work messages from the last 7 days.
+
+**OR (| or +):**
+```
+m'gpt*' | m'claude*'
+```
+Messages from either GPT or Claude models.
+
+```
+s3 | b
+```
+3-star messages OR blue-flagged messages.
+
+**NOT (!):**
+```
+!t'Archive...'
+```
+Everything EXCEPT Archive topic and its subtopics.
+
+```
+d<30d & !e
+```
+Last 30 days, excluding errors.
+
+**Parentheses for grouping:**
+```
+(t'Python...' | t'JavaScript...') & c'error'
+```
+Errors in either Python or JavaScript topics.
+
+```
+t'Coding...' & (s3 | b)
+```
+Coding messages that are either 3-starred OR blue-flagged.
+
+**Operator precedence:**
+- `()` — Parentheses (highest priority)
+- `!` — NOT
+- `&` and adjacency (space) — AND
+- `|` and `+` — OR (lowest priority)
+
+### Topic Patterns (Case-Insensitive) {#topic-patterns-case-insensitive}
+
+Topics support powerful pattern matching:
+
+**Exact match:**
+- `t'AI'` — Only the "AI" topic (not children)
+- `t'AI > Transformers > GPT'` — Full path match
+
+**Descendants (...):**
+- `t'AI...'` — AI topic AND all its subtopics (recursive)
+- `t'Work...'` — Everything under Work
+
+**Wildcards (*):**
+- `t'*Learning'` — Any topic ending with "Learning"
+- `t'Machine*'` — Any topic starting with "Machine"
+- `t'*Neural*'` — Any topic containing "Neural"
+
+**Combinations:**
+- `t'*AI*...'` — Topics containing "AI" and all their descendants
+- `t'Work > *'` — Direct children of Work only (not recursive)
+
+**Bare t:**
+- `t` — Use currently selected topic from Input Mode
+
+### Model Patterns (Case-Insensitive)
+
+Similar to topics, model filters support patterns:
+
+**Exact ID:**
+- `m'gpt-4o'`
+- `m'claude-3.5-sonnet'`
+
+**Wildcards:**
+- `m'gpt*'` — All GPT models
+- `m'*mini*'` — Any model with "mini" in the name
+- `m'claude*'` — All Claude models
+
+**Bare m:**
+- `m` — Use currently selected model from Input Mode
+
+**Common comparisons:**
+```
+(m'gpt-4*' | m'claude*') & t'Coding...'
+```
+Compare GPT-4 vs Claude on coding questions.
+
+### Date Filters
+
+Dates are flexible and support both absolute and relative forms.
+
+**Absolute dates:**
+- `d2025-10-08` — Exact day (local timezone)
+- `d>=2025-01-01` — On or after January 1
+- `d<2025-12-31` — Before December 31
+
+**Relative ages:**
+- `d<24h` — Last 24 hours
+- `d<7d` — Last 7 days (omit unit = days by default)
+- `d<=2w` — Last 2 weeks or less
+- `d<6mo` — Last 6 months
+- `d<1y` — Last year
+
+**Date ranges (AND two filters):**
+
+Closed interval (inclusive):
+```
+d>=2025-09-01 & d<=2025-09-30
+```
+All of September 2025.
+
+Relative age range:
+```
+d>=3d & d<=14d
+```
+Messages between 3 and 14 days old.
+
+Half-open range:
+```
+d>=2025-01-01 & d<2025-02-01
+```
+January 2025 (excludes February 1).
+
+**Default unit is days:**
+- `d<7` ≡ `d<7d`
+- `d>=30` ≡ `d>=30d`
+
+### Practical Examples {#filter-examples}
+
+Here are real-world filtering scenarios you can copy and adapt:
+
+**Review recent important conversations:**
+```
+r30 & s>=2
+```
+Last 30 pairs that you rated highly.
+
+**Find all discussions about a bug:**
+```
+c'authentication' & c'bug' & t'Work...'
+```
+Work messages containing both "authentication" and "bug".
+
+**Compare model outputs on a topic:**
+```
+(m'gpt-4*' | m'claude*') & t'Writing...'
+```
+See which model you used for writing tasks.
+
+**Recent conversations excluding archives:**
+```
+d<14d & !t'Archive...'
+```
+Last 2 weeks of active conversations.
+
+**Flagged or highly-rated research:**
+```
+(b | s3) & t'Research...'
+```
+Your marked or 3-starred research messages.
+
+**Debug recent API errors:**
+```
+e & d<7d
+```
+Failed requests from the last week.
+
+**Find conversations about Python errors:**
+```
+t'Python...' & c'error' & !e
+```
+Python discussions mentioning "error" but not actual API failures.
+
+**Weekly review of all topics:**
+```
+d>=7d & d<14d
+```
+Messages from 1-2 weeks ago (last week).
+
+**Current topic, recent, highly rated:**
+```
+t & d<30d & s>=2
+```
+Great recent messages in your active topic.
+
+### Workflow Tips
+
+**Start broad, then narrow:**
+1. `t'Coding...'` — See all coding
+2. `t'Coding...' & d<30d` — Add time constraint
+3. `t'Coding...' & d<30d & m'gpt*'` — Narrow to GPT models
+
+**Save common filters as commands:**
+The command input has history (`Ctrl+P`/`Ctrl+N`). Your frequent filters are remembered.
+
+**Filter before sending:**
+Apply a filter, verify your visible context, then `Ctrl+I` to compose a message with that context.
+
+**Use filters for retrospective organization:**
+Find unrated messages: `s0 & d<7d` — rate them while fresh.
+
+**Combine with View Mode actions:**
+Filter to a set, then navigate (`j`/`k`) and rate (`1`/`2`/`3`) or flag (`a`) them.
+
+### Command Mode Shortcuts
+
+When typing filters in Command Mode:
+
+- `Enter` — Apply filter and switch to View Mode
+- `Esc` — Clear input (stays in Command Mode)
+- `Ctrl+P` — Previous command from history
+- `Ctrl+N` — Next command from history
+- `Ctrl+A` — Move to start of line
+- `Ctrl+E` — Move to end of line
+- `Ctrl+U` — Delete from cursor to start
+- `Ctrl+W` — Delete previous word
+
+### Common Mistakes
+
+**Forgetting quotes:**
+- ✗ `t'work` — Missing closing quote
+- ✓ `t'work'`
+
+**Using commas instead of operators:**
+- ✗ `t'work', d<7d` — Comma doesn't work
+- ✓ `t'work' & d<7d` or just `t'work' d<7d`
+
+**Wrong wildcard syntax:**
+- ✗ `t'work*...'` — Wildcard and dots don't mix well
+- ✓ `t'work...'` — Just use dots for descendants
+
+**Confusing NOT with exclusion:**
+- ✗ `!s3` alone often too broad
+- ✓ `r50 & !s0` — Recent non-zero-rated (more useful)
+
+> **Quick reference:** Press `F1` anytime to see the compact filter syntax cheatsheet in the help overlay.
+
+## Context Management {#context}
+
+One of MaiChat's most important features is giving you **precise control over what context gets sent to the AI model**. Unlike standard chat interfaces where you can't see how far back the model's "memory" extends, MaiChat shows you exactly which messages are in-context and lets you control the selection.
+
+### Why Context Matters
+
+The context you send affects:
+
+1. **Response quality:** Relevant history helps the model understand your needs
+2. **Token costs:** Less context = lower API costs
+3. **Response time:** Smaller requests are faster
+4. **Focus:** Too much irrelevant context can confuse the model
+
+**MaiChat's approach: Visible, flexible control**
+
+MaiChat gives you:
+
+- **Flexible composition:** Use filters + metadata (topics, stars, flags) to select which messages are candidates for context
+- **Visual feedback:** See exactly what's in-context and what's not
+- **Direct control:** What you choose to filter is what gets sent (as long as it fits the model's limits)
+- **Multiple strategies:** Filter by topic, date, rating, model, content — or any combination
+
+**Example:** Send only your highly-rated Python conversations from the last month:
+```
+t'Python...' & s>=2 & d<30d
+```
+
+This level of control helps you balance quality, cost, and relevance for every request.
+
+### What Gets Sent?
+
+When you send a message, MaiChat includes three things:
+
+1. **Your new user request** — what you just typed
+2. **The topic's system message** — if your current topic has one configured (custom instructions)
+3. **Selected conversation history** — the messages you've chosen through filtering
+
+**How history selection works:**
+
+- You use **filters** to select which messages are candidates (e.g., `t'Python...'`, `d<7d`, `s>=2`)
+- MaiChat takes your **filtered/visible messages** and includes as many as fit the model's context window
+- Newest messages are included first, working backward in time
+- The app shows you **visually** which messages are in-context (will be sent) and which are off-context (won't be sent)
+
+**Typical workflow:**
+
+In most cases, your filtered history will **fit completely** into the context. For example:
+- Filter to current topic: `t` → 25 messages → all 25 fit ✓
+- Filter to recent starred: `s>=2 & d<30d` → 15 messages → all 15 fit ✓
+- Filter to specific project: `t'Project X...'` → 40 messages → all 40 fit ✓
+
+**When trimming occurs:**
+
+If your filtered history is very large (hundreds of messages) or you're using a small context model, MaiChat may need to trim older messages to fit the token limit. You'll see this happen and can:
+- Apply a more restrictive filter to focus on what matters most
+- Switch to a larger context model (e.g., Claude 3.5 Sonnet with 200K tokens)
+- Accept the automatic trimming (often the best choice — newest messages usually matter most)
+
+The key point: **You see what gets sent**. The app marks which messages are in-context, so there are no surprises.
+
+### The Context Boundary
+
+The **context boundary** is the dividing line between messages that will be sent to the model (in-context) and messages that won't be sent (off-context).
+
+**Why you need to see this:**
+
+Knowing where the boundary is lets you:
+- Verify that important messages are included
+- Understand if you need to filter more restrictively
+- See at a glance how much context you're sending
+- Make informed decisions about whether to adjust your filter
+
+**How MaiChat shows you the boundary:**
+
+- **In-context messages** appear at normal brightness
+- **Off-context messages** are dimmed (grayed out) with an "off" badge in their meta line
+- This visual distinction makes it instantly clear what the model will see
+
+**Checking the boundary:**
+
+Press `o` or `Shift+O` in View Mode to jump directly to the first in-context message (the boundary point). The view centers on this message so you can easily review what's included.
+
+### The Message Counter (Top-Right)
+
+The message counter shows context status at a glance:
+
+**Basic format: `X/Y`**
+- `X` = Predicted in-context pairs (will be sent)
+- `Y` = Currently visible pairs (after filtering)
+
+**Example:** `15/42` means 15 pairs will be sent out of 42 visible.
+
+**Prefix: `(-) `**
+- Means your newest message is hidden by the current filter
+- **Warning:** You won't be able to send with this filter active!
+
+**Trim indicator: `[S-T]/Y`**
+- `S` = Pairs actually sent (after trimming)
+- `T` = Pairs trimmed out (didn't fit)
+- `Y` = Visible pairs
+
+**Example:** `[12-3]/42` means 12 pairs sent, 3 were trimmed, 42 visible.
+
+**Hover for details:**
+The counter's tooltip shows:
+- Predicted token count
+- Whether URA (User Request Allowance) is active
+- How many pairs were trimmed on the last send
+- Current model's context window size
+
+### How Context is Computed
+
+MaiChat uses a **prediction algorithm** before you send:
+
+1. **Start with visible history** (after any filters)
+2. **Count tokens** for each pair (user + assistant)
+3. **Reserve URA tokens** for your new request + expected response (default: 600)
+4. **Include pairs from newest to oldest** until space runs out
+5. **Mark the boundary** and dim older messages
+
+**Model-dependent:**
+- Each model has a different context window (tokens it can handle)
+- GPT-4o: 128K tokens
+- Claude 3.5 Sonnet: 200K tokens
+- Switching models changes the boundary!
+
+**Settings that affect context:**
+- **userRequestAllowance (URA):** Default 600. Higher = more room for your new message, but less history included
+- **charsPerToken (CPT):** Default 4. Estimation factor (4 chars ≈ 1 token)
+- **maxTrimAttempts:** How many times to retry if the initial prediction is too large
+
+### Context Control Strategies
+
+**1. Use filters before sending:**
+
+```
+t'Python...' & d<7d
+```
+Only include recent Python conversations, then send your question.
+
+**2. Switch to a larger context model:**
+
+Press `Ctrl+M` and choose a model with a bigger window if you need more history.
+
+**3. Adjust URA in settings:**
+
+- **Lower URA** (e.g., 400) = more history fits, less room for your new message
+- **Higher URA** (e.g., 800) = fewer history pairs, more room for complex prompts
+
+**4. Star and filter important messages:**
+
+Rate key messages with `1`/`2`/`3`, then filter by `s>=2` to include only high-quality context.
+
+**5. Review the boundary:**
+
+Press `o` before sending to see what's included. If something important is off-context, apply a filter to bring it in.
+
+### Understanding Token Trimming
+
+Sometimes MaiChat's prediction is slightly off (different models count tokens differently). When this happens:
+
+1. **Initial send fails** (too many tokens)
+2. **MaiChat trims** the oldest included pair
+3. **Retries** up to `maxTrimAttempts` times
+4. **Updates the counter** to show `[S-T]/Y` format
+
+**Example scenario:**
+- Predicted: 15 pairs would fit
+- Actual: Only 12 pairs fit
+- Result: `[12-3]/42` (3 pairs trimmed)
+
+This is normal and automatic. You'll see the trim indicator briefly after sending.
+
+### Practical Examples
+
+**Review before sending:**
+1. Type your message in Input Mode
+2. Press `Esc` to enter View Mode
+3. Press `o` to jump to context boundary
+4. Review what's in-context
+5. Apply filters if needed: `Ctrl+D`, type filter, `Enter`
+6. Press `Ctrl+I` to return to Input Mode and send
+
+**Focus on recent conversations:**
+```
+d<7d
+```
+Only include messages from the last week, reducing noise from old conversations.
+
+**Include only important messages:**
+```
+s>=2 & t'Work...'
+```
+Only highly-rated work messages.
+
+**Deep context for complex questions:**
+1. Switch to Claude 3.5 Sonnet (200K context)
+2. Filter to relevant topic: `t'Project X...'`
+3. Check counter: `o` to see boundary
+4. Send complex question requiring lots of context
+
+**Minimal context for quick questions:**
+```
+r5
+```
+Only last 5 pairs — fast and cheap for simple follow-ups.
+
+### Common Patterns
+
+**Daily workflow:**
+- Use `t` filter to focus on current topic
+- Check counter occasionally to ensure context size is reasonable
+- Press `o` when you want to verify what's being sent
+
+**Research/analysis:**
+- Filter by topic and date: `t'Research...' & d<30d`
+- Use larger context models
+- Review boundary before sending complex queries
+
+**Cost optimization:**
+- Use smaller models (mini/flash) with filtered context
+- Check counter to avoid sending unnecessary history
+- Star important messages, filter by stars before sending
+
+**Debugging context issues:**
+- Hover over message counter for token details
+- Press `o` to see boundary
+- Check if important messages are dimmed
+- Adjust filter or URA settings
+
+### Advanced: Context and System Messages
+
+If your current topic (or any ancestor) has a **system message** set:
+- It's automatically included in every request
+- It doesn't count against your URA
+- It appears at the beginning of the context
+- Useful for role-setting or custom instructions
+
+Set system messages in the Topic Editor (`Ctrl+Shift+T`), then press `Ctrl+E` on a topic.
+
+### Troubleshooting
+
+**"My important message isn't being sent!"**
+- Check if it's dimmed (off-context)
+- Press `o` to see the boundary
+- Apply a filter to bring it into context, or increase URA
+
+**"Counter shows (-) prefix"**
+- Your newest message is hidden by your filter
+- Clear the filter (`Esc` in Command Mode) before sending
+
+**"Trim indicator keeps appearing"**
+- Your messages are close to the token limit
+- Use a larger context model, or filter more aggressively
+
+**"Context seems wrong after filtering"**
+- Remember: filters affect what's visible AND what's sent
+- Clear filters to reset: `Esc` in Command Mode
+
+**"How do I know exact token count?"**
+- Hover over the message counter tooltip
+- Or append `?reqdbg=1` to URL for Request Debug overlay
+
+### Key Takeaways
+
+✓ **The context boundary** determines what gets sent — press `o` to see it  
+✓ **The message counter** (`X/Y`) shows predicted context size  
+✓ **Filters control context** — apply them before sending  
+✓ **Different models** have different context windows  
+✓ **URA setting** balances new message space vs history inclusion  
+✓ **Visual dimming** shows off-context messages clearly  
+✓ **Token trimming** is automatic when predictions are slightly off
+
+## API Keys and Model Catalogue {#models}
+
+MaiChat connects to AI providers through their APIs. To use the app, you need to set up API keys and understand how to manage your model catalog.
+
+### Setting Up API Keys
+
+**Important: Bring Your Own Key (BYOK)**
+
+MaiChat is **completely free** — you pay nothing to use the app itself. Instead, you use your own API keys from AI providers, and you pay them directly based on your usage.
+
+- **You register** with OpenAI, Anthropic, and/or Google (see details below)
+- **You obtain** your own API keys from their platforms
+- **You pay** the providers directly for API usage
+- **MaiChat cost:** $0 (the app is free)
+- **AI provider cost:** Pay-as-you-go or subscription plans
+
+**Free tiers and costs:**
+
+- **OpenAI:** No free tier; pay per token (roughly $2-20 per 1M tokens depending on model. 1M tokens corresponds to 1200-1500 typical chat messages)
+- **Anthropic:** Some credits for new users; similar pricing to OpenAI
+- **Google (Gemini):** Generous free tier (15 requests/min, 1M tokens/day for Gemini 1.5 Flash)
+- **Typical usage:** Light use might cost $5-20/month; heavy use $50-100+/month
+
+Check each provider's website for current pricing and free tier details.
+
+MaiChat supports three major AI providers. You need at least one API key to use the app.
+
+**Opening API Keys settings:**
+- Press `Ctrl+K` from any mode
+- Or use the menu: `Ctrl+.` → API Keys
+
+**Supported providers:**
+
+1. **OpenAI** (ChatGPT models)
+   - Get your key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+   - Models: GPT-5, GPT-5 mini, GPT-5 nano, o4-mini
+   
+2. **Anthropic** (Claude models)
+   - Get your key at [console.anthropic.com](https://console.anthropic.com)
+   - Models: Claude Sonnet 4.5, Claude Opus 4.1, Claude 3.5 Haiku
+   
+3. **Google** (Gemini models)
+   - Get your key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+   - Models: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite
+
+**Security and privacy:**
+
+- API keys are stored **locally** in your browser's localStorage
+- **OpenAI and Google:** Keys are sent directly from your browser to their APIs
+- **Anthropic (Claude):** Requests go through a MaiChat proxy server (required due to browser CORS restrictions). The proxy forwards your key and request to Anthropic but doesn't store or log either
+- Your conversation data stays between you and the AI providers
+- Use your browser's private/incognito mode if on a shared computer
+
+### Understanding the Model Catalogue
+
+MaiChat comes with a pre-configured catalog of popular models. You can enable/disable models and add custom ones.
+
+**Opening the Model Editor:**
+- Press `Ctrl+Shift+M` from any mode
+- Or use the menu: `Ctrl+.` → Model Editor
+
+**What you see:**
+
+A table showing all available models with:
+- **Model ID** — The unique identifier (e.g., `gpt-5`, `claude-sonnet-4-5-20250929`)
+- **Enabled** — Whether the model appears in the model selector (`Ctrl+M`)
+- **Context Window** — Maximum tokens the model can handle
+- **TPM/RPM/TPD** — Tokens/Requests per Minute, Tokens per Day limits
+
+**Model categories:**
+
+**High-performance models** (expensive, powerful):
+- GPT-5 (OpenAI) — 128K context
+- Claude Opus 4.1 (Anthropic) — 200K context
+- Claude Sonnet 4.5 (Anthropic) — 200K context (1M beta)
+- Gemini 2.5 Pro (Google) — 2M context
+
+**Balanced models** (mid-tier):
+- GPT-5 mini (OpenAI) — 128K context
+- Gemini 2.5 Flash (Google) — 1M context
+
+**Fast/economical models** (cheap, quick):
+- GPT-5 nano (OpenAI) — 128K context
+- Claude 3.5 Haiku (Anthropic) — 200K context
+- Gemini 2.5 Flash-Lite (Google) — 1M context
+
+**Reasoning models** (specialized):
+- o4-mini (OpenAI) — Extended thinking time
+
+### Managing Models
+
+**Enable/disable models:**
+1. Open Model Editor (`Ctrl+Shift+M`)
+2. Click the checkbox next to a model to toggle
+3. Only enabled models appear in the model selector (`Ctrl+M`)
+4. Tip: Disable models you don't have API keys for to declutter the selector
+
+**Why disable models:**
+- No API key for that provider
+- Don't want to accidentally use expensive models
+- Simplify the model selector
+- Testing with specific model subset
+
+**Editing model parameters:**
+
+Click on any field to edit:
+- **Context Window:** Match provider specifications (in tokens)
+- **TPM:** Tokens per minute limit (enforced - MaiChat won't include context exceeding this)
+- **RPM:** Requests per minute limit (not yet enforced)
+- **TPD:** Total tokens per day limit (not yet enforced)
+
+**Why set limits:**
+- **TPM enforcement:** MaiChat uses this to limit context size per message
+- Future rate limiting (RPM/TPD)
+- Usage tracking and monitoring
+- Cost awareness and control
+
+### Adding Custom Models
+
+Providers regularly release new models. You can add them yourself:
+
+1. Open Model Editor (`Ctrl+Shift+M`)
+2. Use the **Add** row at the bottom
+3. Enter:
+   - **Model ID** — Exact API identifier (check provider docs)
+   - **Context Window** — Maximum tokens (from provider specs)
+   - **TPM/RPM/TPD** — Your rate limits
+4. Press Enter or click Save
+5. The model immediately appears in your selector
+
+**When to add custom models:**
+- Provider releases a new model
+- You have access to a beta model
+- You want to use a fine-tuned model
+- Testing with model variants
+
+**Removing custom models:**
+- Click the delete icon next to custom models
+- Base models (pre-configured) can't be deleted, only disabled
+
+### How Context Window Affects Your Work
+
+The **context window** is the most important model parameter because it determines how much history you can include.
+
+**Small context (8K-32K tokens):**
+- Limits conversation depth
+- Forces aggressive filtering
+- Lower cost per request
+- Faster responses
+
+**Medium context (128K-200K tokens):**
+- Most modern models (GPT-5, Claude Sonnet 4.5)
+- Comfortable for most use cases
+- Balances depth and cost
+
+**Large context (1M-2M tokens):**
+- Gemini models (massive windows!)
+- Claude Sonnet 4.5 with beta header (1M)
+- Include entire project histories
+- Expensive per request
+- Use when deep context is critical
+
+**Switching models changes the boundary:**
+
+MaiChat recalculates the context boundary when you switch models:
+- Larger window → More messages fit → Boundary moves back
+- Smaller window → Fewer messages fit → Boundary moves forward
+- You see this instantly (dimming updates in real-time)
+
+Press `o` after switching models to see the new boundary.
+
+### Model Selection Strategy
+
+**Daily workflow:**
+- Use **mini/flash/nano models** (GPT-5 nano, Gemini 2.5 Flash-Lite, Claude 3.5 Haiku)
+- Fast, cheap, good enough for most tasks
+- Switch to larger models only when needed
+
+**Complex questions:**
+- Use **flagship models** (GPT-5, Claude Sonnet 4.5, Gemini 2.5 Pro)
+- Better reasoning and understanding
+- Worth the cost for important tasks
+
+**Deep context needs:**
+- Use **Claude Sonnet 4.5** (200K, 1M beta) or **Gemini 2.5 Pro** (2M)
+- When you need lots of conversation history
+- Research, analysis, long-form content
+
+**Cost optimization:**
+- Filter aggressively with nano/flash-lite models
+- Check message counter before sending
+- Use `r10` or `r20` filters for quick questions
+- Reserve flagship models for complex work
+
+**Speed optimization:**
+- Flash-lite/nano models are significantly faster
+- Use them for rapid iteration
+- Switch to larger models only for final versions
+
+### Troubleshooting API and Model Issues
+
+**"Invalid API key" error:**
+- Open API Keys (`Ctrl+K`)
+- Verify the key is entered correctly (no extra spaces)
+- Check that the key is active on the provider's website
+- Some providers require billing to be set up
+
+**"Model not found" error:**
+- Check that the model ID exactly matches provider docs
+- Some models require special access or beta enrollment
+- Verify you have the right API key for that provider
+
+**"Rate limit exceeded" error:**
+- You've hit your provider's rate limit
+- Wait a minute and try again
+- Upgrade your plan on the provider's website
+- Or use a different model from the same provider
+
+**"Context too large" error:**
+- Your request exceeds the model's context window
+- Apply a more restrictive filter
+- Or switch to a model with a larger context window
+
+**Models not appearing in selector:**
+- Check that they're enabled in Model Editor
+- Verify you have an API key for that provider
+- Refresh the page if you just added a key
+
+### Related Settings
+
+Some app-wide settings affect how models work:
+
+**userRequestAllowance (URA):** `Ctrl+,` → Settings
+- Default: 600 tokens
+- Space reserved for your new message + expected response
+- Higher = more room for complex prompts, but less history fits
+- Lower = more history, but less room for long messages
+
+**charsPerToken (CPT):** `Ctrl+,` → Settings
+- Default: 4 characters per token
+- Estimation factor for token counting
+- Higher = more aggressive (includes more history)
+- Lower = more conservative (includes less history)
+
+**maxTrimAttempts:** `Ctrl+,` → Settings
+- Default: 10
+- How many times to retry trimming if initial send fails
+- Rarely needs adjustment
+
+### Best Practices
+
+✓ **Set up all three providers** if possible — gives you flexibility and backup options  
+✓ **Start with free tier** (Gemini) to experiment before committing budget  
+✓ **Monitor your costs** using provider dashboards and Daily Stats (`Ctrl+Shift+D`)  
+✓ **Disable models you don't use** — keeps the selector clean  
+✓ **Start with mini/flash models** — upgrade to flagship only when needed  
+✓ **Check the message counter** before sending expensive flagship models  
+✓ **Add custom models** as providers release new ones  
+✓ **Set realistic TPM limits** to control context size per message  
+✓ **Press `o` after switching models** to see the new context boundary
 
 ## New message workflow {#workflow}
 
@@ -136,39 +1308,10 @@ This helps you see which parts of the conversation will be sent to the model and
 ## Settings and tools {#settings}
 
 - **Settings** (`Ctrl+,`): general app preferences.
-- **Topic Editor** (`Ctrl+E`): manage the topic hierarchy.
+- **Topic Editor** (`Ctrl+Shift+T`): manage the topic hierarchy.
 - **Model Editor** (`Ctrl+Shift+M`): curate models, TPM/RPM, etc.
 - **API Keys** (`Ctrl+K`): manage keys.
 - **Daily Stats** (`Ctrl+Shift+D`): daily breakdown of message stats.
-
-## Model Editor and usage limits {#models}
-
-Open the Model Editor (`Ctrl+Shift+M`) to manage your model catalog and limits.
-
-**What you can edit per model:**
-
-- **Enabled:** include/exclude a model from the selector (`Ctrl+M`). Disabling the active model auto-switches to the next enabled one.
-- **Context Window (tokens):** max context size for that model (from provider docs). This drives the context boundary and trimming.
-- **TPM / RPM / TPD:** tokens per minute, requests per minute, tokens per day. Set these to match your subscription/plan. They're recorded for budgeting/diagnostics and future rate limiting.
-
-**Add custom models:** use the Add row to define an ID and numeric limits. Base models can be disabled but not deleted; custom models can be removed.
-
-**How limits affect context:**
-
-- The boundary is computed per active model: predicted history tokens + reserved new‑request tokens (URA) must fit the model's context window. If not, MaiChat trims oldest included pairs iteratively.
-- Switching models can expand or shrink what's "in‑context" (dim/off markers update accordingly).
-
-**Related Settings** (`Ctrl+,`):
-
-- **userRequestAllowance (URA):** total new‑message allowance (user prompt + expected assistant response). Default 600. Increase for longer prompts/replies; decrease to include more history.
-- **charsPerToken (CPT):** estimation factor (default 4). Higher CPT estimates fewer tokens per char → includes more history.
-- **maxTrimAttempts (NTA):** number of iterative trims before giving up.
-
-**Tips:**
-
-- Use the message counter to spot trimming: `[S-T]/Y` means S pairs sent after trimming T pairs; `(-) ` prefix means the newest pair is hidden by your filter.
-- For deep context, pick a model with a larger context window or lower URA. For fewer trims, refine your filter (Command Mode) to include only relevant pairs.
-- Optional: append `?reqdbg=1` to the URL to open the Request Debug overlay and inspect predicted tokens, attempts, and included pairs.
 
 ## Troubleshooting {#troubleshooting}
 

@@ -20,6 +20,14 @@
 - publish on github pages (as current version) - generally should work automatically after push
 
 
-## Header 2
-### Header 3
-#### Header 4
+# MaiChat Tutorial
+
+## Quick start
+## Navigation
+## Topics & topic tree
+## Search & Filtering language
+## Context management
+## API keys & Model catalogue
+## Settings & Tools
+## Tips & Best Practices
+## Keyboard shortcuts

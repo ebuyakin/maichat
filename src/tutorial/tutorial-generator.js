@@ -244,15 +244,23 @@ ${content}
         toggle.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const navItem = toggle.closest('.nav-item');
-          navItem.classList.toggle('collapsed');
           
-          // Save state to localStorage
-          const link = navItem.querySelector('a');
-          if (link) {
-            const id = link.getAttribute('href').substring(1);
-            const isCollapsed = navItem.classList.contains('collapsed');
-            localStorage.setItem(\`nav-collapsed-\${id}\`, isCollapsed);
+          // Get the parent nav-item-header first, then its parent nav-item
+          // This ensures we only toggle the item that owns this toggle
+          const header = toggle.parentElement;
+          const navItem = header.parentElement;
+          
+          // Only toggle if this is actually a nav-item with children
+          if (navItem && navItem.classList.contains('nav-item') && navItem.classList.contains('has-children')) {
+            navItem.classList.toggle('collapsed');
+            
+            // Save state to localStorage
+            const link = navItem.querySelector(':scope > .nav-item-header > a');
+            if (link) {
+              const id = link.getAttribute('href').substring(1);
+              const isCollapsed = navItem.classList.contains('collapsed');
+              localStorage.setItem(\`nav-collapsed-\${id}\`, isCollapsed);
+            }
           }
         });
       });
@@ -290,19 +298,62 @@ ${content}
         if (currentId && currentId !== activeId) {
           activeId = currentId;
           
-          navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === \`#\${currentId}\`) {
-              link.classList.add('active');
+          // Clear all active states first
+          navLinks.forEach(link => link.classList.remove('active'));
+          
+          // Find the link for the current section
+          const activeLink = Array.from(navLinks).find(
+            link => link.getAttribute('href') === \`#\${currentId}\`
+          );
+          
+          if (activeLink) {
+            // Check if the active link is inside .nav-sub-items of a collapsed parent
+            // (Links in .nav-item-header are always visible, even if that item is collapsed)
+            const subItemsList = activeLink.closest('.nav-sub-items');
+            
+            if (subItemsList) {
+              // This link is a sub-item (h3/h4) - check if its parent section is collapsed
+              const collapsedParent = subItemsList.closest('.nav-item.has-children.collapsed');
               
-              // Auto-expand parent items when navigating to a section
-              let parentItem = link.closest('.nav-item.has-children.collapsed');
-              while (parentItem) {
-                parentItem.classList.remove('collapsed');
-                parentItem = parentItem.parentElement.closest('.nav-item.has-children.collapsed');
+              if (collapsedParent) {
+                // Link is hidden inside collapsed sub-items - find the nearest visible parent link
+                let parentNavItem = collapsedParent;
+                let parentLink = null;
+                
+                // Walk up the tree to find the first visible parent nav item
+                while (parentNavItem) {
+                  if (parentNavItem.classList.contains('nav-item') && 
+                      parentNavItem.classList.contains('has-children')) {
+                    parentLink = parentNavItem.querySelector(':scope > .nav-item-header > a');
+                    if (parentLink) {
+                      // Check if this parent's link is also hidden in collapsed sub-items
+                      const parentSubItems = parentLink.closest('.nav-sub-items');
+                      if (parentSubItems) {
+                        const parentCollapsed = parentSubItems.closest('.nav-item.has-children.collapsed');
+                        if (!parentCollapsed) {
+                          // Found a visible parent - highlight it
+                          parentLink.classList.add('active');
+                          break;
+                        }
+                      } else {
+                        // Parent link is in a header (always visible) - highlight it
+                        parentLink.classList.add('active');
+                        break;
+                      }
+                    }
+                  }
+                  // Move up to the next parent
+                  parentNavItem = parentNavItem.parentElement?.closest('.nav-item.has-children');
+                }
+              } else {
+                // Sub-item link is visible (parent is expanded) - highlight it normally
+                activeLink.classList.add('active');
               }
+            } else {
+              // Link is in a header (h2 level) - always visible, highlight it normally
+              activeLink.classList.add('active');
             }
-          });
+          }
         }
       };
       
@@ -310,6 +361,29 @@ ${content}
       window.addEventListener('scroll', updateActiveNav);
       // Update on load
       updateActiveNav();
+      
+      // Auto-expand when clicking nav links
+      navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          // Don't prevent default - we want the anchor scroll behavior
+          
+          // Expand all parent collapsed items for this link
+          let parentItem = link.closest('.nav-item.has-children.collapsed');
+          while (parentItem) {
+            parentItem.classList.remove('collapsed');
+            
+            // Update localStorage to reflect the expansion
+            const parentLink = parentItem.querySelector(':scope > .nav-item-header > a');
+            if (parentLink) {
+              const id = parentLink.getAttribute('href').substring(1);
+              localStorage.setItem(\`nav-collapsed-\${id}\`, false);
+            }
+            
+            // Move up to the next collapsed parent
+            parentItem = parentItem.parentElement.closest('.nav-item.has-children.collapsed');
+          }
+        });
+      });
       
       // Mobile menu toggle
       const menuBtn = document.querySelector('.mobile-menu-btn');

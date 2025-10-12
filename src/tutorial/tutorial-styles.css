@@ -73,6 +73,7 @@ body {
 .sidebar-nav {
   list-style: none;
   padding-right: 15px;
+  margin-left: 12px;
 }
 
 /* Top link styling */
@@ -89,7 +90,7 @@ body {
 /* Items without children - simple link */
 .nav-item:not(.has-children) > a {
   display: block;
-  padding: 6px 24px;
+  padding: 2px 12px;
   color: var(--text-dim);
   text-decoration: none;
   font-size: 0.95rem;
@@ -113,7 +114,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 24px 6px 16px;
+  padding: 2px 12px 2px 8px;
   transition: background 0.2s;
 }
 
@@ -174,7 +175,7 @@ body {
   overflow: hidden;
   transition: max-height 0.3s ease-out, opacity 0.3s;
   opacity: 1;
-  padding-left: 16px;
+  padding-left: 12px;
 }
 
 .nav-item.collapsed > .nav-sub-items {
@@ -184,12 +185,12 @@ body {
 
 /* Nested sub-items styling */
 .nav-sub-items .nav-item:not(.has-children) > a {
-  padding: 5px 24px;
+  padding: 2px 12px;
   font-size: 0.9rem;
 }
 
 .nav-sub-items .nav-sub-items .nav-item > a {
-  padding: 4px 24px;
+  padding: 2px 12px;
   font-size: 0.85rem;
   color: var(--text-dim);
 }
