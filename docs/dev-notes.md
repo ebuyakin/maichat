@@ -29,5 +29,17 @@
 ## Context management
 ## API keys & Model catalogue
 ## Settings & Tools
-## Tips & Best Practices
-## Keyboard shortcuts
+## Common Errors & Solutions
+## Tips & Best Practices (deferred)
+
+
+'custome models' - doesn't sound right
+'setting limits' - explain what they are and that it's user's responsibility
+'errors'
+
+token estimator - does it work differently for different providers? OpenAI vs Claude?
+
+
+about modes:
+
+MaiChat uses vim-inspired modal system. The purpose of modes is to use the same keys for different purposes depending on the situation. In INPUT mode and COMMAND mode (loosely similar to vim input mode and command line) most of the keys are used for typing as in regular text editor, while the commands/actions are typically performed with Ctrl-Key combination. In VIEW mode, there is no typing of the text, so single key presses are used to perform various actions/commands.

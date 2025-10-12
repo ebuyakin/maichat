@@ -488,9 +488,12 @@ th {
   <li class="nav-item has-children">
     <div class="nav-item-header">
       <span class="nav-item-toggle">›</span>
-      <a href="#modes">Navigation: Understanding the Three Modes</a>
+      <a href="#modes">Navigation: Understanding Modes</a>
     </div>
     <ul class="nav-sub-items">
+      <li class="nav-item">
+        <a href="#understanding-modes">Understanding Modes</a>
+      </li>
       <li class="nav-item">
         <a href="#the-three-modes">The Three Modes</a>
       </li>
@@ -659,36 +662,58 @@ th {
         <a href="#managing-models">Managing Models</a>
       </li>
       <li class="nav-item">
-        <a href="#adding-custom-models">Adding Custom Models</a>
+        <a href="#adding-more-models">Adding More Models</a>
       </li>
       <li class="nav-item">
         <a href="#how-context-window-affects-your-work">How Context Window Affects Your Work</a>
       </li>
       <li class="nav-item">
+        <a href="#understanding-rate-limits-tpm-vs-context-window">Understanding Rate Limits (TPM vs Context Window)</a>
+      </li>
+      <li class="nav-item">
         <a href="#model-selection-strategy">Model Selection Strategy</a>
-      </li>
-      <li class="nav-item">
-        <a href="#troubleshooting-api-and-model-issues">Troubleshooting API and Model Issues</a>
-      </li>
-      <li class="nav-item">
-        <a href="#related-settings">Related Settings</a>
       </li>
       <li class="nav-item">
         <a href="#best-practices">Best Practices</a>
       </li>
     </ul>
   </li>
-  <li class="nav-item">
-    <a href="#workflow">New message workflow</a>
+  <li class="nav-item has-children">
+    <div class="nav-item-header">
+      <span class="nav-item-toggle">›</span>
+      <a href="#settings">Settings and Tools</a>
+    </div>
+    <ul class="nav-sub-items">
+      <li class="nav-item">
+        <a href="#settings">Settings</a>
+      </li>
+      <li class="nav-item">
+        <a href="#daily-statistics">Daily Statistics</a>
+      </li>
+      <li class="nav-item">
+        <a href="#export-data">Export Data</a>
+      </li>
+    </ul>
   </li>
-  <li class="nav-item">
-    <a href="#settings">Settings and tools</a>
-  </li>
-  <li class="nav-item">
-    <a href="#troubleshooting">Troubleshooting</a>
-  </li>
-  <li class="nav-item">
-    <a href="#tips">Tips & Best Practices</a>
+  <li class="nav-item has-children">
+    <div class="nav-item-header">
+      <span class="nav-item-toggle">›</span>
+      <a href="#errors">Common Errors and Solutions</a>
+    </div>
+    <ul class="nav-sub-items">
+      <li class="nav-item">
+        <a href="#error-classifications">Error Classifications</a>
+      </li>
+      <li class="nav-item">
+        <a href="#common-workflows">Common Workflows</a>
+      </li>
+      <li class="nav-item">
+        <a href="#interface-issues">Interface Issues</a>
+      </li>
+      <li class="nav-item">
+        <a href="#when-all-else-fails">When All Else Fails</a>
+      </li>
+    </ul>
   </li>
 </ul>
   </nav>
@@ -805,8 +830,15 @@ th {
       </section>
 
       <section id="modes">
-<h2 id="modes">Navigation: Understanding the Three Modes</h2>
-        <p>MaiChat organizes your interaction into <strong>three distinct modes</strong>, each with its own screen area and keyboard commands. Understanding these modes is essential to using the app efficiently.</p>
+<h2 id="modes">Navigation: Understanding Modes</h2>
+        <p>MaiChat uses a <strong>vim-inspired modal system</strong> where the same keys perform different functions depending on the current mode. This design maximizes keyboard efficiency:</p>
+        <ul>
+        <li><strong>In Input Mode and Command Mode:</strong> Most keys are used for typing text (like a regular editor). Commands and actions typically use <kbd>Ctrl+Key</kbd> combinations.</li>
+        <li><strong>In View Mode:</strong> There&#39;s no text entry, so single key presses perform various navigation and management actions.</li>
+        </ul>
+        <p>This modal approach lets you stay on the home row and accomplish tasks without constantly reaching for the mouse or modifier keys.</p>
+        <h3 id="understanding-modes">Understanding Modes</h3>
+        <p>MaiChat organizes your interaction into <strong>three distinct modes</strong>, each with its own screen area and keyboard commands.</p>
         <blockquote>
         <p><strong>Visual indicator:</strong> The current mode is always shown in a badge at the bottom-left corner of the screen (Vim-style), displaying &quot;INPUT&quot;, &quot;VIEW&quot;, or &quot;COMMAND&quot;.</p>
         </blockquote>
@@ -1782,46 +1814,42 @@ th {
         <p><strong>Editing model parameters:</strong></p>
         <p>Click on any field to edit:</p>
         <ul>
-        <li><strong>Context Window:</strong> Match provider specifications (in tokens)</li>
-        <li><strong>TPM:</strong> Tokens per minute limit (enforced - MaiChat won&#39;t include context exceeding this)</li>
-        <li><strong>RPM:</strong> Requests per minute limit (not yet enforced)</li>
-        <li><strong>TPD:</strong> Total tokens per day limit (not yet enforced)</li>
+        <li><strong>Context Window:</strong> The model&#39;s maximum capacity (get from provider docs)</li>
+        <li><strong>TPM:</strong> Your plan&#39;s tokens per minute limit — <strong>See &quot;Understanding Rate Limits&quot; below</strong></li>
+        <li><strong>RPM:</strong> Requests per minute (not yet enforced, set for reference)</li>
+        <li><strong>TPD:</strong> Tokens per day (not yet enforced, set for reference)</li>
         </ul>
-        <p><strong>Why set limits:</strong></p>
-        <ul>
-        <li><strong>TPM enforcement:</strong> MaiChat uses this to limit context size per message</li>
-        <li>Future rate limiting (RPM/TPD)</li>
-        <li>Usage tracking and monitoring</li>
-        <li>Cost awareness and control</li>
-        </ul>
-        <h3 id="adding-custom-models">Adding Custom Models</h3>
-        <p>Providers regularly release new models. You can add them yourself:</p>
+        <p><strong>Important:</strong> You must set TPM to match YOUR plan, not the model&#39;s advertised capacity. MaiChat uses TPM to calculate how much context fits in each message.</p>
+        <h3 id="adding-more-models">Adding More Models</h3>
+        <p>By default, MaiChat includes only the most popular and relevant models from each provider. However, you can add any other official model from OpenAI, Anthropic, or Google.</p>
+        <p><strong>Important:</strong> You can only add models from the three supported providers. You cannot add models from other providers or use custom/fine-tuned models (those typically have different API endpoints).</p>
+        <p><strong>How to add a model:</strong></p>
         <ol>
         <li>Open Model Editor (<kbd>Ctrl+Shift+M</kbd>)</li>
         <li>Use the <strong>Add</strong> row at the bottom</li>
         <li>Enter:<ul>
-        <li><strong>Model ID</strong> — Exact API identifier (check provider docs)</li>
+        <li><strong>Model ID</strong> — Exact API identifier (check provider&#39;s documentation)</li>
         <li><strong>Context Window</strong> — Maximum tokens (from provider specs)</li>
-        <li><strong>TPM/RPM/TPD</strong> — Your rate limits</li>
+        <li><strong>TPM/RPM/TPD</strong> — Your plan&#39;s rate limits (see next section)</li>
         </ul>
         </li>
         <li>Press Enter or click Save</li>
-        <li>The model immediately appears in your selector</li>
+        <li>The model immediately appears in your selector (<kbd>Ctrl+M</kbd>)</li>
         </ol>
-        <p><strong>When to add custom models:</strong></p>
+        <p><strong>When to add models:</strong></p>
         <ul>
-        <li>Provider releases a new model</li>
-        <li>You have access to a beta model</li>
-        <li>You want to use a fine-tuned model</li>
-        <li>Testing with model variants</li>
+        <li>Provider releases a new model not yet in the default catalog</li>
+        <li>You have beta access to an experimental model</li>
+        <li>You need a specialized model (e.g., specific GPT-4 variant)</li>
+        <li>Testing with different model versions</li>
         </ul>
-        <p><strong>Removing custom models:</strong></p>
+        <p><strong>Removing models:</strong></p>
         <ul>
-        <li>Click the delete icon next to custom models</li>
-        <li>Base models (pre-configured) can&#39;t be deleted, only disabled</li>
+        <li>Click the delete icon next to models you&#39;ve added</li>
+        <li>Default models (pre-configured by MaiChat) can&#39;t be deleted, only disabled</li>
         </ul>
         <h3 id="how-context-window-affects-your-work">How Context Window Affects Your Work</h3>
-        <p>The <strong>context window</strong> is the most important model parameter because it determines how much history you can include.</p>
+        <p>The <strong>context window</strong> is one of the two key parameters that determine how much history you can include in each message (the other is TPM - see next section).</p>
         <p><strong>Small context (8K-32K tokens):</strong></p>
         <ul>
         <li>Limits conversation depth</li>
@@ -1851,6 +1879,91 @@ th {
         <li>You see this instantly (dimming updates in real-time)</li>
         </ul>
         <p>Press <kbd>o</kbd> after switching models to see the new boundary.</p>
+        <h3 id="understanding-rate-limits-tpm-vs-context-window">Understanding Rate Limits (TPM vs Context Window)</h3>
+        <p>This is crucial to understand how MaiChat calculates what fits in each message.</p>
+        <p><strong>Two different limits:</strong></p>
+        <ol>
+        <li><p><strong>Context Window (CW):</strong> The model&#39;s theoretical maximum capacity</p>
+        <ul>
+        <li>Example: GPT-5 can handle up to 128,000 tokens</li>
+        <li>This is what providers advertise</li>
+        </ul>
+        </li>
+        <li><p><strong>Tokens Per Minute (TPM):</strong> Your plan&#39;s rate limit</p>
+        <ul>
+        <li>Example: Your tier allows 30,000 tokens per minute</li>
+        <li>This is what you&#39;re actually limited by</li>
+        </ul>
+        </li>
+        </ol>
+        <p><strong>How MaiChat calculates your limit:</strong></p>
+        <p>For each message, MaiChat uses: <strong>MIN(Context Window, TPM)</strong></p>
+        <p>Whichever is smaller becomes the actual constraint.</p>
+        <p><strong>Why both matter:</strong></p>
+        <ul>
+        <li>If TPM &lt; CW (common): TPM is the bottleneck — your plan limits you before the model&#39;s capacity</li>
+        <li>If CW &lt; TPM (rare): Context Window is the bottleneck — the model&#39;s capacity limits you before your plan</li>
+        </ul>
+        <p><strong>Example scenario (TPM is smaller):</strong></p>
+        <ul>
+        <li>Model: GPT-5 (CW = 128K)</li>
+        <li>Your plan: TPM = 30K</li>
+        <li><strong>Your actual limit per message:</strong> MIN(128K, 30K) = 30K tokens</li>
+        <li>MaiChat will trim history to fit within 30K tokens</li>
+        </ul>
+        <p><strong>Provider differences in rate limits:</strong></p>
+        <p><strong>OpenAI:</strong></p>
+        <ul>
+        <li>Has a single <strong>total TPM limit</strong> that applies to input tokens</li>
+        <li>Your input (prompt + history) must fit within this limit</li>
+        <li>Output tokens don&#39;t count toward TPM (but do count toward context window)</li>
+        </ul>
+        <p><strong>Anthropic (Claude):</strong></p>
+        <ul>
+        <li>Has <strong>separate input TPM and output TPM limits</strong></li>
+        <li>Input limit: Controls how many tokens you can send (prompt + history)</li>
+        <li>Output limit: Controls how many tokens the model can generate in response</li>
+        <li>Both limits are enforced independently</li>
+        </ul>
+        <p><strong>Google (Gemini):</strong></p>
+        <ul>
+        <li>Uses <strong>&quot;Tokens per minute (input)&quot;</strong> limit</li>
+        <li>Similar to OpenAI — only input tokens count toward TPM</li>
+        <li>Very generous free tier: 250K-1M TPM depending on model</li>
+        <li>Output tokens don&#39;t count toward TPM</li>
+        </ul>
+        <p><strong>What this means for you:</strong></p>
+        <ul>
+        <li><strong>OpenAI/Gemini:</strong> Set TPM to your plan&#39;s input token limit</li>
+        <li><strong>Anthropic:</strong> Set TPM to your plan&#39;s input token limit (MaiChat handles output limits separately)</li>
+        </ul>
+        <p><strong>Setting TPM correctly:</strong></p>
+        <p><strong>This is your responsibility!</strong> You must set TPM to match YOUR plan, not the model&#39;s advertised capacity.</p>
+        <ol>
+        <li><p>Check your plan on the provider&#39;s website:</p>
+        <ul>
+        <li><strong>OpenAI:</strong> platform.openai.com → Settings → Limits (look for &quot;Tokens per minute&quot;)</li>
+        <li><strong>Anthropic:</strong> console.anthropic.com → Settings → Limits (look for &quot;Input tokens per minute&quot;)</li>
+        <li><strong>Google:</strong> Check your tier — Free tier has very high limits (250K-1M TPM)</li>
+        </ul>
+        </li>
+        <li><p>Open Model Editor (<kbd>Ctrl+Shift+M</kbd>)</p>
+        </li>
+        <li><p>Update TPM for each model to match your plan&#39;s <strong>input</strong> token limit</p>
+        </li>
+        </ol>
+        <p><strong>Default TPM values:</strong></p>
+        <p>MaiChat ships with conservative defaults that should work for most paid plans. However:</p>
+        <ul>
+        <li><strong>If you&#39;re on a free tier:</strong> You might need to lower TPM (except Gemini, which has generous limits)</li>
+        <li><strong>If you&#39;re on a high-tier plan:</strong> You can increase TPM for better performance</li>
+        </ul>
+        <p><strong>RPM and TPD:</strong></p>
+        <ul>
+        <li><strong>RPM (Requests Per Minute):</strong> Currently not enforced by MaiChat (future feature)</li>
+        <li><strong>TPD (Tokens Per Day):</strong> Currently tracked but not enforced (future feature)</li>
+        <li>Set them for your own reference and future proofing</li>
+        </ul>
         <h3 id="model-selection-strategy">Model Selection Strategy</h3>
         <p><strong>Daily workflow:</strong></p>
         <ul>
@@ -1883,108 +1996,342 @@ th {
         <li>Use them for rapid iteration</li>
         <li>Switch to larger models only for final versions</li>
         </ul>
-        <h3 id="troubleshooting-api-and-model-issues">Troubleshooting API and Model Issues</h3>
-        <p><strong>&quot;Invalid API key&quot; error:</strong></p>
-        <ul>
-        <li>Open API Keys (<kbd>Ctrl+K</kbd>)</li>
-        <li>Verify the key is entered correctly (no extra spaces)</li>
-        <li>Check that the key is active on the provider&#39;s website</li>
-        <li>Some providers require billing to be set up</li>
-        </ul>
-        <p><strong>&quot;Model not found&quot; error:</strong></p>
-        <ul>
-        <li>Check that the model ID exactly matches provider docs</li>
-        <li>Some models require special access or beta enrollment</li>
-        <li>Verify you have the right API key for that provider</li>
-        </ul>
-        <p><strong>&quot;Rate limit exceeded&quot; error:</strong></p>
-        <ul>
-        <li>You&#39;ve hit your provider&#39;s rate limit</li>
-        <li>Wait a minute and try again</li>
-        <li>Upgrade your plan on the provider&#39;s website</li>
-        <li>Or use a different model from the same provider</li>
-        </ul>
-        <p><strong>&quot;Context too large&quot; error:</strong></p>
-        <ul>
-        <li>Your request exceeds the model&#39;s context window</li>
-        <li>Apply a more restrictive filter</li>
-        <li>Or switch to a model with a larger context window</li>
-        </ul>
-        <p><strong>Models not appearing in selector:</strong></p>
-        <ul>
-        <li>Check that they&#39;re enabled in Model Editor</li>
-        <li>Verify you have an API key for that provider</li>
-        <li>Refresh the page if you just added a key</li>
-        </ul>
-        <h3 id="related-settings">Related Settings</h3>
-        <p>Some app-wide settings affect how models work:</p>
-        <p><strong>userRequestAllowance (URA):</strong> <kbd>Ctrl+,</kbd> → Settings</p>
-        <ul>
-        <li>Default: 600 tokens</li>
-        <li>Space reserved for your new message + expected response</li>
-        <li>Higher = more room for complex prompts, but less history fits</li>
-        <li>Lower = more history, but less room for long messages</li>
-        </ul>
-        <p><strong>charsPerToken (CPT):</strong> <kbd>Ctrl+,</kbd> → Settings</p>
-        <ul>
-        <li>Default: 4 characters per token</li>
-        <li>Estimation factor for token counting</li>
-        <li>Higher = more aggressive (includes more history)</li>
-        <li>Lower = more conservative (includes less history)</li>
-        </ul>
-        <p><strong>maxTrimAttempts:</strong> <kbd>Ctrl+,</kbd> → Settings</p>
-        <ul>
-        <li>Default: 10</li>
-        <li>How many times to retry trimming if initial send fails</li>
-        <li>Rarely needs adjustment</li>
-        </ul>
         <h3 id="best-practices">Best Practices</h3>
-        <p>✓ <strong>Set up all three providers</strong> if possible — gives you flexibility and backup options<br>✓ <strong>Start with free tier</strong> (Gemini) to experiment before committing budget<br>✓ <strong>Monitor your costs</strong> using provider dashboards and Daily Stats (<kbd>Ctrl+Shift+D</kbd>)<br>✓ <strong>Disable models you don&#39;t use</strong> — keeps the selector clean<br>✓ <strong>Start with mini/flash models</strong> — upgrade to flagship only when needed<br>✓ <strong>Check the message counter</strong> before sending expensive flagship models<br>✓ <strong>Add custom models</strong> as providers release new ones<br>✓ <strong>Set realistic TPM limits</strong> to control context size per message<br>✓ <strong>Press <kbd>o</kbd> after switching models</strong> to see the new context boundary</p>
-      </section>
-
-      <section id="workflow">
-<h2 id="workflow">New message workflow</h2>
-        <ol>
-        <li>Pick/create a topic if needed (<kbd>Ctrl+T</kbd> in Input Mode).</li>
-        <li>Choose a model (<kbd>Ctrl+M</kbd>) and check settings if relevant (<kbd>Ctrl+,</kbd>).</li>
-        <li>Compose and send (<kbd>Enter</kbd>). Edit-and-resend is available for error rows (<kbd>e</kbd> in View Mode).</li>
-        <li>When a new reply arrives, you&#39;ll be at the end of history; use <kbd>j</kbd>/<kbd>k</kbd> to move across parts, <kbd>g</kbd>/<kbd>G</kbd> to jump to start/end; star rate if helpful (<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>, <kbd>Space</kbd> clears the rating).</li>
-        </ol>
+        <p>✓ <strong>Set up all three providers</strong> if possible — gives you flexibility and backup options<br>✓ <strong>Start with free tier</strong> (Gemini) to experiment before committing budget<br>✓ <strong>Monitor your costs</strong> using provider dashboards and Daily Stats (<kbd>Ctrl+Shift+D</kbd>)<br>✓ <strong>Disable models you don&#39;t use</strong> — keeps the selector clean<br>✓ <strong>Start with mini/flash models</strong> — upgrade to flagship only when needed<br>✓ <strong>Check the message counter</strong> before sending expensive flagship models<br>✓ <strong>Add more models</strong> as providers release new ones<br>✓ <strong>Set realistic TPM limits</strong> to control context size per message<br>✓ <strong>Press <kbd>o</kbd> after switching models</strong> to see the new context boundary</p>
       </section>
 
       <section id="settings">
-<h2 id="settings">Settings and tools</h2>
+<h2 id="settings">Settings and Tools</h2>
+        <p>MaiChat provides several tools for configuration, monitoring, and data management.</p>
+        <h3 id="settings">Settings</h3>
+        <p>Configure app-wide behavior and appearance through the Settings panel.</p>
+        <p><strong>Access:</strong> Press <kbd>Ctrl+,</kbd> from any mode, or use menu (<kbd>Ctrl+.</kbd> → Settings)</p>
+        <p><strong>Settings are organized in 3 tabs:</strong></p>
+        <ol>
+        <li><p><strong>Spacing Tab</strong> — Visual layout controls:</p>
         <ul>
-        <li><strong>Settings</strong> (<kbd>Ctrl+,</kbd>): general app preferences.</li>
-        <li><strong>Topic Editor</strong> (<kbd>Ctrl+Shift+T</kbd>): manage the topic hierarchy.</li>
-        <li><strong>Model Editor</strong> (<kbd>Ctrl+Shift+M</kbd>): curate models, TPM/RPM, etc.</li>
-        <li><strong>API Keys</strong> (<kbd>Ctrl+K</kbd>): manage keys.</li>
-        <li><strong>Daily Stats</strong> (<kbd>Ctrl+Shift+D</kbd>): daily breakdown of message stats.</li>
+        <li>Fade Zone, Message Gap, Assistant Gap, Message Padding</li>
+        <li>Meta Gap, Gutter Left/Right</li>
+        <li>Inline Markdown Formatting (experimental)</li>
+        <li>Adjust for more spacious or compact reading experience</li>
+        </ul>
+        </li>
+        <li><p><strong>Scroll Tab</strong> — Animation behavior:</p>
+        <ul>
+        <li>Base Duration, Dynamic Scaling, Min/Max Duration, Easing</li>
+        <li>Navigation Animation toggles (j/k, J/K, u/d)</li>
+        <li>Disable for instant navigation or adjust for preferred feel</li>
+        </ul>
+        </li>
+        <li><p><strong>Context Tab</strong> — Token estimation and AI request behavior:</p>
+        <ul>
+        <li><strong>User Request Allowance (URA):</strong> Default 600 tokens — Space reserved for your message. Higher = more room for long prompts but less history; Lower = more history but less room for your message. Adjust if you write very long or very short messages.</li>
+        <li><strong>Assistant Response Allowance (ARA):</strong> Default 800 tokens — Expected response size (OpenAI only). Rarely needs adjustment.</li>
+        <li><strong>Chars Per Token (CPT):</strong> Default 4 — Estimation factor. Rarely needs adjustment (works well for English).</li>
+        <li><strong>Assumed User Tokens:</strong> Default 256 — Preview boundary reserve. Rarely needs adjustment.</li>
+        <li><strong>Max Trim Attempts:</strong> Default 10 — Retry limit for context overflow. Rarely needs adjustment.</li>
+        <li><strong>Topic Order Mode:</strong> How topics sort in Topic Selector (manual/alpha/recent)</li>
+        </ul>
+        </li>
+        </ol>
+        <p><strong>Saving:</strong></p>
+        <ul>
+        <li>Click &quot;Apply (Ctrl+S)&quot; or press <kbd>Ctrl+S</kbd> to save</li>
+        <li>Click &quot;Cancel+Close (Esc)&quot; or press <kbd>Esc</kbd> to discard</li>
+        <li>Settings stored in browser localStorage (persist across sessions)</li>
+        </ul>
+        <p><strong>When changes take effect:</strong></p>
+        <ul>
+        <li>Spacing: Immediate visual update</li>
+        <li>Scroll: Next navigation action</li>
+        <li>Context: Next message send (recalculates boundary)</li>
+        </ul>
+        <p><strong>Storage location:</strong> Settings, API keys, model catalog, and topic tree are stored in <strong>localStorage</strong>. Conversation history (message pairs) is stored in <strong>IndexedDB</strong> for better performance with large datasets.</p>
+        <h3 id="daily-statistics">Daily Statistics</h3>
+        <p>View basic activity breakdown for your currently filtered conversations.</p>
+        <p><strong>Access:</strong> Press <kbd>Ctrl+Shift+D</kbd> from any mode, or use menu (<kbd>Ctrl+.</kbd> → Daily Stats)</p>
+        <p><strong>What you see:</strong></p>
+        <ul>
+        <li>Date-by-date message count breakdown</li>
+        <li>Total count for filtered view</li>
+        <li>Simple table sorted chronologically</li>
+        </ul>
+        <p><strong>Features:</strong></p>
+        <ul>
+        <li><strong>Respects current filter</strong> — Shows stats only for visible messages</li>
+        <li><strong>Keyboard navigation:</strong> j/k or arrows to navigate rows, g/G to jump to top/bottom</li>
+        </ul>
+        <p><strong>What it&#39;s NOT:</strong></p>
+        <ul>
+        <li>Not a cost tracker (no pricing/spending data)</li>
+        <li>Not a detailed analytics tool (no breakdown by model/provider)</li>
+        <li>Not exportable or historical (shows only current data)</li>
+        </ul>
+        <p><strong>When to use:</strong></p>
+        <ul>
+        <li>Quick activity overview</li>
+        <li>Verify filter is working as expected</li>
+        <li>See when you&#39;ve been most active</li>
+        </ul>
+        <p><strong>Note:</strong> Data comes from IndexedDB (where conversation history is stored). Clearing browser data will delete this history.</p>
+        <h3 id="export-data">Export Data</h3>
+        <p>Download your conversations as files for backup, sharing, or analysis.</p>
+        <p><strong>How it works:</strong></p>
+        <p>Command Mode syntax: <code><filter> :export <format></code></p>
+        <p>Where:</p>
+        <ul>
+        <li><code><filter></code> — Any filter expression (or <code>*</code> for all messages)</li>
+        <li><code>:export</code> — The export command</li>
+        <li><code><format></code> — Optional: <code>json</code> (default), <code>md</code>, or <code>txt</code></li>
+        </ul>
+        <p><strong>Available formats:</strong></p>
+        <ol>
+        <li><p><strong>JSON (default)</strong> — Structured data with full metadata</p>
+        <ul>
+        <li>Command: <code>:export</code> or <code>:export json</code></li>
+        <li>Output file: <code>export_chat-YYYYMMDD-HHMMSS.json</code></li>
+        <li>Best for: Backup, re-importing, programmatic processing</li>
+        </ul>
+        </li>
+        <li><p><strong>Markdown (.md)</strong> — Human-readable formatted text</p>
+        <ul>
+        <li>Command: <code>:export md</code></li>
+        <li>Output file: <code>export_chat-YYYYMMDD-HHMMSS.md</code></li>
+        <li>Best for: Reading, sharing, documentation</li>
+        </ul>
+        </li>
+        <li><p><strong>Plain Text (.txt)</strong> — Simple unformatted text</p>
+        <ul>
+        <li>Command: <code>:export txt</code></li>
+        <li>Output file: <code>export_chat-YYYYMMDD-HHMMSS.txt</code></li>
+        <li>Best for: Minimal files, plain text editors</li>
+        </ul>
+        </li>
+        </ol>
+        <p><strong>Examples:</strong></p>
+        <pre><code># Export all messages as JSON
+        * :export
+
+        # Export only starred messages
+        s&gt;=2 :export
+
+        # Export last 5 days as Markdown
+        d&lt;5 :export md
+
+        # Export specific topic as plain text
+        t&#39;Python...&#39; :export txt
+
+        # Export recent high-rated conversations
+        d&lt;30 &amp; s&gt;=2 :export
+        </code></pre>
+        <p><strong>What gets exported:</strong></p>
+        <ul>
+        <li>Message pairs (user request + AI response)</li>
+        <li>Timestamps, topics, models, ratings, flags</li>
+        <li>Error states (if response failed)</li>
+        <li>Full topic paths (e.g., &quot;Work &gt; Python &gt; Debugging&quot;)</li>
+        </ul>
+        <p><strong>What does NOT get exported:</strong></p>
+        <ul>
+        <li>In-context markers (not relevant outside app)</li>
+        <li>UI state (dimming, active message, etc.)</li>
+        <li>Settings or API keys</li>
+        <li>Internal temporary data</li>
+        </ul>
+        <p><strong>JSON structure example:</strong></p>
+        <pre><code class="language-json">{
+          &quot;schemaVersion&quot;: &quot;1&quot;,
+          &quot;app&quot;: &quot;MaiChat&quot;,
+          &quot;generatedAt&quot;: &quot;2025-10-12T10:30:00Z&quot;,
+          &quot;filterInput&quot;: &quot;t&#39;Python...&#39; :export&quot;,
+          &quot;count&quot;: 42,
+          &quot;pairs&quot;: [
+            {
+              &quot;id&quot;: &quot;p_123&quot;,
+              &quot;createdAt&quot;: &quot;2025-10-12T08:15:00Z&quot;,
+              &quot;topicPath&quot;: &quot;Work &gt; Python&quot;,
+              &quot;topicId&quot;: &quot;uuid-here&quot;,
+              &quot;model&quot;: &quot;gpt-5-mini&quot;,
+              &quot;stars&quot;: 2,
+              &quot;flagColor&quot;: &quot;blue&quot;,
+              &quot;userText&quot;: &quot;How do I...?&quot;,
+              &quot;assistantText&quot;: &quot;Here&#39;s how...&quot;,
+              &quot;errorState&quot;: false
+            }
+          ]
+        }
+        </code></pre>
+        <p><strong>When to use export:</strong></p>
+        <p>✓ <strong>Regular backups</strong> — Download important conversations periodically<br>✓ <strong>Project documentation</strong> — Export completed projects as Markdown<br>✓ <strong>Sharing</strong> — Export specific topics to share with colleagues<br>✓ <strong>Analysis</strong> — Export as JSON to process with other tools<br>✓ <strong>Archiving</strong> — Save before cleaning up or browser reset<br>✓ <strong>Migration</strong> — Backup before major changes</p>
+        <p><strong>Tips:</strong></p>
+        <ul>
+        <li><strong>Filter first</strong> — Export exactly what you need, not everything</li>
+        <li><strong>Use JSON for backups</strong> — Most complete format</li>
+        <li><strong>Use Markdown for sharing</strong> — Most readable for others</li>
+        <li><strong>Check your filter</strong> — Verify message count before exporting</li>
         </ul>
       </section>
 
-      <section id="troubleshooting">
-<h2 id="troubleshooting">Troubleshooting</h2>
+      <section id="errors">
+<h2 id="errors">Common Errors and Solutions</h2>
+        <p>When a message send fails, MaiChat displays an error badge in the message metadata with a short classification code. The full error message appears on hover. You can retry with the &quot;Re-ask&quot; button (or press <kbd>e</kbd> in View Mode) or delete the error with the &quot;Delete&quot; button (or press <kbd>w</kbd> in View Mode).</p>
+        <h3 id="error-classifications">Error Classifications</h3>
+        <p>MaiChat categorizes errors into 5 types based on the error message from the provider:</p>
+        <p><strong>error: auth</strong></p>
         <ul>
-        <li><strong>&quot;Keys don&#39;t respond&quot;:</strong> ensure you&#39;re in the right mode. <kbd>Enter</kbd>/<kbd>Esc</kbd> to cycle, or <kbd>Ctrl+V</kbd>/<kbd>I</kbd>/<kbd>D</kbd> to jump.</li>
-        <li><strong>&quot;Mouse focus feels off&quot;:</strong> the app switches modes when needed; try keyboard-first if unsure.</li>
-        <li><strong>&quot;Can&#39;t find a message&quot;:</strong> use Command Mode to filter by topic (<code>t'…'</code>), model (<code>m'…'</code>), date (<code>d…</code>), or content (<code>c'…'</code>).</li>
-        <li><strong>&quot;API key missing / auth error&quot;:</strong> open API Keys (<kbd>Ctrl+K</kbd>) and set the provider key (e.g., OpenAI). Then resend.</li>
+        <li><strong>Meaning:</strong> Authentication failed — API key is missing, invalid, or expired</li>
+        <li><strong>Triggers:</strong><ul>
+        <li>&quot;API key&quot; in error message</li>
+        <li>&quot;Unauthorized&quot; or &quot;401&quot; response</li>
+        <li>&quot;Forbidden&quot; response</li>
         </ul>
-      </section>
-
-      <section id="tips">
-<h2 id="tips">Tips & Best Practices</h2>
+        </li>
+        <li><strong>How to fix:</strong><ol>
+        <li>Press <kbd>Ctrl+K</kbd> to open API Keys</li>
+        <li>Check that the correct API key is entered</li>
+        <li>Verify the key is active on the provider&#39;s website</li>
+        <li>Generate a new key if needed</li>
+        <li>Make sure billing is set up (some providers require it)</li>
+        </ol>
+        </li>
+        </ul>
+        <p><strong>error: model</strong></p>
         <ul>
-        <li><strong>Start simple:</strong> Begin with 3-5 broad topics (Work, Personal, Research). Create sub-topics as conversations grow.</li>
-        <li><strong>Use Reading Mode for long replies:</strong> Press <kbd>r</kbd> to toggle. It centers the active part for easier reading.</li>
-        <li><strong>Filter before sending:</strong> Use Command Mode filters to include only relevant context before making a new request.</li>
-        <li><strong>Star important messages:</strong> Use <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> in View Mode to rate messages, then filter with <code>s>=2</code>.</li>
-        <li><strong>Use color codes:</strong> Press <kbd>a</kbd> in View Mode to toggle blue/grey flags for quick visual organization.</li>
-        <li><strong>Learn the keyboard shortcuts:</strong> Press <kbd>F1</kbd> anytime to see the help overlay. Keyboard navigation is much faster!</li>
-        <li><strong>Check the context boundary:</strong> Press <kbd>o</kbd> to see what will be sent to the model. Dimmed messages are &quot;off&quot; context.</li>
-        <li><strong>Experiment with filters:</strong> The command language is powerful. Try combining filters with <code>&</code>, <code>|</code>, and <code>!</code>.</li>
+        <li><strong>Meaning:</strong> The model ID doesn&#39;t exist or you don&#39;t have access</li>
+        <li><strong>Triggers:</strong><ul>
+        <li>&quot;Model not found&quot; or &quot;unknown model&quot;</li>
+        <li>&quot;Invalid model&quot; or &quot;unsupported model&quot;</li>
+        <li>&quot;Model doesn&#39;t exist&quot; or &quot;deprecated model&quot;</li>
+        <li>404 errors mentioning &quot;model&quot;</li>
         </ul>
+        </li>
+        <li><strong>How to fix:</strong><ol>
+        <li>Open Model Editor (<kbd>Ctrl+Shift+M</kbd>)</li>
+        <li>Check the model ID matches provider documentation exactly</li>
+        <li>Some models require beta access or special enrollment</li>
+        <li>Try switching to a different model from the same provider</li>
+        <li>Remove the model if it&#39;s been deprecated</li>
+        </ol>
+        </li>
+        </ul>
+        <p><strong>error: quota</strong></p>
+        <ul>
+        <li><strong>Meaning:</strong> You&#39;ve hit a rate limit or context size limit</li>
+        <li><strong>Triggers:</strong><ul>
+        <li>429 status code (too many requests)</li>
+        <li>&quot;Rate limit&quot; or &quot;quota&quot; in error message</li>
+        <li>&quot;TPM&quot; or &quot;RPM&quot; (tokens/requests per minute)</li>
+        <li>&quot;Context length exceeded&quot; or &quot;context window&quot;</li>
+        </ul>
+        </li>
+        <li><strong>How to fix:</strong><ul>
+        <li><strong>For rate limits (429/TPM/RPM):</strong><ol>
+        <li>Wait 60 seconds and try again</li>
+        <li>Check your plan limits on provider&#39;s website</li>
+        <li>Consider upgrading your plan if this happens often</li>
+        <li>Use a different model (they often have separate limits)</li>
+        </ol>
+        </li>
+        <li><strong>For context limits:</strong><ol>
+        <li>Apply a more restrictive filter to include less history</li>
+        <li>Try <code>r20</code> to include only last 20 message pairs</li>
+        <li>Switch to a model with larger context window</li>
+        <li>Press <kbd>o</kbd> to see what&#39;s being included</li>
+        <li>Check Model Editor (<kbd>Ctrl+Shift+M</kbd>) — your TPM might be too low</li>
+        </ol>
+        </li>
+        </ul>
+        </li>
+        </ul>
+        <p><strong>error: net</strong></p>
+        <ul>
+        <li><strong>Meaning:</strong> Network connection failed</li>
+        <li><strong>Triggers:</strong><ul>
+        <li>&quot;Network error&quot; in message</li>
+        <li>&quot;Fetch failed&quot; </li>
+        <li>Connection timeouts</li>
+        <li>DNS resolution failures</li>
+        </ul>
+        </li>
+        <li><strong>How to fix:</strong><ol>
+        <li>Check your internet connection</li>
+        <li>Try again in a moment (temporary network issue)</li>
+        <li>Check if the provider&#39;s API is down (visit status page)</li>
+        <li>Disable VPN if using one (might interfere)</li>
+        <li>Try a different network if available</li>
+        </ol>
+        </li>
+        </ul>
+        <p><strong>error: unknown</strong></p>
+        <ul>
+        <li><strong>Meaning:</strong> Error doesn&#39;t match any known pattern</li>
+        <li><strong>Triggers:</strong> Any error that doesn&#39;t fit the above categories</li>
+        <li><strong>How to fix:</strong><ol>
+        <li>Hover over error badge to read full error message</li>
+        <li>Search for the error message in provider&#39;s documentation</li>
+        <li>Check if it&#39;s a content policy violation</li>
+        <li>Try rephrasing your request</li>
+        <li>Try a different model</li>
+        <li>Check browser console (F12) for additional details</li>
+        </ol>
+        </li>
+        </ul>
+        <h3 id="common-workflows">Common Workflows</h3>
+        <p><strong>After an error occurs:</strong></p>
+        <ol>
+        <li><strong>Read the error</strong> — Hover over the error badge to see the full message</li>
+        <li><strong>Retry</strong> — Press <kbd>e</kbd> (View Mode) or click the ↻ button to re-ask</li>
+        <li><strong>Delete</strong> — Press <kbd>w</kbd> (View Mode) or click the ✕ button to remove the error</li>
+        <li><strong>Fix and retry</strong> — Fix the underlying issue (add API key, change model, apply filter) then press <kbd>e</kbd> to re-ask</li>
+        </ol>
+        <p><strong>The Re-ask feature:</strong></p>
+        <ul>
+        <li>Copies the original user message to input field</li>
+        <li>Sets the model to what was used</li>
+        <li>Switches to Input Mode</li>
+        <li>You can edit before resending</li>
+        <li>Original error message remains until you delete it or send successfully</li>
+        </ul>
+        <h3 id="interface-issues">Interface Issues</h3>
+        <p><strong>&quot;Keys don&#39;t respond&quot;</strong></p>
+        <ul>
+        <li><strong>Cause:</strong> You&#39;re in the wrong mode</li>
+        <li><strong>Solution:</strong> <ol>
+        <li>Check mode indicator (bottom-left: VIEW/INPUT/COMMAND)</li>
+        <li>Press <kbd>Esc</kbd> to cycle through modes</li>
+        <li>Or use <kbd>Ctrl+V</kbd> (View), <kbd>Ctrl+I</kbd> (Input), <kbd>Ctrl+D</kbd> (Command)</li>
+        </ol>
+        </li>
+        </ul>
+        <p><strong>&quot;Can&#39;t find a message&quot;</strong></p>
+        <ul>
+        <li><strong>Cause:</strong> A filter is hiding it</li>
+        <li><strong>Solution:</strong><ol>
+        <li>Press <kbd>Ctrl+D</kbd> to enter Command Mode</li>
+        <li>Type <code>*</code> and press <kbd>Enter</kbd> to clear all filters</li>
+        <li>Or check active filters shown at top of history pane</li>
+        <li>Use <code>c'search term'</code> to search for specific content</li>
+        </ol>
+        </li>
+        </ul>
+        <p><strong>&quot;Modal or overlay won&#39;t close&quot;</strong></p>
+        <ul>
+        <li><strong>Cause:</strong> Not using the right key</li>
+        <li><strong>Solution:</strong><ol>
+        <li>Press <kbd>Esc</kbd> to close most overlays</li>
+        <li>Or click outside the overlay</li>
+        <li>For Settings/Model Editor: click &quot;Cancel&quot; or press <kbd>Esc</kbd></li>
+        </ol>
+        </li>
+        </ul>
+        <h3 id="when-all-else-fails">When All Else Fails</h3>
+        <ol>
+        <li><strong>Refresh the page</strong> — Sometimes the app state gets confused</li>
+        <li><strong>Check browser console</strong> — Press F12 and look for error messages</li>
+        <li><strong>Try a different browser</strong> — Some extensions can interfere</li>
+        <li><strong>Clear browser data</strong> — Last resort (you&#39;ll lose settings/history)</li>
+        <li><strong>Report the issue</strong> — Check GitHub issues or create a new one</li>
+        </ol>
       </section>
 
       <div class="footer">

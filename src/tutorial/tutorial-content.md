@@ -94,9 +94,18 @@ You now know the basics! Here's what to explore next:
 
 > **Quick reference:** Press `F1` anytime to see all keyboard shortcuts.
 
-## Navigation: Understanding the Three Modes {#modes}
+## Navigation: Understanding Modes {#modes}
 
-MaiChat organizes your interaction into **three distinct modes**, each with its own screen area and keyboard commands. Understanding these modes is essential to using the app efficiently.
+MaiChat uses a **vim-inspired modal system** where the same keys perform different functions depending on the current mode. This design maximizes keyboard efficiency:
+
+- **In Input Mode and Command Mode:** Most keys are used for typing text (like a regular editor). Commands and actions typically use `Ctrl+Key` combinations.
+- **In View Mode:** There's no text entry, so single key presses perform various navigation and management actions.
+
+This modal approach lets you stay on the home row and accomplish tasks without constantly reaching for the mouse or modifier keys.
+
+### Understanding Modes
+
+MaiChat organizes your interaction into **three distinct modes**, each with its own screen area and keyboard commands.
 
 > **Visual indicator:** The current mode is always shown in a badge at the bottom-left corner of the screen (Vim-style), displaying "INPUT", "VIEW", or "COMMAND".
 
@@ -1143,43 +1152,43 @@ A table showing all available models with:
 **Editing model parameters:**
 
 Click on any field to edit:
-- **Context Window:** Match provider specifications (in tokens)
-- **TPM:** Tokens per minute limit (enforced - MaiChat won't include context exceeding this)
-- **RPM:** Requests per minute limit (not yet enforced)
-- **TPD:** Total tokens per day limit (not yet enforced)
+- **Context Window:** The model's maximum capacity (get from provider docs)
+- **TPM:** Your plan's tokens per minute limit — **See "Understanding Rate Limits" below**
+- **RPM:** Requests per minute (not yet enforced, set for reference)
+- **TPD:** Tokens per day (not yet enforced, set for reference)
 
-**Why set limits:**
-- **TPM enforcement:** MaiChat uses this to limit context size per message
-- Future rate limiting (RPM/TPD)
-- Usage tracking and monitoring
-- Cost awareness and control
+**Important:** You must set TPM to match YOUR plan, not the model's advertised capacity. MaiChat uses TPM to calculate how much context fits in each message.
 
-### Adding Custom Models
+### Adding More Models
 
-Providers regularly release new models. You can add them yourself:
+By default, MaiChat includes only the most popular and relevant models from each provider. However, you can add any other official model from OpenAI, Anthropic, or Google.
+
+**Important:** You can only add models from the three supported providers. You cannot add models from other providers or use custom/fine-tuned models (those typically have different API endpoints).
+
+**How to add a model:**
 
 1. Open Model Editor (`Ctrl+Shift+M`)
 2. Use the **Add** row at the bottom
 3. Enter:
-   - **Model ID** — Exact API identifier (check provider docs)
+   - **Model ID** — Exact API identifier (check provider's documentation)
    - **Context Window** — Maximum tokens (from provider specs)
-   - **TPM/RPM/TPD** — Your rate limits
+   - **TPM/RPM/TPD** — Your plan's rate limits (see next section)
 4. Press Enter or click Save
-5. The model immediately appears in your selector
+5. The model immediately appears in your selector (`Ctrl+M`)
 
-**When to add custom models:**
-- Provider releases a new model
-- You have access to a beta model
-- You want to use a fine-tuned model
-- Testing with model variants
+**When to add models:**
+- Provider releases a new model not yet in the default catalog
+- You have beta access to an experimental model
+- You need a specialized model (e.g., specific GPT-4 variant)
+- Testing with different model versions
 
-**Removing custom models:**
-- Click the delete icon next to custom models
-- Base models (pre-configured) can't be deleted, only disabled
+**Removing models:**
+- Click the delete icon next to models you've added
+- Default models (pre-configured by MaiChat) can't be deleted, only disabled
 
 ### How Context Window Affects Your Work
 
-The **context window** is the most important model parameter because it determines how much history you can include.
+The **context window** is one of the two key parameters that determine how much history you can include in each message (the other is TPM - see next section).
 
 **Small context (8K-32K tokens):**
 - Limits conversation depth
@@ -1207,6 +1216,86 @@ MaiChat recalculates the context boundary when you switch models:
 - You see this instantly (dimming updates in real-time)
 
 Press `o` after switching models to see the new boundary.
+
+### Understanding Rate Limits (TPM vs Context Window)
+
+This is crucial to understand how MaiChat calculates what fits in each message.
+
+**Two different limits:**
+
+1. **Context Window (CW):** The model's theoretical maximum capacity
+   - Example: GPT-5 can handle up to 128,000 tokens
+   - This is what providers advertise
+   
+2. **Tokens Per Minute (TPM):** Your plan's rate limit
+   - Example: Your tier allows 30,000 tokens per minute
+   - This is what you're actually limited by
+
+**How MaiChat calculates your limit:**
+
+For each message, MaiChat uses: **MIN(Context Window, TPM)**
+
+Whichever is smaller becomes the actual constraint.
+
+**Why both matter:**
+
+- If TPM < CW (common): TPM is the bottleneck — your plan limits you before the model's capacity
+- If CW < TPM (rare): Context Window is the bottleneck — the model's capacity limits you before your plan
+
+**Example scenario (TPM is smaller):**
+- Model: GPT-5 (CW = 128K)
+- Your plan: TPM = 30K
+- **Your actual limit per message:** MIN(128K, 30K) = 30K tokens
+- MaiChat will trim history to fit within 30K tokens
+
+**Provider differences in rate limits:**
+
+**OpenAI:**
+- Has a single **total TPM limit** that applies to input tokens
+- Your input (prompt + history) must fit within this limit
+- Output tokens don't count toward TPM (but do count toward context window)
+
+**Anthropic (Claude):**
+- Has **separate input TPM and output TPM limits**
+- Input limit: Controls how many tokens you can send (prompt + history)
+- Output limit: Controls how many tokens the model can generate in response
+- Both limits are enforced independently
+
+**Google (Gemini):**
+- Uses **"Tokens per minute (input)"** limit
+- Similar to OpenAI — only input tokens count toward TPM
+- Very generous free tier: 250K-1M TPM depending on model
+- Output tokens don't count toward TPM
+
+**What this means for you:**
+
+- **OpenAI/Gemini:** Set TPM to your plan's input token limit
+- **Anthropic:** Set TPM to your plan's input token limit (MaiChat handles output limits separately)
+
+**Setting TPM correctly:**
+
+**This is your responsibility!** You must set TPM to match YOUR plan, not the model's advertised capacity.
+
+1. Check your plan on the provider's website:
+   - **OpenAI:** platform.openai.com → Settings → Limits (look for "Tokens per minute")
+   - **Anthropic:** console.anthropic.com → Settings → Limits (look for "Input tokens per minute")
+   - **Google:** Check your tier — Free tier has very high limits (250K-1M TPM)
+
+2. Open Model Editor (`Ctrl+Shift+M`)
+
+3. Update TPM for each model to match your plan's **input** token limit
+
+**Default TPM values:**
+
+MaiChat ships with conservative defaults that should work for most paid plans. However:
+- **If you're on a free tier:** You might need to lower TPM (except Gemini, which has generous limits)
+- **If you're on a high-tier plan:** You can increase TPM for better performance
+
+**RPM and TPD:**
+
+- **RPM (Requests Per Minute):** Currently not enforced by MaiChat (future feature)
+- **TPD (Tokens Per Day):** Currently tracked but not enforced (future feature)
+- Set them for your own reference and future proofing
 
 ### Model Selection Strategy
 
@@ -1236,56 +1325,6 @@ Press `o` after switching models to see the new boundary.
 - Use them for rapid iteration
 - Switch to larger models only for final versions
 
-### Troubleshooting API and Model Issues
-
-**"Invalid API key" error:**
-- Open API Keys (`Ctrl+K`)
-- Verify the key is entered correctly (no extra spaces)
-- Check that the key is active on the provider's website
-- Some providers require billing to be set up
-
-**"Model not found" error:**
-- Check that the model ID exactly matches provider docs
-- Some models require special access or beta enrollment
-- Verify you have the right API key for that provider
-
-**"Rate limit exceeded" error:**
-- You've hit your provider's rate limit
-- Wait a minute and try again
-- Upgrade your plan on the provider's website
-- Or use a different model from the same provider
-
-**"Context too large" error:**
-- Your request exceeds the model's context window
-- Apply a more restrictive filter
-- Or switch to a model with a larger context window
-
-**Models not appearing in selector:**
-- Check that they're enabled in Model Editor
-- Verify you have an API key for that provider
-- Refresh the page if you just added a key
-
-### Related Settings
-
-Some app-wide settings affect how models work:
-
-**userRequestAllowance (URA):** `Ctrl+,` → Settings
-- Default: 600 tokens
-- Space reserved for your new message + expected response
-- Higher = more room for complex prompts, but less history fits
-- Lower = more history, but less room for long messages
-
-**charsPerToken (CPT):** `Ctrl+,` → Settings
-- Default: 4 characters per token
-- Estimation factor for token counting
-- Higher = more aggressive (includes more history)
-- Lower = more conservative (includes less history)
-
-**maxTrimAttempts:** `Ctrl+,` → Settings
-- Default: 10
-- How many times to retry trimming if initial send fails
-- Rarely needs adjustment
-
 ### Best Practices
 
 ✓ **Set up all three providers** if possible — gives you flexibility and backup options  
@@ -1294,39 +1333,307 @@ Some app-wide settings affect how models work:
 ✓ **Disable models you don't use** — keeps the selector clean  
 ✓ **Start with mini/flash models** — upgrade to flagship only when needed  
 ✓ **Check the message counter** before sending expensive flagship models  
-✓ **Add custom models** as providers release new ones  
+✓ **Add more models** as providers release new ones  
 ✓ **Set realistic TPM limits** to control context size per message  
 ✓ **Press `o` after switching models** to see the new context boundary
 
-## New message workflow {#workflow}
+## Settings and Tools {#settings}
 
-1. Pick/create a topic if needed (`Ctrl+T` in Input Mode).
-2. Choose a model (`Ctrl+M`) and check settings if relevant (`Ctrl+,`).
-3. Compose and send (`Enter`). Edit-and-resend is available for error rows (`e` in View Mode).
-4. When a new reply arrives, you'll be at the end of history; use `j`/`k` to move across parts, `g`/`G` to jump to start/end; star rate if helpful (`1`/`2`/`3`, `Space` clears the rating).
+MaiChat provides several tools for configuration, monitoring, and data management.
 
-## Settings and tools {#settings}
+### Settings
 
-- **Settings** (`Ctrl+,`): general app preferences.
-- **Topic Editor** (`Ctrl+Shift+T`): manage the topic hierarchy.
-- **Model Editor** (`Ctrl+Shift+M`): curate models, TPM/RPM, etc.
-- **API Keys** (`Ctrl+K`): manage keys.
-- **Daily Stats** (`Ctrl+Shift+D`): daily breakdown of message stats.
+Configure app-wide behavior and appearance through the Settings panel.
 
-## Troubleshooting {#troubleshooting}
+**Access:** Press `Ctrl+,` from any mode, or use menu (`Ctrl+.` → Settings)
 
-- **"Keys don't respond":** ensure you're in the right mode. `Enter`/`Esc` to cycle, or `Ctrl+V`/`I`/`D` to jump.
-- **"Mouse focus feels off":** the app switches modes when needed; try keyboard-first if unsure.
-- **"Can't find a message":** use Command Mode to filter by topic (`t'…'`), model (`m'…'`), date (`d…`), or content (`c'…'`).
-- **"API key missing / auth error":** open API Keys (`Ctrl+K`) and set the provider key (e.g., OpenAI). Then resend.
+**Settings are organized in 3 tabs:**
 
-## Tips & Best Practices {#tips}
+1. **Spacing Tab** — Visual layout controls:
+   - Fade Zone, Message Gap, Assistant Gap, Message Padding
+   - Meta Gap, Gutter Left/Right
+   - Inline Markdown Formatting (experimental)
+   - Adjust for more spacious or compact reading experience
 
-- **Start simple:** Begin with 3-5 broad topics (Work, Personal, Research). Create sub-topics as conversations grow.
-- **Use Reading Mode for long replies:** Press `r` to toggle. It centers the active part for easier reading.
-- **Filter before sending:** Use Command Mode filters to include only relevant context before making a new request.
-- **Star important messages:** Use `1`/`2`/`3` in View Mode to rate messages, then filter with `s>=2`.
-- **Use color codes:** Press `a` in View Mode to toggle blue/grey flags for quick visual organization.
-- **Learn the keyboard shortcuts:** Press `F1` anytime to see the help overlay. Keyboard navigation is much faster!
-- **Check the context boundary:** Press `o` to see what will be sent to the model. Dimmed messages are "off" context.
-- **Experiment with filters:** The command language is powerful. Try combining filters with `&`, `|`, and `!`.
+2. **Scroll Tab** — Animation behavior:
+   - Base Duration, Dynamic Scaling, Min/Max Duration, Easing
+   - Navigation Animation toggles (j/k, J/K, u/d)
+   - Disable for instant navigation or adjust for preferred feel
+
+3. **Context Tab** — Token estimation and AI request behavior:
+   - **User Request Allowance (URA):** Default 600 tokens — Space reserved for your message. Higher = more room for long prompts but less history; Lower = more history but less room for your message. Adjust if you write very long or very short messages.
+   - **Assistant Response Allowance (ARA):** Default 800 tokens — Expected response size (OpenAI only). Rarely needs adjustment.
+   - **Chars Per Token (CPT):** Default 4 — Estimation factor. Rarely needs adjustment (works well for English).
+   - **Assumed User Tokens:** Default 256 — Preview boundary reserve. Rarely needs adjustment.
+   - **Max Trim Attempts:** Default 10 — Retry limit for context overflow. Rarely needs adjustment.
+   - **Topic Order Mode:** How topics sort in Topic Selector (manual/alpha/recent)
+
+**Saving:**
+- Click "Apply (Ctrl+S)" or press `Ctrl+S` to save
+- Click "Cancel+Close (Esc)" or press `Esc` to discard
+- Settings stored in browser localStorage (persist across sessions)
+
+**When changes take effect:**
+- Spacing: Immediate visual update
+- Scroll: Next navigation action
+- Context: Next message send (recalculates boundary)
+
+**Storage location:** Settings, API keys, model catalog, and topic tree are stored in **localStorage**. Conversation history (message pairs) is stored in **IndexedDB** for better performance with large datasets.
+
+### Daily Statistics
+
+View basic activity breakdown for your currently filtered conversations.
+
+**Access:** Press `Ctrl+Shift+D` from any mode, or use menu (`Ctrl+.` → Daily Stats)
+
+**What you see:**
+- Date-by-date message count breakdown
+- Total count for filtered view
+- Simple table sorted chronologically
+
+**Features:**
+- **Respects current filter** — Shows stats only for visible messages
+- **Keyboard navigation:** j/k or arrows to navigate rows, g/G to jump to top/bottom
+
+**What it's NOT:**
+- Not a cost tracker (no pricing/spending data)
+- Not a detailed analytics tool (no breakdown by model/provider)
+- Not exportable or historical (shows only current data)
+
+**When to use:**
+- Quick activity overview
+- Verify filter is working as expected
+- See when you've been most active
+
+**Note:** Data comes from IndexedDB (where conversation history is stored). Clearing browser data will delete this history.
+
+### Export Data
+
+Download your conversations as files for backup, sharing, or analysis.
+
+**How it works:**
+
+Command Mode syntax: `<filter> :export <format>`
+
+Where:
+- `<filter>` — Any filter expression (or `*` for all messages)
+- `:export` — The export command
+- `<format>` — Optional: `json` (default), `md`, or `txt`
+
+**Available formats:**
+
+1. **JSON (default)** — Structured data with full metadata
+   - Command: `:export` or `:export json`
+   - Output file: `export_chat-YYYYMMDD-HHMMSS.json`
+   - Best for: Backup, re-importing, programmatic processing
+
+2. **Markdown (.md)** — Human-readable formatted text
+   - Command: `:export md`
+   - Output file: `export_chat-YYYYMMDD-HHMMSS.md`
+   - Best for: Reading, sharing, documentation
+
+3. **Plain Text (.txt)** — Simple unformatted text
+   - Command: `:export txt`
+   - Output file: `export_chat-YYYYMMDD-HHMMSS.txt`
+   - Best for: Minimal files, plain text editors
+
+**Examples:**
+
+```
+# Export all messages as JSON
+* :export
+
+# Export only starred messages
+s>=2 :export
+
+# Export last 5 days as Markdown
+d<5 :export md
+
+# Export specific topic as plain text
+t'Python...' :export txt
+
+# Export recent high-rated conversations
+d<30 & s>=2 :export
+```
+
+**What gets exported:**
+- Message pairs (user request + AI response)
+- Timestamps, topics, models, ratings, flags
+- Error states (if response failed)
+- Full topic paths (e.g., "Work > Python > Debugging")
+
+**What does NOT get exported:**
+- In-context markers (not relevant outside app)
+- UI state (dimming, active message, etc.)
+- Settings or API keys
+- Internal temporary data
+
+**JSON structure example:**
+
+```json
+{
+  "schemaVersion": "1",
+  "app": "MaiChat",
+  "generatedAt": "2025-10-12T10:30:00Z",
+  "filterInput": "t'Python...' :export",
+  "count": 42,
+  "pairs": [
+    {
+      "id": "p_123",
+      "createdAt": "2025-10-12T08:15:00Z",
+      "topicPath": "Work > Python",
+      "topicId": "uuid-here",
+      "model": "gpt-5-mini",
+      "stars": 2,
+      "flagColor": "blue",
+      "userText": "How do I...?",
+      "assistantText": "Here's how...",
+      "errorState": false
+    }
+  ]
+}
+```
+
+**When to use export:**
+
+✓ **Regular backups** — Download important conversations periodically  
+✓ **Project documentation** — Export completed projects as Markdown  
+✓ **Sharing** — Export specific topics to share with colleagues  
+✓ **Analysis** — Export as JSON to process with other tools  
+✓ **Archiving** — Save before cleaning up or browser reset  
+✓ **Migration** — Backup before major changes
+
+**Tips:**
+
+- **Filter first** — Export exactly what you need, not everything
+- **Use JSON for backups** — Most complete format
+- **Use Markdown for sharing** — Most readable for others
+- **Check your filter** — Verify message count before exporting
+
+## Common Errors and Solutions {#errors}
+
+When a message send fails, MaiChat displays an error badge in the message metadata with a short classification code. The full error message appears on hover. You can retry with the "Re-ask" button (or press `e` in View Mode) or delete the error with the "Delete" button (or press `w` in View Mode).
+
+### Error Classifications
+
+MaiChat categorizes errors into 5 types based on the error message from the provider:
+
+**error: auth**
+- **Meaning:** Authentication failed — API key is missing, invalid, or expired
+- **Triggers:**
+  - "API key" in error message
+  - "Unauthorized" or "401" response
+  - "Forbidden" response
+- **How to fix:**
+  1. Press `Ctrl+K` to open API Keys
+  2. Check that the correct API key is entered
+  3. Verify the key is active on the provider's website
+  4. Generate a new key if needed
+  5. Make sure billing is set up (some providers require it)
+
+**error: model**
+- **Meaning:** The model ID doesn't exist or you don't have access
+- **Triggers:**
+  - "Model not found" or "unknown model"
+  - "Invalid model" or "unsupported model"
+  - "Model doesn't exist" or "deprecated model"
+  - 404 errors mentioning "model"
+- **How to fix:**
+  1. Open Model Editor (`Ctrl+Shift+M`)
+  2. Check the model ID matches provider documentation exactly
+  3. Some models require beta access or special enrollment
+  4. Try switching to a different model from the same provider
+  5. Remove the model if it's been deprecated
+
+**error: quota**
+- **Meaning:** You've hit a rate limit or context size limit
+- **Triggers:**
+  - 429 status code (too many requests)
+  - "Rate limit" or "quota" in error message
+  - "TPM" or "RPM" (tokens/requests per minute)
+  - "Context length exceeded" or "context window"
+- **How to fix:**
+  - **For rate limits (429/TPM/RPM):**
+    1. Wait 60 seconds and try again
+    2. Check your plan limits on provider's website
+    3. Consider upgrading your plan if this happens often
+    4. Use a different model (they often have separate limits)
+  - **For context limits:**
+    1. Apply a more restrictive filter to include less history
+    2. Try `r20` to include only last 20 message pairs
+    3. Switch to a model with larger context window
+    4. Press `o` to see what's being included
+    5. Check Model Editor (`Ctrl+Shift+M`) — your TPM might be too low
+
+**error: net**
+- **Meaning:** Network connection failed
+- **Triggers:**
+  - "Network error" in message
+  - "Fetch failed" 
+  - Connection timeouts
+  - DNS resolution failures
+- **How to fix:**
+  1. Check your internet connection
+  2. Try again in a moment (temporary network issue)
+  3. Check if the provider's API is down (visit status page)
+  4. Disable VPN if using one (might interfere)
+  5. Try a different network if available
+
+**error: unknown**
+- **Meaning:** Error doesn't match any known pattern
+- **Triggers:** Any error that doesn't fit the above categories
+- **How to fix:**
+  1. Hover over error badge to read full error message
+  2. Search for the error message in provider's documentation
+  3. Check if it's a content policy violation
+  4. Try rephrasing your request
+  5. Try a different model
+  6. Check browser console (F12) for additional details
+
+### Common Workflows
+
+**After an error occurs:**
+
+1. **Read the error** — Hover over the error badge to see the full message
+2. **Retry** — Press `e` (View Mode) or click the ↻ button to re-ask
+3. **Delete** — Press `w` (View Mode) or click the ✕ button to remove the error
+4. **Fix and retry** — Fix the underlying issue (add API key, change model, apply filter) then press `e` to re-ask
+
+**The Re-ask feature:**
+- Copies the original user message to input field
+- Sets the model to what was used
+- Switches to Input Mode
+- You can edit before resending
+- Original error message remains until you delete it or send successfully
+
+### Interface Issues
+
+**"Keys don't respond"**
+- **Cause:** You're in the wrong mode
+- **Solution:** 
+  1. Check mode indicator (bottom-left: VIEW/INPUT/COMMAND)
+  2. Press `Esc` to cycle through modes
+  3. Or use `Ctrl+V` (View), `Ctrl+I` (Input), `Ctrl+D` (Command)
+
+**"Can't find a message"**
+- **Cause:** A filter is hiding it
+- **Solution:**
+  1. Press `Ctrl+D` to enter Command Mode
+  2. Type `*` and press `Enter` to clear all filters
+  3. Or check active filters shown at top of history pane
+  4. Use `c'search term'` to search for specific content
+
+**"Modal or overlay won't close"**
+- **Cause:** Not using the right key
+- **Solution:**
+  1. Press `Esc` to close most overlays
+  2. Or click outside the overlay
+  3. For Settings/Model Editor: click "Cancel" or press `Esc`
+
+### When All Else Fails
+
+1. **Refresh the page** — Sometimes the app state gets confused
+2. **Check browser console** — Press F12 and look for error messages
+3. **Try a different browser** — Some extensions can interfere
+4. **Clear browser data** — Last resort (you'll lose settings/history)
+5. **Report the issue** — Check GitHub issues or create a new one
