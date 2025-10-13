@@ -25,7 +25,7 @@ export function openModelEditor({ onClose, store }) {
   panel.style.minWidth = '930px'
   panel.innerHTML = `
     <header>Models</header>
-  <div class="me-hintbar"><span class="me-hint">j/k rows · h/l cols · Space toggle · on Provider: switch · Ctrl+N new</span></div>
+  <div class="me-hintbar"><span class="me-hint">j/k rows · h/l cols · Space Enable/Disable · Ctrl+N new model</span></div>
     <div class="me-table">
       <div class="me-row me-head" aria-hidden="true">
   <span class="me-col me-col-toggle">Enabled</span>
@@ -142,7 +142,7 @@ export function openModelEditor({ onClose, store }) {
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.contextWindow || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpm || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-otpm"><input aria-label="Output tokens per minute (K tokens)" data-field="otpm" data-scale="1000" type="number" min="0" step="1" value="${m.otpm != null ? Math.round((m.otpm || 0) / 1000) : ''}" class="me-num" placeholder="-"/></span>
-        <span class="me-col me-col-tpd"><input aria-label="Tokens per day (K tokens)" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpd || 0) / 1000)}" class="me-num"/></span>
+        <span class="me-col me-col-tpd"><input aria-label="Tokens per day (K tokens)" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${m.tpd != null ? Math.round((m.tpd || 0) / 1000) : ''}" class="me-num" placeholder="-"/></span>
         <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-field="rpm" type="number" min="0" step="1" value="${m.rpm || ''}" class="me-num" placeholder="-"/></span>
         <span class="me-col me-col-rpd"><div class="me-actions"><input aria-label="Requests per day" data-field="rpd" type="number" min="0" step="1" value="${m.rpd || ''}" class="me-num" placeholder="-"/></div></span>`
       ul.appendChild(li)
@@ -162,7 +162,7 @@ export function openModelEditor({ onClose, store }) {
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-pending="1" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.contextWindow || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-pending="1" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpm || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-otpm"><input aria-label="Output tokens per minute (K tokens)" data-pending="1" data-field="otpm" data-scale="1000" type="number" min="0" step="1" value="${pendingNewRow.otpm != null ? Math.round((pendingNewRow.otpm || 0) / 1000) : ''}" class="me-num" placeholder="-"/></span>
-        <span class="me-col me-col-tpd"><input aria-label="Tokens per day (K tokens)" data-pending="1" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpd || 0) / 1000)}" class="me-num"/></span>
+        <span class="me-col me-col-tpd"><input aria-label="Tokens per day (K tokens)" data-pending="1" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${pendingNewRow.tpd != null ? Math.round((pendingNewRow.tpd || 0) / 1000) : ''}" class="me-num" placeholder="-"/></span>
         <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-pending="1" data-field="rpm" type="number" min="0" step="1" value="${pendingNewRow.rpm || 0}" class="me-num" placeholder="-"/></span>
         <span class="me-col me-col-rpd"><div class="me-actions"><input aria-label="Requests per day" data-pending="1" data-field="rpd" type="number" min="0" step="1" value="${pendingNewRow.rpd || ''}" class="me-num" placeholder="-"/></div></span>`
       ul.appendChild(li)
@@ -218,16 +218,13 @@ export function openModelEditor({ onClose, store }) {
       'gpt-5',
       'gpt-5-mini',
       'gpt-5-nano',
-      'gpt-4.1',
-      'gpt-4.1-mini',
-      'gpt-4.1-nano',
-      'o3',
       'o4-mini',
-      'gpt-4o',
-      'gpt-4o-mini',
-      'gpt-3.5-turbo',
-      'claude-3-5-sonnet-20240620',
+      'claude-sonnet-4-5-20250929',
+      'claude-opus-4-1-20250929',
       'claude-3-5-haiku-20241022',
+      'gemini-2-5-pro',
+      'gemini-2-5-flash',
+      'gemini-2-0-flash',
     ].includes(id)
   }
   ul.addEventListener('click', (e) => {

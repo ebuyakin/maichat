@@ -1,58 +1,88 @@
 // Moved from src/models/modelCatalog.js (Phase 5 core move)
 const STORAGE_KEY = 'maichat_model_catalog_v2'
 const BASE_MODELS = [
-  { id: 'gpt-5', provider: 'openai', contextWindow: 128000, tpm: 30000, rpm: 500, tpd: 900000 },
-  { id: 'gpt-5-mini', contextWindow: 128000, tpm: 200000, rpm: 500, tpd: 2000000 },
-  { id: 'gpt-5-nano', contextWindow: 128000, tpm: 200000, rpm: 500, tpd: 2000000 },
-  { id: 'gpt-4.1', contextWindow: 128000, tpm: 30000, rpm: 500, tpd: 900000 },
-  { id: 'gpt-4.1-mini', contextWindow: 128000, tpm: 200000, rpm: 500, tpd: 2000000 },
-  { id: 'gpt-4.1-nano', contextWindow: 128000, tpm: 200000, rpm: 500, tpd: 2000000 },
-  { id: 'o3', contextWindow: 128000, tpm: 30000, rpm: 500, tpd: 90000 },
-  { id: 'o4-mini', contextWindow: 128000, tpm: 200000, rpm: 500, tpd: 2000000 },
-  { id: 'gpt-4o', contextWindow: 128000, tpm: 30000, rpm: 500, tpd: 900000 },
-  { id: 'gpt-4o-mini', contextWindow: 128000, tpm: 200000, rpm: 500, tpd: 2000000 },
-  { id: 'gpt-3.5-turbo', contextWindow: 16000, tpm: 200000, rpm: 500, tpd: 2000000 },
-  // Anthropic popular models (approximated budgets) (otpm left undefined for now; user can supply)
+  // OpenAI models (Tier 1 limits)
+  { 
+    id: 'gpt-5', 
+    provider: 'openai', 
+    contextWindow: 400000, 
+    tpm: 500000, 
+    rpm: 500, 
+    tpd: 1500000 
+  },
+  { 
+    id: 'gpt-5-mini', 
+    provider: 'openai', 
+    contextWindow: 400000, 
+    tpm: 500000, 
+    rpm: 500, 
+    tpd: 5000000 
+  },
+  { 
+    id: 'gpt-5-nano', 
+    provider: 'openai', 
+    contextWindow: 400000, 
+    tpm: 200000, 
+    rpm: 500, 
+    tpd: 2000000 
+  },
+  { 
+    id: 'o4-mini', 
+    provider: 'openai', 
+    contextWindow: 128000, 
+    tpm: 200000, 
+    rpm: 500, 
+    tpd: 2000000 
+  },
+  // Anthropic models (Tier 1 limits)
   {
-    id: 'claude-3-5-sonnet-20240620',
+    id: 'claude-sonnet-4-5-20250929',
     provider: 'anthropic',
     contextWindow: 200000,
-    tpm: 200000,
-    rpm: 60,
-    tpd: 2000000,
+    tpm: 30000,
+    rpm: 50,
+    otpm: 8000,
+  },
+  {
+    id: 'claude-opus-4-1-20250929',
+    provider: 'anthropic',
+    contextWindow: 200000,
+    tpm: 30000,
+    rpm: 50,
+    otpm: 8000,
   },
   {
     id: 'claude-3-5-haiku-20241022',
     provider: 'anthropic',
     contextWindow: 200000,
-    tpm: 200000,
-    rpm: 60,
-    tpd: 2000000,
+    tpm: 50000,
+    rpm: 50,
+    otpm: 10000,
   },
-  // Gemini models (Google AI Studio pricing - Oct 2025)
+  // Gemini models (Free tier limits)
   {
-    id: 'gemini-2.5-flash',
+    id: 'gemini-2-5-pro',
     provider: 'gemini',
     contextWindow: 1000000,
-    tpm: 4000000,
-    rpm: 2000,
-    tpd: 10000000,
+    tpm: 125000,
+    rpm: 2,
+    rpd: 50,
   },
   {
-    id: 'gemini-2.5-pro',
-    provider: 'gemini',
-    contextWindow: 2000000,
-    tpm: 4000000,
-    rpm: 1000,
-    tpd: 10000000,
-  },
-  {
-    id: 'gemini-2.0-flash',
+    id: 'gemini-2-5-flash',
     provider: 'gemini',
     contextWindow: 1000000,
-    tpm: 4000000,
-    rpm: 2000,
-    tpd: 10000000,
+    tpm: 250000,
+    rpm: 10,
+    rpd: 250,
+  },
+  {
+    id: 'gemini-2-0-flash',
+    provider: 'gemini',
+    contextWindow: 1000000,
+    tpm: 1000000,
+    rpm: 15,
+    rpd: 200,
   },
 ]
 function loadState() {
@@ -75,25 +105,37 @@ function normalize(state) {
         contextWindow: bm.contextWindow,
         tpm: bm.tpm,
         rpm: bm.rpm,
-        tpd: bm.tpd,
-        otpm: state.models[bm.id]?.otpm,
-        rpd: state.models[bm.id]?.rpd,
       }
+      // Only include optional fields if defined in BASE_MODELS
+      if (bm.tpd !== undefined) state.models[bm.id].tpd = bm.tpd
+      if (bm.otpm !== undefined) state.models[bm.id].otpm = bm.otpm
+      if (bm.rpd !== undefined) state.models[bm.id].rpd = bm.rpd
     } else {
       if (typeof state.models[bm.id].contextWindow !== 'number')
         state.models[bm.id].contextWindow = bm.contextWindow
       if (typeof state.models[bm.id].enabled !== 'boolean') state.models[bm.id].enabled = true
       if (typeof state.models[bm.id].tpm !== 'number') state.models[bm.id].tpm = bm.tpm
       if (typeof state.models[bm.id].rpm !== 'number') state.models[bm.id].rpm = bm.rpm
-      if (typeof state.models[bm.id].tpd !== 'number') state.models[bm.id].tpd = bm.tpd
+      // TPD is optional - only set from BASE_MODELS if defined there
+      if (state.models[bm.id].tpd === undefined && bm.tpd !== undefined) {
+        state.models[bm.id].tpd = bm.tpd
+      } else if (state.models[bm.id].tpd != null && !Number.isFinite(Number(state.models[bm.id].tpd))) {
+        delete state.models[bm.id].tpd
+      }
       if (typeof state.models[bm.id].provider !== 'string')
         state.models[bm.id].provider = bm.provider || 'openai'
-      // Preserve existing otpm if present; leave undefined otherwise
-      if (state.models[bm.id].otpm != null && !Number.isFinite(Number(state.models[bm.id].otpm)))
+      // Initialize otpm from BASE_MODELS if undefined, or validate if present
+      if (state.models[bm.id].otpm === undefined && bm.otpm !== undefined) {
+        state.models[bm.id].otpm = bm.otpm
+      } else if (state.models[bm.id].otpm != null && !Number.isFinite(Number(state.models[bm.id].otpm))) {
         delete state.models[bm.id].otpm
-      // Preserve existing rpd if present; leave undefined otherwise
-      if (state.models[bm.id].rpd != null && !Number.isFinite(Number(state.models[bm.id].rpd)))
+      }
+      // Initialize rpd from BASE_MODELS if undefined, or validate if present
+      if (state.models[bm.id].rpd === undefined && bm.rpd !== undefined) {
+        state.models[bm.id].rpd = bm.rpd
+      } else if (state.models[bm.id].rpd != null && !Number.isFinite(Number(state.models[bm.id].rpd))) {
         delete state.models[bm.id].rpd
+      }
     }
   }
   // Ensure any custom models (not in BASE_MODELS) have required fields
@@ -110,8 +152,8 @@ function normalize(state) {
     }
   }
   if (!state.activeModel || !state.models[state.activeModel]?.enabled) {
-    // Prefer modern defaults if available
-    const preferred = ['gpt-4o-mini', 'gpt-4o']
+    // Prefer modern defaults if available (economical models first)
+    const preferred = ['gpt-5-nano', 'gpt-5-mini', 'gpt-5']
     const pref = preferred.find((id) => state.models[id]?.enabled)
     if (pref) state.activeModel = pref
     else {
