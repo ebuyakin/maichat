@@ -157,7 +157,7 @@
 .overlay-panel.model-editor .me-head { 
   display: grid; 
   /* Use responsive grid directly */
-  grid-template-columns: 50px minmax(180px, 1fr) minmax(80px, 90px) repeat(5, minmax(45px, 65px)); 
+  grid-template-columns: 50px minmax(180px, 1fr) minmax(80px, 90px) repeat(6, minmax(45px, 65px)); 
   align-items: center; 
   gap: var(--me-gap); 
   padding: 6px var(--me-padding); 
@@ -182,7 +182,7 @@
 
 .overlay-panel.model-editor li { 
   display: grid; 
-  grid-template-columns: 50px minmax(180px, 1fr) minmax(80px, 90px) repeat(5, minmax(45px, 65px)); 
+  grid-template-columns: 50px minmax(180px, 1fr) minmax(80px, 90px) repeat(6, minmax(45px, 65px)); 
   align-items: center; 
   gap: var(--me-gap); 
   font: var(--size-base)/1.35 var(--font-ui); 
@@ -229,6 +229,15 @@
   outline: 1px solid #3b82f6; 
   outline-offset: 2px; 
   border-radius: 3px; 
+}
+
+/* Toggle enabled/disabled colors */
+.overlay-panel.model-editor .me-col-toggle.on {
+  color: #5fa8ff;
+}
+
+.overlay-panel.model-editor .me-col-toggle.off {
+  color: #555;
 }
 
 /* Footer hint and buttons spacing */

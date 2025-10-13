@@ -33,12 +33,13 @@ export function openModelEditor({ onClose, store }) {
   <span class="me-col me-col-provider">Provider</span>
   <span class="me-col me-col-cw">CW (K)</span>
   <span class="me-col me-col-tpm">TPM (K)</span>
-  <span class="me-col me-col-rpm">RPM (K)</span>
-  <span class="me-col me-col-tpd">TPD (K)</span>
   <span class="me-col me-col-otpm">OTPM (K)</span>
+  <span class="me-col me-col-tpd">TPD (K)</span>
+  <span class="me-col me-col-rpm">RPM</span>
+  <span class="me-col me-col-rpd">RPD</span>
       </div>
   <div class="list"><ul tabindex="0" class="me-list"></ul></div>
-  <div class="me-hintbar" aria-hidden="true"><span class="me-hint">CW — context window · TPM — tokens per minute · RPM — requests per minute · TPD — tokens per day · OTPM — output tokens per minute (Anthropic)</span></div>
+  <div class="me-hintbar" aria-hidden="true"><span class="me-hint">CW — context window · TPM — tokens per minute · OTPM — output tokens per minute (Anthropic) · TPD — tokens per day · RPM — requests per minute · RPD — requests per day</span></div>
     </div>
     <footer class="me-footer">
       <div class="me-controls">
@@ -89,10 +90,10 @@ export function openModelEditor({ onClose, store }) {
   let __dirty = false
   let __applied = false // becomes true when changes are saved
 
-  const COLS = ['toggle', 'name', 'provider', 'contextWindow', 'tpm', 'rpm', 'tpd', 'otpm']
+  const COLS = ['toggle', 'name', 'provider', 'contextWindow', 'tpm', 'otpm', 'tpd', 'rpm', 'rpd']
   const PROVIDER_COL_INDEX = 2
   const FIRST_NUMERIC_COL = 3 // contextWindow
-  const LAST_COL = 7
+  const LAST_COL = 8
   function render(preserveId) {
     const prevId = preserveId || (models[activeIndex] && models[activeIndex].id)
     models = listModels()
@@ -140,9 +141,10 @@ export function openModelEditor({ onClose, store }) {
         <span class="me-col me-col-provider"><input aria-label="Provider" data-field="provider" type="text" value="${m.provider || 'openai'}" class="me-provider-input"/></span>
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.contextWindow || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpm || 0) / 1000)}" class="me-num"/></span>
-        <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-field="rpm" type="number" min="0" step="1" value="${m.rpm}" class="me-num"/></span>
-        <span class="me-col me-col-tpd"><div class="me-actions"><input aria-label="Tokens per day (K tokens)" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpd || 0) / 1000)}" class="me-num"/></div></span>
-        <span class="me-col me-col-otpm"><input aria-label="Output tokens per minute (K tokens)" data-field="otpm" data-scale="1000" type="number" min="0" step="1" value="${m.otpm != null ? Math.round((m.otpm || 0) / 1000) : ''}" class="me-num" placeholder="-"/></span>`
+        <span class="me-col me-col-otpm"><input aria-label="Output tokens per minute (K tokens)" data-field="otpm" data-scale="1000" type="number" min="0" step="1" value="${m.otpm != null ? Math.round((m.otpm || 0) / 1000) : ''}" class="me-num" placeholder="-"/></span>
+        <span class="me-col me-col-tpd"><input aria-label="Tokens per day (K tokens)" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpd || 0) / 1000)}" class="me-num"/></span>
+        <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-field="rpm" type="number" min="0" step="1" value="${m.rpm || ''}" class="me-num" placeholder="-"/></span>
+        <span class="me-col me-col-rpd"><div class="me-actions"><input aria-label="Requests per day" data-field="rpd" type="number" min="0" step="1" value="${m.rpd || ''}" class="me-num" placeholder="-"/></div></span>`
       ul.appendChild(li)
     })
     // Render inline pending new row, if any
@@ -159,9 +161,10 @@ export function openModelEditor({ onClose, store }) {
         <span class="me-col me-col-provider"><input class="me-provider-input" data-pending="1" data-field="provider" type="text" placeholder="Provider" value="${pendingNewRow.provider || 'openai'}"/></span>
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-pending="1" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.contextWindow || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-pending="1" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpm || 0) / 1000)}" class="me-num"/></span>
-        <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-pending="1" data-field="rpm" type="number" min="0" step="1" value="${pendingNewRow.rpm || 0}" class="me-num"/></span>
-        <span class="me-col me-col-tpd"><div class="me-actions"><input aria-label="Tokens per day (K tokens)" data-pending="1" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpd || 0) / 1000)}" class="me-num"/></div></span>
-        <span class="me-col me-col-otpm"><input aria-label="Output tokens per minute (K tokens)" data-pending="1" data-field="otpm" data-scale="1000" type="number" min="0" step="1" value="${pendingNewRow.otpm != null ? Math.round((pendingNewRow.otpm || 0) / 1000) : ''}" class="me-num" placeholder="-"/></span>`
+        <span class="me-col me-col-otpm"><input aria-label="Output tokens per minute (K tokens)" data-pending="1" data-field="otpm" data-scale="1000" type="number" min="0" step="1" value="${pendingNewRow.otpm != null ? Math.round((pendingNewRow.otpm || 0) / 1000) : ''}" class="me-num" placeholder="-"/></span>
+        <span class="me-col me-col-tpd"><input aria-label="Tokens per day (K tokens)" data-pending="1" data-field="tpd" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpd || 0) / 1000)}" class="me-num"/></span>
+        <span class="me-col me-col-rpm"><input aria-label="Requests per minute" data-pending="1" data-field="rpm" type="number" min="0" step="1" value="${pendingNewRow.rpm || 0}" class="me-num" placeholder="-"/></span>
+        <span class="me-col me-col-rpd"><div class="me-actions"><input aria-label="Requests per day" data-pending="1" data-field="rpd" type="number" min="0" step="1" value="${pendingNewRow.rpd || ''}" class="me-num" placeholder="-"/></div></span>`
       ul.appendChild(li)
     }
     // Apply visual selection outline when a column is selected
@@ -330,6 +333,7 @@ export function openModelEditor({ onClose, store }) {
         rpm: pendingNewRow?.rpm || 60,
         tpd: pendingNewRow?.tpd || 100000,
         otpm: pendingNewRow?.otpm,
+        rpd: pendingNewRow?.rpd,
       }
       draftById.set(id, { id, ...meta })
       stagedAdds.set(id, { ...meta })
@@ -608,6 +612,7 @@ export function openModelEditor({ onClose, store }) {
           rpm: 60,
           tpd: 100000,
           otpm: undefined,
+          rpd: undefined,
         }
       }
       activeIndex = models.length
@@ -764,9 +769,10 @@ export function openModelEditor({ onClose, store }) {
       '.me-col-provider',
       '.me-col-cw',
       '.me-col-tpm',
-      '.me-col-rpm',
-      '.me-col-tpd',
       '.me-col-otpm',
+      '.me-col-tpd',
+      '.me-col-rpm',
+      '.me-col-rpd',
     ][selectedCol]
     const cell = sel && row.querySelector(sel)
     if (cell) cell.classList.add('me-col-selected')
@@ -781,9 +787,10 @@ export function openModelEditor({ onClose, store }) {
       '.me-col-provider',
       '.me-col-cw',
       '.me-col-tpm',
-      '.me-col-rpm',
-      '.me-col-tpd',
       '.me-col-otpm',
+      '.me-col-tpd',
+      '.me-col-rpm',
+      '.me-col-rpd',
     ][selectedCol]
     const cell = sel && row.querySelector(sel)
     if (!cell) return
@@ -885,6 +892,7 @@ export function openModelEditor({ onClose, store }) {
       if (draft.rpm !== orig.rpm) patch.rpm = draft.rpm
       if (draft.tpd !== orig.tpd) patch.tpd = draft.tpd
       if (draft.otpm !== orig.otpm) patch.otpm = draft.otpm
+      if (draft.rpd !== orig.rpd) patch.rpd = draft.rpd
       if (draft.provider !== orig.provider) patch.provider = draft.provider
       if (Object.keys(patch).length) {
         updateModelMeta(id, patch)

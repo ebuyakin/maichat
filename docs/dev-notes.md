@@ -2,8 +2,6 @@
 
 ### pre-release:
 
-0. default font size for scale 100%
-1. tutorial / main page
 2. discoverability of the app.
 
 #### initialization for new users:
@@ -19,6 +17,7 @@
 
 #### push/production/release steps:
 - publish on github pages (as current version) - generally should work automatically after push
+- launch on vercel
 
 
 # MaiChat Tutorial
@@ -34,14 +33,32 @@
 ## Tips & Best Practices (deferred)
 
 
-'custome models' - doesn't sound right
-'setting limits' - explain what they are and that it's user's responsibility
-'errors'
-
-default font size. - what is the standard.
 token estimator - does it work differently for different providers? OpenAI vs Claude?
 
+## Agreed Model List (this is TRUE, latest list of models available and selected by us):
+model                          | cw    | TPM    | RPM   | TPD       | OTPM      | RPD
+__OpenAI (4 models) tier 1:__
+GPT-5                           400000  500000  500     1500000
+GPT-5 mini                      400000  500000  500     5000000
+GPT-5 nano                      400000  200000  500     2000000
+o4-mini                         128000  200000  500     2000000
+__Anthropic (3 models) tier 1:__
+Claude Sonnet 4.5               200000  30000   50                  8000
+Claude Opus 4.1                 200000  30000   50                  8000
+Claude 3.5 Haiku                200000  50000   50                  10000
+__Google (3 models):__
+Gemini 2.5 Pro                  1000000 125000  2                               50
+Gemini 2.5 Flash                1000000 250000  10                              250
+Gemini 2.0 Flash                1000000 1000000 15                              200
 
-about modes:
 
-MaiChat uses vim-inspired modal system. The purpose of modes is to use the same keys for different purposes depending on the situation. In INPUT mode and COMMAND mode (loosely similar to vim input mode and command line) most of the keys are used for typing as in regular text editor, while the commands/actions are typically performed with Ctrl-Key combination. In VIEW mode, there is no typing of the text, so single key presses are used to perform various actions/commands.
+GPT-5
+GPT-5 mini
+GPT-5 nano
+o4-mini 
+Claude Sonnet 4.5
+Claude Opus 4.1
+Claude 3.5 Haiku
+Gemini 2.5 Pro
+Gemini 2.5 Flash
+Gemini 2.0 Flash

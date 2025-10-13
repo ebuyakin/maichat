@@ -77,6 +77,7 @@ function normalize(state) {
         rpm: bm.rpm,
         tpd: bm.tpd,
         otpm: state.models[bm.id]?.otpm,
+        rpd: state.models[bm.id]?.rpd,
       }
     } else {
       if (typeof state.models[bm.id].contextWindow !== 'number')
@@ -90,6 +91,9 @@ function normalize(state) {
       // Preserve existing otpm if present; leave undefined otherwise
       if (state.models[bm.id].otpm != null && !Number.isFinite(Number(state.models[bm.id].otpm)))
         delete state.models[bm.id].otpm
+      // Preserve existing rpd if present; leave undefined otherwise
+      if (state.models[bm.id].rpd != null && !Number.isFinite(Number(state.models[bm.id].rpd)))
+        delete state.models[bm.id].rpd
     }
   }
   // Ensure any custom models (not in BASE_MODELS) have required fields
@@ -102,6 +106,7 @@ function normalize(state) {
       if (typeof m.tpd !== 'number') m.tpd = 100000
       if (typeof m.provider !== 'string') m.provider = 'openai'
       if (m.otpm != null && !Number.isFinite(Number(m.otpm))) delete m.otpm
+      if (m.rpd != null && !Number.isFinite(Number(m.rpd))) delete m.rpd
     }
   }
   if (!state.activeModel || !state.models[state.activeModel]?.enabled) {
@@ -128,15 +133,16 @@ export function getActiveModel() {
 export function setActiveModel(id) {
   if (__state.models[id]?.enabled) {
     __state.activeModel = id
+    // Track last usage for MRU sorting
+    __state.models[id].lastUsedAt = Date.now()
     saveState(__state)
   }
 }
 export function listModels() {
-  // Include both base and custom models; stable sort by: enabled desc, base first, then id asc
+  // Include both base and custom models; sort by: enabled desc, then MRU (most recently used), then alphabetical
   const allIds = Array.from(
     new Set([...BASE_MODELS.map((m) => m.id), ...Object.keys(__state.models)])
   )
-  const isBase = (id) => !!BASE_MODELS.find((b) => b.id === id)
   return allIds
     .filter((id) => !!__state.models[id])
     .map((id) => ({
@@ -147,14 +153,22 @@ export function listModels() {
       rpm: __state.models[id].rpm,
       tpd: __state.models[id].tpd,
       otpm: __state.models[id].otpm,
+      rpd: __state.models[id].rpd,
       enabled: __state.models[id].enabled,
+      lastUsedAt: __state.models[id].lastUsedAt,
     }))
-    .sort(
-      (a, b) =>
-        b.enabled - a.enabled ||
-        Number(isBase(b.id)) - Number(isBase(a.id)) ||
-        a.id.localeCompare(b.id)
-    )
+    .sort((a, b) => {
+      // 1. Enabled models first
+      if (b.enabled !== a.enabled) return b.enabled - a.enabled
+      
+      // 2. Recently used first (MRU - Most Recently Used)
+      const aUsed = __state.models[a.id]?.lastUsedAt || 0
+      const bUsed = __state.models[b.id]?.lastUsedAt || 0
+      if (bUsed !== aUsed) return bUsed - aUsed  // Descending (recent first)
+      
+      // 3. Alphabetical fallback for never-used models
+      return a.id.localeCompare(b.id)
+    })
 }
 export function toggleModelEnabled(id) {
   const m = __state.models[id]
@@ -179,8 +193,10 @@ export function getModelMeta(id) {
       rpm: 60,
       tpd: 100000,
       otpm: undefined,
+      rpd: undefined,
+      lastUsedAt: undefined,
     }
-  return { ...m, provider: m.provider || 'openai', otpm: m.otpm }
+  return { ...m, provider: m.provider || 'openai', otpm: m.otpm, rpd: m.rpd, lastUsedAt: m.lastUsedAt }
 }
 export function ensureCatalogLoaded() {}
 
@@ -214,6 +230,11 @@ export function updateModelMeta(id, patch) {
     if (Number.isFinite(v) && v >= 0) next.otpm = v
     else if (patch.otpm === null) delete next.otpm
   }
+  if (patch && 'rpd' in patch) {
+    const v = Number(patch.rpd)
+    if (Number.isFinite(v) && v >= 0) next.rpd = v
+    else if (patch.rpd === null) delete next.rpd
+  }
   if (patch && 'provider' in patch) next.provider = String(patch.provider || 'openai')
   __state.models[id] = next
   saveState(__state)
@@ -238,6 +259,10 @@ export function addModel(id, meta) {
     otpm:
       meta && Number.isFinite(Number(meta.otpm)) && Number(meta.otpm) >= 0
         ? Number(meta.otpm)
+        : undefined,
+    rpd:
+      meta && Number.isFinite(Number(meta.rpd)) && Number(meta.rpd) >= 0
+        ? Number(meta.rpd)
         : undefined,
   }
   __state.models[id] = m
