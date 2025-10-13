@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-page="tutorial">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,7 +9,7 @@
   <style>
 /* MaiChat Tutorial Styles */
 
-:root {
+html[data-page="tutorial"] {
   --bg-main: #0a0a0a;
   --bg-alt: #1a1a1a;
   --bg-card: #111;
@@ -24,13 +24,13 @@
   --sidebar-width: 360px;
 }
 
-* { 
+html[data-page="tutorial"] * { 
   margin: 0; 
   padding: 0; 
   box-sizing: border-box; 
 }
 
-html, body { 
+html[data-page="tutorial"] html, body { 
   margin: 0; 
   padding: 0; 
   background: var(--bg-main); 
@@ -39,7 +39,7 @@ html, body {
   height: 100%;
 }
 
-body { 
+html[data-page="tutorial"] body { 
   font-family: var(--font-ui);
   font-size: 16px;
   line-height: 1.6;
@@ -48,7 +48,7 @@ body {
 }
 
 /* Sidebar Navigation */
-.sidebar {
+html[data-page="tutorial"] .sidebar {
   position: fixed;
   left: 0;
   top: 0;
@@ -61,43 +61,43 @@ body {
   z-index: 100;
 }
 
-.sidebar-header {
+html[data-page="tutorial"] .sidebar-header {
   padding: 0 24px 20px 24px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 20px;
 }
 
-.sidebar-title {
+html[data-page="tutorial"] .sidebar-title {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 4px;
 }
 
-.sidebar-subtitle {
+html[data-page="tutorial"] .sidebar-subtitle {
   font-size: 0.85rem;
   color: var(--text-dim);
 }
 
-.sidebar-nav {
+html[data-page="tutorial"] .sidebar-nav {
   list-style: none;
   padding-right: 15px;
   margin-left: 12px;
 }
 
 /* Top link styling */
-.nav-top a {
+html[data-page="tutorial"] .nav-top a {
   font-weight: 600;
   color: var(--text);
 }
 
 /* Nav items */
-.nav-item {
+html[data-page="tutorial"] .nav-item {
   position: relative;
 }
 
 /* Items without children - simple link */
-.nav-item:not(.has-children) > a {
+html[data-page="tutorial"] .nav-item:not(.has-children) > a {
   display: block;
   padding: 2px 12px;
   color: var(--text-dim);
@@ -107,19 +107,19 @@ body {
   border-left: 3px solid transparent;
 }
 
-.nav-item:not(.has-children) > a:hover {
+html[data-page="tutorial"] .nav-item:not(.has-children) > a:hover {
   color: var(--text);
   background: rgba(255, 255, 255, 0.05);
 }
 
-.nav-item:not(.has-children) > a.active {
+html[data-page="tutorial"] .nav-item:not(.has-children) > a.active {
   color: var(--accent);
   background: rgba(74, 158, 255, 0.1);
   border-left-color: var(--accent);
 }
 
 /* Items with children - header with toggle */
-.nav-item.has-children > .nav-item-header {
+html[data-page="tutorial"] .nav-item.has-children > .nav-item-header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -127,11 +127,11 @@ body {
   transition: background 0.2s;
 }
 
-.nav-item.has-children > .nav-item-header:hover {
+html[data-page="tutorial"] .nav-item.has-children > .nav-item-header:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.nav-item-toggle {
+html[data-page="tutorial"] .nav-item-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -145,21 +145,21 @@ body {
   flex-shrink: 0;
 }
 
-.nav-item-toggle:hover {
+html[data-page="tutorial"] .nav-item-toggle:hover {
   color: var(--text);
 }
 
 /* Chevron rotation */
-.nav-item.has-children > .nav-item-header .nav-item-toggle {
+html[data-page="tutorial"] .nav-item.has-children > .nav-item-header .nav-item-toggle {
   transform: rotate(90deg); /* Down when expanded */
 }
 
-.nav-item.has-children.collapsed > .nav-item-header .nav-item-toggle {
+html[data-page="tutorial"] .nav-item.has-children.collapsed > .nav-item-header .nav-item-toggle {
   transform: rotate(0deg); /* Right when collapsed */
 }
 
 /* Links inside headers */
-.nav-item-header a {
+html[data-page="tutorial"] .nav-item-header a {
   flex: 1;
   color: var(--text-dim);
   text-decoration: none;
@@ -168,17 +168,17 @@ body {
   border-left: none;
 }
 
-.nav-item-header a:hover {
+html[data-page="tutorial"] .nav-item-header a:hover {
   color: var(--text);
 }
 
-.nav-item-header a.active {
+html[data-page="tutorial"] .nav-item-header a.active {
   color: var(--accent);
   font-weight: 600;
 }
 
 /* Sub-items container */
-.nav-sub-items {
+html[data-page="tutorial"] .nav-sub-items {
   list-style: none;
   max-height: 2000px;
   overflow: hidden;
@@ -187,54 +187,54 @@ body {
   padding-left: 12px;
 }
 
-.nav-item.collapsed > .nav-sub-items {
+html[data-page="tutorial"] .nav-item.collapsed > .nav-sub-items {
   max-height: 0;
   opacity: 0;
 }
 
 /* Nested sub-items styling */
-.nav-sub-items .nav-item:not(.has-children) > a {
+html[data-page="tutorial"] .nav-sub-items .nav-item:not(.has-children) > a {
   padding: 2px 12px;
   font-size: 0.9rem;
 }
 
-.nav-sub-items .nav-sub-items .nav-item > a {
+html[data-page="tutorial"] .nav-sub-items .nav-sub-items .nav-item > a {
   padding: 2px 12px;
   font-size: 0.85rem;
   color: var(--text-dim);
 }
 
 /* Main Content */
-.main-content {
+html[data-page="tutorial"] .main-content {
   margin-left: var(--sidebar-width);
   flex: 1;
   min-width: 0;
 }
 
-.container { 
+html[data-page="tutorial"] .container { 
   max-width: 900px; 
   margin: 0 auto; 
   padding: 48px 48px 64px;
 }
 
-header { 
+html[data-page="tutorial"] header { 
   margin-bottom: 48px;
 }
 
-h1 { 
+html[data-page="tutorial"] h1 { 
   font-size: 2.5rem; 
   line-height: 1.2; 
   margin: 0 0 16px; 
   font-weight: 700; 
 }
 
-.subtitle { 
+html[data-page="tutorial"] .subtitle { 
   color: var(--text-dim); 
   margin: 0 0 24px; 
   font-size: 1.1rem; 
 }
 
-.back-link {
+html[data-page="tutorial"] .back-link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -245,11 +245,11 @@ h1 {
   transition: color 0.2s;
 }
 
-.back-link:hover {
+html[data-page="tutorial"] .back-link:hover {
   color: var(--accent);
 }
 
-h2 { 
+html[data-page="tutorial"] h2 { 
   margin-top: 60px; 
   padding-top: 40px; 
   border-top: 2px solid var(--border); 
@@ -258,13 +258,13 @@ h2 {
   scroll-margin-top: 24px;
 }
 
-section:first-of-type h2 { 
+html[data-page="tutorial"] section:first-of-type h2 { 
   margin-top: 0;
   border-top: none;
   padding-top: 0;
 }
 
-h3 { 
+html[data-page="tutorial"] h3 { 
   margin-top: 36px; 
   font-size: 1.25rem; 
   color: var(--accent); 
@@ -272,27 +272,27 @@ h3 {
   scroll-margin-top: 24px;
 }
 
-h4 { 
+html[data-page="tutorial"] h4 { 
   margin-top: 24px; 
   font-size: 1.05rem; 
   font-weight: 600; 
 }
 
-p { 
+html[data-page="tutorial"] p { 
   margin: 14px 0; 
   line-height: 1.7; 
 }
 
-ul, ol { 
+html[data-page="tutorial"] ul, ol { 
   margin: 12px 0 20px 24px; 
 }
 
-li { 
+html[data-page="tutorial"] li { 
   margin: 10px 0; 
   line-height: 1.7; 
 }
 
-code { 
+html[data-page="tutorial"] code { 
   background: var(--bg-card); 
   padding: 3px 8px; 
   border-radius: 4px; 
@@ -301,7 +301,7 @@ code {
   color: var(--accent); 
 }
 
-kbd { 
+html[data-page="tutorial"] kbd { 
   background: var(--bg-alt); 
   border: 1px solid var(--border); 
   padding: 3px 8px; 
@@ -312,7 +312,7 @@ kbd {
   white-space: nowrap; 
 }
 
-blockquote {
+html[data-page="tutorial"] blockquote {
   border-left: 3px solid var(--accent); 
   padding: 16px 20px; 
   background: rgba(74, 158, 255, 0.1); 
@@ -320,11 +320,11 @@ blockquote {
   margin: 20px 0; 
 }
 
-blockquote strong { 
+html[data-page="tutorial"] blockquote strong { 
   color: var(--accent); 
 }
 
-.info { 
+html[data-page="tutorial"] .info { 
   border-left: 3px solid var(--success); 
   padding: 16px 20px; 
   background: rgba(74, 222, 128, 0.1); 
@@ -332,11 +332,11 @@ blockquote strong {
   margin: 20px 0; 
 }
 
-.info strong { 
+html[data-page="tutorial"] .info strong { 
   color: var(--success); 
 }
 
-.footer { 
+html[data-page="tutorial"] .footer { 
   margin-top: 64px; 
   padding-top: 24px; 
   border-top: 1px solid var(--border); 
@@ -345,35 +345,35 @@ blockquote strong {
   text-align: center; 
 }
 
-.footer .small {
+html[data-page="tutorial"] .footer .small {
   font-size: 0.9em;
   margin-top: 8px;
   display: block;
 }
 
-a { 
+html[data-page="tutorial"] a { 
   color: var(--accent); 
   text-decoration: none; 
   transition: color 0.2s; 
 }
 
-a:hover { 
+html[data-page="tutorial"] a:hover { 
   color: var(--accent-hover); 
 }
 
-table { 
+html[data-page="tutorial"] table { 
   border-collapse: collapse; 
   width: 100%; 
   margin: 20px 0; 
 }
 
-th, td { 
+html[data-page="tutorial"] th, td { 
   text-align: left; 
   padding: 12px; 
   border: 1px solid var(--border); 
 }
 
-th { 
+html[data-page="tutorial"] th { 
   background: var(--bg-card); 
   font-weight: 600; 
 }
@@ -2335,7 +2335,7 @@ th {
       </section>
 
       <div class="footer">
-        <p><a href="app.html">Launch App</a> | <a href="index.html">Home</a> | <a href="https://github.com/ebuyakin/maichat">GitHub</a></p>
+        <p><a href="index.html">← Home</a> | <a href="https://github.com/ebuyakin/maichat">GitHub</a></p>
         <p class="small">MaiChat Tutorial • Last updated October 2025</p>
       </div>
 

@@ -1,10 +1,14 @@
-html, body { margin:0; padding:0; height:100%; overscroll-behavior:none; }
-body { min-height:100vh; overflow:hidden; font-family: var(--font-ui); font-size: var(--size-base); line-height: 1.45; color: var(--text); background: var(--bg); }
-#app { height:100vh; width:100%; position:relative; }
+html[data-page="app"],
+html[data-page="app"] body { margin:0; padding:0; height:100%; overscroll-behavior:none; }
+
+html[data-page="app"] body { min-height:100vh; overflow:hidden; font-family: var(--font-ui); font-size: var(--size-base); line-height: 1.45; color: var(--text); background: var(--bg); }
+
+html[data-page="app"] #app { height:100vh; width:100%; position:relative; }
 
 /* Reduce selection flash */
-::selection { background: #25527a; }
+html[data-page="app"] ::selection { background: #25527a; }
 
 /* Global focus handling */
-*:focus { outline:none; }
-input:focus, button:focus { border-color: var(--accent); }
+html[data-page="app"] *:focus { outline:none; }
+html[data-page="app"] input:focus, 
+html[data-page="app"] button:focus { border-color: var(--accent); }

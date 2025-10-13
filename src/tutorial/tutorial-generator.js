@@ -32,6 +32,83 @@ function generateId(title) {
     .replace(/\s/g, '-'); // replace spaces with hyphens
 }
 
+// Scope CSS to prevent contamination of other pages
+function scopeCSS(css) {
+  const scope = 'html[data-page="tutorial"]';
+  const lines = css.split('\n');
+  const output = [];
+  
+  let inMediaQuery = false;
+  let mediaQueryDepth = 0;
+  let braceDepth = 0;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    
+    // Track brace depth
+    const openBraces = (line.match(/{/g) || []).length;
+    const closeBraces = (line.match(/}/g) || []).length;
+    braceDepth += openBraces - closeBraces;
+    
+    // Handle media queries
+    if (trimmed.startsWith('@media')) {
+      inMediaQuery = true;
+      mediaQueryDepth = braceDepth;
+      output.push(line);
+      continue;
+    }
+    
+    // Exit media query when we close its braces
+    if (inMediaQuery && braceDepth < mediaQueryDepth) {
+      inMediaQuery = false;
+      mediaQueryDepth = 0;
+    }
+    
+    // Handle comments
+    if (trimmed.startsWith('/*') || trimmed.startsWith('//') || trimmed === '' || trimmed.endsWith('*/')) {
+      output.push(line);
+      continue;
+    }
+    
+    // Handle closing braces
+    if (trimmed === '}' || trimmed.startsWith('}')) {
+      output.push(line);
+      continue;
+    }
+    
+    // Scope selectors (lines that end with { or contain {)
+    if (line.includes('{') && !trimmed.startsWith('@') && !inMediaQuery) {
+      const parts = line.split('{');
+      const selector = parts[0].trim();
+      const rest = parts.slice(1).join('{');
+      
+      // Don't double-scope
+      if (selector.includes(scope)) {
+        output.push(line);
+        continue;
+      }
+      
+      // Special handling for :root
+      if (selector === ':root') {
+        const indent = line.match(/^\s*/)[0];
+        output.push(`${indent}${scope} {${rest}`);
+        continue;
+      }
+      
+      // Scope all other selectors
+      const indent = line.match(/^\s*/)[0];
+      output.push(`${indent}${scope} ${selector} {${rest}`);
+      continue;
+    }
+    
+    // Property lines and everything else
+    output.push(line);
+  }
+  
+  return output.join('\n');
+}
+
 // Parse markdown structure to extract headers
 function parseMarkdownStructure(markdownContent) {
   const lines = markdownContent.split('\n');
@@ -187,7 +264,7 @@ function generateNav(structure) {
 // Generate the full HTML page
 function generateHTML(content, styles, nav) {
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-page="tutorial">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -225,7 +302,7 @@ ${nav}
 ${content}
 
       <div class="footer">
-        <p><a href="app.html">Launch App</a> | <a href="index.html">Home</a> | <a href="https://github.com/ebuyakin/maichat">GitHub</a></p>
+        <p><a href="index.html">← Home</a> | <a href="https://github.com/ebuyakin/maichat">GitHub</a></p>
         <p class="small">MaiChat Tutorial • Last updated ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
       </div>
 
@@ -472,7 +549,11 @@ async function build() {
     // Read source files
     console.log('Reading source files...');
     const markdownContent = fs.readFileSync(contentPath, 'utf8');
-    const styles = fs.readFileSync(stylesPath, 'utf8');
+    const rawStyles = fs.readFileSync(stylesPath, 'utf8');
+    
+    // Scope CSS to prevent contamination
+    console.log('Scoping CSS...');
+    const styles = scopeCSS(rawStyles);
     
     // Parse markdown structure for navigation
     console.log('Parsing markdown structure...');

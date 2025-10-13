@@ -944,21 +944,21 @@ GitHub: [link]"
 
 ### **Phase 1: Content Creation** ⏳ Not Started
 
-- [ ] Write landing page copy (index.html)
-  - [ ] Hero section
-  - [ ] Key features (4 blocks)
-  - [ ] Quick start
-  - [ ] Target audience
-  - [ ] Technical details
-  - [ ] Footer with links
+- [x] Write landing page copy (index.html)
+  - [x] Hero section
+  - [x] Key features (4 blocks)
+  - [x] Quick start
+  - [x] Target audience
+  - [x] Technical details
+  - [x] Footer with links
   
-- [ ] Rewrite tutorial (progressive structure)
-  - [ ] 5-minute getting started
-  - [ ] Core concepts section
-  - [ ] Keyboard reference (tables)
-  - [ ] Command language guide
-  - [ ] Advanced features
-  - [ ] FAQ & troubleshooting
+- [x] Rewrite tutorial (progressive structure)
+  - [x] 5-minute getting started
+  - [x] Core concepts section
+  - [x] Keyboard reference (tables)
+  - [x] Command language guide
+  - [x] Advanced features
+  - [x] FAQ & troubleshooting
   
 - [ ] Create visual assets
   - [ ] Take screenshots for landing page (3-5)

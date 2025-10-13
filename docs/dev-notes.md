@@ -2,6 +2,7 @@
 
 ### pre-release:
 
+0. default font size for scale 100%
 1. tutorial / main page
 2. discoverability of the app.
 
@@ -37,6 +38,7 @@
 'setting limits' - explain what they are and that it's user's responsibility
 'errors'
 
+default font size. - what is the standard.
 token estimator - does it work differently for different providers? OpenAI vs Claude?
 
 

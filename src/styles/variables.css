@@ -1,4 +1,4 @@
-:root {
+html[data-page="app"] {
   /* Fallbacks to avoid FOUC before JS applies runtime spacing */
   --bg: #0c0c0c;
   --bg-alt: #242424;

@@ -16,7 +16,7 @@
 #topBar input {
     width: 100%;
     background: var(--bg-alt);
-    border: 1px solid var(--border);
+    border: none;
     color: var(--text);
     padding: 6px 0 6px 0;
     font: var(--size-base)/1.5 var(--font-ui);
