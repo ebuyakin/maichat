@@ -17,7 +17,7 @@ html[data-page="app"] {
   --marked-bg: #103b2c;
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  --size-base: 13px;
+  --size-base: 14px;
   --topbar-h: 40px;
   --bottombar-h: 96px;
   --gutter: 16px;
