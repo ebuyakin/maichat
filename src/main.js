@@ -1,6 +1,4 @@
 import './styles/index.css'
-// Boot diagnostics injected (temporary) to investigate blank page issue.
-console.log('[MaiChat] boot script loaded (pre-imports)')
 
 import { initRuntime } from './runtime/runtimeSetup.js'
 import { createModeManager, MODES } from './features/interaction/modes.js'
@@ -22,12 +20,8 @@ window.addEventListener('unhandledrejection', (e) => {
     console.error('[MaiChat] unhandled rejection', e.reason)
   } catch {}
 })
-window.__BOOT_STAGE = 'imports-complete'
-
-console.log('[MaiChat] imports complete')
 
 // Mode management
-console.log('[MaiChat] constructing mode manager')
 const modeManager = createModeManager()
 window.__modeManager = modeManager
 window.__MODES = MODES
@@ -100,15 +94,10 @@ loadingEl.textContent = 'Loading…'
 document.body.appendChild(loadingEl)
 
 // Runtime context
-console.log('[MaiChat] initRuntime start')
-
 const __runtime = initRuntime() // create runtime NB!
 
-console.log('[MaiChat] initRuntime done')
 const { store, persistence, activeParts, pendingMessageMeta } = __runtime
-console.log('[MaiChat] createHistoryRuntime start')
 const historyRuntime = createHistoryRuntime(__runtime)
-console.log('[MaiChat] createHistoryRuntime done')
 const {
   layoutHistoryPane,
   applySpacingStyles,
@@ -141,14 +130,12 @@ try {
   const isDev =
     (typeof import.meta !== 'undefined' && import.meta?.env && import.meta.env.DEV === true) ||
     /^(localhost|127\.|0\.0\.0\.0)/.test(window.location.hostname)
-  console.log('[MaiChat] dev detect:', { isDev, host: window.location.hostname })
   if (isDev) {
     const usp = new URLSearchParams(window.location.search)
     const hudParam = (usp.get('hud') || '').replace(/\s+/g, '').trim()
     const wantReq = /(^|,)(req|request)(,|$)/i.test(hudParam) || /(^|,)(all)(,|$)/i.test(hudParam)
     const wantRuntime =
       /(^|,)(runtime|rt)(,|$)/i.test(hudParam) || /(^|,)(all)(,|$)/i.test(hudParam)
-    console.log('[MaiChat] HUD param:', hudParam || '(none)')
     if (wantReq) {
       const mod = await import('./instrumentation/requestDebugOverlay.js')
       requestDebug = mod.createRequestDebugOverlay({ historyRuntime })
@@ -174,7 +161,6 @@ try {
 }
 
 // Interaction layer (Step 6 extraction)
-console.log('[MaiChat] createInteraction start')
 const interaction = createInteraction({
   ctx: __runtime,
   dom: { commandInput, commandErrEl, inputField, sendBtn, historyPaneEl },
@@ -182,7 +168,6 @@ const interaction = createInteraction({
   requestDebug,
   hudRuntime,
 })
-console.log('[MaiChat] createInteraction done')
 
 bindHistoryErrorActions(document.getElementById('history'), {
   onResend: (pairId) => {
@@ -237,19 +222,14 @@ function renderTopics() {
   /* hidden for now */
 }
 
-console.log('[MaiChat] bootstrap start')
 bootstrap({ ctx: __runtime, historyRuntime, interaction, loadingEl }).then(() => {
   try {
     // Restore last filter if it was active
     interaction.restoreLastFilter()
     // Default to Input Mode on startup for immediate typing
     window.__modeManager && window.__modeManager.set(MODES.INPUT)
-    console.log('[MaiChat] default mode set to INPUT')
   } catch {}
 })
-console.log('[MaiChat] bootstrap invoked')
-
-console.log('[MaiChat] boot complete')
 
 // Pointer-mode switching (mouse/touch): switch app mode before pointer focus lands (excludes overlays)
 installPointerModeSwitcher({

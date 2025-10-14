@@ -12,43 +12,6 @@ export function createScrollController({ container, getParts }) {
   let currentActiveIndex = 0
   let appliedScrollTop = 0
   let visibleWindow = { first: 0, last: 0 }
-
-  // Debug: Monitor ALL scroll events
-  /*
-	let lastLoggedScroll = -1
-	let bootstrapScrollToBottomPending = false
-	
-	container.addEventListener('scroll', ()=>{
-		const currentScroll = Math.round(container.scrollTop)
-		if(Math.abs(currentScroll - lastLoggedScroll) > 5){
-			lastLoggedScroll = currentScroll
-			console.log('[SCROLL EVENT]', {
-				scrollTop: currentScroll,
-				scrollHeight: container.scrollHeight,
-				clientHeight: container.clientHeight,
-				maxScroll: container.scrollHeight - container.clientHeight,
-				programmatic: programmaticScrollActive,
-				timestamp: performance.now().toFixed(2),
-				stack: new Error().stack.split('\n')[2]
-			})
-			
-			// If browser restoration happens (non-programmatic scroll) and we're supposed to be at bottom,
-			// override it by scrolling to actual bottom
-			if(!programmaticScrollActive && bootstrapScrollToBottomPending){
-				const correctMax = container.scrollHeight - container.clientHeight
-				if(Math.abs(currentScroll - correctMax) > 10){
-					console.log('[OVERRIDE browser restoration] Correcting to', correctMax)
-					setTimeout(()=>{
-						container.scrollTop = correctMax
-						bootstrapScrollToBottomPending = false
-					}, 50)
-				} else {
-					bootstrapScrollToBottomPending = false
-				}
-			}
-		}
-	})
-	*/
   // Stateless model: no persistent policy anchors; all actions are one-shot
   function findIndexById(partId) {
     if (!metrics) return -1
@@ -86,17 +49,6 @@ export function createScrollController({ container, getParts }) {
     metrics = { parts, paneH, edgeGap, totalContentH }
   }
   function anchorScrollTop(k, positionOverride) {
-    console.log('xxx')
-    // Debug: Log all bottom alignments to find the culprit
-    if (positionOverride === 'bottom') {
-      const stack = new Error().stack
-      console.log('[anchorScrollTop BOTTOM called]', {
-        index: k,
-        timestamp: performance.now().toFixed(2),
-        caller: stack.split('\n').slice(2, 5).join('\n'),
-      })
-    }
-
     if (!metrics) return 0
     // anchorMode removed: callers must pass positionOverride explicitly; default fallback 'bottom'
     const mode = positionOverride || 'bottom'
