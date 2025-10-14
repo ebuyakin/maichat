@@ -124,6 +124,13 @@
   margin: 0.25em 0;
 }
 
+/* Extra bottom margin when code/blocks end a list item */
+.assistant-body li > pre:last-child,
+.assistant-body li > blockquote:last-child,
+.assistant-body li > table:last-child {
+  margin-bottom: 1.5em;
+}
+
 /* ============================================
    BLOCKQUOTES
    ============================================ */

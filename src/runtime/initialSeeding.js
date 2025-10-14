@@ -31,27 +31,44 @@ function seedTopics(store) {
   const rootId = store.rootTopicId
   const id = {}
   let t = Date.now()
-  // Top-level in exact order
-  id.GeneralTalk = store.addTopic('General talk', rootId, ++t)
-  id.Study = store.addTopic('Study', rootId, ++t)
+  
+  // Top-level topics
+  id.General = store.addTopic('General', rootId, ++t)
   id.Work = store.addTopic('Work', rootId, ++t)
+  id.Study = store.addTopic('Study', rootId, ++t)
+  id.Computers = store.addTopic('Computers', rootId, ++t)
+  id.Health = store.addTopic('Health', rootId, ++t)
   id.Entertainment = store.addTopic('Entertainment', rootId, ++t)
-  id.Curiousity = store.addTopic('Curiousity', rootId, ++t)
   id.Travel = store.addTopic('Travel', rootId, ++t)
+  
+  // General children
+  id.DailyTalk = store.addTopic('Daily talk', id.General, ++t)
+  id.Curiousity = store.addTopic('Curiousity', id.General, ++t)
+  
+  // Work children
+  id.Marketing = store.addTopic('Marketing', id.Work, ++t)
+  id.Finance = store.addTopic('Finance', id.Work, ++t)
+  id.Legal = store.addTopic('Legal', id.Work, ++t)
+  
+  // Finance grandchildren
+  id.PersonalFinance = store.addTopic('Personal finance', id.Finance, ++t)
+  id.Economics = store.addTopic('Economics', id.Finance, ++t)
+  
   // Study children
+  id.Politics = store.addTopic('Politics', id.Study, ++t)
   id.Math = store.addTopic('Math', id.Study, ++t)
-  id.Physics = store.addTopic('Physics', id.Study, ++t)
-  id.CompSci = store.addTopic('CompSci', id.Study, ++t)
-  // Physics grandchildren
-  id.Classic = store.addTopic('Classic', id.Physics, ++t)
-  id.Modern = store.addTopic('Modern', id.Physics, ++t)
-  // CompSci grandchildren
-  id.Python = store.addTopic('Python', id.CompSci, ++t)
-  id.Linux = store.addTopic('Linux', id.CompSci, ++t)
-  // Entertainment children
-  id.Fitness = store.addTopic('Fitness', id.Entertainment, ++t)
-  id.Music = store.addTopic('Music', id.Entertainment, ++t)
-  id.Movies = store.addTopic('Movies', id.Entertainment, ++t)
+  id.Art = store.addTopic('Art', id.Study, ++t)
+  
+  // Computers children
+  id.AI = store.addTopic('AI', id.Computers, ++t)
+  id.Python = store.addTopic('Python', id.Computers, ++t)
+  id.JavaScript = store.addTopic('JavaScript', id.Computers, ++t)
+  id.Linux = store.addTopic('Linux', id.Computers, ++t)
+  
+  // Health children
+  id.Exercises = store.addTopic('Exercises', id.Health, ++t)
+  id.Diet = store.addTopic('Diet', id.Health, ++t)
+  
   return id
 }
 
@@ -61,7 +78,7 @@ function buildWelcomePair() {
 
 Quick start:
 - Esc / Enter to cycle different modes; Ctrl+I / Ctrl+V / Ctrl+D jump to Input / View / Command.
-- In View: j/k move between parts; g/G first/last; Shift+O jump to context boundary; Shift+R cycle reading position.
+- In View: j/k scroll down/up the history; u/d move between messages; g/G first/last; Shift+O jump to context boundary.
 - In Input: Ctrl+M pick a model; Ctrl+T pick a topic; Enter sends.
 - In Command: filter with terse queries, e.g. t'AI...'  d<7d  m'gpt*'  r10  s>=2  b
   • AND: space or &   • OR: | or +   • NOT: !   • Group: (...). Enter - to apply filter, Esc - switch to View, Ctrl-U - clear filter.
@@ -78,7 +95,7 @@ Ready when you are — type your first request below and press Enter.`
 
 function seedWelcomeMessage(store, topicId) {
   const { userText, assistantText } = buildWelcomePair()
-  store.addMessagePair({ topicId, model: 'gpt-4o-mini', userText, assistantText })
+  store.addMessagePair({ topicId, model: 'gpt-5-nano', userText, assistantText })
 }
 
 export function shouldRunInitialSeeding(store) {
@@ -94,10 +111,10 @@ export function runInitialSeeding({ store }) {
   if (!shouldRunInitialSeeding(store)) return false
   // Topics
   const ids = seedTopics(store) || {}
-  // Models: prefer gpt-4o-mini as default
-  setActiveModel('gpt-4o-mini')
-  // Welcome message under General talk if present, else root
-  const topicId = ids.GeneralTalk || store.rootTopicId
+  // Models: prefer gpt-5-nano as default
+  setActiveModel('gpt-5-nano')
+  // Welcome message under Daily talk if present, else General, else root
+  const topicId = ids.DailyTalk || ids.General || store.rootTopicId
   seedWelcomeMessage(store, topicId)
   setSeedVersion(SEED_VERSION)
   return true

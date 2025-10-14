@@ -36,7 +36,7 @@ const BASE_MODELS = [
   },
   // Anthropic models (Tier 1 limits)
   {
-    id: 'claude-sonnet-4-5-20250929',
+    id: 'claude-4-5-sonnet-20250929',
     provider: 'anthropic',
     contextWindow: 200000,
     tpm: 30000,
@@ -44,7 +44,7 @@ const BASE_MODELS = [
     otpm: 8000,
   },
   {
-    id: 'claude-opus-4-1-20250929',
+    id: 'claude-4-1-opus-20250929',
     provider: 'anthropic',
     contextWindow: 200000,
     tpm: 30000,
@@ -57,11 +57,11 @@ const BASE_MODELS = [
     contextWindow: 200000,
     tpm: 50000,
     rpm: 50,
-    otpm: 10000,
+    otpm: 8000,
   },
   // Gemini models (Free tier limits)
   {
-    id: 'gemini-2-5-pro',
+    id: 'gemini-2.5-pro',
     provider: 'gemini',
     contextWindow: 1000000,
     tpm: 125000,
@@ -69,7 +69,7 @@ const BASE_MODELS = [
     rpd: 50,
   },
   {
-    id: 'gemini-2-5-flash',
+    id: 'gemini-2.5-flash',
     provider: 'gemini',
     contextWindow: 1000000,
     tpm: 250000,
@@ -77,7 +77,7 @@ const BASE_MODELS = [
     rpd: 250,
   },
   {
-    id: 'gemini-2-0-flash',
+    id: 'gemini-2.0-flash',
     provider: 'gemini',
     contextWindow: 1000000,
     tpm: 1000000,

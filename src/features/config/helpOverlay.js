@@ -44,12 +44,15 @@ export function openHelpOverlay({ onClose, modeManager }) {
           <div class="help-title">View Mode</div>
           <div class="help-k">Enter</div><div class="help-d">Switch to Input Mode</div>
           <div class="help-k">Esc</div><div class="help-d">Switch to Command Mode</div>
-          <div class="help-k">j / ArrowDown</div><div class="help-d">Move to next message part</div>
-          <div class="help-k">k / ArrowUp</div><div class="help-d">Move to previous message part</div>
+          <div class="help-k">j / ArrowDown</div><div class="help-d">Scroll down</div>
+          <div class="help-k">k / ArrowUp</div><div class="help-d">Scroll up</div>
+          <div class="help-k">J</div><div class="help-d">Scroll down (big step)</div>
+          <div class="help-k">K</div><div class="help-d">Scroll up (big step)</div>
+          <div class="help-k">u</div><div class="help-d">Jump to previous message</div>
+          <div class="help-k">d</div><div class="help-d">Jump to next message</div>
           <div class="help-k">g</div><div class="help-d">Move to first message part</div>
           <div class="help-k">G</div><div class="help-d">Move to last message part</div>
           <div class="help-k">o / Shift+O</div><div class="help-d">Jump to context boundary</div>
-          <div class="help-k">r</div><div class="help-d">Toggle Reading Mode</div>
           <div class="help-k">c / c1-9</div><div class="help-d">Copy code block(s)</div>
           <div class="help-k">y / y1-9</div><div class="help-d">Copy equation(s)</div>
           <div class="help-k">Y</div><div class="help-d">Copy entire message</div>
@@ -59,7 +62,7 @@ export function openHelpOverlay({ onClose, modeManager }) {
           <div class="help-k">Space</div><div class="help-d">Clear star rating</div>
           <div class="help-k">a</div><div class="help-d">Toggle color code</div>
           <div class="help-k">e</div><div class="help-d">Edit & resend (error row)</div>
-          <div class="help-k">d</div><div class="help-d">Delete (error row)</div>
+          <div class="help-k">w</div><div class="help-d">Delete (error row)</div>
           <div class="help-k">Ctrl+T</div><div class="help-d">Topic picker (full tree)</div>
         </section>
         <section class="help-col">

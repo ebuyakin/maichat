@@ -17,7 +17,7 @@ export const SETTINGS_SCHEMA = {
   // ========================================
   
   fadeZonePx: {
-    defaultValue: 20,
+    defaultValue: 10,
     renderAction: 'restyle',
     control: { type: 'number', min: 0, max: 120, step: 1 },
     ui: { label: 'Fade Zone (px)', tab: 'spacing' },
@@ -38,38 +38,38 @@ export const SETTINGS_SCHEMA = {
   },
   
   messagePaddingPx: {
-    defaultValue: 10,
+    defaultValue: 15,
     renderAction: 'restyle',
     control: { type: 'number', min: 0, max: 48, step: 1 },
     ui: { label: 'Message Padding (px)', tab: 'spacing' },
   },
   
   metaGapPx: {
-    defaultValue: 5,
+    defaultValue: 10,
     renderAction: 'restyle',
     control: { type: 'number', min: 0, max: 48, step: 1 },
     ui: { label: 'Meta Gap (px)', tab: 'spacing' },
   },
   
   gutterLPx: {
-    defaultValue: 10,
+    defaultValue: 15,
     renderAction: 'restyle',
     control: { type: 'number', min: 0, max: 60, step: 1 },
     ui: { label: 'Gutter Left (px)', tab: 'spacing' },
   },
   
   gutterRPx: {
-    defaultValue: 10,
+    defaultValue: 7,
     renderAction: 'restyle',
     control: { type: 'number', min: 0, max: 60, step: 1 },
     ui: { label: 'Gutter Right (px)', tab: 'spacing' },
   },
   
   useInlineFormatting: {
-    defaultValue: false,
+    defaultValue: true,
     renderAction: 'rebuild',
     control: { type: 'checkbox' },
-    ui: { label: 'Inline Markdown Formatting (experimental)', tab: 'spacing' },
+    ui: { label: 'Inline Markdown Formatting', tab: 'spacing' },
   },
   
   // ========================================
@@ -119,14 +119,14 @@ export const SETTINGS_SCHEMA = {
   // ========================================
   
   animateSmallSteps: {
-    defaultValue: false,
+    defaultValue: true,
     renderAction: 'none',
     control: { type: 'checkbox' },
     ui: { label: 'Animate j/k (small steps)', tab: 'scroll' },
   },
   
   animateBigSteps: {
-    defaultValue: false,
+    defaultValue: true,
     renderAction: 'none',
     control: { type: 'checkbox' },
     ui: { label: 'Animate J/K (big steps)', tab: 'scroll' },
