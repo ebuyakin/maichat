@@ -14,7 +14,7 @@
  * @property {MsgPart[]} parts  In visual order: user -> meta -> assistant (if present)
  */
 
-export function buildMessages(pairs) {
+export function buildMessagesForDisplay(pairs) {
   const out = []
   const safe = (v) => (v == null ? '' : String(v))
   for (const p of pairs) {

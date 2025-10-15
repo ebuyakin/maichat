@@ -9,6 +9,7 @@ import { decideRenderAction } from './runtime/renderPolicy.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
+import { setupConsoleTest } from './features/history/refreshAndScroll.js'
 
 window.addEventListener('error', (e) => {
   try {
@@ -159,6 +160,18 @@ try {
 } catch (e) {
   console.warn('[MaiChat] HUD setup skipped', e)
 }
+
+// Setup experimental console test function
+setupConsoleTest({
+  store,
+  historyRuntime,
+  scrollController: __runtime.scrollController,
+  activeParts,
+  boundaryMgr: __runtime.boundaryMgr,
+  historyView: __runtime.historyView,
+  lifecycle: __runtime.lifecycle,
+  pendingMessageMeta,
+})
 
 // Interaction layer (Step 6 extraction)
 const interaction = createInteraction({

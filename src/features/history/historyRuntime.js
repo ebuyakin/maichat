@@ -1,5 +1,5 @@
 // historyRuntime moved from ui/history/historyRuntime.js
-import { buildMessages, flattenMessagesToParts } from './messageList.js'
+import { buildMessagesForDisplay, flattenMessagesToParts } from './messageList.js'
 import { getSettings } from '../../core/settings/index.js'
 
 // partitioner removed in message-based rendering
@@ -222,7 +222,7 @@ export function createHistoryRuntime(ctx) {
     lastContextIncludedIds = new Set(boundary.included.map((p) => p.id))
     lastPredictedCount = boundary.included.length
     // section 3
-    const messages = buildMessages(pairs)
+    const messages = buildMessagesForDisplay(pairs)
     const parts = flattenMessagesToParts(messages)
     activeParts.setParts(parts) // this is
     try {
