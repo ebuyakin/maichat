@@ -36,7 +36,12 @@ export async function refreshAndScrollToBottom({
   console.log('[refreshAndScroll] ===== STARTING =====')
   
   // STEP 1: Get all pairs
-  let pairs = store
+  /*
+   * pairs is raw full array of messages loaded from the indexedDB as is (two objects combined in getAllPairs)
+   * [{id, userMessageId, aiMessageId, topicId, createdAt, model, userRating, userText, assistantText}]
+   * all raw data.
+   */
+  let pairs = store 
     .getAllPairs()
     .slice()
     .sort((a, b) => a.createdAt - b.createdAt)
@@ -56,12 +61,21 @@ export async function refreshAndScrollToBottom({
   })
   boundaryMgr.setModel(activeModel)
   boundaryMgr.updateVisiblePairs(pairs)
-  const boundary = boundaryMgr.getBoundary()
+  const boundary = boundaryMgr.getBoundary() // this has {included:[pairId1,..],excluded:[pairId5,..],anchorIndex:2}
   console.log(`[refreshAndScroll] Step 3: Boundary calculated (${boundary.included.length} in context)`)
   
   // STEP 4: Build messages and parts
-  const messages = historyRuntime.buildMessages(pairs) // k
-  const parts = historyRuntime.flattenMessagesToParts(messages)
+  /*
+   * buildMessagesForDisplay returns:
+   * messages = [{id,parts}]
+   * parts = [{id,role,pairId,text}]
+   * 
+   * flattenMessagestToParts() - essentially excludes meta lines.
+   * parts = [{id,role,pairId,text}]
+   */
+  const messages = historyRuntime.buildMessagesForDisplay(pairs) // 
+  const parts = historyRuntime.flattenMessagesToParts(messages) // 
+
   activeParts.setParts(parts)
   console.log(`[refreshAndScroll] Step 4: Built ${messages.length} messages, ${parts.length} parts`)
   

@@ -12,7 +12,7 @@
 6. Double check keyboard reference / F1 help - to make sure they reflect the latest changes. [x]
 
 #### code polish:
-1. remove debug code
+1. remove debug code. inclduing scroll-alignment experimental file
 2. readme, changelog - consider this the first real public beta.
 
 #### push/production/release steps:
