@@ -64,6 +64,9 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | k | Previous part | Primary navigation |
 | ArrowDown | Next part | Secondary fallback |
 | ArrowUp | Previous part | Secondary fallback |
+| u | Jump to previous message | Aligns message to top of viewport |
+| d | Jump to next message | Aligns message to top of viewport |
+| U | Scroll current message to top | No navigation, stays on current message |
 | g | Jump to first part | Single press |
 | G | Jump to last part | Shift+g |
 | o / Shift+O | Jump to first in‑context pair (boundary) and center it | One-shot center (does not enable the Typewriter Regime) |

@@ -36,9 +36,12 @@ Note: Actions can be executed on the filtered set via colon commands using the s
 
 ### Topic Filtering (`t`)
 
-**Purpose**: Filter messages by hierarchical topic paths
+**Purpose**: Filter messages by hierarchical topic paths or recent messages within current topic
 
-**Syntax**: `t'<topic_expression>'` or bare `t`
+**Syntax**: 
+- `t'<topic_expression>'` - Filter by topic name/pattern
+- `t` - Current topic (bare)
+- `tN` - Last N messages of current topic (e.g., `t10`, `t5`)
 
 **Topic Expression Formats (case-insensitive)**:
 - **Exact Match**: `t'AI'` - Only messages in the "AI" topic (no children)
@@ -50,6 +53,13 @@ Note: Actions can be executed on the filtered set via colon commands using the s
 - **Wildcard Match**: `t'*Neural*'` - Topics containing "Neural"
  - Combinations allowed: `t"*AI*..."` (wildcard name across the tree + descendants)
 
+**Recent Messages of Current Topic (`tN`)**:
+- `t10` - Last 10 messages of current topic (including descendants)
+- `t5` - Last 5 messages of current topic
+- `t20` - Last 20 messages of current topic
+- Works only with current topic; combines topic filtering with recency limit
+- Useful for focusing on recent conversation in active topic
+
 **Bare `t` (Current Topic Shortcut)**:
 - `t` with no quotes uses the current selection from the main topic selector (input area).
 - Equivalent to quoting the current topic path/name depending on the UI selection; descendants are not implied (use `t'…...'` or an explicit descendant expression if needed later).
@@ -57,6 +67,7 @@ Note: Actions can be executed on the filtered set via colon commands using the s
 Notes:
 - Quoted topic patterns may include spaces and escapes (e.g., `t'Natural Language Processing'`, `t'It\'s AI'`).
 - Use wildcards to span words if desired (e.g., `t'*Natural*Language*Processing*'`).
+- Numeric patterns: `t10` is recent count, `t'10'` is topic named "10"
 
 **Examples**:
 ```
@@ -66,6 +77,9 @@ t'/ai/ml/neural-nets'               # Direct path format
 t'*Learning'                        # All topics ending with "Learning"
 t'Machine*'                         # All topics starting with "Machine"
 t                                   # Use the current topic selected in the main topic selector
+t10                                 # Last 10 messages of current topic
+t5                                  # Last 5 messages of current topic
+t'10'                               # Topic named "10" (if it exists)
 ```
 
 ### Star Rating Filtering (`s`)

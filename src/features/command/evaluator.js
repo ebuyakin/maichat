@@ -68,6 +68,26 @@ export function evaluate(ast, pairs, opts = {}) {
             p.lifecycleState === 'error' || (p.errorMessage && String(p.errorMessage).trim() !== '')
         )
       case 't': {
+        // Check if value is a number -> tN (last N messages of current topic)
+        if (value != null && /^\d+$/.test(String(value))) {
+          const n = Number(value)
+          if (n <= 0) return []
+          
+          // Resolve current topic to include descendants
+          const topicIds = resolveTopicFilter(null, {
+            store: opts.store,
+            currentTopicId: opts.currentTopicId,
+          })
+          if (!topicIds || topicIds.size === 0) return []
+          
+          // Filter to current topic tree
+          const topicPairs = pairs.filter((p) => topicIds.has(p.topicId))
+          
+          // Return last N
+          return topicPairs.slice(-n)
+        }
+        
+        // Otherwise: topic name filter (t'name' or bare t)
         // Resolve topic expression to a set of topicIds (supports bare t, wildcards, paths, descendants)
         const topicIds = resolveTopicFilter(value, {
           store: opts.store,

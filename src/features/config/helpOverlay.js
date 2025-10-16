@@ -50,9 +50,10 @@ export function openHelpOverlay({ onClose, modeManager }) {
           <div class="help-k">K</div><div class="help-d">Scroll up (big step)</div>
           <div class="help-k">u</div><div class="help-d">Jump to previous message</div>
           <div class="help-k">d</div><div class="help-d">Jump to next message</div>
+          <div class="help-k">U</div><div class="help-d">Scroll current message to top</div>
           <div class="help-k">g</div><div class="help-d">Move to first message part</div>
           <div class="help-k">G</div><div class="help-d">Move to last message part</div>
-          <div class="help-k">o / Shift+O</div><div class="help-d">Jump to context boundary</div>
+          <div class="help-k">o / O</div><div class="help-d">Jump to context boundary</div>
           <div class="help-k">c / c1-9</div><div class="help-d">Copy code block(s)</div>
           <div class="help-k">y / y1-9</div><div class="help-d">Copy equation(s)</div>
           <div class="help-k">Y</div><div class="help-d">Copy entire message</div>
@@ -79,7 +80,6 @@ export function openHelpOverlay({ onClose, modeManager }) {
           <div class="help-k">Ctrl+Shift+B</div><div class="help-d">Backward one word</div>
         </section>
       </div>
-        <div class="keys-footnote">OpenAI, Anthropic, and Gemini are supported. Shortcuts: Enter — save; Esc — close.</div>
       <div class="help-buttons">
         <button class="btn" data-action="close">Close</button>
       </div>

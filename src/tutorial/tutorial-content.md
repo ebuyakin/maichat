@@ -153,6 +153,7 @@ This is where you'll spend most of your reading time. View Mode uses Vim-inspire
 **Jump to message boundaries:**
 - `u` — Jump to the start of the previous message
 - `d` — Jump to the start of the next message
+- `U` — Scroll current message to top (useful for returning to start of long messages)
 
 **Jump to extremes:**
 - `g` — Jump to the very first message in history
@@ -391,6 +392,8 @@ Once you have topics organized, filtering becomes powerful:
 **Show single topic:**
 - `t'Work'` — Only "Work" topic (exact match)
 - `t` — Current topic (whatever's selected in Input Mode)
+- `t10` — Last 10 messages of current topic
+- `t5` — Last 5 messages of current topic
 
 **Show topic branch:**
 - `t'Work...'` — "Work" and all subtopics (recursive)

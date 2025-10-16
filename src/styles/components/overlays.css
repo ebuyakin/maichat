@@ -118,8 +118,8 @@
 .help-panel .help-body strong { font-weight:500; color: var(--text); }
 
 .help-grid { display:grid; grid-template-columns: 1.15fr 1.05fr 1.35fr 1.45fr; gap:16px 20px; align-items:start; }
-.help-col { display:grid; grid-template-columns:auto 1fr; column-gap:16px; row-gap:8px; align-content:start; border:1px solid var(--border); border-radius:6px; padding:8px; background:transparent; }
-.help-title { grid-column:1 / -1; font-weight:400; color:var(--text-dim); margin-bottom:4px; }
+.help-col { display:grid; grid-template-columns:auto 1fr; column-gap:16px; row-gap:6px; align-content:start; border:1px solid var(--border); border-radius:6px; padding:6px 8px; background:transparent; }
+.help-title { grid-column:1 / -1; font-weight:400; color:var(--text-dim); margin-bottom:2px; }
 .help-subtitle { grid-column:1 / -1; margin:0; font-size:inherit; color:var(--text-dim); }
 .help-k { color:var(--text); background:transparent; border:none; border-radius:0; padding:0; line-height:1.45; white-space:nowrap; }
 .help-d { color:var(--text-dim); }
