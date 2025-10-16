@@ -148,6 +148,21 @@ export function createViewKeyHandler({
         return true
       }
     }
+    // Shift+U: Scroll current message to top (no navigation)
+    if (e.key === 'U' && e.shiftKey) {
+      const s = getSettings()
+      const animate = s.animateMessageJumps !== undefined ? s.animateMessageJumps : true
+
+      const act = activeParts.active()
+      if (act) {
+        if (scrollController && scrollController.jumpToMessage) {
+          scrollController.jumpToMessage(act.id, 'top', animate)
+        }
+        setReadingMode(false)
+        hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
+        return true
+      }
+    }
     if (e.key === 'u') {
       const s = getSettings()
       const animate = s.animateMessageJumps !== undefined ? s.animateMessageJumps : true
