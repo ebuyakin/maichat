@@ -36,7 +36,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
 
   // suspected legacy function.... looks like it's not used anywhere.
 
-/*   function render(parts) {
+  function render(parts) {
     const tokens = []
     for (let i = 0; i < parts.length; i++) {
       const cur = parts[i]
@@ -52,7 +52,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
     container.innerHTML = tokens.join('')
     if (onActivePartRendered) onActivePartRendered()
   }
- */
+
 
   /**
    * Renders message history to the DOM by constructing HTML markup.
