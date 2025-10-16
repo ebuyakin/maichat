@@ -81,7 +81,8 @@ export function renderMathToString(html) {
           strict: false,
           trust: false,
         })
-        return rendered
+        // Add 'numbered' class for CSS counter-based numbering
+        return rendered.replace('class="katex-display"', 'class="katex-display numbered"')
       } catch (error) {
         console.warn('Failed to render display math:', error)
         return match // Return original on error
@@ -116,7 +117,8 @@ export function renderMathToString(html) {
           strict: false,
           trust: false,
         })
-        return rendered
+        // Add 'numbered' class for CSS counter-based numbering
+        return rendered.replace('class="katex-display"', 'class="katex-display numbered"')
       } catch (error) {
         console.warn('Failed to render LaTeX bracket math:', error)
         return match
