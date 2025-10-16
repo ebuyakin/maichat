@@ -1,5 +1,24 @@
 import './styles/index.css'
 
+// Bundle syntax highlighting and math rendering libraries
+import 'katex/dist/katex.min.css'
+import katex from 'katex'
+import Prism from 'prismjs'
+
+// Import common Prism language grammars
+import 'prismjs/components/prism-python'
+import 'prismjs/components/prism-javascript'
+import 'prismjs/components/prism-typescript'
+import 'prismjs/components/prism-bash'
+import 'prismjs/components/prism-json'
+import 'prismjs/components/prism-sql'
+import 'prismjs/components/prism-yaml'
+import 'prismjs/components/prism-markdown'
+
+// Expose globally for enhancement functions
+window.katex = katex
+window.Prism = Prism
+
 import { initRuntime } from './runtime/runtimeSetup.js'
 import { createModeManager, MODES } from './features/interaction/modes.js'
 import { bindHistoryErrorActions } from './features/history/historyView.js'
@@ -9,7 +28,8 @@ import { decideRenderAction } from './runtime/renderPolicy.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
-import { setupConsoleTest } from './features/history/refreshAndScroll.js'
+import { setupConsoleTest } from './features/history/refreshAndScroll.js' // this is for testing/debuggig. 
+import { testEnhancer } from './features/formatting/test-stringEnhancer.js'
 
 window.addEventListener('error', (e) => {
   try {

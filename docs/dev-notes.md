@@ -1,7 +1,8 @@
 ## current problem notes and comments.
 
 ### pre-release:
-
+Shift-U or something - for top position of the current message (in addition to u - for the previsou message)
+tN - N last messages of a given topic (as opposed to trN which is t AND rN - ie topic messages among last N)
 
 #### initialization for new users:
 1. tutorial [x]

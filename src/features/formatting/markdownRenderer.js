@@ -2,6 +2,7 @@
 // Replaces the extraction/placeholder system with direct inline rendering
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { enhanceHTMLString } from './stringEnhancer.js'
 
 // Track lazy-loaded features
 let prismLoadPromise = null
@@ -23,10 +24,13 @@ marked.setOptions({
 
 /**
  * Main rendering function: converts markdown to sanitized HTML
+ * 
  * @param {string} markdown - Raw markdown text from LLM
+ * @param {Object} options - Rendering options
+ * @param {boolean} options.enhance - If true, apply syntax highlighting and math rendering immediately (default: false)
  * @returns {string} - Sanitized HTML ready for innerHTML
  */
-export function renderMarkdownInline(markdown) {
+export function renderMarkdownInline(markdown, options = {}) {
   if (!markdown || typeof markdown !== 'string') return ''
 
   try {
@@ -148,7 +152,14 @@ export function renderMarkdownInline(markdown) {
       }
     })
 
-    return tempDiv.innerHTML
+    let result = tempDiv.innerHTML
+
+    // Step 6 (optional): Apply inline enhancements if requested
+    if (options.enhance) {
+      result = enhanceHTMLString(result)
+    }
+
+    return result
   } catch (error) {
     console.error('Markdown rendering error:', error)
     // Fallback: return escaped plain text

@@ -34,6 +34,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
   const container = document.getElementById('history')
   if (!container) throw new Error('history container missing')
 
+  // suspected legacy function.... looks like it's not used anywhere.
   function render(parts) {
     const tokens = []
     for (let i = 0; i < parts.length; i++) {
@@ -78,12 +79,14 @@ export function createHistoryView({ store, onActivePartRendered }) {
       const pairId = msg.id
       const user = msg.parts.find((p) => p.role === 'user')
       const assistant = msg.parts.find((p) => p.role === 'assistant')
+
       if (user) {
         // User message block
         tokens.push(
           `<div class="message user" data-message-id="${user.id}" data-part-id="${user.id}" data-pair-id="${user.pairId}" data-role="user">${escapeHtml(user.text || '')}</div>`
         )
       }
+
       if (assistant) {
         // Assistant message block with inline meta header
         const pair = store.pairs.get(assistant.pairId)
@@ -93,6 +96,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
         const modelName = pair && pair.model ? pair.model : '(model)'
         let stateBadge = ''
         let errActions = ''
+
         if (pair && pair.lifecycleState === 'sending')
           stateBadge = '<span class="badge state" data-state="sending">…</span>'
         else if (pair && pair.lifecycleState === 'error') {
@@ -100,23 +104,38 @@ export function createHistoryView({ store, onActivePartRendered }) {
           stateBadge = `<span class=\"badge state error\" title=\"${escapeHtml(pair.errorMessage || 'error')}\">${label}</span>`
           errActions = `<span class=\"err-actions\"><button class=\"btn btn-icon resend\" data-action=\"resend\" title=\"Re-ask: copy to input and resend (E key)\">↻</button><button class=\"btn btn-icon del\" data-action=\"delete\" title=\"Delete this error message (W key)\">✕</button></span>`
         }
+
+        // This is main conversion algorithn for the assistant response (NB!)
         // Feature flag: use inline markdown rendering or legacy placeholder processing
+        // NEW: Enhancement happens during HTML building (string-based, synchronous)
         const bodyHtml = settings.useInlineFormatting
-          ? renderMarkdownInline(assistant.text || '')
-          : processCodePlaceholders(assistant.text || '')
+          ? renderMarkdownInline(assistant.text || '', { enhance: true })
+          : processCodePlaceholders(assistant.text || '');
+
+        // Collecting full assistant HTML string including meta line.
         tokens.push(
-          `<div class="message assistant" data-message-id="${assistant.id}" data-part-id="${assistant.id}" data-pair-id="${assistant.pairId}" data-role="assistant"><div class="assistant-meta"><div class="meta-left"><span class="badge flag" data-flag="${pair ? pair.colorFlag : 'g'}" title="${pair && pair.colorFlag === 'b' ? 'Flagged (blue)' : 'Unflagged (grey)'}"></span><span class="badge stars">${pair ? '★'.repeat(pair.star) + '☆'.repeat(Math.max(0, 3 - pair.star)) : '☆☆☆'}</span><span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span></div><div class="meta-right">${stateBadge}${errActions}<span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span><span class="badge model">${escapeHtml(modelName)}</span><span class="badge timestamp" data-ts="${pair ? pair.createdAt : ''}">${ts}</span></div></div><div class="assistant-body">${bodyHtml}</div></div>`
+          `<div class="message assistant" data-message-id="${assistant.id}" data-part-id="${assistant.id}" data-pair-id="${assistant.pairId}" data-role="assistant">
+            <div class="assistant-meta">
+              <div class="meta-left">
+                <span class="badge flag" data-flag="${pair ? pair.colorFlag : 'g'}" title="${pair && pair.colorFlag === 'b' ? 'Flagged (blue)' : 'Unflagged (grey)'}"></span>
+                <span class="badge stars">${pair ? '★'.repeat(pair.star) + '☆'.repeat(Math.max(0, 3 - pair.star)) : '☆☆☆'}</span>
+                <span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span>
+              </div>
+              <div class="meta-right">
+                ${stateBadge}${errActions}
+                <span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span>
+                <span class="badge model">${escapeHtml(modelName)}</span>
+                <span class="badge timestamp" data-ts="${pair ? pair.createdAt : ''}">${ts}</span>
+              </div>
+            </div>
+            <div class="assistant-body">${bodyHtml}</div>
+          </div>`
         )
       }
     }
-    container.innerHTML = tokens.join('')
 
-    // Enhance rendered messages with lazy-loaded features (syntax highlighting, math)
-    if (settings.useInlineFormatting) {
-      container.querySelectorAll('.message.assistant .assistant-body').forEach((body) => {
-        enhanceRenderedMessage(body)
-      })
-    }
+    // all HTML construction is done above at the HTML string level. No direct update of the DOM elements! Just one final assignment of HTML string to the DOM container. Don't violate this rule.
+    container.innerHTML = tokens.join('')
 
     if (onActivePartRendered) onActivePartRendered()
   }
