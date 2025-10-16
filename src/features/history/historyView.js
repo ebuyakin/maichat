@@ -35,7 +35,8 @@ export function createHistoryView({ store, onActivePartRendered }) {
   if (!container) throw new Error('history container missing')
 
   // suspected legacy function.... looks like it's not used anywhere.
-  function render(parts) {
+
+/*   function render(parts) {
     const tokens = []
     for (let i = 0; i < parts.length; i++) {
       const cur = parts[i]
@@ -51,6 +52,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
     container.innerHTML = tokens.join('')
     if (onActivePartRendered) onActivePartRendered()
   }
+ */
 
   /**
    * Renders message history to the DOM by constructing HTML markup.
@@ -139,6 +141,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
 
     if (onActivePartRendered) onActivePartRendered()
   }
+
   function classifyGap(prev, cur) {
     if (prev.pairId !== cur.pairId) return 'between'
     if (prev.role === 'user' && cur.role === 'meta') return 'meta'
@@ -217,11 +220,13 @@ export function createHistoryView({ store, onActivePartRendered }) {
     }
     return `<div class="part ${pt.role}" data-part-id="${pt.id}" data-role="${pt.role}" data-pair-id="${pt.pairId}"><div class="part-inner">${processedContent}</div></div>`
   }
+
   function classifyErrLabel(pair) {
     return classifyErrorCode(pair.errorMessage)
   }
   return { render, renderMessages }
 }
+
 // Exported for tests and reuse: classify an error message to compact label
 export function classifyErrorCode(message) {
   const msg = (message || '').toLowerCase()

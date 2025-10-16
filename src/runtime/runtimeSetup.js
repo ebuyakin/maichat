@@ -57,14 +57,15 @@ import { createBoundaryManager } from '../core/context/boundaryManager.js'
 
 // launch of the application NB!
 export function initRuntime() {
-  const store = createStore()
+  const store = createStore() // indexDB loader
   attachIndexes(store)
   const persistence = attachContentPersistence(store, createIndexedDbAdapter())
   const historyPaneEl = document.getElementById('historyPane')
   const historyEl = document.getElementById('history')
   const activeParts = new ActivePartController() // controls active message
   const scrollController = createScrollController({ container: historyEl })
-  const historyView = createHistoryView({ store, onActivePartRendered: () => {} })
+
+  const historyView = createHistoryView({ store, onActivePartRendered: () => {} }) // InStep2
   const boundaryMgr = createBoundaryManager()
 
   // Pending message metadata (topic + model) initially set after catalog load; fallback model default.

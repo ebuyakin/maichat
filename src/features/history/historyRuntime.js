@@ -41,15 +41,18 @@ export function createHistoryRuntime(ctx) {
     boundaryMgr,
     lifecycle,
     pendingMessageMeta,
-  } = ctx
+  } = ctx // unpack ctx
+
   const historyPaneEl = document.getElementById('historyPane')
   const historyEl = document.getElementById('history')
   const commandErrEl = document.getElementById('commandError')
   let lastContextStats = null
+
   let lastContextIncludedIds = new Set()
   let lastPredictedCount = 0
   let lastTrimmedCount = 0
   let lastViewportH = window.innerHeight
+
   function setSendDebug(predictedMessageCount, trimmedCount) {
     if (typeof predictedMessageCount === 'number') lastPredictedCount = predictedMessageCount
     if (typeof trimmedCount === 'number') lastTrimmedCount = trimmedCount
@@ -68,7 +71,8 @@ export function createHistoryRuntime(ctx) {
     histPane.style.top = topH + 'px'
     histPane.style.bottom = botH + 'px'
   }
-  window.addEventListener('resize', layoutHistoryPane)
+
+  window.addEventListener('resize', layoutHistoryPane) // check this too
   window.addEventListener('resize', () => {
     const h = window.innerHeight
     if (!h || !lastViewportH) {
@@ -81,21 +85,24 @@ export function createHistoryRuntime(ctx) {
       // No partition cache; just re-render preserving active
       renderCurrentView({ preserveActive: true })
       // After resize rebuild, keep the currently focused part on-screen (non-intrusive)
-      try {
+      // is this legacy too?
+      try { // strongly suspect this is legacy code
         const act = activeParts && activeParts.active && activeParts.active()
         const id = act && act.id
         if (id && scrollController && scrollController.ensureVisible) {
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              scrollController.ensureVisible(id, false)
+              scrollController.ensureVisible(id, false) // is ensureVisible still used?
             })
           })
         }
       } catch { }
     }
   })
+
   // Track scroll direction for viewport-based active switching
   let __lastScrollTop = historyEl ? historyEl.scrollTop : 0
+
   function updateActiveOnScroll() {
     const pane = historyEl
     if (!pane) return
@@ -186,6 +193,7 @@ export function createHistoryRuntime(ctx) {
       }
     } catch { }
   }
+
   function applySpacingStyles(settings) {
     applySpacingStylesHelper(settings)
   }
@@ -204,12 +212,14 @@ export function createHistoryRuntime(ctx) {
    * @param {Array<id, userText, assistantText, createdAt, topicId, model, lifcycleState>} pairs - Message pairs to render (user + assistant exchanges)
    * @returns {void}
    */
+
   function renderHistory(pairs) {
     // section 1
     pairs = [...pairs].sort((a, b) => a.createdAt - b.createdAt) // pairs - coming from storage, indexDb
     const settings = getSettings()
     const cpt = settings.charsPerToken || 3.5
     const activeModel = pendingMessageMeta.model || getActiveModel() || 'gpt'
+
     // section 2. boundary.  
     boundaryMgr.applySettings({
       userRequestAllowance: settings.userRequestAllowance || 0,
@@ -221,10 +231,12 @@ export function createHistoryRuntime(ctx) {
     lastContextStats = boundary.stats
     lastContextIncludedIds = new Set(boundary.included.map((p) => p.id))
     lastPredictedCount = boundary.included.length
+
     // section 3
-    const messages = buildMessagesForDisplay(pairs)
-    const parts = flattenMessagesToParts(messages)
+    const messages = buildMessagesForDisplay(pairs) // construct HTML here
+    const parts = flattenMessagesToParts(messages) // ?
     activeParts.setParts(parts) // this is
+
     try {
       ctx.__messages = messages
     } catch { }
@@ -237,6 +249,7 @@ export function createHistoryRuntime(ctx) {
     applyOutOfContextStyling()
     updateMessageCount(boundary.included.length, pairs.length)
 
+    // whhat does this do?
     requestAnimationFrame(() => {
       scrollController.remeasure()
       applyActiveMessage()
@@ -267,12 +280,15 @@ export function createHistoryRuntime(ctx) {
   function renderCurrentView(opts = {}) {
     const { preserveActive = false } = opts
     const prevActiveId = preserveActive && activeParts.active() ? activeParts.active().id : null
+
     let all = store
       .getAllPairs()
       .slice()
       .sort((a, b) => a.createdAt - b.createdAt)
+
     const fq = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : ''
     if (fq) {
+      // parsing filter? don't we have a special function for that?
       try {
         const ast = parse(fq)
         const currentTopicId =
@@ -339,7 +355,8 @@ export function createHistoryRuntime(ctx) {
         return
       }
     }
-    renderHistory(all)
+
+    renderHistory(all) // NB!
     if (prevActiveId) {
       activeParts.setActiveById(prevActiveId)
       if (!activeParts.active()) {
@@ -348,6 +365,7 @@ export function createHistoryRuntime(ctx) {
       applyActiveMessage()
     }
   }
+
   function applyActiveMessage() {
     // Remove active classes, then set on the current message node
     document.querySelectorAll('.message.active').forEach((el) => el.classList.remove('active'))

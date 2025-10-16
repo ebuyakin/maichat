@@ -115,10 +115,11 @@ loadingEl.textContent = 'Loading…'
 document.body.appendChild(loadingEl)
 
 // Runtime context
-const __runtime = initRuntime() // create runtime NB!
+const __runtime = initRuntime() // InStep1 
 
 const { store, persistence, activeParts, pendingMessageMeta } = __runtime
-const historyRuntime = createHistoryRuntime(__runtime)
+const historyRuntime = createHistoryRuntime(__runtime) // calls initRuntime
+
 const {
   layoutHistoryPane,
   applySpacingStyles,
@@ -126,10 +127,13 @@ const {
   applyActiveMessage,
   renderStatus,
 } = historyRuntime
+
 requestAnimationFrame(layoutHistoryPane)
 // (currentTopicId handled inside interaction module now)
+
 const historyPaneEl = document.getElementById('historyPane')
 // DOM inputs (needed before interaction creation)
+
 const commandInput = document.getElementById('commandInput')
 const commandErrEl = document.getElementById('commandError')
 const inputField = document.getElementById('inputField')
@@ -181,7 +185,7 @@ try {
   console.warn('[MaiChat] HUD setup skipped', e)
 }
 
-// Setup experimental console test function
+// Setup experimental console test function. To be deleted.
 setupConsoleTest({
   store,
   historyRuntime,
@@ -251,10 +255,12 @@ subscribeSettings((s) => {
     // no-op for view; still allow other subscribers to react
   }
 })
+
 function renderTopics() {
   /* hidden for now */
 }
 
+// App starter.
 bootstrap({ ctx: __runtime, historyRuntime, interaction, loadingEl }).then(() => {
   try {
     // Restore last filter if it was active

@@ -21,6 +21,7 @@ import { openApiKeysOverlay } from '../features/config/apiKeysOverlay.js'
  * @param {Object} opts.interaction interaction module API
  * @param {HTMLElement} opts.loadingEl overlay element to remove when ready
  */
+
 export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl }) {
   const { store, persistence, pendingMessageMeta } = ctx
   const {
