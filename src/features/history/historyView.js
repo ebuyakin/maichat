@@ -34,6 +34,9 @@ export function createHistoryView({ store, onActivePartRendered }) {
   const container = document.getElementById('history')
   if (!container) throw new Error('history container missing')
 
+  // Performance tracking
+  let renderCount = 0
+
   // suspected legacy function.... looks like it's not used anywhere.
 
   function render(parts) {
@@ -112,7 +115,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
         // NEW: Enhancement happens during HTML building (string-based, synchronous)
         const bodyHtml = settings.useInlineFormatting
           ? renderMarkdownInline(assistant.text || '', { enhance: true })
-          : processCodePlaceholders(assistant.text || '');
+          : processCodePlaceholders(assistant.text || '')
 
         // Collecting full assistant HTML string including meta line.
         tokens.push(

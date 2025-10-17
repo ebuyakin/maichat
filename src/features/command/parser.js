@@ -99,8 +99,10 @@ export function parse(input) {
 /**
  * Check if the filter AST contains an unargumented 't' filter
  * Used to detect if history should refresh when topic changes in INPUT mode
+ * Matches: 't' (plain) and 'tN' (last N from pending topic)
+ * Does NOT match: 't"name"' (specific named topic)
  * @param {Object} ast - Parsed filter AST from parse()
- * @returns {boolean} - True if contains 't' without arguments
+ * @returns {boolean} - True if contains 't' or 'tN' (depends on pending topic)
  */
 export function hasUnargumentedTopicFilter(ast) {
   if (!ast) return false
@@ -108,10 +110,17 @@ export function hasUnargumentedTopicFilter(ast) {
   function check(node) {
     if (!node) return false
 
-    // Check if this is a 't' filter without value
+    // Check if this is a 't' filter that depends on pending topic
     if (node.type === 'FILTER' && node.kind === 't') {
-      // Check if args.value is null/undefined/empty (means unargumented)
-      return !node.args || !node.args.value
+      // No value = plain 't'
+      if (!node.args || !node.args.value) return true
+      
+      // Numeric value = 'tN' (last N from pending topic)
+      const val = node.args.value
+      if (typeof val === 'number' || /^\d+$/.test(String(val))) return true
+      
+      // String value = 't"name"' (specific topic) - does NOT depend on pending
+      return false
     }
 
     // Recursively check child nodes

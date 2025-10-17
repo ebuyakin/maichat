@@ -836,7 +836,7 @@ html[data-page="tutorial"] th {
         <li><strong>In Input Mode and Command Mode:</strong> Most keys are used for typing text (like a regular editor). Commands and actions typically use <kbd>Ctrl+Key</kbd> combinations.</li>
         <li><strong>In View Mode:</strong> There&#39;s no text entry, so single key presses perform various navigation and management actions.</li>
         </ul>
-        <p>This modal approach lets you stay on the home row and accomplish tasks without constantly reaching for the mouse or modifier keys.</p>
+        <p>This modal approach lets you stay on the home row and accomplish tasks without constantly reaching for the mouse or arrow keys.</p>
         <h3 id="understanding-modes">Understanding Modes</h3>
         <p>MaiChat organizes your interaction into <strong>three distinct modes</strong>, each with its own screen area and keyboard commands.</p>
         <blockquote>
@@ -890,6 +890,7 @@ html[data-page="tutorial"] th {
         <ul>
         <li><kbd>u</kbd> — Jump to the start of the previous message</li>
         <li><kbd>d</kbd> — Jump to the start of the next message</li>
+        <li><kbd>U</kbd> — Scroll current message to top (useful for returning to start of long messages)</li>
         </ul>
         <p><strong>Jump to extremes:</strong></p>
         <ul>
@@ -924,6 +925,7 @@ html[data-page="tutorial"] th {
         <ul>
         <li><kbd>Enter</kbd> — Send the message</li>
         <li><kbd>Esc</kbd> — Return to View Mode (without sending)</li>
+        <li><kbd>Ctrl+C</kbd> — Cancel/Abort sending message</li>
         <li><kbd>Ctrl+M</kbd> — Open model selector</li>
         <li><kbd>Ctrl+T</kbd> — Open topic selector</li>
         </ul>
@@ -1119,6 +1121,8 @@ html[data-page="tutorial"] th {
         <ul>
         <li><code>t'Work'</code> — Only &quot;Work&quot; topic (exact match)</li>
         <li><kbd>t</kbd> — Current topic (whatever&#39;s selected in Input Mode)</li>
+        <li><code>t10</code> — Last 10 messages of current topic</li>
+        <li><code>t5</code> — Last 5 messages of current topic</li>
         </ul>
         <p><strong>Show topic branch:</strong></p>
         <ul>

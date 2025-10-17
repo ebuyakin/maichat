@@ -87,10 +87,6 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
     if (sc && sc.scrollToBottom) {
       requestAnimationFrame(() => {
         sc.scrollToBottom(false)
-        // Additional delayed scroll to catch async KaTeX rendering
-        setTimeout(() => {
-          sc.scrollToBottom(false)
-        }, 100)
       })
     }
   } catch {}
