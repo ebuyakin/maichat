@@ -154,6 +154,17 @@ export function createInputKeyHandler({
       }
       return true
     }
+    // Ctrl+C to abort pending request
+    if (e.key === 'c' && e.ctrlKey && !e.shiftKey && !e.metaKey) {
+      const controller = window.__maichat && window.__maichat.requestController
+      if (lifecycle.isPending() && controller) {
+        e.preventDefault()
+        controller.abort()
+        return true
+      }
+      // If not pending, pass through (no-op)
+      return false
+    }
     // Shift+Enter = new line (don't send)
     if (e.key === 'Enter' && e.shiftKey) {
       return false
@@ -196,6 +207,19 @@ export function createInputKeyHandler({
 
         // new message treatment.
         ;(async () => {
+          // Create AbortController with timeout
+          const controller = new AbortController()
+          const settings = getSettings()
+          const timeoutSec = settings.requestTimeoutSec || 120
+          const timeoutMs = timeoutSec * 1000
+          const timeoutId = setTimeout(() => {
+            controller.abort()
+          }, timeoutMs)
+
+          // Store controller reference for manual abort (Ctrl+C handler)
+          if (!window.__maichat) window.__maichat = {}
+          window.__maichat.requestController = controller
+
           try {
             const currentPairs = activeParts.parts
               .map((pt) => store.pairs.get(pt.pairId))
@@ -210,7 +234,7 @@ export function createInputKeyHandler({
               model,
               topicId,
               userText: text,
-              signal: undefined,
+              signal: controller.signal,
               visiblePairs: chrono,
               boundarySnapshot,
               onDebugPayload: (payload) => {
@@ -258,14 +282,25 @@ export function createInputKeyHandler({
                 : sanitizeAssistantText(rawText)
 
             store.updatePair(id, updateData)
+            clearTimeout(timeoutId)
+            window.__maichat.requestController = null
             lifecycle.completeSend()
             updateSendDisabled()
             historyRuntime.renderCurrentView({ preserveActive: true })
             lifecycle.handleNewAssistantReply(id)
           } catch (ex) {
-            let errMsg = ex && ex.message ? ex.message : 'error'
-            if (errMsg === 'missing_api_key')
-              errMsg = 'API key missing (Ctrl+. → API Keys or Ctrl+K)'
+            clearTimeout(timeoutId)
+            window.__maichat.requestController = null
+
+            let errMsg
+            if (ex.name === 'AbortError') {
+              errMsg = 'Request aborted'
+            } else {
+              errMsg = ex && ex.message ? ex.message : 'error'
+              if (errMsg === 'missing_api_key')
+                errMsg = 'API key missing (Ctrl+. → API Keys or Ctrl+K)'
+            }
+
             store.updatePair(id, {
               assistantText: '',
               lifecycleState: 'error',

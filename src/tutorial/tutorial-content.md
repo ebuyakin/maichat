@@ -101,7 +101,7 @@ MaiChat uses a **vim-inspired modal system** where the same keys perform differe
 - **In Input Mode and Command Mode:** Most keys are used for typing text (like a regular editor). Commands and actions typically use `Ctrl+Key` combinations.
 - **In View Mode:** There's no text entry, so single key presses perform various navigation and management actions.
 
-This modal approach lets you stay on the home row and accomplish tasks without constantly reaching for the mouse or modifier keys.
+This modal approach lets you stay on the home row and accomplish tasks without constantly reaching for the mouse or arrow keys.
 
 ### Understanding Modes
 
@@ -186,6 +186,7 @@ When composing messages, these editing shortcuts speed up your workflow:
 **Basic actions:**
 - `Enter` — Send the message
 - `Esc` — Return to View Mode (without sending)
+- `Ctrl+C` — Cancel/Abort sending message
 - `Ctrl+M` — Open model selector
 - `Ctrl+T` — Open topic selector
 

@@ -30,6 +30,7 @@ export function openHelpOverlay({ onClose, modeManager }) {
           <div class="help-title">Input Mode</div>
           <div class="help-k">Enter</div><div class="help-d">Send message</div>
           <div class="help-k">Esc</div><div class="help-d">Back to View Mode</div>
+          <div class="help-k">Ctrl+C</div><div class="help-d">Cancel pending request</div>
           <div class="help-k">Ctrl+A</div><div class="help-d">Start of line</div>
           <div class="help-k">Ctrl+E</div><div class="help-d">End of line</div>
           <div class="help-k">Ctrl+U</div><div class="help-d">Clear to start</div>

@@ -722,106 +722,26 @@ export function createInteraction({
     }
   })
   if (sendBtn) {
+    // Delegate to Enter key handler (inputKeys.js)
+    // This ensures Send button uses the same complete logic as Enter:
+    // - Topic history tracking
+    // - Boundary management
+    // - Code/equation extraction
+    // - All error handling
     sendBtn.addEventListener('click', () => {
-      if (modeManager.mode !== 'input') modeManager.set('input')
-      const text = inputField.value.trim()
-      if (!text) return
-      if (lifecycle.isPending()) return
-      lifecycle.beginSend()
-      const topicId = pendingMessageMeta.topicId || currentTopicId
-      const model = pendingMessageMeta.model || getActiveModel()
-      const editingId = window.__editingPairId
-      let id
-      if (editingId) {
-        const old = store.pairs.get(editingId)
-        if (old) {
-          store.removePair(editingId)
-        }
-        id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
-        window.__editingPairId = null
-      } else {
-        id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
-      }
-      try {
-        localStorage.setItem('maichat_pending_topic', topicId)
-      } catch {}
-      ;(async () => {
-        try {
-          const currentPairs = activeParts.parts
-            .map((pt) => store.pairs.get(pt.pairId))
-            .filter(Boolean)
-          const chrono = [...new Set(currentPairs)].sort((a, b) => a.createdAt - b.createdAt)
-          const { content } = await executeSend({
-            store,
-            model,
-            topicId,
-            userText: text,
-            signal: undefined,
-            visiblePairs: chrono,
-            onDebugPayload: (payload) => {
-              requestDebug.setPayload(payload)
-            },
-          })
-          const clean = sanitizeAssistantText(content)
-          store.updatePair(id, {
-            assistantText: clean,
-            lifecycleState: 'complete',
-            errorMessage: undefined,
-          })
-          lifecycle.completeSend()
-          updateSendDisabled()
-          historyRuntime.renderCurrentView({ preserveActive: true })
-          lifecycle.handleNewAssistantReply(id)
-        } catch (ex) {
-          let errMsg = ex && ex.message ? ex.message : 'error'
-          if (errMsg === 'missing_api_key') errMsg = 'API key missing (Ctrl+.) -> API Keys'
-          store.updatePair(id, { assistantText: '', lifecycleState: 'error', errorMessage: errMsg })
-          lifecycle.completeSend()
-          updateSendDisabled()
-          historyRuntime.renderCurrentView({ preserveActive: true })
-        } finally {
-          updateSendDisabled()
-        }
-      })()
-      inputField.value = ''
-      historyRuntime.renderCurrentView({ preserveActive: true })
-      try {
-        const pane = document.getElementById('historyPane')
-        const userEls = pane
-          ? pane.querySelectorAll(
-              `.message[data-pair-id="${id}"][data-role="user"], .part[data-pair-id="${id}"][data-role="user"]`
-            )
-          : null
-        const lastUserEl = userEls && userEls.length ? userEls[userEls.length - 1] : null
-        if (lastUserEl) {
-          const lastUserId = lastUserEl.getAttribute('data-part-id')
-          if (lastUserId) {
-            activeParts.setActiveById(lastUserId)
-          }
-        } else {
-          activeParts.last()
-        }
-      } catch {
-        activeParts.last()
-      }
-      historyRuntime.applyActivePart()
-      updateSendDisabled()
+      // Only work in INPUT mode
+      if (modeManager.mode !== 'input') return
+      
+      // Dispatch Enter key event
+      const enterEvent = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        code: 'Enter',
+        bubbles: true,
+        cancelable: true
+      })
+      inputField.dispatchEvent(enterEvent)
     })
     inputField.addEventListener('input', updateSendDisabled)
-  }
-  if (sendBtn) {
-    // Scroll to bottom after send
-    sendBtn.addEventListener('click', () => {
-      readingMode = false
-      hudRuntime && hudRuntime.setReadingMode && hudRuntime.setReadingMode(false)
-      try {
-        if (ctx.scrollController && ctx.scrollController.scrollToBottom) {
-          requestAnimationFrame(() => {
-            ctx.scrollController.scrollToBottom(false)
-          })
-        }
-      } catch {}
-    })
   }
   // No persistent policy to clear on scroll in stateless model
   // No policy clearing needed on typing in stateless model

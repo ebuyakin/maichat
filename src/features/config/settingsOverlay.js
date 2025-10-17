@@ -140,6 +140,7 @@ export function openSettingsOverlay({ onClose }) {
     true
   )
 
+  // future improvement: make the function schema-driven, not hardcoded. same for populaterFromSettings
   function readFormValues() {
     const fd = new FormData(form)
     const fadeZonePx = clampRange(parseInt(fd.get('fadeZonePx')), 0, 120)
@@ -166,6 +167,7 @@ export function openSettingsOverlay({ onClose }) {
     const maxTrimAttempts = clampRange(parseInt(fd.get('maxTrimAttempts')), 0, 1000)
     const charsPerToken = clampFloat(parseFloat(fd.get('charsPerToken')), 1.0, 10.0)
     const assumedUserTokens = clampRange(parseInt(fd.get('assumedUserTokens')), 0, 10000)
+    const requestTimeoutSec = clampRange(parseInt(fd.get('requestTimeoutSec')), 5, 600)
     const topicOrderMode = fd.get('topicOrderMode') || 'manual'
     const useInlineFormatting = fd.get('useInlineFormatting') === 'on'
     return {
@@ -189,6 +191,7 @@ export function openSettingsOverlay({ onClose }) {
       maxTrimAttempts,
       charsPerToken,
       assumedUserTokens,
+      requestTimeoutSec,
       topicOrderMode,
       useInlineFormatting,
     }
@@ -250,6 +253,7 @@ export function openSettingsOverlay({ onClose }) {
     const cpt = form.querySelector('input[name="charsPerToken"]')
     if (cpt && s.charsPerToken != null) cpt.value = String(s.charsPerToken)
     setNum('assumedUserTokens', s.assumedUserTokens)
+    setNum('requestTimeoutSec', s.requestTimeoutSec)
     const tom = form.querySelector('select[name="topicOrderMode"]')
     if (tom) tom.value = s.topicOrderMode || 'manual'
   }

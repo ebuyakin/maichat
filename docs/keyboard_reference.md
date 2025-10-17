@@ -100,6 +100,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Key | Action | Notes |
 |-----|--------|-------|
 | Enter | Send message & remain in INPUT | Ignored if previous send pending ("AI is thinking") |
+| Ctrl+C | Cancel pending request | Aborts in-flight AI request; shows abort error |
 | Escape | Return to VIEW | Restores active selection |
 | Ctrl+v / Ctrl+d / Ctrl+i | Direct mode switch | Overrides cycle |
 | Ctrl+P | Open chrono topic picker | Quick access to recent topics; sets pending topic for next message |

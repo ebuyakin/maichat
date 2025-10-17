@@ -178,6 +178,13 @@ export const SETTINGS_SCHEMA = {
     ui: { label: 'Assumed User Tokens', tab: 'context' },
   },
   
+  requestTimeoutSec: {
+    defaultValue: 120,
+    renderAction: 'none',
+    control: { type: 'number', min: 5, max: 600, step: 5 },
+    ui: { label: 'Request Timeout (seconds)', tab: 'context' },
+  },
+  
   // ========================================
   // OTHER SETTINGS
   // ========================================
