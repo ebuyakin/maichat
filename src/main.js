@@ -244,13 +244,22 @@ subscribeSettings((s) => {
       if (act && act.id && __runtime.scrollController && __runtime.scrollController.alignTo) {
         setTimeout(() => {
           __runtime.scrollController.alignTo(act.id, 'top', false)
-        }, 100)
+        }, 0)
       }
     } catch {}
   } else if (action === 'restyle') {
     applySpacingStyles(s)
     layoutHistoryPane()
-    // Note: no history rebuild; fade/visibility will update on scroll or next render
+    // Align active message to top after layout change (same as rebuild)
+    try {
+      const act =
+        __runtime.activeParts && __runtime.activeParts.active && __runtime.activeParts.active()
+      if (act && act.id && __runtime.scrollController && __runtime.scrollController.alignTo) {
+        setTimeout(() => {
+          __runtime.scrollController.alignTo(act.id, 'top', false)
+        }, 100)
+      }
+    } catch {}
   } else {
     // no-op for view; still allow other subscribers to react
   }
@@ -263,8 +272,9 @@ function renderTopics() {
 // App starter.
 bootstrap({ ctx: __runtime, historyRuntime, interaction, loadingEl }).then(() => {
   try {
-    // Restore last filter if it was active
-    interaction.restoreLastFilter()
+    // Filter restoration now handled by bootstrap for cleaner initial load
+    // (restoreLastFilter() still available for user actions)
+    
     // Default to Input Mode on startup for immediate typing
     window.__modeManager && window.__modeManager.set(MODES.INPUT)
   } catch {}

@@ -78,7 +78,9 @@ export function renderMarkdownInline(markdown, options = {}) {
     })
 
     // Step 2: Parse markdown to HTML
+    const t1 = performance.now()
     const rawHtml = marked.parse(textWithPlaceholders)
+    const t2 = performance.now()
 
     // Step 3: Sanitize to prevent XSS
     const cleanHtml = DOMPurify.sanitize(rawHtml, {
@@ -124,6 +126,7 @@ export function renderMarkdownInline(markdown, options = {}) {
       ALLOW_DATA_ATTR: true, // For data-language on code blocks
       RETURN_TRUSTED_TYPE: false,
     })
+    const t3 = performance.now()
 
     // Step 4: Restore math expressions (after sanitization to preserve LaTeX)
     let finalHtml = cleanHtml
@@ -156,7 +159,10 @@ export function renderMarkdownInline(markdown, options = {}) {
 
     // Step 6 (optional): Apply inline enhancements if requested
     if (options.enhance) {
+      const t4 = performance.now()
       result = enhanceHTMLString(result)
+      const t5 = performance.now()
+      console.log(`  │  │  ├─ marked: ${(t2-t1).toFixed(1)}ms, sanitize: ${(t3-t2).toFixed(1)}ms, enhance: ${(t5-t4).toFixed(1)}ms`)
     }
 
     return result

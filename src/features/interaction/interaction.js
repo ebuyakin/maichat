@@ -68,26 +68,38 @@ export function createInteraction({
     setFilterActivePref(!!active)
   }
   function restoreLastFilter() {
+    console.log(`📍 restoreLastFilter: called, filterActive=${getFilterActive()}, historyLen=${commandHistory.length}`)
     if (getFilterActive() && commandHistory.length > 0) {
       const lastFilter = commandHistory[commandHistory.length - 1]
       if (lastFilter) {
+        console.log(`📍 restoreLastFilter: applying filter "${lastFilter}"`)
         commandInput.value = lastFilter
         // Trigger filter application logic (same as pressing Enter)
         lifecycle.setFilterQuery(lastFilter)
+        console.log(`📍 restoreLastFilter: calling renderCurrentView()`)
         historyRuntime.renderCurrentView({ preserveActive: true })
         try {
           const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active()
           const id = act && act.id
+          console.log(`📍 restoreLastFilter: active part = ${id || 'NULL'}`)
           if (id && ctx.scrollController && ctx.scrollController.alignTo) {
+            console.log(`📍 restoreLastFilter: scheduling alignTo()`)
             requestAnimationFrame(() => {
               requestAnimationFrame(() => {
+                console.log(`📍 restoreLastFilter: executing alignTo(${id})`)
                 ctx.scrollController.alignTo(id, 'bottom', false)
               })
             })
+          } else {
+            console.log(`📍 restoreLastFilter: NO SCROLL - id=${id}, hasController=${!!ctx.scrollController}`)
           }
-        } catch {}
+        } catch (e) {
+          console.log(`📍 restoreLastFilter: ERROR in scroll logic:`, e)
+        }
         modeManager.set('view')
       }
+    } else {
+      console.log(`📍 restoreLastFilter: NOT RESTORING (no active filter or empty history)`)
     }
   }
   function historyPrev() {
@@ -267,7 +279,7 @@ export function createInteraction({
                       requestAnimationFrame(() => {
                         historyRuntime.applyActiveMessage()
                       })
-                    }, 100)
+                    }, 0) // testing 0 delay. with topic filter
                   }
                 } catch {}
               }
@@ -338,7 +350,7 @@ export function createInteraction({
                       requestAnimationFrame(() => {
                         historyRuntime.applyActiveMessage()
                       })
-                    }, 100)
+                    }, 0) // set delay to 0 to test
                   }
                 } catch {}
               }
@@ -673,7 +685,7 @@ export function createInteraction({
                           requestAnimationFrame(() => {
                             historyRuntime.applyActiveMessage()
                           })
-                        }, 100)
+                        }, 0)
                       }
                     } catch {}
                   }
@@ -783,7 +795,7 @@ export function createInteraction({
       if (ctx.scrollController && ctx.scrollController.scrollToBottom) {
         setTimeout(() => {
           ctx.scrollController.scrollToBottom(false)
-        }, 100)
+        }, 0)
       }
     } catch {}
     modeManager.set('input')
@@ -800,7 +812,7 @@ export function createInteraction({
       if (ctx.scrollController && ctx.scrollController.scrollToBottom) {
         setTimeout(() => {
           ctx.scrollController.scrollToBottom(false)
-        }, 100)
+        }, 0)
       }
     } catch {
       // If no parts remain (empty history), no focus needed

@@ -9,6 +9,7 @@ import { createAnthropicAdapter } from '../infrastructure/provider/anthropicAdap
 import { createGeminiAdapter } from '../infrastructure/provider/geminiAdapter.js'
 import { ensureCatalogLoaded } from '../core/models/modelCatalog.js'
 import { runInitialSeeding, shouldRunInitialSeeding } from './initialSeeding.js'
+import { loadCommandHistory, getFilterActive } from '../features/interaction/userPrefs.js'
 import { getSettings } from '../core/settings/index.js'
 import { getApiKey } from '../infrastructure/api/keys.js'
 import { openApiKeysOverlay } from '../features/config/apiKeysOverlay.js'
@@ -23,7 +24,7 @@ import { openApiKeysOverlay } from '../features/config/apiKeysOverlay.js'
  */
 
 export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl }) {
-  const { store, persistence, pendingMessageMeta } = ctx
+  const { store, persistence, pendingMessageMeta, lifecycle } = ctx
   const {
     applySpacingStyles,
     renderCurrentView,
@@ -55,9 +56,36 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
     if (shouldRunInitialSeeding(store)) runInitialSeeding({ store })
   } catch {}
 
-  renderCurrentView()
+  // Check for stored filter - if exists, set it BEFORE rendering
+  const filterActive = getFilterActive()
+  const commandHistory = loadCommandHistory()
+  const storedFilter = filterActive && commandHistory.length > 0 
+    ? commandHistory[commandHistory.length - 1] 
+    : null
+
+  console.log(`📍 bootstrap: filterActive=${filterActive}, storedFilter="${storedFilter || 'none'}"`)
+
+  if (storedFilter) {
+    // Restore filter BEFORE rendering (single render with filter applied)
+    console.log(`📍 bootstrap: setting filter "${storedFilter}" on lifecycle`)
+    lifecycle.setFilterQuery(storedFilter)
+    
+    // Also update command input UI to show the filter
+    const commandInput = document.getElementById('commandInput')
+    if (commandInput) commandInput.value = storedFilter
+    
+    console.log(`📍 bootstrap: calling renderCurrentView({ preserveActive: false })`)
+    renderCurrentView({ preserveActive: false })
+  } else {
+    // No filter - normal render
+    console.log(`📍 bootstrap: calling renderCurrentView() (no filter)`)
+    renderCurrentView()
+  }
+
   renderStatus()
-  // Start focused at the last (newest) part on first load
+  
+  // Set active to last message (both cases)
+  console.log(`📍 bootstrap: calling activeParts.last()`)
   try {
     ctx.activeParts && ctx.activeParts.last && ctx.activeParts.last()
   } catch {}
@@ -81,11 +109,13 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
   interaction.renderPendingMeta()
   layoutHistoryPane()
 
-  // Scroll to bottom AFTER layout completes
+  // Scroll to bottom AFTER layout completes (both cases)
+  console.log(`📍 bootstrap: scheduling scrollToBottom()`)
   try {
     const sc = ctx.scrollController
     if (sc && sc.scrollToBottom) {
       requestAnimationFrame(() => {
+        console.log(`📍 bootstrap: executing scrollToBottom()`)
         sc.scrollToBottom(false)
       })
     }
