@@ -1,8 +1,16 @@
 ## current problem notes and comments.
 
 ### pre-release:
-Shift-U or something - for top position of the current message (in addition to u - for the previsou message)
-tN - N last messages of a given topic (as opposed to trN which is t AND rN - ie topic messages among last N)
+Shift-U or something - for top position of the current message (in addition to u - for the previsou message) [x]
+tN - N last messages of a given topic (as opposed to trN which is t AND rN - ie topic messages among last N) [x]
+interrupting the response waiting - [x]
+100 ms waiting... including loading optimization [x] - that's a big one!
+log messages - to remove [x]
+scrollAndRefresh - to remove [x]
+LEGACY_KEYS in index.js
+legacy code in interaction.js
+system messages for different topics?
+icon - I have a good one.
 
 #### initialization for new users:
 1. tutorial [x]
@@ -14,6 +22,8 @@ tN - N last messages of a given topic (as opposed to trN which is t AND rN - ie 
 
 #### code polish:
 1. remove debug code. inclduing scroll-alignment experimental file
+- fadeVisible, ensureVisible, parts.. - what is unused? 
+- feature flags, legacy_keys.
 2. readme, changelog - consider this the first real public beta.
 
 #### push/production/release steps:
@@ -38,3 +48,12 @@ Keep (Already Safe):
 ✅ Focus debug logs (gated by window.__focusDebug)
 ✅ Error handlers and warnings
 ✅ Essential window.__ globals used by app logic
+
+
+Test non-delay on scrolling to bottom:
+1. regular topic picker
+2. chrono topic picker
+3. model picker
+4. error edit
+5. error delete
+6. settings update

@@ -560,6 +560,9 @@ html[data-page="tutorial"] th {
         <a href="#topic-metadata-advanced">Topic Metadata (Advanced)</a>
       </li>
       <li class="nav-item">
+        <a href="#customizing-model-behavior">Customizing Model Behavior</a>
+      </li>
+      <li class="nav-item">
         <a href="#common-questions">Common Questions</a>
       </li>
     </ul>
@@ -1162,9 +1165,9 @@ html[data-page="tutorial"] th {
         <p>Topics can have additional settings:</p>
         <p><strong>System message:</strong></p>
         <ul>
-        <li>Custom instructions for that topic branch</li>
+        <li>Custom instructions for the AI model in this topic</li>
         <li>Press <kbd>Ctrl+E</kbd> on a topic in the Topic Editor</li>
-        <li>Inherited by child topics unless overridden</li>
+        <li>Each topic has its own independent system message</li>
         </ul>
         <p><strong>Temperature:</strong></p>
         <ul>
@@ -1177,6 +1180,46 @@ html[data-page="tutorial"] th {
         <li>Press <kbd>Ctrl+L</kbd> on a topic in the Topic Editor</li>
         </ul>
         <p>These are optional and most users can ignore them initially.</p>
+        <h3 id="customizing-model-behavior">Customizing Model Behavior</h3>
+        <p>System messages are powerful tools for shaping how the AI responds in specific topics. Think of them as persistent instructions that apply to every conversation in that topic branch.</p>
+        <p><strong>When to use custom system messages:</strong></p>
+        <ul>
+        <li>You want a consistent style or tone for a topic area</li>
+        <li>You need specific output formats (citations, code, LaTeX)</li>
+        <li>You want the AI to adopt a particular role or expertise level</li>
+        <li>You have recurring requirements that shouldn&#39;t be repeated in every message</li>
+        </ul>
+        <p><strong>Example system messages:</strong></p>
+        <p><strong>Style variations:</strong></p>
+        <ul>
+        <li><em>Be extremely concise. Use bullet points. No fluff.</em></li>
+        <li><em>Write in a friendly, conversational tone. Use analogies and examples.</em></li>
+        <li><em>Respond formally and professionally, suitable for business communications.</em></li>
+        </ul>
+        <p><strong>Expertise &amp; personas:</strong></p>
+        <ul>
+        <li><em>You are an expert Python developer. Focus on best practices, performance, and clean code. Cite PEPs when relevant.</em></li>
+        <li><em>Act as a patient tutor explaining math concepts to a high school student. Use simple language and step-by-step reasoning.</em></li>
+        <li><em>You are a creative writing coach. Provide constructive feedback on style, structure, and narrative flow.</em></li>
+        </ul>
+        <p><strong>Format requirements:</strong></p>
+        <ul>
+        <li><em>Always cite sources when making factual claims. Use [Author, Year] format.</em></li>
+        <li><em>Write mathematical expressions in LaTeX. Use display mode ($$...$$) for equations.</em></li>
+        <li><em>Respond only with valid JSON. No explanatory text outside the JSON structure.</em></li>
+        </ul>
+        <p><strong>Domain-specific contexts:</strong></p>
+        <ul>
+        <li><em>Focus on front-end web development with React and TypeScript. Assume familiarity with modern JavaScript.</em></li>
+        <li><em>Discuss health topics from an evidence-based perspective. Remind me to consult healthcare professionals for medical advice.</em></li>
+        </ul>
+        <p><strong>Tips:</strong></p>
+        <ul>
+        <li>Keep system messages focused and actionable</li>
+        <li>Test them with a few messages to refine the instructions</li>
+        <li>Remember: system messages consume tokens from your context budget</li>
+        <li>You can update them anytime without affecting existing messages</li>
+        </ul>
         <h3 id="common-questions">Common Questions</h3>
         <p><strong>Q: Can a message belong to multiple topics?</strong><br>A: No. Each message has exactly one topic. This keeps things simple and unambiguous.</p>
         <p><strong>Q: What happens if I delete a topic with messages?</strong><br>A: MaiChat requires you to reassign those messages first. No accidental data loss.</p>

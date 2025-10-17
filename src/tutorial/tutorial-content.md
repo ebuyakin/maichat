@@ -439,9 +439,9 @@ Don't create subtopics prematurely. Let your usage patterns guide the structure.
 Topics can have additional settings:
 
 **System message:**
-- Custom instructions for that topic branch
+- Custom instructions for the AI model in this topic
 - Press `Ctrl+E` on a topic in the Topic Editor
-- Inherited by child topics unless overridden
+- Each topic has its own independent system message
 
 **Temperature:**
 - Control creativity (0.0-2.0)
@@ -452,6 +452,43 @@ Topics can have additional settings:
 - Press `Ctrl+L` on a topic in the Topic Editor
 
 These are optional and most users can ignore them initially.
+
+### Customizing Model Behavior
+
+System messages are powerful tools for shaping how the AI responds in specific topics. Think of them as persistent instructions that apply to every conversation in that topic branch.
+
+**When to use custom system messages:**
+- You want a consistent style or tone for a topic area
+- You need specific output formats (citations, code, LaTeX)
+- You want the AI to adopt a particular role or expertise level
+- You have recurring requirements that shouldn't be repeated in every message
+
+**Example system messages:**
+
+**Style variations:**
+- *Be extremely concise. Use bullet points. No fluff.*
+- *Write in a friendly, conversational tone. Use analogies and examples.*
+- *Respond formally and professionally, suitable for business communications.*
+
+**Expertise & personas:**
+- *You are an expert Python developer. Focus on best practices, performance, and clean code. Cite PEPs when relevant.*
+- *Act as a patient tutor explaining math concepts to a high school student. Use simple language and step-by-step reasoning.*
+- *You are a creative writing coach. Provide constructive feedback on style, structure, and narrative flow.*
+
+**Format requirements:**
+- *Always cite sources when making factual claims. Use [Author, Year] format.*
+- *Write mathematical expressions in LaTeX. Use display mode ($$...$$) for equations.*
+- *Respond only with valid JSON. No explanatory text outside the JSON structure.*
+
+**Domain-specific contexts:**
+- *Focus on front-end web development with React and TypeScript. Assume familiarity with modern JavaScript.*
+- *Discuss health topics from an evidence-based perspective. Remind me to consult healthcare professionals for medical advice.*
+
+**Tips:**
+- Keep system messages focused and actionable
+- Test them with a few messages to refine the instructions
+- Remember: system messages consume tokens from your context budget
+- You can update them anytime without affecting existing messages
 
 ### Common Questions
 
