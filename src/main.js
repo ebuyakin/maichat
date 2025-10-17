@@ -28,8 +28,6 @@ import { decideRenderAction } from './runtime/renderPolicy.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
-import { setupConsoleTest } from './features/history/refreshAndScroll.js' // this is for testing/debuggig. 
-import { testEnhancer } from './features/formatting/test-stringEnhancer.js'
 
 window.addEventListener('error', (e) => {
   try {
@@ -185,18 +183,6 @@ try {
   console.warn('[MaiChat] HUD setup skipped', e)
 }
 
-// Setup experimental console test function. To be deleted.
-setupConsoleTest({
-  store,
-  historyRuntime,
-  scrollController: __runtime.scrollController,
-  activeParts,
-  boundaryMgr: __runtime.boundaryMgr,
-  historyView: __runtime.historyView,
-  lifecycle: __runtime.lifecycle,
-  pendingMessageMeta,
-})
-
 // Interaction layer (Step 6 extraction)
 const interaction = createInteraction({
   ctx: __runtime,
@@ -250,14 +236,19 @@ subscribeSettings((s) => {
   } else if (action === 'restyle') {
     applySpacingStyles(s)
     layoutHistoryPane()
-    // Align active message to top after layout change (same as rebuild)
+    // Remeasure after CSS changes, then align active message to top
     try {
       const act =
         __runtime.activeParts && __runtime.activeParts.active && __runtime.activeParts.active()
-      if (act && act.id && __runtime.scrollController && __runtime.scrollController.alignTo) {
-        setTimeout(() => {
+      if (act && act.id && __runtime.scrollController) {
+        // Remeasure with new spacing (no render = no automatic remeasure)
+        if (__runtime.scrollController.remeasure) {
+          __runtime.scrollController.remeasure()
+        }
+        // Now align with fresh metrics
+        if (__runtime.scrollController.alignTo) {
           __runtime.scrollController.alignTo(act.id, 'top', false)
-        }, 100)
+        }
       }
     } catch {}
   } else {

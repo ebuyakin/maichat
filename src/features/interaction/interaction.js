@@ -68,38 +68,26 @@ export function createInteraction({
     setFilterActivePref(!!active)
   }
   function restoreLastFilter() {
-    console.log(`📍 restoreLastFilter: called, filterActive=${getFilterActive()}, historyLen=${commandHistory.length}`)
     if (getFilterActive() && commandHistory.length > 0) {
       const lastFilter = commandHistory[commandHistory.length - 1]
       if (lastFilter) {
-        console.log(`📍 restoreLastFilter: applying filter "${lastFilter}"`)
         commandInput.value = lastFilter
         // Trigger filter application logic (same as pressing Enter)
         lifecycle.setFilterQuery(lastFilter)
-        console.log(`📍 restoreLastFilter: calling renderCurrentView()`)
         historyRuntime.renderCurrentView({ preserveActive: true })
         try {
           const act = ctx.activeParts && ctx.activeParts.active && ctx.activeParts.active()
           const id = act && act.id
-          console.log(`📍 restoreLastFilter: active part = ${id || 'NULL'}`)
           if (id && ctx.scrollController && ctx.scrollController.alignTo) {
-            console.log(`📍 restoreLastFilter: scheduling alignTo()`)
             requestAnimationFrame(() => {
               requestAnimationFrame(() => {
-                console.log(`📍 restoreLastFilter: executing alignTo(${id})`)
                 ctx.scrollController.alignTo(id, 'bottom', false)
               })
             })
-          } else {
-            console.log(`📍 restoreLastFilter: NO SCROLL - id=${id}, hasController=${!!ctx.scrollController}`)
           }
-        } catch (e) {
-          console.log(`📍 restoreLastFilter: ERROR in scroll logic:`, e)
-        }
+        } catch {}
         modeManager.set('view')
       }
-    } else {
-      console.log(`📍 restoreLastFilter: NOT RESTORING (no active filter or empty history)`)
     }
   }
   function historyPrev() {

@@ -63,29 +63,23 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
     ? commandHistory[commandHistory.length - 1] 
     : null
 
-  console.log(`📍 bootstrap: filterActive=${filterActive}, storedFilter="${storedFilter || 'none'}"`)
-
   if (storedFilter) {
     // Restore filter BEFORE rendering (single render with filter applied)
-    console.log(`📍 bootstrap: setting filter "${storedFilter}" on lifecycle`)
     lifecycle.setFilterQuery(storedFilter)
     
     // Also update command input UI to show the filter
     const commandInput = document.getElementById('commandInput')
     if (commandInput) commandInput.value = storedFilter
     
-    console.log(`📍 bootstrap: calling renderCurrentView({ preserveActive: false })`)
     renderCurrentView({ preserveActive: false })
   } else {
     // No filter - normal render
-    console.log(`📍 bootstrap: calling renderCurrentView() (no filter)`)
     renderCurrentView()
   }
 
   renderStatus()
   
   // Set active to last message (both cases)
-  console.log(`📍 bootstrap: calling activeParts.last()`)
   try {
     ctx.activeParts && ctx.activeParts.last && ctx.activeParts.last()
   } catch {}
@@ -110,12 +104,10 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
   layoutHistoryPane()
 
   // Scroll to bottom AFTER layout completes (both cases)
-  console.log(`📍 bootstrap: scheduling scrollToBottom()`)
   try {
     const sc = ctx.scrollController
     if (sc && sc.scrollToBottom) {
       requestAnimationFrame(() => {
-        console.log(`📍 bootstrap: executing scrollToBottom()`)
         sc.scrollToBottom(false)
       })
     }

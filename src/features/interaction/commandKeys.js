@@ -452,13 +452,13 @@ export function createCommandKeyHandler({
           if (act && act.id && scrollController && scrollController.alignTo) {
             setTimeout(() => {
               scrollController.alignTo(act.id, 'top', false)
-            }, 100)
+            }, ) // experiment. set delay to 0
           }
         } else if (anchorTargetId && scrollController && scrollController.scrollToBottom) {
           // Active didn't survive - scroll to bottom to show last message
           setTimeout(() => {
             scrollController.scrollToBottom(false)
-          }, 100)
+          }, 0) // experiment. set delay to 0
         }
         
         pushCommandHistory(q)

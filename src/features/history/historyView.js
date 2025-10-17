@@ -70,14 +70,9 @@ export function createHistoryView({ store, onActivePartRendered }) {
    * @returns {void}
    */
   function renderMessages(messages) {
-    const t0 = performance.now()
-    const msgCount = Array.isArray(messages) ? messages.length : 0
-    console.log(`🔵 renderMessages() called - ${msgCount} messages`)
-    
     if (!Array.isArray(messages)) {
       container.innerHTML = ''
       if (onActivePartRendered) onActivePartRendered()
-      console.log(`🔵 renderMessages() done (empty) - ${(performance.now() - t0).toFixed(1)}ms`)
       return
     }
     const tokens = []
@@ -101,7 +96,6 @@ export function createHistoryView({ store, onActivePartRendered }) {
 
       if (assistant) {
         // Assistant message block with inline meta header
-        const msgStart = performance.now()
         const pair = store.pairs.get(assistant.pairId)
         const topic = pair ? store.topics.get(pair.topicId) : null
         const ts = pair ? formatTimestamp(pair.createdAt) : ''
@@ -118,19 +112,12 @@ export function createHistoryView({ store, onActivePartRendered }) {
           errActions = `<span class=\"err-actions\"><button class=\"btn btn-icon resend\" data-action=\"resend\" title=\"Re-ask: copy to input and resend (E key)\">↻</button><button class=\"btn btn-icon del\" data-action=\"delete\" title=\"Delete this error message (W key)\">✕</button></span>`
         }
 
-        console.log(`  ├─ msg #${msgIndex} (${pairId.slice(0,8)}) start`)
-        const beforeMarkdown = performance.now()
-
         // This is main conversion algorithn for the assistant response (NB!)
         // Feature flag: use inline markdown rendering or legacy placeholder processing
         // NEW: Enhancement happens during HTML building (string-based, synchronous)
         const bodyHtml = settings.useInlineFormatting
           ? renderMarkdownInline(assistant.text || '', { enhance: true })
           : processCodePlaceholders(assistant.text || '')
-        
-        const afterMarkdown = performance.now()
-        console.log(`  │  └─ markdown+enhance: ${(afterMarkdown - beforeMarkdown).toFixed(1)}ms`)
-        console.log(`  ├─ msg #${msgIndex} done: ${(performance.now() - msgStart).toFixed(1)}ms`)
 
         // Collecting full assistant HTML string including meta line.
         tokens.push(
@@ -155,13 +142,9 @@ export function createHistoryView({ store, onActivePartRendered }) {
     }
 
     // all HTML construction is done above at the HTML string level. No direct update of the DOM elements! Just one final assignment of HTML string to the DOM container. Don't violate this rule.
-    const beforeDOM = performance.now()
     container.innerHTML = tokens.join('')
-    const afterDOM = performance.now()
-    console.log(`  ├─ DOM insertion: ${(afterDOM - beforeDOM).toFixed(1)}ms`)
 
     if (onActivePartRendered) onActivePartRendered()
-    console.log(`🔵 renderMessages() done - ${(performance.now() - t0).toFixed(1)}ms`)
   }
 
   function classifyGap(prev, cur) {
