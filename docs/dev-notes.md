@@ -1,4 +1,4 @@
-## current problem notes and comments.
+## current tasks, notes and comments.
 
 ### pre-release:
 Shift-U or something - for top position of the current message (in addition to u - for the previsou message) [x]
@@ -7,10 +7,10 @@ interrupting the response waiting - [x]
 100 ms waiting... including loading optimization [x] - that's a big one!
 log messages - to remove [x]
 scrollAndRefresh - to remove [x]
-LEGACY_KEYS in index.js
-legacy code in interaction.js
-system messages for different topics?
-icon - I have a good one.
+LEGACY_KEYS in index.js [x]
+legacy code in interaction.js - deferred.
+system messages for different topics? - deferred. - tutorial - updatead [x]
+icon - I have a good one. [x]
 
 #### initialization for new users:
 1. tutorial [x]
