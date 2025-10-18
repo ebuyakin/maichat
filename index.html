@@ -29,7 +29,7 @@
   <meta name="robots" content="index, follow">
   <meta name="language" content="English">
   <meta name="author" content="MaiChat">
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="icon" type="image/x-icon" href="/maichat_logo.ico" />
   
   <style>
     :root {
@@ -88,10 +88,24 @@
       padding: 60px 0;
     }
     
+    .hero-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+    
+    .hero-logo {
+      width: 64px;
+      height: 64px;
+      flex-shrink: 0;
+    }
+    
     .hero h1 {
       font-size: 64px;
       font-weight: 700;
-      margin-bottom: 16px;
+      margin: 0;
       letter-spacing: -0.02em;
       background: linear-gradient(135deg, #fff 0%, #999 100%);
       -webkit-background-clip: text;
@@ -467,6 +481,11 @@
     
     /* Responsive */
     @media (max-width: 768px) {
+      .hero-logo {
+        width: 48px;
+        height: 48px;
+      }
+      
       .hero h1 {
         font-size: 42px;
       }
@@ -506,7 +525,10 @@
   <!-- Hero Section -->
   <section class="hero">
     <div class="container">
-      <h1>MaiChat</h1>
+      <div class="hero-header">
+        <img src="/maichat_logo.png" alt="MaiChat Logo" class="hero-logo">
+        <h1>MaiChat</h1>
+      </div>
       <p class="tagline">Keyboard-First LLM Client for Power Users</p>
       <p class="subtitle">A unified interface for ChatGPT, Claude, and Gemini with advanced conversation history organization, search capabilities, and context control</p>
       <div class="cta-group">
