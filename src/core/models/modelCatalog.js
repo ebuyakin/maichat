@@ -1,4 +1,4 @@
-// Moved from src/models/modelCatalog.js (Phase 5 core move)
+// default preconfigured model catalog for new users
 const STORAGE_KEY = 'maichat_model_catalog_v2'
 const BASE_MODELS = [
   // OpenAI models (Tier 1 limits)
@@ -36,7 +36,7 @@ const BASE_MODELS = [
   },
   // Anthropic models (Tier 1 limits)
   {
-    id: 'claude-4-5-sonnet-20250929',
+    id: 'claude-sonnet-4-5-20250929',
     provider: 'anthropic',
     contextWindow: 200000,
     tpm: 30000,
@@ -44,7 +44,7 @@ const BASE_MODELS = [
     otpm: 8000,
   },
   {
-    id: 'claude-4-1-opus-20250929',
+    id: 'claude-opus-4-1-20250805',
     provider: 'anthropic',
     contextWindow: 200000,
     tpm: 30000,
@@ -52,7 +52,7 @@ const BASE_MODELS = [
     otpm: 8000,
   },
   {
-    id: 'claude-3-5-haiku-20241022',
+    id: 'claude-haiku-4-5-20251001',
     provider: 'anthropic',
     contextWindow: 200000,
     tpm: 50000,

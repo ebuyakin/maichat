@@ -1,5 +1,17 @@
 ## current tasks, notes and comments.
 
+fixes/changes:
+1. vercel analytics
+2. model catalog updated
+3. in index.html meta tags updated (Gemini added).
+
+
+new version specs/fixes/ideas:
+1. model catalogue update (changing model names)
+2. Grok
+3. Internet search
+
+
 ### pre-release:
 Shift-U or something - for top position of the current message (in addition to u - for the previsou message) [x]
 tN - N last messages of a given topic (as opposed to trN which is t AND rN - ie topic messages among last N) [x]
