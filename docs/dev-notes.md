@@ -4,15 +4,18 @@ fixes/changes:
 1. vercel analytics and privacy statement update. Decide y/N? [ ]
 2. model catalog updated [x]
 3. in index.html meta tags updated (Gemini added). [x]
+4. update index.html to reflect the new tagline and other content. [ ]
 
 to do:
 1. feedback collection
 
 
 new version specs/fixes/ideas:
-1. model catalogue update (changing model names)
-2. Grok
+1. model catalogue update (changing model names) - think how?
+2. Grok integration
 3. Internet search
+4. Attachments
+5. file recognition.
 
 
 ### pre-release:
@@ -72,3 +75,11 @@ Test non-delay on scrolling to bottom:
 4. error edit
 5. error delete
 6. settings update
+
+
+## promotion action plan
+1. social preview image
+2. submit to search engine
+3. share on communities
+4. github social card
+
