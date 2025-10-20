@@ -4,10 +4,8 @@ fixes/changes:
 1. vercel analytics and privacy statement update. Decide y/N? [ ]
 2. model catalog updated [x]
 3. in index.html meta tags updated (Gemini added). [x]
-4. update index.html to reflect the new tagline and other content. [ ]
-
-to do:
-1. feedback collection
+4. update index.html to reflect the new tagline and other content. [x]
+5. feedback collection [x]
 
 
 new version specs/fixes/ideas:

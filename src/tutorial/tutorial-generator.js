@@ -211,7 +211,7 @@ function generateNav(structure) {
   
   structure.forEach(item => {
     const hasChildren = item.children && item.children.length > 0;
-    const itemClass = hasChildren ? 'nav-item has-children' : 'nav-item';
+    const itemClass = hasChildren ? 'nav-item has-children collapsed' : 'nav-item';
     
     html += `  <li class="${itemClass}">\n`;
     
@@ -225,7 +225,7 @@ function generateNav(structure) {
       // Generate h3 children
       item.children.forEach(child => {
         const hasGrandchildren = child.children && child.children.length > 0;
-        const childClass = hasGrandchildren ? 'nav-item has-children' : 'nav-item';
+        const childClass = hasGrandchildren ? 'nav-item has-children collapsed' : 'nav-item';
         
         html += `      <li class="${childClass}">\n`;
         
@@ -270,7 +270,7 @@ function generateHTML(content, styles, nav) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MaiChat Tutorial - Getting Started Guide</title>
   <meta name="description" content="Learn to use MaiChat: a keyboard-first interface for ChatGPT, Claude, and Gemini with topic organization and powerful filtering." />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="icon" type="image/x-icon" href="/maichat-logo.ico" />
   <style>
 ${styles}
   </style>
