@@ -1,9 +1,12 @@
 ## current tasks, notes and comments.
 
 fixes/changes:
-1. vercel analytics
-2. model catalog updated
-3. in index.html meta tags updated (Gemini added).
+1. vercel analytics and privacy statement update. Decide y/N? [ ]
+2. model catalog updated [x]
+3. in index.html meta tags updated (Gemini added). [x]
+
+to do:
+1. feedback collection
 
 
 new version specs/fixes/ideas:
