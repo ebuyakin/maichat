@@ -157,7 +157,7 @@
 .overlay-panel.model-editor .me-head { 
   display: grid; 
   /* Use responsive grid directly */
-  grid-template-columns: 50px minmax(180px, 1fr) minmax(80px, 90px) repeat(6, minmax(45px, 65px)); 
+  grid-template-columns: 50px minmax(230px, 250px) minmax(80px, 90px) 50px repeat(6, minmax(45px, 65px)); 
   align-items: center; 
   gap: var(--me-gap); 
   padding: 6px var(--me-padding); 
@@ -182,7 +182,7 @@
 
 .overlay-panel.model-editor li { 
   display: grid; 
-  grid-template-columns: 50px minmax(180px, 1fr) minmax(80px, 90px) repeat(6, minmax(45px, 65px)); 
+  grid-template-columns: 50px minmax(230px, 250px) minmax(80px, 90px) 50px repeat(6, minmax(45px, 65px)); 
   align-items: center; 
   gap: var(--me-gap); 
   font: var(--size-base)/1.35 var(--font-ui); 

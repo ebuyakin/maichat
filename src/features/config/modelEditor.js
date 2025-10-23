@@ -22,15 +22,16 @@ export function openModelEditor({ onClose, store }) {
   backdrop.className = 'overlay-backdrop centered'
   const panel = document.createElement('div')
   panel.className = 'overlay-panel model-editor'
-  panel.style.minWidth = '930px'
+  panel.style.minWidth = '1000px'
   panel.innerHTML = `
     <header>Models</header>
-  <div class="me-hintbar"><span class="me-hint">j/k rows · h/l cols · Space Enable/Disable · Ctrl+N new model</span></div>
+  <div class="me-hintbar"><span class="me-hint">j/k rows · h/l cols · Space Enable/Disable · s toggle Search · Ctrl+N new model</span></div>
     <div class="me-table">
       <div class="me-row me-head" aria-hidden="true">
   <span class="me-col me-col-toggle">Enabled</span>
   <span class="me-col me-col-name">Model</span>
   <span class="me-col me-col-provider">Provider</span>
+  <span class="me-col me-col-search">Search</span>
   <span class="me-col me-col-cw">CW (K)</span>
   <span class="me-col me-col-tpm">TPM (K)</span>
   <span class="me-col me-col-otpm">OTPM (K)</span>
@@ -90,10 +91,11 @@ export function openModelEditor({ onClose, store }) {
   let __dirty = false
   let __applied = false // becomes true when changes are saved
 
-  const COLS = ['toggle', 'name', 'provider', 'contextWindow', 'tpm', 'otpm', 'tpd', 'rpm', 'rpd']
+  const COLS = ['toggle', 'name', 'provider', 'webSearch', 'contextWindow', 'tpm', 'otpm', 'tpd', 'rpm', 'rpd']
   const PROVIDER_COL_INDEX = 2
-  const FIRST_NUMERIC_COL = 3 // contextWindow
-  const LAST_COL = 8
+  const WEBSEARCH_COL_INDEX = 3
+  const FIRST_NUMERIC_COL = 4 // contextWindow
+  const LAST_COL = 9
   function render(preserveId) {
     const prevId = preserveId || (models[activeIndex] && models[activeIndex].id)
     models = listModels()
@@ -139,6 +141,7 @@ export function openModelEditor({ onClose, store }) {
         <span class="me-col me-col-toggle ${m.enabled ? 'on' : 'off'}" data-role="toggle" aria-label="${m.enabled ? 'enabled' : 'disabled'}">${m.enabled ? '●' : '○'}</span>
         <span class="me-col me-col-name"><input aria-label="Model ID" data-field="id" type="text" value="${m.id}" class="me-name-input"/>${activeBadge}</span>
         <span class="me-col me-col-provider"><input aria-label="Provider" data-field="provider" type="text" value="${m.provider || 'openai'}" class="me-provider-input"/></span>
+        <span class="me-col me-col-search"><input aria-label="Web Search" data-field="webSearch" type="checkbox" ${m.webSearch ? 'checked' : ''} class="me-checkbox"/></span>
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.contextWindow || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpm || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-otpm"><input aria-label="Output tokens per minute (K tokens)" data-field="otpm" data-scale="1000" type="number" min="0" step="1" value="${m.otpm != null ? Math.round((m.otpm || 0) / 1000) : ''}" class="me-num" placeholder="-"/></span>
@@ -159,6 +162,7 @@ export function openModelEditor({ onClose, store }) {
         <span class="me-col me-col-toggle on" data-role="toggle" aria-label="enabled">●</span>
         <span class="me-col me-col-name"><input class="me-name-input" type="text" placeholder="New model id" value="${pendingNewRow.id || ''}"/></span>
         <span class="me-col me-col-provider"><input class="me-provider-input" data-pending="1" data-field="provider" type="text" placeholder="Provider" value="${pendingNewRow.provider || 'openai'}"/></span>
+        <span class="me-col me-col-search"><input aria-label="Web Search" data-pending="1" data-field="webSearch" type="checkbox" ${pendingNewRow.webSearch ? 'checked' : ''} class="me-checkbox"/></span>
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-pending="1" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.contextWindow || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-pending="1" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpm || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-otpm"><input aria-label="Output tokens per minute (K tokens)" data-pending="1" data-field="otpm" data-scale="1000" type="number" min="0" step="1" value="${pendingNewRow.otpm != null ? Math.round((pendingNewRow.otpm || 0) / 1000) : ''}" class="me-num" placeholder="-"/></span>
@@ -252,15 +256,33 @@ export function openModelEditor({ onClose, store }) {
     }
   })
   ul.addEventListener('change', (e) => {
-    const input = e.target.closest('input.me-num, input.me-name-input, input.me-provider-input')
+    const input = e.target.closest('input.me-num, input.me-name-input, input.me-provider-input, input.me-checkbox')
     if (!input) return
     const li = e.target.closest('li')
     if (!li) return
     const id = li.dataset.id
     const field = input.getAttribute('data-field')
 
+    // Handle checkbox fields
+    if (input.classList.contains('me-checkbox')) {
+      const val = input.checked
+
+      if (input.getAttribute('data-pending') === '1') {
+        if (!pendingNewRow) return
+        pendingNewRow[field] = val
+        __dirty = true
+      } else {
+        const cur = draftById.get(id) || origById.get(id)
+        if (cur) {
+          draftById.set(id, { ...cur, [field]: val })
+          __dirty = true
+        }
+      }
+      updateFooterState()
+    }
+
     // Handle numeric fields
-    if (input.classList.contains('me-num')) {
+    else if (input.classList.contains('me-num')) {
       let val = Number(input.value)
       if (!Number.isFinite(val) || val < 0) {
         val = 0
@@ -325,6 +347,7 @@ export function openModelEditor({ onClose, store }) {
       const meta = {
         enabled: true,
         provider: pendingNewRow?.provider || 'openai',
+        webSearch: pendingNewRow?.webSearch !== undefined ? pendingNewRow.webSearch : true,
         contextWindow: pendingNewRow?.contextWindow || 8192,
         tpm: pendingNewRow?.tpm || 8192,
         rpm: pendingNewRow?.rpm || 60,
@@ -494,6 +517,7 @@ export function openModelEditor({ onClose, store }) {
           if (id && !draftById.has(id) && !origById.has(id)) {
             const meta = {
               enabled: true,
+              webSearch: pendingNewRow?.webSearch !== undefined ? pendingNewRow.webSearch : true,
               contextWindow: pendingNewRow?.contextWindow || 8192,
               tpm: pendingNewRow?.tpm || 8192,
               rpm: pendingNewRow?.rpm || 60,
@@ -604,6 +628,7 @@ export function openModelEditor({ onClose, store }) {
           id: '',
           enabled: true,
           provider: 'openai',
+          webSearch: true,
           contextWindow: 8192,
           tpm: 8192,
           rpm: 60,
@@ -693,6 +718,37 @@ export function openModelEditor({ onClose, store }) {
       moveCol(-1)
       return
     }
+    // Toggle Search with 's' key when webSearch column is selected
+    if (lowerKey === 's' && selectedCol === WEBSEARCH_COL_INDEX) {
+      const rowIdx = activeIndex
+      const isPending = !!pendingNewRow && rowIdx === models.length
+      
+      if (isPending) {
+        pendingNewRow.webSearch = !pendingNewRow.webSearch
+        __dirty = true
+        render()
+        applyCellSelection()
+        enterEditMode()
+        ensureVisible()
+        return
+      }
+      
+      const cur = models[rowIdx]
+      if (cur) {
+        const id = cur.id
+        const draft = draftById.get(id) || origById.get(id)
+        if (draft) {
+          draftById.set(id, { ...draft, webSearch: !draft.webSearch })
+          __dirty = true
+          render(id)
+          applyCellSelection()
+          enterEditMode()
+          ensureVisible()
+        }
+      }
+      return
+    }
+    
     // Toggle / provider switch for pending row
     if (isSpace) {
       const rowIdx = activeIndex
@@ -764,6 +820,7 @@ export function openModelEditor({ onClose, store }) {
       '.me-col-toggle',
       '.me-col-name',
       '.me-col-provider',
+      '.me-col-search',
       '.me-col-cw',
       '.me-col-tpm',
       '.me-col-otpm',
@@ -782,6 +839,7 @@ export function openModelEditor({ onClose, store }) {
       '.me-col-toggle',
       '.me-col-name',
       '.me-col-provider',
+      '.me-col-search',
       '.me-col-cw',
       '.me-col-tpm',
       '.me-col-otpm',
@@ -808,6 +866,13 @@ export function openModelEditor({ onClose, store }) {
       try {
         providerInput.select()
       } catch {}
+      return
+    }
+
+    const checkbox = cell.querySelector('input.me-checkbox')
+    if (checkbox) {
+      editing = true
+      checkbox.focus()
       return
     }
 
@@ -843,6 +908,7 @@ export function openModelEditor({ onClose, store }) {
       if ((draft.rpm || 0) !== (orig.rpm || 0)) return true
       if ((draft.tpd || 0) !== (orig.tpd || 0)) return true
       if ((draft.otpm || 0) !== (orig.otpm || 0)) return true
+      if ((draft.webSearch || false) !== (orig.webSearch || false)) return true
     }
     return !!__dirty
   }
@@ -891,6 +957,7 @@ export function openModelEditor({ onClose, store }) {
       if (draft.otpm !== orig.otpm) patch.otpm = draft.otpm
       if (draft.rpd !== orig.rpd) patch.rpd = draft.rpd
       if (draft.provider !== orig.provider) patch.provider = draft.provider
+      if (draft.webSearch !== orig.webSearch) patch.webSearch = draft.webSearch
       if (Object.keys(patch).length) {
         updateModelMeta(id, patch)
       }

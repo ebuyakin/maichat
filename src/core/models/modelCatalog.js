@@ -8,7 +8,8 @@ const BASE_MODELS = [
     contextWindow: 400000, 
     tpm: 500000, 
     rpm: 500, 
-    tpd: 1500000 
+    tpd: 1500000,
+    webSearch: true,
   },
   { 
     id: 'gpt-5-mini', 
@@ -16,7 +17,8 @@ const BASE_MODELS = [
     contextWindow: 400000, 
     tpm: 500000, 
     rpm: 500, 
-    tpd: 5000000 
+    tpd: 5000000,
+    webSearch: true,
   },
   { 
     id: 'gpt-5-nano', 
@@ -24,7 +26,8 @@ const BASE_MODELS = [
     contextWindow: 400000, 
     tpm: 200000, 
     rpm: 500, 
-    tpd: 2000000 
+    tpd: 2000000,
+    webSearch: true,
   },
   { 
     id: 'o4-mini', 
@@ -32,7 +35,8 @@ const BASE_MODELS = [
     contextWindow: 128000, 
     tpm: 200000, 
     rpm: 500, 
-    tpd: 2000000 
+    tpd: 2000000,
+    webSearch: true,
   },
   // Anthropic models (Tier 1 limits)
   {
@@ -42,6 +46,7 @@ const BASE_MODELS = [
     tpm: 30000,
     rpm: 50,
     otpm: 8000,
+    webSearch: true,
   },
   {
     id: 'claude-opus-4-1-20250805',
@@ -50,6 +55,7 @@ const BASE_MODELS = [
     tpm: 30000,
     rpm: 50,
     otpm: 8000,
+    webSearch: true,
   },
   {
     id: 'claude-haiku-4-5-20251001',
@@ -58,6 +64,7 @@ const BASE_MODELS = [
     tpm: 50000,
     rpm: 50,
     otpm: 8000,
+    webSearch: true,
   },
   // Gemini models (Free tier limits)
   {
@@ -67,6 +74,7 @@ const BASE_MODELS = [
     tpm: 125000,
     rpm: 2,
     rpd: 50,
+    webSearch: true,
   },
   {
     id: 'gemini-2.5-flash',
@@ -75,6 +83,7 @@ const BASE_MODELS = [
     tpm: 250000,
     rpm: 10,
     rpd: 250,
+    webSearch: true,
   },
   {
     id: 'gemini-2.0-flash',
@@ -83,6 +92,32 @@ const BASE_MODELS = [
     tpm: 1000000,
     rpm: 15,
     rpd: 200,
+    webSearch: true,
+  },
+  // xAI models (Tier 1 limits)
+  {
+    id: 'grok-4-fast-non-reasoning',
+    provider: 'grok',
+    contextWindow: 2000000,
+    tpm: 4000000,
+    rpm: 480,
+    webSearch: true,
+  },
+  {
+    id: 'grok-4-fast-reasoning',
+    provider: 'grok',
+    contextWindow: 2000000,
+    tpm: 4000000,
+    rpm: 480,
+    webSearch: true,
+  },
+  {
+    id: 'grok-code-fast-1',
+    provider: 'grok',
+    contextWindow: 256000,
+    tpm: 2000000,
+    rpm: 480,
+    webSearch: false,
   },
 ]
 function loadState() {
@@ -110,6 +145,7 @@ function normalize(state) {
       if (bm.tpd !== undefined) state.models[bm.id].tpd = bm.tpd
       if (bm.otpm !== undefined) state.models[bm.id].otpm = bm.otpm
       if (bm.rpd !== undefined) state.models[bm.id].rpd = bm.rpd
+      if (bm.webSearch !== undefined) state.models[bm.id].webSearch = bm.webSearch
     } else {
       if (typeof state.models[bm.id].contextWindow !== 'number')
         state.models[bm.id].contextWindow = bm.contextWindow
@@ -136,6 +172,12 @@ function normalize(state) {
       } else if (state.models[bm.id].rpd != null && !Number.isFinite(Number(state.models[bm.id].rpd))) {
         delete state.models[bm.id].rpd
       }
+      // Initialize webSearch from BASE_MODELS if undefined, or validate if present
+      if (state.models[bm.id].webSearch === undefined && bm.webSearch !== undefined) {
+        state.models[bm.id].webSearch = bm.webSearch
+      } else if (state.models[bm.id].webSearch != null && typeof state.models[bm.id].webSearch !== 'boolean') {
+        delete state.models[bm.id].webSearch
+      }
     }
   }
   // Ensure any custom models (not in BASE_MODELS) have required fields
@@ -149,6 +191,7 @@ function normalize(state) {
       if (typeof m.provider !== 'string') m.provider = 'openai'
       if (m.otpm != null && !Number.isFinite(Number(m.otpm))) delete m.otpm
       if (m.rpd != null && !Number.isFinite(Number(m.rpd))) delete m.rpd
+      if (m.webSearch != null && typeof m.webSearch !== 'boolean') delete m.webSearch
     }
   }
   if (!state.activeModel || !state.models[state.activeModel]?.enabled) {
@@ -196,6 +239,7 @@ export function listModels() {
       tpd: __state.models[id].tpd,
       otpm: __state.models[id].otpm,
       rpd: __state.models[id].rpd,
+      webSearch: __state.models[id].webSearch,
       enabled: __state.models[id].enabled,
       lastUsedAt: __state.models[id].lastUsedAt,
     }))
@@ -236,9 +280,10 @@ export function getModelMeta(id) {
       tpd: 100000,
       otpm: undefined,
       rpd: undefined,
+      webSearch: undefined,
       lastUsedAt: undefined,
     }
-  return { ...m, provider: m.provider || 'openai', otpm: m.otpm, rpd: m.rpd, lastUsedAt: m.lastUsedAt }
+  return { ...m, provider: m.provider || 'openai', otpm: m.otpm, rpd: m.rpd, webSearch: m.webSearch, lastUsedAt: m.lastUsedAt }
 }
 export function ensureCatalogLoaded() {}
 
@@ -278,6 +323,7 @@ export function updateModelMeta(id, patch) {
     else if (patch.rpd === null) delete next.rpd
   }
   if (patch && 'provider' in patch) next.provider = String(patch.provider || 'openai')
+  if (patch && 'webSearch' in patch) next.webSearch = Boolean(patch.webSearch)
   __state.models[id] = next
   saveState(__state)
 }
@@ -306,6 +352,7 @@ export function addModel(id, meta) {
       meta && Number.isFinite(Number(meta.rpd)) && Number(meta.rpd) >= 0
         ? Number(meta.rpd)
         : undefined,
+    webSearch: typeof meta?.webSearch === 'boolean' ? meta.webSearch : undefined,
   }
   __state.models[id] = m
   if (!__state.activeModel || !__state.models[__state.activeModel]?.enabled)
