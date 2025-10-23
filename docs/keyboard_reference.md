@@ -19,6 +19,7 @@ Covered overlays:
 5. Help Overlay (F1)
 6. Settings Overlay (Ctrl+,)
 7. Topic Quick Picker (Ctrl+T: VIEW/INPUT only per spec)
+8. Sources Overlay (Ctrl+Shift+S: VIEW only)
 
 Notes:
 - Menu (Ctrl+.) still uses its own handler but already preserves mode; may migrate to helper later.
@@ -79,6 +80,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Y | Copy entire message (Shift+y) | Copies raw message text (user input or assistant response) from data model |
 | v | View code in overlay | Single block: opens immediately. Multiple blocks: wait for digit (v1, v2, v3...) |
 | m | View equation in overlay | Single equation: opens immediately. Multiple equations: wait for digit (m1, m2, m3...) |
+| Ctrl+Shift+S | Open Sources overlay for active assistant message | Shows sources (citations) used by the model; Esc / outside click closes; Copy URLs with C |
 | * | Cycle star (0→1→2→3→0) | Affects active pair |
 | 1 / 2 / 3 | Set star to 1 / 2 / 3 | Direct rating |
 | Space | Set star to 0 | Clear rating |

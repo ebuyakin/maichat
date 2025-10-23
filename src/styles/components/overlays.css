@@ -18,6 +18,11 @@
 .overlay-panel.model-editor #me-cancel-btn { width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .overlay-panel input[type=text] { flex:1; background:#0a0a0a; border:1px solid #333; color:#eee; padding:4px 6px; font:var(--size-base)/1.4 var(--font-ui); }
 
+/* Sources overlay (inherits overlay styles) */
+.sources-panel a.source-link { color: var(--text); text-decoration: none; }
+.sources-panel a.source-link:hover { text-decoration: underline; }
+.sources-panel a.source-link .dim { color: var(--text-dim); }
+
 /* Topic Picker */
 .topic-picker-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:flex-start; justify-content:center; padding-top:14vh; z-index:1300; }
 .topic-picker { background:var(--bg-alt); border:1px solid #222; border-radius:6px; width:360px; max-height:60vh; display:flex; flex-direction:column; font:var(--size-base)/1.4 var(--font-ui); }

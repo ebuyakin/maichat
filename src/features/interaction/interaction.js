@@ -34,6 +34,7 @@ import { createEquationOverlay } from '../codeDisplay/equationOverlay.js'
 import { openModal } from '../../shared/openModal.js'
 import { setupCopyShortcuts } from '../formatting/copyUtilities.js'
 import { createViewKeyHandler } from './viewKeys.js'
+import { openSourcesOverlay } from '../history/sourcesOverlay.js'
 import { createCommandKeyHandler } from './commandKeys.js'
 import { createInputKeyHandler } from './inputKeys.js'
 import { createAppMenuController } from './appMenu.js'
@@ -154,6 +155,7 @@ export function createInteraction({
     setStarRating,
     handleEditIfErrorActive,
     handleDeleteIfErrorActive,
+    openSources: (pairId) => openSourcesOverlay({ store, pairId, modeManager }),
   })
 
   // COMMAND handler extracted

@@ -18,8 +18,19 @@ export function createViewKeyHandler({
   setStarRating,
   handleEditIfErrorActive,
   handleDeleteIfErrorActive,
+  openSources,
 }) {
   return function viewHandler(e) {
+    // Ctrl+Shift+S: Open Sources overlay for the active assistant message
+    if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'S') {
+      const act = activeParts.active()
+      if (!(act && act.role === 'assistant')) return false
+      if (typeof openSources === 'function') {
+        openSources(act.pairId)
+        return true
+      }
+      return false
+    }
     if (window.modalIsActive && window.modalIsActive()) return false
     window.__lastKey = e.key
     if (e.key === 'Enter') {

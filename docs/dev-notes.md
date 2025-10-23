@@ -1,11 +1,15 @@
 ## current tasks, notes and comments.
 
+- model badge in the input zone - expand to fit the longer model names
+- new keys Ctrl-Shift-s - in view mode - sources
+
 fixes/changes:
 1. vercel analytics and privacy statement update. Decide y/N? [ ]
 2. model catalog updated [x]
 3. in index.html meta tags updated (Gemini added). [x]
 4. update index.html to reflect the new tagline and other content. [x]
 5. feedback collection [x]
+6. tutorial - collapsed sections. []
 
 
 new version specs/fixes/ideas:

@@ -34,53 +34,7 @@ src/features/config/         - API keys + Model editor
 ### Step 2: Model Catalog - Add Web Search Field
 
 **File:** `src/core/models/modelCatalog.js`
-
-**Schema Change:**
-Add `webSearch` boolean to model objects:
-```javascript
-{
-  id: 'grok-beta',
-  provider: 'grok',
-  contextWindow: 131072,
-  tpm: 60000,
-  rpm: 60,
-  webSearch: true,  // NEW FIELD
-}
-```
-
-**Models to Add (per xAI specs):**
-```javascript
-{
-  id: 'grok-4-fast-non-reasoning',
-  provider: 'grok',
-  contextWindow: 131072,
-  tpm: 400000,
-  rpm: 500,
-  tpd: 5000000,
-  webSearch: true,
-},
-{
-  id: 'grok-4-fast-reasoning',
-  provider: 'grok',
-  contextWindow: 131072,
-  tpm: 400000,
-  rpm: 500,
-  tpd: 5000000,
-  webSearch: true,
-},
-{
-  id: 'grok-code-fast-1',
-  provider: 'grok',
-  contextWindow: 131072,
-  tpm: 400000,
-  rpm: 500,
-  tpd: 5000000,
-  webSearch: false,  // Code model - no search
-},
-```
-
 **Storage:** Existing save/load handles new field automatically (additive change).
-
 **Test:** Load app, check localStorage, verify models present with `webSearch` property.
 
 ---
@@ -114,49 +68,7 @@ Add `webSearch` boolean to model objects:
 ### Step 4: Grok Provider Adapter
 
 **File:** `src/infrastructure/provider/grokAdapter.js` (NEW)
-
-**Implementation:**
-```javascript
-export function createGrokAdapter() {
-  return {
-    async sendChat(req) {
-      const { model, messages, system, apiKey, signal, options } = req
-      
-      // Endpoint
-      const url = 'https://api.x.ai/v1/chat/completions'
-      
-      // Payload (OpenAI-compatible)
-      const msgArr = system ? [{ role: 'system', content: system }, ...messages] : messages
-      const body = { 
-        model, 
-        messages: msgArr.map(m => ({ role: m.role, content: m.content }))
-      }
-      
-      // Options
-      if (options?.temperature) body.temperature = options.temperature
-      if (options?.maxOutputTokens) body.max_tokens = options.maxOutputTokens
-      
-      // Request
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(body),
-        signal,
-      })
-      
-      // Error handling (mirror OpenAI adapter)
-      // Response parsing
-      // Return { content, usage, __timing }
-    }
-  }
-}
-```
-
 **Pattern:** Mirror `openaiAdapter.js` structure exactly.
-
 **Test:** Send text message to Grok, verify response.
 
 ---
@@ -172,9 +84,7 @@ import { createGrokAdapter } from '../infrastructure/provider/grokAdapter.js'
 // In bootstrap():
 registerProvider('grok', createGrokAdapter())
 ```
-
 **Location:** After gemini registration (line 43).
-
 **Test:** App boots, no console errors, Grok provider available.
 
 ---
@@ -222,4 +132,44 @@ registerProvider('grok', createGrokAdapter())
 - All changes additive (easy rollback)
 - `webSearch` field prepares for Phase 2
 - Vision structure added in Phase 3 (separate payload change)
+
+
+Short, practical answer: yes—both Grok Chat Completions and Grok Responses support built-in search tools (Web, X, and News), but the Responses API exposes them with richer control and better event/citation plumbing.
+
+Here’s what matters in practice:
+
+- Chat Completions
+  - How to enable search: add search_parameters
+    {
+      "model": "...",
+      "messages": [...],
+      "search_parameters": {
+        "mode": "auto"   // "auto" lets the model decide; use "none"/"off" to disable
+        // Optional:
+        // "sources": [{"type":"web"}, {"type":"news"}, {"type":"x"}],
+        // "return_citations": true,
+        // "max_search_results": 10
+      }
+    }
+  - What you get back: a normal choices/message response; if citations are enabled, you’ll receive supporting metadata in the response (schema varies—surface it if present).
+  - When to use: drop-in with your current OpenAI-style adapter; simple “on/off/auto” search with optional source selection.
+
+- Responses API
+  - How to enable search: via tools/tool_choice or a search/search_parameters equivalent (naming is slightly different and more flexible)
+    {
+      "model": "...",
+      "input": [ ...content blocks... ],
+      "tools": [{"type": "web_search"}],
+      "tool_choice": "auto",
+      // or a search/search_parameters block, depending on the latest spec
+      // (same concepts: mode, sources, return_citations, max_search_results)
+    }
+  - What you get back: a response with output parts, and (if streaming) typed events (e.g., response.output_text.delta, tool.*). This gives you better visibility into search steps and makes citations/grounding easier to consume.
+  - When to use: you want richer multimodal flows, structured outputs (JSON schema), or detailed tool step telemetry.
+
+Search options both generally support
+- Mode: auto (model decides), off/none (disabled). Some implementations also support “required/always” modes.
+- Sources: choose from web, news, x (Twitter/X).
+- Results detail: return_citations (to get sources back); optionally tune max_search_results.
+- Notes: exact field names can evolve—these are the stable concepts. If you toggle search via your settings, you already have the right abstraction in your code.
 

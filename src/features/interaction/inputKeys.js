@@ -229,7 +229,7 @@ export function createInputKeyHandler({
             boundaryMgr.setModel(model)
             boundaryMgr.applySettings(getSettings())
             const boundarySnapshot = boundaryMgr.getBoundary()
-            const { content } = await executeSend({
+            const execResult = await executeSend({
               store,
               model,
               topicId,
@@ -243,8 +243,7 @@ export function createInputKeyHandler({
                 historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length)
               },
             })
-
-            const rawText = content // keep original for assistantText (context fidelity)
+            const rawText = execResult.content // keep original for assistantText (context fidelity)
             // 1. Code extraction first
             const codeExtraction = extractCodeBlocks(rawText)
             const afterCode = codeExtraction.hasCode ? codeExtraction.displayText : rawText
@@ -269,6 +268,10 @@ export function createInputKeyHandler({
               assistantText: rawText,
               lifecycleState: 'complete',
               errorMessage: undefined,
+            }
+            // Persist citations if provided by provider (e.g., Grok with search enabled)
+            if (Array.isArray(execResult.citations) && execResult.citations.length) {
+              updateData.citations = execResult.citations
             }
             if (codeExtraction.hasCode) {
               updateData.codeBlocks = codeExtraction.codeBlocks

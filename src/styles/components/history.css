@@ -13,6 +13,10 @@
 .badge.flag[data-flag='g'] { background:transparent; border:1px solid #666; border-radius:50%; }
 .badge.offctx { background:transparent; border:none; color:#ff9fb2; text-transform:none; font-size:11px; letter-spacing:.3px; }
 .badge.model { background:transparent; border:none; color:var(--text-dim); }
+.badge.sources { background:transparent; border:none; color:var(--text-dim); cursor:pointer; }
+.badge.sources:hover, .badge.sources:focus { color: var(--text); outline: 0; }
+.badge.sources .icon-link { vertical-align: -1px; margin-right: 3px; display: inline-block; }
+.badge.sources .sources-count { display:inline-block; }
 .badge.state { background:transparent; border:none; color:var(--text-dim); min-width:18px; text-align:center; border-radius:0; padding:0 2px; }
 .badge.state[data-state=sending] { animation:pulse 1.2s ease-in-out infinite; }
 .badge.state.error { color:var(--text-dim); }

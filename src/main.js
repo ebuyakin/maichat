@@ -22,8 +22,10 @@ window.Prism = Prism
 import { initRuntime } from './runtime/runtimeSetup.js'
 import { createModeManager, MODES } from './features/interaction/modes.js'
 import { bindHistoryErrorActions } from './features/history/historyView.js'
+import { openSourcesOverlay } from './features/history/sourcesOverlay.js'
 import { createHistoryRuntime } from './features/history/historyRuntime.js'
 import { getSettings, subscribeSettings } from './core/settings/index.js'
+import { bindSourcesActions } from './features/history/historyView.js'
 import { decideRenderAction } from './runtime/renderPolicy.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
@@ -198,6 +200,11 @@ bindHistoryErrorActions(document.getElementById('history'), {
   },
   onDelete: (pairId) => {
     interaction.deletePairWithFocus(pairId)
+  },
+})
+bindSourcesActions(document.getElementById('history'), {
+  onOpen: (pairId) => {
+    openSourcesOverlay({ store, pairId, modeManager })
   },
 })
 // Preload settings

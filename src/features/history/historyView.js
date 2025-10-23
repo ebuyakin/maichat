@@ -120,6 +120,23 @@ export function createHistoryView({ store, onActivePartRendered }) {
           : processCodePlaceholders(assistant.text || '')
 
         // Collecting full assistant HTML string including meta line.
+        // Sources badge (if citations exist)
+        let sourcesBadge = ''
+          try {
+            const count = pair && Array.isArray(pair.citations)
+              ? Array.from(new Set(pair.citations.filter((u) => typeof u === 'string' && u))).length
+              : 0
+            if (count > 0) {
+              const display = count > 9 ? '9+' : String(count)
+              const icon = `
+                <svg class=\"icon-link\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">
+                  <path d=\"M10 13a5 5 0 0 1 0-7L11.5 4.5a5 5 0 0 1 7 7L17 12\"/>
+                  <path d=\"M14 11a5 5 0 0 1 0 7L12.5 19.5a5 5 0 0 1-7-7L7 12\"/>
+                </svg>`
+              sourcesBadge = `<span class="badge sources" data-action="sources" title="Sources (${count})" aria-label="Sources (${count})" role="button">${icon}<span class="sources-count">${display}</span></span>`
+            }
+          } catch {}
+
         tokens.push(
           `<div class="message assistant" data-message-id="${assistant.id}" data-part-id="${assistant.id}" data-pair-id="${assistant.pairId}" data-role="assistant">
             <div class="assistant-meta">
@@ -131,6 +148,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
               <div class="meta-right">
                 ${stateBadge}${errActions}
                 <span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span>
+                ${sourcesBadge}
                 <span class="badge model">${escapeHtml(modelName)}</span>
                 <span class="badge timestamp" data-ts="${pair ? pair.createdAt : ''}">${ts}</span>
               </div>
@@ -206,6 +224,23 @@ export function createHistoryView({ store, onActivePartRendered }) {
         stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage || 'error')}">${label}</span>`
         errActions = `<span class="err-actions"><button class="btn btn-icon resend" data-action="resend" title="Re-ask: copy to input and resend (E key)">↻</button><button class="btn btn-icon del" data-action="delete" title="Delete this error message (W key)">✕</button></span>`
       }
+      // Sources badge (if citations exist)
+      let sourcesBadge = ''
+        try {
+          const count = pair && Array.isArray(pair.citations)
+            ? Array.from(new Set(pair.citations.filter((u) => typeof u === 'string' && u))).length
+            : 0
+          if (count > 0) {
+            const display = count > 9 ? '9+' : String(count)
+            const icon = `
+              <svg class=\"icon-link\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">
+                <path d=\"M10 13a5 5 0 0 1 0-7L11.5 4.5a5 5 0 0 1 7 7L17 12\"/>
+                <path d=\"M14 11a5 5 0 0 1 0 7L12.5 19.5a5 5 0 0 1-7-7L7 12\"/>
+              </svg>`
+            sourcesBadge = `<span class="badge sources" data-action="sources" title="Sources (${count})" aria-label="Sources (${count})" role="button">${icon}<span class="sources-count">${display}</span></span>`
+          }
+        } catch {}
+
       return `<div class="part assistant" data-part-id="${pt.id}" data-role="assistant" data-pair-id="${pt.pairId}"><div class="part-inner">
 				<div class="assistant-meta">
 					<div class="meta-left">
@@ -213,12 +248,13 @@ export function createHistoryView({ store, onActivePartRendered }) {
 						<span class="badge stars">${'★'.repeat(pair.star)}${'☆'.repeat(Math.max(0, 3 - pair.star))}</span>
 						<span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span>
 					</div>
-					<div class="meta-right">
-						${stateBadge}${errActions}
-						<span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span>
-						<span class="badge model">${escapeHtml(modelName)}</span>
-						<span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
-					</div>
+          <div class="meta-right">
+            ${stateBadge}${errActions}
+            <span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span>
+            ${sourcesBadge}
+            <span class="badge model">${escapeHtml(modelName)}</span>
+            <span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
+          </div>
 				</div>
 				<div class="assistant-body">${processedContent}</div>
 			</div></div>`
@@ -292,6 +328,30 @@ export function bindHistoryErrorActions(rootEl, { onResend, onDelete }) {
       else if (action === 'delete' && onDelete) onDelete(pairId)
     })
     rootEl.__errActionsBound = true
+  }
+}
+export function bindSourcesActions(rootEl, { onOpen }) {
+  if (!rootEl.__sourcesActionsBound) {
+    rootEl.addEventListener('click', (e) => {
+      const el = e.target.closest('[data-action="sources"]')
+      if (!el) return
+      const host = el.closest('.message.assistant[data-pair-id], .part[data-pair-id]')
+      if (!host) return
+      const pairId = host.getAttribute('data-pair-id')
+      if (onOpen) onOpen(pairId)
+    })
+    // Keyboard accessibility: Enter/Space on badge
+    rootEl.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      const el = e.target.closest('[data-action="sources"]')
+      if (!el) return
+      e.preventDefault()
+      const host = el.closest('.message.assistant[data-pair-id], .part[data-pair-id]')
+      if (!host) return
+      const pairId = host.getAttribute('data-pair-id')
+      if (onOpen) onOpen(pairId)
+    })
+    rootEl.__sourcesActionsBound = true
   }
 }
 function formatTimestamp(ts) {
