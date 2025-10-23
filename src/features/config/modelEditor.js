@@ -180,17 +180,54 @@ export function openModelEditor({ onClose, store }) {
   function fmt(n) {
     return Math.round(n / 1000)
   }
+  
+  let hintTimeout = null
+  function showActiveModelHint() {
+    // Clear any existing hint
+    if (hintTimeout) {
+      clearTimeout(hintTimeout)
+      hintTimeout = null
+    }
+    
+    // Find or create hint element
+    let hintEl = panel.querySelector('.me-active-model-hint')
+    if (!hintEl) {
+      hintEl = document.createElement('div')
+      hintEl.className = 'me-active-model-hint'
+      hintEl.textContent = 'Cannot disable active model. Switch to another model first.'
+      panel.appendChild(hintEl)
+    }
+    
+    // Show hint
+    hintEl.style.display = 'block'
+    hintEl.style.opacity = '1'
+    
+    // Hide after 2 seconds
+    hintTimeout = setTimeout(() => {
+      if (hintEl) {
+        hintEl.style.opacity = '0'
+        setTimeout(() => {
+          if (hintEl) hintEl.style.display = 'none'
+        }, 300)
+      }
+      hintTimeout = null
+    }, 2000)
+  }
+  
   function toggle(id) {
     const cur = draftById.get(id) || origById.get(id)
     if (!cur) return
-    draftById.set(id, { ...cur, enabled: !cur.enabled })
-    __dirty = true
-    // Keep active model valid in snapshot UI: if active becomes disabled, switch to first enabled
+    
+    // Don't allow disabling the currently active model
     const active = getActiveModel()
     if (active === id && cur.enabled === true) {
-      const firstEnabled = [...draftById.values()].find((m) => m.enabled)
-      if (firstEnabled) setActiveModel(firstEnabled.id)
+      // Show visual feedback
+      showActiveModelHint()
+      return
     }
+    
+    draftById.set(id, { ...cur, enabled: !cur.enabled })
+    __dirty = true
     render(id)
     // Ensure focus stays inside overlay to keep key handling alive
     try {
@@ -248,6 +285,14 @@ export function openModelEditor({ onClose, store }) {
     const id = li.dataset.id
     const cur = draftById.get(id) || origById.get(id)
     if (cur) {
+      // Don't allow disabling the currently active model
+      const active = getActiveModel()
+      if (active === id && cur.enabled === true) {
+        // Show visual feedback
+        showActiveModelHint()
+        return
+      }
+      
       draftById.set(id, { ...cur, enabled: !cur.enabled })
       render(id)
       try {
