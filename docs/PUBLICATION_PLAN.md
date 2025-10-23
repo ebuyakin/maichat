@@ -25,8 +25,8 @@ This document outlines the complete process of migrating MaiChat from GitHub Pag
 ### Phase 1: Prepare & Push (Do First)
 
 #### 1.1 Update README.md
-- [ ] Change references from "GitHub Pages" to "Vercel"
-- [ ] Update deployment instructions
+- [x] Change references from "GitHub Pages" to "Vercel"
+- [x] Update deployment instructions
 - [ ] Verify all links point to correct locations
 
 #### 1.2 Final Local Checks
