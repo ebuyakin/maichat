@@ -7,6 +7,7 @@ import { registerProvider } from '../infrastructure/provider/adapter.js'
 import { createOpenAIAdapter } from '../infrastructure/provider/openaiAdapter.js'
 import { createAnthropicAdapter } from '../infrastructure/provider/anthropicAdapter.js'
 import { createGeminiAdapter } from '../infrastructure/provider/geminiAdapter.js'
+import { createGrokAdapter } from '../infrastructure/provider/grokAdapter.js'
 import { ensureCatalogLoaded } from '../core/models/modelCatalog.js'
 import { runInitialSeeding, shouldRunInitialSeeding } from './initialSeeding.js'
 import { loadCommandHistory, getFilterActive } from '../features/interaction/userPrefs.js'
@@ -41,6 +42,7 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
   registerProvider('openai', createOpenAIAdapter())
   registerProvider('anthropic', createAnthropicAdapter())
   registerProvider('gemini', createGeminiAdapter())
+  registerProvider('grok', createGrokAdapter())
   await persistence.init()
   ensureCatalogLoaded()
   applySpacingStyles(getSettings())

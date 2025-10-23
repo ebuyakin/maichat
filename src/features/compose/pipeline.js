@@ -173,6 +173,8 @@ export async function executeSend({
   const rp = (topic && topic.requestParams) || {}
   if (typeof rp.temperature === 'number') options.temperature = rp.temperature
   if (typeof rp.maxOutputTokens === 'number') options.maxOutputTokens = rp.maxOutputTokens
+  // Add webSearch from model metadata if available
+  if (typeof providerMeta.webSearch === 'boolean') options.webSearch = providerMeta.webSearch
   // Stage 3: provider retry loop (context overflow at provider tokenizer)
   let attemptsUsed = 0
   let T_provider = 0

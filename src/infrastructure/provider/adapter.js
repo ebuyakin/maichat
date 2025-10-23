@@ -16,13 +16,16 @@
  * @property {string} [system]
  * @property {AbortSignal} [signal]
  * @property {string} apiKey
- * @property {{ temperature?: number, maxOutputTokens?: number }} [options]
+ * @property {{ temperature?: number, maxOutputTokens?: number, webSearch?: boolean }} [options]
  */
 
 /**
  * @typedef {Object} ChatResponse
  * @property {string} content
  * @property {{ promptTokens?: number, completionTokens?: number, totalTokens?: number }} [usage]
+ * @property {string[]} [citations] - URLs from search tools (xAI Grok)
+ * @property {any[]} [toolCalls] - Tool call details (xAI Grok)
+ * @property {Object} [serverSideToolUsage] - Tool usage counts (xAI Grok)
  */
 
 const registry = new Map()
