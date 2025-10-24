@@ -6,6 +6,7 @@
 - command history (filter command history)
 - using localStorage for debugging. - effective, but bad idea
 - hyperlinks in the assistant messages open with ...
+- link topic to model (set combo: topic+model+search settings)
 
 fixes/changes:
 1. vercel analytics and privacy statement update. Decide y/N? [ ]
@@ -22,3 +23,6 @@ new version specs/fixes/ideas:
 3. Internet search
 4. Attachments
 5. file recognition.
+
+
+ok, plain_text_policy.md is a way outdated... it was created for the 0.1 version when we ignored all markdown and embedded content in order to split the message into measurable parts based on token counting. Since then we walked a long road. The app is very different now. We now parse and render code snippets, math equations and all standard markdown. Can you investigate the relevant #codebase and #file:docs (#history_navigation_redesign, #inline_content_rendering, #messages_with_code_snippets)
