@@ -1,6 +1,7 @@
 // historyRuntime moved from ui/history/historyRuntime.js
 import { buildMessagesForDisplay, flattenMessagesToParts } from './messageList.js'
 import { getSettings } from '../../core/settings/index.js'
+import * as linkHints from './linkHints.js'
 
 // partitioner removed in message-based rendering
 import { parse } from '../command/parser.js'
@@ -74,6 +75,7 @@ export function createHistoryRuntime(ctx) {
 
   window.addEventListener('resize', layoutHistoryPane) // check this too
   window.addEventListener('resize', () => {
+    try { linkHints.exit && linkHints.exit() } catch {}
     const h = window.innerHeight
     if (!h || !lastViewportH) {
       lastViewportH = h
@@ -214,6 +216,7 @@ export function createHistoryRuntime(ctx) {
    */
 
   function renderHistory(pairs) {
+    try { linkHints.exit && linkHints.exit() } catch {}
     // section 1
     pairs = [...pairs].sort((a, b) => a.createdAt - b.createdAt) // pairs - coming from storage, indexDb
     const settings = getSettings()

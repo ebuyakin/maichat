@@ -11,4 +11,5 @@
 @import './components/instrumentation.css';
 @import '../features/codeDisplay/codeOverlay.css';
 @import '../features/codeDisplay/equationOverlay.css';
+@import './components/linkHints.css';
 @import '../features/formatting/formatting.css';

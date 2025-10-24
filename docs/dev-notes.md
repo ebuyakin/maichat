@@ -3,10 +3,12 @@
 # reminders:
 - model badge in the input zone - expand to fit the longer model names
 - new keys Ctrl-Shift-s - in view mode - add to Tutorial/F1
+- new keys lN - for the link opening (in new tab) - add to Tutorial/F1
 - command history (filter command history)
 - using localStorage for debugging. - effective, but bad idea
 - hyperlinks in the assistant messages open with ...
 - link topic to model (set combo: topic+model+search settings)
+- timing of the response - is it saved? expose average time in daily stats?
 
 fixes/changes:
 1. vercel analytics and privacy statement update. Decide y/N? [ ]

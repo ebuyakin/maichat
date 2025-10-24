@@ -1,0 +1,22 @@
+.message.assistant.has-link-hints, .part.assistant.has-link-hints {
+  position: relative;
+}
+.link-hints-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 3; /* above content but below overlays */
+  pointer-events: none;
+}
+.link-hint-badge {
+  position: absolute;
+  min-width: 16px; height: 16px;
+  line-height: 16px;
+  border-radius: 8px;
+  background: var(--accent, #5fa8ff);
+  color: #fff;
+  font-size: 11px;
+  font-family: var(--font-ui, system-ui, sans-serif);
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  user-select: none;
+}

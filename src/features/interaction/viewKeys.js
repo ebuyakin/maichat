@@ -1,6 +1,7 @@
 // viewKeys.js
 // Factory that creates the VIEW mode key handler. Behavior is identical to the previous inline handler.
 import { getSettings } from '../../core/settings/index.js'
+import * as linkHints from '../history/linkHints.js'
 
 export function createViewKeyHandler({
   modeManager,
@@ -21,6 +22,22 @@ export function createViewKeyHandler({
   openSources,
 }) {
   return function viewHandler(e) {
+    // If link hints are active, handle digits/Esc here and exit on any other key
+    try {
+      if (linkHints && linkHints.isActive && linkHints.isActive()) {
+        if (e.key === 'Escape' || /^[1-9]$/.test(e.key)) {
+          e.preventDefault()
+          if (linkHints.handleKey) {
+            const handled = linkHints.handleKey(e)
+            if (handled) return true
+          }
+          return true
+        } else {
+          // Exit on any other key and continue normal handling
+          linkHints.exit && linkHints.exit()
+        }
+      }
+    } catch {}
     // Ctrl+Shift+S: Open Sources overlay for the active assistant message
     if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'S') {
       const act = activeParts.active()
@@ -33,6 +50,23 @@ export function createViewKeyHandler({
     }
     if (window.modalIsActive && window.modalIsActive()) return false
     window.__lastKey = e.key
+    // Enter link hints (l): show numbered badges for links in active assistant message
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'l') {
+      const lh = linkHints && (linkHints.enterForMessage || linkHints.enterForMessage)
+      if (!lh) return false
+      const act = activeParts.active()
+      if (!(act && act.role === 'assistant')) return false
+      // Find active assistant element (message or part view)
+      let el = document.querySelector(
+        `.message.assistant[data-part-id="${act.id}"]`
+      )
+      if (!el) {
+        el = document.querySelector(`.part.assistant[data-part-id="${act.id}"]`)
+      }
+      if (!el) return false
+      const shown = linkHints.enterForMessage && linkHints.enterForMessage(el)
+      return !!shown
+    }
     if (e.key === 'Enter') {
       modeManager.set('input')
       return true
