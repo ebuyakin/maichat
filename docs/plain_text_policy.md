@@ -1,3 +1,5 @@
+# OUTDATED! NOT RELEVANT. IGNORE
+
 # Plain Text Output Policy & Markdown Suppression Spec
 
 Status / Scope / Out of scope / See also

@@ -3,7 +3,7 @@ I'll create a formal specification document for the code snippet extraction and 
 # Code & Equation Extraction and Overlay Display Specification
 
 ## Status
-Draft - Under Discussion
+Implemented (with further extension an polishing of the interface and logic - keep in mind further enhancements)
 
 ## Scope
 This specification covers the extraction, display, and interaction with code snippets and (Phase 2 extension) LaTeX equations in MaiChat message history.

@@ -1,7 +1,7 @@
 # Inline Content Rendering Specification
 
 ## Status
-Draft - December 2024 (Post Message-Based Navigation Migration)
+Implemented (Post Message-Based Navigation Migration) - expanded, updated, and polished as described in other docs
 
 ## Context & Motivation
 

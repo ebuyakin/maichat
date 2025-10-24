@@ -1,6 +1,7 @@
 # History Navigation Redesign (Message-based)
 
-Status: Draft (for review)
+Status: Implemented (and extended, modified in other documents)
+
 Scope: History navigation and rendering only; no change to filtering, context assembly, or provider pipelines.
 NB! Redesign SHALL NOT affect: zone allocation (top, middle, bottom), modes and modal character of the app (command - top, view - middle, input - bottom zones), key mappings, Topic editor/selector, Model catalogue, Meta attributes of the messages, settings, storage, pipeline, LLM interaction, Command/filtering language, visual style of the app. The ONLY affected area is message history and only with respect to the presentation, formatting, positioning and navigation!!!
 See also: `ui_layout.md`, `ui_view_reading_behaviour.md`, `scroll_positioning_spec.md`, `new_message_workflow.md`
