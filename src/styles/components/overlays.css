@@ -22,6 +22,14 @@
 .sources-panel a.source-link { color: var(--text); text-decoration: none; }
 .sources-panel a.source-link:hover { text-decoration: underline; }
 .sources-panel a.source-link .dim { color: var(--text-dim); }
+/* Keyboard focus highlight: apply to the <li> so padding is included */
+.sources-panel li:focus-within {
+  background: #1e3a5a;
+  color: #fff;
+  border-radius: 3px;
+}
+.sources-panel li:focus-within a.source-link { color: #fff; text-decoration: none; }
+.sources-panel li:focus-within a.source-link .dim { color: rgba(255,255,255,0.85); }
 
 /* Topic Picker */
 .topic-picker-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:flex-start; justify-content:center; padding-top:14vh; z-index:1300; }

@@ -93,12 +93,42 @@ export function openSourcesOverlay({ store, pairId, modeManager }) {
     }
   })
 
-  // Keyboard: Enter opens focused link (handled by browser on <a>), C copies, Esc closes
+  // Keyboard inside overlay (local-only):
+  // - j / ArrowDown: focus next link
+  // - k / ArrowUp: focus previous link
+  // - Enter/Space: default browser behavior opens focused <a> in new tab (target=_blank)
+  // - c: copy URLs (existing)
   panel.addEventListener('keydown', (e) => {
+    const links = Array.from(panel.querySelectorAll('a.source-link'))
+    if (!links.length) {
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault()
+        const text = unique.join('\n')
+        try { navigator.clipboard.writeText(text) } catch {}
+      }
+      return
+    }
+    const isDown = e.key === 'j' || e.key === 'ArrowDown'
+    const isUp = e.key === 'k' || e.key === 'ArrowUp'
+    if (isDown || isUp) {
+      e.preventDefault()
+      // Determine current focused index
+      let idx = links.findIndex((a) => a === document.activeElement)
+      if (idx < 0) idx = 0 // default to first
+      idx = (idx + (isDown ? 1 : -1) + links.length) % links.length
+      const target = links[idx]
+      if (target && typeof target.focus === 'function') {
+        target.focus()
+        // Keep the focused link visible without jumping
+        try { target.scrollIntoView({ block: 'nearest', inline: 'nearest' }) } catch {}
+      }
+      return
+    }
     if (e.key === 'c' || e.key === 'C') {
       e.preventDefault()
       const text = unique.join('\n')
       try { navigator.clipboard.writeText(text) } catch {}
+      return
     }
   })
 }
