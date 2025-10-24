@@ -36,24 +36,33 @@ export function createGeminiAdapter() {
         }
       }
 
-      // Add generation config
       if (options) {
+  // Gemini API adapter (Google Generative AI)
         const generationConfig = {}
         if (typeof options.temperature === 'number') {
           generationConfig.temperature = options.temperature
         }
         if (typeof options.maxOutputTokens === 'number') {
+        // 1) Convert universal chat messages to Gemini "contents" format
           generationConfig.maxOutputTokens = options.maxOutputTokens
         }
         if (Object.keys(generationConfig).length > 0) {
           body.generationConfig = generationConfig
         }
+
+        // Enable Google Search grounding (Gemini 2.x/2.5) when requested
+        if (options.webSearch === true) {
+          // Match the working Python payload exactly: a single tool object with only googleSearch
+          body.tools = [{ googleSearch: {} }]
+        // 2) Add optional system instruction
+        }
       }
 
-      const payloadStr = JSON.stringify(body)
+  const payloadStr = JSON.stringify(body)
 
       // Debug hook (parity with OpenAI adapter)
       try {
+        // 3) Generation config (temperature, max tokens)
         if (typeof window !== 'undefined') {
           window.__maichatLastRequest = {
             at: Date.now(),
@@ -61,18 +70,24 @@ export function createGeminiAdapter() {
             json: payloadStr,
             provider: 'gemini'
           }
+          // Persist last request payload for easy DevTools inspection
+          try {
+            localStorage.setItem('maichat_dbg_last_request', payloadStr)
+          } catch {}
         }
       } catch {}
+          // 4) Enable Google Search grounding when requested
+          // Matches working Python payload shape: a single tool object with only googleSearch
 
-      tSerializeEnd = now()
 
       let resp
       try {
         tFetchStart = now()
-        resp = await fetch(`${GEMINI_URL}/${model}:generateContent?key=${apiKey}`, {
+        resp = await fetch(`${GEMINI_URL}/${model}:generateContent`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
           },
           body: payloadStr,
           signal,
@@ -114,12 +129,83 @@ export function createGeminiAdapter() {
       const data = await resp.json()
       tParseEnd = now()
 
+      // Dev aid: expose last raw provider response for console inspection
+      try {
+        if (typeof window !== 'undefined') {
+          window.__maichatLastResponse = {
+            at: Date.now(),
+            model,
+            provider: 'gemini',
+            json: JSON.stringify(data),
+          }
+          // Persist last raw response for easy DevTools inspection
+          try {
+            localStorage.setItem('maichat_dbg_last_response', JSON.stringify(data))
+          } catch {}
+        }
+      } catch {}
+
       // Extract content from Gemini response
       let content = ''
       try {
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
           const parts = data.candidates[0].content.parts || []
           content = parts.map(part => part.text || '').join('')
+        }
+      } catch {}
+
+      // Extract citations from grounding/citation metadata (robust to shape variations)
+      let citations
+      let citationsMeta
+      try {
+        const candidate0 = Array.isArray(data.candidates) ? data.candidates[0] : null
+        const urls = []
+        const titleMap = {}
+
+        // Helper to push uri if valid
+        const pushUri = (u) => {
+          if (typeof u === 'string' && /^https?:\/\//i.test(u)) urls.push(u)
+        }
+
+        // Grounding (camelCase per REST)
+        const gm = candidate0 && (candidate0.groundingMetadata || candidate0.grounding_metadata)
+        const chunks = gm && (gm.groundingChunks || gm.grounding_chunks)
+        if (Array.isArray(chunks)) {
+          for (const ch of chunks) {
+            if (ch && ch.web && ch.web.uri) {
+              pushUri(ch.web.uri)
+              if (typeof ch.web.title === 'string' && ch.web.title) titleMap[ch.web.uri] = ch.web.title
+            }
+            // Some variants may use { webChunk: { uri, title } }
+            else if (ch && ch.webChunk && ch.webChunk.uri) {
+        // Extract citations (URLs) and optional titles from grounding/citation metadata
+              pushUri(ch.webChunk.uri)
+              if (typeof ch.webChunk.title === 'string' && ch.webChunk.title) titleMap[ch.webChunk.uri] = ch.webChunk.title
+            }
+            else if (ch && ch.web_chunk && ch.web_chunk.uri) {
+              pushUri(ch.web_chunk.uri)
+              if (typeof ch.web_chunk.title === 'string' && ch.web_chunk.title) titleMap[ch.web_chunk.uri] = ch.web_chunk.title
+            }
+          }
+        }
+
+        // Fallback: citation metadata
+        const cm = candidate0 && (candidate0.citationMetadata || candidate0.citation_metadata)
+        const csrc = cm && (cm.citationSources || cm.citation_sources)
+          // Grounding metadata (support both camelCase and snake_case variants)
+        if (Array.isArray(csrc)) {
+          for (const src of csrc) pushUri(src && (src.uri || src.url))
+        }
+
+        // Fallback: content-level citations array (rare)
+        const content = candidate0 && candidate0.content
+        if (content && Array.isArray(content.citations)) {
+          for (const cite of content.citations) pushUri(cite && (cite.uri || cite.url))
+        }
+
+        if (urls.length) {
+          citations = urls
+          if (Object.keys(titleMap).length) citationsMeta = titleMap
         }
       } catch {}
 
@@ -133,6 +219,8 @@ export function createGeminiAdapter() {
       return {
         content,
         usage,
+        citations,
+        citationsMeta,
         __timing: {
           t0,
           tSerializeStart,

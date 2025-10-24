@@ -16,6 +16,7 @@
  * @property {string|undefined} processedContent - content with code block placeholders (optional, only if code detected)
  * @property {Array<CodeBlock>|undefined} codeBlocks - extracted code blocks (optional, only if code detected)
  * @property {string[]|undefined} citations - list of source URLs used to generate the assistant response (optional)
+ * @property {{[url:string]: string}|undefined} citationsMeta - optional map of URL -> display title/label (e.g., domain) provided by the model
  * @property {Object|undefined} providerMeta - provider-specific metadata (optional; reserved for future use)
  */
 

@@ -269,9 +269,13 @@ export function createInputKeyHandler({
               lifecycleState: 'complete',
               errorMessage: undefined,
             }
-            // Persist citations if provided by provider (e.g., Grok with search enabled)
+            // Persist citations if provided by provider (e.g., Grok/Gemini with search enabled)
             if (Array.isArray(execResult.citations) && execResult.citations.length) {
               updateData.citations = execResult.citations
+            }
+            // Persist citation titles map when available (url -> title)
+            if (execResult.citationsMeta && typeof execResult.citationsMeta === 'object') {
+              updateData.citationsMeta = execResult.citationsMeta
             }
             if (codeExtraction.hasCode) {
               updateData.codeBlocks = codeExtraction.codeBlocks

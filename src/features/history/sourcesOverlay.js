@@ -1,9 +1,9 @@
 import { openModal } from '../../shared/openModal.js'
 
-function parseUrl(u) {
+function parseUrl(u, preferredDomainLabel) {
   try {
     const url = new URL(u)
-    const domain = url.hostname.replace(/^www\./, '')
+    const domain = (preferredDomainLabel && String(preferredDomainLabel)) || url.hostname.replace(/^www\./, '')
     // Build a short path hint from last non-empty segment
     const parts = url.pathname.split('/').filter(Boolean)
     const last = parts.length ? parts[parts.length - 1] : ''
@@ -30,9 +30,10 @@ function middleTruncate(s, max = 30) {
 export function openSourcesOverlay({ store, pairId, modeManager }) {
   const pair = store && pairId ? store.pairs.get(pairId) : null
   const list = Array.isArray(pair && pair.citations) ? pair.citations.filter(Boolean) : []
+  const metaMap = (pair && pair.citationsMeta && typeof pair.citationsMeta === 'object') ? pair.citationsMeta : null
   // Deduplicate exact URLs and map to display
   const unique = Array.from(new Set(list))
-  const items = unique.map(parseUrl)
+  const items = unique.map((u) => parseUrl(u, metaMap && metaMap[u]))
   // Sort by domain then hint
   items.sort((a, b) => (a.domain < b.domain ? -1 : a.domain > b.domain ? 1 : a.hint.localeCompare(b.hint)))
 
