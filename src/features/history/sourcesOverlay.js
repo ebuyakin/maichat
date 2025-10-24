@@ -48,10 +48,11 @@ export function openSourcesOverlay({ store, pairId, modeManager }) {
         ${items.length ? `<ul>${items
           .map(
             (it) => {
+              const domainLabel = middleTruncate(it.domain || '', 40)
               const hintLabel = middleTruncate(it.hint || '', 30)
               return `<li>
               <a href="${it.href}" target="_blank" rel="noreferrer" class="source-link" title="${it.href}">
-                <span class="src-domain">${it.domain}</span>
+                <span class="src-domain">${domainLabel}</span>
                 ${hintLabel ? `<span class="dim"> / ${hintLabel}</span>` : ''}
               </a>
             </li>`

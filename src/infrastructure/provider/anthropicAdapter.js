@@ -36,6 +36,15 @@ export function createAnthropicAdapter() {
       const body = { model, messages: msgPayload }
       if (system) body.system = system
       if (options && typeof options.temperature === 'number') body.temperature = options.temperature
+      // Enable server-side web search tool (Claude native) when requested
+      if (options && options.webSearch === true) {
+        body.tools = [
+          {
+            type: 'web_search_20250305',
+            name: 'web_search',
+          },
+        ]
+      }
       // Output cap (required) per spec: max_tokens = min(R, otpm?, UTMO?) ignoring undefined.
       try {
         const R =
@@ -94,11 +103,60 @@ export function createAnthropicAdapter() {
         throw new ProviderError(msg, kind, resp.status)
       }
       const data = await resp.json()
-      // Anthropic content can be an array of blocks; join text blocks
+      // Anthropic content is an array of blocks; join text blocks for display
       let text = ''
       try {
         const blocks = data.content || []
         text = blocks.map((b) => (b && b.type === 'text' ? b.text : '')).join('')
+      } catch {}
+      // Extract citations from Claude web search outputs
+      // Sources can appear in:
+      // - text blocks: b.type==='text' with b.citations: [{ type:'web_search_result_location', url, title, ... }]
+      // - web_search_tool_result blocks: with content entries of type 'web_search_result' (fallback)
+      let citations
+      let citationsMeta
+      try {
+        const blocks = Array.isArray(data.content) ? data.content : []
+        const urls = []
+        const titleMap = {}
+        const pushUrl = (u, t) => {
+          if (typeof u === 'string' && /^https?:\/\//i.test(u)) {
+            urls.push(u)
+            if (typeof t === 'string' && t) titleMap[u] = t
+          }
+        }
+        for (const b of blocks) {
+          if (!b || typeof b !== 'object') continue
+          if (b.type === 'text' && Array.isArray(b.citations)) {
+            for (const c of b.citations) {
+              if (c && typeof c.url === 'string') pushUrl(c.url, c.title)
+            }
+          } else if (b.type === 'web_search_tool_result') {
+            const cnt = b.content
+            if (Array.isArray(cnt)) {
+              for (const it of cnt) {
+                if (it && it.type === 'web_search_result' && typeof it.url === 'string') {
+                  pushUrl(it.url, it.title)
+                }
+              }
+            } else if (cnt && cnt.type === 'web_search_result' && typeof cnt.url === 'string') {
+              pushUrl(cnt.url, cnt.title)
+            }
+          }
+        }
+        if (urls.length) {
+          // Deduplicate preserving order
+          const seen = new Set()
+          const dedup = []
+          for (const u of urls) {
+            if (!seen.has(u)) {
+              seen.add(u)
+              dedup.push(u)
+            }
+          }
+          citations = dedup
+          if (Object.keys(titleMap).length) citationsMeta = titleMap
+        }
       } catch {}
       const usage = data.usage
         ? {
@@ -108,7 +166,7 @@ export function createAnthropicAdapter() {
               typeof data.usage.total_tokens === 'number' ? data.usage.total_tokens : undefined,
           }
         : undefined
-      return { content: text, usage }
+      return { content: text, usage, citations, citationsMeta }
     },
   }
 }
