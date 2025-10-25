@@ -69,7 +69,7 @@ export function initRuntime() {
   const boundaryMgr = createBoundaryManager()
 
   // Pending message metadata (topic + model) initially set after catalog load; fallback model default.
-  const pendingMessageMeta = { topicId: null, model: getActiveModel() || 'gpt-4o-mini' }
+  const pendingMessageMeta = { topicId: null, model: getActiveModel() || 'gpt-5-mini', attachments: [] }
 
   // Lifecycle handles send state & new reply focus heuristics.
   const lifecycle = createNewMessageLifecycle({

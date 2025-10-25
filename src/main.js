@@ -30,6 +30,7 @@ import { decideRenderAction } from './runtime/renderPolicy.js'
 import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
+import { init as initImageStore } from './features/images/imageStore.js'
 
 window.addEventListener('error', (e) => {
   try {
@@ -41,6 +42,13 @@ window.addEventListener('unhandledrejection', (e) => {
     console.error('[MaiChat] unhandled rejection', e.reason)
   } catch {}
 })
+
+// Initialize storage subsystems that must be ready before interaction wiring
+try {
+  await initImageStore()
+} catch (e) {
+  console.error('[MaiChat] imageStore init failed', e)
+}
 
 // Mode management
 const modeManager = createModeManager()
@@ -93,7 +101,20 @@ appEl.innerHTML = `
           <span id="pendingModel" title="Model"></span>
           <span id="pendingTopic" title="Topic"></span>
         </div>
-        <button id="sendBtn" disabled>Send</button>
+        <div class="input-meta-right">
+          <span id="attachIndicator" class="attach-indicator" hidden title="Attached images">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3.5" y="5.5" width="17" height="13" rx="2" ry="2"></rect>
+                <path d="M7 15l4-4 3.5 3.5 2-2 3 3" />
+                <circle cx="9.5" cy="9" r="1.2" />
+              </svg>
+            </span>
+            <span id="attachCount"></span>
+          </span>
+          <button id="sendBtn" disabled>Send</button>
+          <input id="attachFileInput" type="file" accept="image/*" multiple hidden />
+        </div>
       </div>
     </div>
   </div>

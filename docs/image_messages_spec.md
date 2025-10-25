@@ -49,6 +49,7 @@ Keyboard
   - Ctrl+F: open native file picker (attach). Not a modal overlay; uses hidden input[type=file].
   - Cmd+V: paste image(s) to attach.
   - Ctrl+Shift+O: open image overlay for the drafted message (first attachment), or Ctrl+Shift+O + [1–9] for Nth.
+  - In overlay (Input mode only): j/k (prev/next), Esc close, Delete/Backspace or x removes the currently viewed image from the draft (with confirm prompt if >1 image attached).
     - Rationale: cannot use plain “i” while typing; Ctrl+Shift+O is cross-mode and does not collide with browser devtools on macOS. We also support Ctrl+Shift+O in View mode as an alternative for consistency.
 
 Provider mapping (send time)
@@ -108,64 +109,90 @@ Rollout
 Notes
 - We keep the philosophy: single-write rendering; overlays are true modals; keyboard-first; privacy-first.
 
+## Current status (2025-10-25)
+
+Implemented
+- Data model: MessagePair.attachments: string[] (default []); legacy backfill.
+- Image store: IndexedDB (maichat-image-store-v1) with blob records, totals, refCount.
+- Ingest: file picker (Ctrl+F) and paste (Cmd+V) in Input mode.
+- Caps: per-message count (≤4) and total bytes (≤30MB) enforced; overflow immediately detached.
+- Input indicator: small icon + count near Send; click clears all; Shift+click removes last.
+
+Not yet implemented
+- History message badge (icon + N) and click-to-open.
+- Image overlay viewer (view/draft) with j/k and Esc.
+- Provider payload mapping (text then images), non-vision prompt, send pipeline wiring.
+- Explicit UI errors/notices for caps/HEIC (currently console warnings only).
+- Tests and keyboard reference updates.
+
+Open question (tracked)
+- Finalize deletion semantics and visibility: indicator click currently removes from draft and calls detach on images; object-store removal happens when refCount reaches 0 (see RefCount semantics below).
+
 ## Implementation Plan (trackable)
 
-1) Data model & quotas
+1) Data model & quotas (done)
 - MessagePair: attachments?: string[] (imageIds in attach order).
 - Image store schema: { id, blob, format, w, h, bytes, createdAt, refCount }.
 - Quotas: ≤4 images/message; ≤20–30MB/message; ~300–500MB global (warn 80%, block 100%).
 - Migration: existing messages default to attachments = [].
 
-2) Storage module
+2) Storage module (done)
 - features/images/imageStore.js: init, stats, get/getMany, attachFromFiles, attachFromClipboard, detach/purge, encodeToBase64.
 - Downscale/convert on ingest; EXIF orientation normalization; enforce caps; compute metadata; manage refCount.
 - ID: UUID v4 strings; collisions practically impossible.
 
-3) Provider capability & payload mapping contracts
+3) Input mode — attach & manage (done)
+- Ctrl+F picker and Cmd+V paste attach paths wired to imageStore.
+- Per-message caps enforced (count and total bytes) with immediate detach of overflow.
+- Minimal indicator in input row (🖼︎ N). Click: clear all. Shift+click: remove last.
+- Paste reliability across browsers (detect items and files).
+
+4) Input mode — view attached images (next)
+- Overlay viewer for the draft: Ctrl+Shift+O (or Ctrl+Shift+O + digit).
+- In overlay: j/k prev/next, Esc close, Delete/Backspace or x removes the current image from the draft.
+- Lazy blob load; object URL lifecycle (create on show, revoke on close); focus trap & aria labels.
+
+5) Provider capability & payload mapping contracts
 - Capability map: which models accept images, limits per request, accepted mime types.
 - Mapping policy: send [text, ...images] in attach order; convert formats if needed (e.g., HEIC→JPEG).
 - Failure modes: if provider rejects an image, remove from payload and warn; continue sending text.
 
-4) Input attach wiring
-- inputKeys.js: Ctrl+F (hidden file input), Cmd+V (paste) → imageStore.attach*; update pending meta attachments[].
-- Enforce caps before persisting; show clear errors.
-- Input indicator: monochrome image icon + count on second row left of Send.
-
-5) History rendering (badge only)
-- historyView.js: append an end-of-line badge (icon + N) for user messages with attachments; clicking opens overlay. No <img> tags.
-
-6) Image overlay (viewer)
-- features/history/imageOverlay.js using openModal: j/k navigate, Esc close, optional digit jump.
-- Lazy load blobs via imageStore.get(id); create object URLs; reuse during session; revoke on close.
-- Accessibility: focus trap, aria-labels, keyboard-only operable.
-
-7) Send pipeline integration
+6) Send pipeline integration
 - Compose payload by appending image parts after text; base64 on demand via imageStore.encodeToBase64(id).
 - If model isn’t vision-capable and attachments exist, prompt to switch or continue without images.
 - Abort/cancel: if send is aborted, release any transient buffers promptly.
 
-8) Errors & caps UX
+7) History rendering (badge only)
+- historyView.js: append an end-of-line badge (icon + N) for user messages with attachments; clicking opens overlay. No <img> tags.
+
+8) View mode overlay (after badge)
+- features/history/imageOverlay.js using openModal: j/k navigate, Esc close, optional digit jump.
+- Lazy load blobs via imageStore.get(id); create object URLs; reuse during session; revoke on close.
+- Accessibility: focus trap, aria-labels, keyboard-only operable.
+
+9) Errors & caps UX
 - Clear messages for per-message/global caps; HEIC guidance; near-quota warnings; unsupported mime fallback.
 
-9) Keys & reference docs
+10) Keys & reference docs
 - Keys: View → i / iN; Input → Ctrl+F (picker), Cmd+V (paste), Ctrl+Shift+O (+digit) open drafted attachments overlay / Nth.
 - Update keyboard_reference.md accordingly.
 
-10) Tests (minimal set)
+11) Tests (minimal set)
 - imageStore ingest, downscale, caps, metadata, refCount lifecycle.
 - Paste & Ctrl+F attach flows; pending meta updates; indicator count.
 - Provider payload order and base64 shape; non-vision prompt.
 - Overlay: open/close, j/k navigation, Nth open; object URL lifecycle and revocation.
 
 Status checkpoints
-- [ ] Data model + quotas finalized
-- [ ] Storage module scaffold
-- [ ] Input attach (Ctrl+F, paste) → attachments[]
-- [ ] Indicator in input area
-- [ ] History badge (icon + N)
-- [ ] Image overlay (view/input)
+- [x] Data model + quotas finalized
+- [x] Storage module scaffold
+- [x] Input attach (Ctrl+F, paste) → attachments[]
+- [x] Indicator in input area (clear/remove last)
+- [ ] Draft overlay viewer (Ctrl+Shift+O, digits; delete current)
 - [ ] Provider mapping and send
-- [ ] Caps & error flows
+- [ ] History badge (icon + N)
+- [ ] View overlay (i/iN)
+- [ ] Caps & error flows (UI notices; non-vision prompt)
 - [ ] Docs & tests
 
 Additional considerations (quick checklist)
@@ -174,3 +201,16 @@ Additional considerations (quick checklist)
 - Privacy: no external fetches; blobs never leave client except via provider API on send.
 - Cross-platform keys: Ctrl+F is safe on macOS (Cmd+F is browser find). On Windows/Linux provide a visible Attach button as fallback if needed.
 - Drag-and-drop: future DnD calls imageStore.attachFromDataTransfer(); pipeline remains unchanged.
+
+### RefCount semantics (draft and messages)
+- On attach to draft: imageStore saves record with refCount=1.
+- Clearing/removing from draft: we call detach(id). If refCount becomes 0 → the record is deleted from the image store and totals updated.
+- On send: the same reference persists for the saved MessagePair (no extra increment needed if the image was attached only to this draft). If in the future we allow attaching the same image to multiple drafts/messages, we incrementRef() for each additional reference and detach on removal/delete.
+- On message delete (future): decrement refs for all attachments; delete records where refCount reaches 0.
+
+### Iconography spec (indicator and message badge)
+- Style: 2D contour/outline, monochrome, no shadows/gradients; consistent with link icon in assistant meta line.
+- Size: ~12–14px height in input/meta rows; align optically with baseline and text metrics.
+- Color: use a muted foreground var (e.g., var(--text-dim) or equivalent), with hover state slightly brighter; no fill.
+- Form: simple photo frame glyph or landscape outline; single-weight stroke (~1px). Avoid visual noise.
+- Accessibility: aria-label on the indicator/badge; count shown as adjacent text (e.g., “🖼︎ 3” or icon + 3).

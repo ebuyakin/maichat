@@ -6,6 +6,9 @@ import { executeSend } from '../compose/pipeline.js'
 import { sanitizeAssistantText } from './sanitizeAssistant.js'
 import { extractCodeBlocks } from '../codeDisplay/codeExtractor.js'
 import { extractEquations } from '../codeDisplay/equationExtractor.js'
+import { attachFromFiles, attachFromDataTransfer, getMany as getImagesByIds, detach as detachImage } from '../images/imageStore.js'
+import { openDraftImageOverlay } from '../images/draftImageOverlay.js'
+import { IMAGE_QUOTAS } from '../images/quotas.js'
 
 // Topic history management (MRU list)
 const TOPIC_HISTORY_KEY = 'maichat_topic_history'
@@ -84,8 +87,201 @@ export function createInputKeyHandler({
     removeFromTopicHistory(topicId)
   })
 
+  // Helper: update small attachments indicator (icon + count)
+  function updateAttachIndicator() {
+    try {
+      const ind = document.getElementById('attachIndicator')
+      const cnt = document.getElementById('attachCount')
+      const n = Array.isArray(pendingMessageMeta.attachments)
+        ? pendingMessageMeta.attachments.length
+        : 0
+      if (!ind || !cnt) return
+      // Visibility: 0 -> hidden; 1 -> icon only; 2+ -> icon + number
+      if (n === 0) {
+        cnt.textContent = ''
+        ind.setAttribute('aria-label', 'No images attached')
+        ind.style.display = 'none'
+        ind.hidden = false // ensure CSS 'hidden' attr is not conflicting; display controls visibility
+      } else {
+        cnt.textContent = n > 1 ? String(n) : ''
+        ind.setAttribute('aria-label', n === 1 ? '1 image attached' : `${n} images attached`)
+        ind.style.display = 'inline-flex'
+        ind.hidden = false
+      }
+    } catch {}
+  }
+
+  // Note: attach indicator is informational only; removal is handled in the overlay UI.
+
+  // Bind hidden file input change → attach images to pending draft (no caps yet)
+  try {
+    const fileInput = document.getElementById('attachFileInput')
+    if (fileInput && !fileInput.__mcBound) {
+      fileInput.addEventListener('change', async () => {
+        try {
+          const files = fileInput.files
+          if (!files || !files.length) return
+          const res = await attachFromFiles(files)
+          const newIds = (res && Array.isArray(res.ids)) ? [...res.ids] : []
+          if (newIds.length) {
+            if (!Array.isArray(pendingMessageMeta.attachments)) pendingMessageMeta.attachments = []
+            const current = pendingMessageMeta.attachments
+            // Enforce per-message image count cap
+            const remainingSlots = Math.max(0, IMAGE_QUOTAS.MAX_IMAGES_PER_MESSAGE - current.length)
+            let allowedIds = newIds.slice(0, remainingSlots)
+            const overflowIds = newIds.slice(remainingSlots)
+            if (overflowIds.length) {
+              console.warn(`[attach] exceeded image count cap; dropping ${overflowIds.length}`)
+              // Detach overflow immediately to avoid orphaning in store
+              for (const id of overflowIds) {
+                try { await detachImage(id) } catch {}
+              }
+            }
+            // Enforce per-message total bytes cap
+            if (allowedIds.length) {
+              try {
+                const recs = await getImagesByIds([...current, ...allowedIds])
+                const sumBytes = (ids) => ids.reduce((acc, id) => {
+                  const idx = [...current, ...allowedIds].indexOf(id)
+                  const rec = recs[idx]
+                  return acc + (rec && rec.bytes ? rec.bytes : 0)
+                }, 0)
+                // Start with all allowedIds, remove from end until within limit
+                let total = sumBytes([...current, ...allowedIds])
+                const removed = []
+                while (total > IMAGE_QUOTAS.MAX_TOTAL_BYTES_PER_MESSAGE && allowedIds.length) {
+                  const drop = allowedIds.pop()
+                  removed.push(drop)
+                  total = sumBytes([...current, ...allowedIds])
+                }
+                if (removed.length) {
+                  console.warn(`[attach] exceeded total bytes cap; dropping ${removed.length}`)
+                  for (const id of removed) {
+                    try { await detachImage(id) } catch {}
+                  }
+                }
+              } catch (err) {
+                console.error('[attach] size check failed', err)
+                // On error, be safe: do not append new ids to avoid exceeding caps unknowingly
+                for (const id of allowedIds) { try { await detachImage(id) } catch {} }
+                allowedIds = []
+              }
+            }
+            if (allowedIds.length) {
+              current.push(...allowedIds)
+            }
+          }
+          // Reset input so selecting the same file again is detected by browsers
+          fileInput.value = ''
+          updateAttachIndicator()
+        } catch (err) {
+          console.error('[attach] failed to attach files', err)
+        }
+      })
+      fileInput.__mcBound = true
+    }
+  } catch {}
+
+  // Paste handling (images only) in input field – Input mode only logic
+  try {
+    if (inputField && !inputField.__mcPasteBound) {
+      inputField.addEventListener('paste', async (e) => {
+        try {
+          const dt = e.clipboardData
+          const items = dt && dt.items ? Array.from(dt.items) : []
+          const files = dt && dt.files ? Array.from(dt.files) : []
+          const hasImageFromItems = items.some((it) => it.kind === 'file' && it.type && it.type.startsWith('image/'))
+          const hasImageFromFiles = files.some((f) => f && typeof f.type === 'string' && f.type.startsWith('image/'))
+          const hasImage = hasImageFromItems || hasImageFromFiles
+          if (!hasImage) return // let normal text paste proceed
+
+          e.preventDefault()
+          const res = await attachFromDataTransfer(dt)
+          const newIds = (res && Array.isArray(res.ids)) ? [...res.ids] : []
+          if (!newIds.length) return
+
+          if (!Array.isArray(pendingMessageMeta.attachments)) pendingMessageMeta.attachments = []
+          const current = pendingMessageMeta.attachments
+
+          // Enforce per-message image count cap
+          const remainingSlots = Math.max(0, IMAGE_QUOTAS.MAX_IMAGES_PER_MESSAGE - current.length)
+          let allowedIds = newIds.slice(0, remainingSlots)
+          const overflowIds = newIds.slice(remainingSlots)
+          if (overflowIds.length) {
+            console.warn(`[paste] exceeded image count cap; dropping ${overflowIds.length}`)
+            for (const id of overflowIds) { try { await detachImage(id) } catch {} }
+          }
+
+          // Enforce per-message total bytes cap
+          if (allowedIds.length) {
+            try {
+              const idsForCheck = [...current, ...allowedIds]
+              const recs = await getImagesByIds(idsForCheck)
+              const recById = new Map(idsForCheck.map((id, i) => [id, recs[i]]))
+              const calcTotal = (ids) => ids.reduce((acc, id) => {
+                const r = recById.get(id)
+                return acc + (r && r.bytes ? r.bytes : 0)
+              }, 0)
+              let total = calcTotal(idsForCheck)
+              const removed = []
+              while (total > IMAGE_QUOTAS.MAX_TOTAL_BYTES_PER_MESSAGE && allowedIds.length) {
+                const drop = allowedIds.pop()
+                removed.push(drop)
+                total = calcTotal([...current, ...allowedIds])
+              }
+              if (removed.length) {
+                console.warn(`[paste] exceeded total bytes cap; dropping ${removed.length}`)
+                for (const id of removed) { try { await detachImage(id) } catch {} }
+              }
+            } catch (err) {
+              console.error('[paste] size check failed', err)
+              for (const id of allowedIds) { try { await detachImage(id) } catch {} }
+              allowedIds = []
+            }
+          }
+
+          if (allowedIds.length) {
+            current.push(...allowedIds)
+            updateAttachIndicator()
+          }
+        } catch (err) {
+          console.error('[paste] failed to attach images', err)
+        }
+      })
+      inputField.__mcPasteBound = true
+    }
+  } catch {}
+
+  // Initialize indicator on entry
+  updateAttachIndicator()
+
   return function inputHandler(e) {
     if (window.modalIsActive && window.modalIsActive()) return false
+    // Ctrl+F: open native file picker for images (Input mode only)
+    if (e.ctrlKey && !e.shiftKey && (e.key === 'f' || e.key === 'F')) {
+      e.preventDefault()
+      const fileInput = document.getElementById('attachFileInput')
+      if (fileInput && typeof fileInput.click === 'function') {
+        fileInput.click()
+        return true
+      }
+      return false
+    }
+    // Ctrl+Shift+O: open draft images overlay (index 0)
+    if (e.ctrlKey && e.shiftKey && (e.key === 'o' || e.key === 'O')) {
+      e.preventDefault()
+      const list = Array.isArray(pendingMessageMeta.attachments) ? pendingMessageMeta.attachments : []
+      if (!list.length) return true
+      const overlay = openDraftImageOverlay({
+        modeManager,
+        pendingMessageMeta,
+        startIndex: 0,
+        onChange: () => updateAttachIndicator(),
+      })
+      // Expose a temporary jump helper while the overlay is open
+      try { window.__mcDraftOverlay = overlay } catch {}
+      return true
+    }
     // Topic history picker (Ctrl+P opens chrono picker)
     if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
       e.preventDefault()
