@@ -124,8 +124,9 @@ def hello():
 - Display: `$$\int_0^\infty e^{-x}dx$$` → Rendered with KaTeX display mode
 
 **Links:**
-- `[text](url)` → `<a href="url" target="_blank" rel="noopener">text</a>`
-- Auto-link URLs (optional)
+- Markdown links `[text](url)` are preserved → `<a href="url" target="_blank" rel="noopener noreferrer">text</a>`
+- Plain http/https URLs in normal text are auto‑linkified (string‑only); skipped inside code/pre/kbd/samp
+- All http/https anchors are enforced to open in a new tab with `rel="noopener noreferrer"`
 
 **Task Lists:**
 - `- [ ] todo` → Interactive checkbox (optional, may keep as plain text)
@@ -191,7 +192,7 @@ const clean = DOMPurify.sanitize(marked(markdown), {
   ALLOWED_TAGS: ['h1','h2','h3','h4','h5','h6','p','br','strong','em','code','pre',
                  'ul','ol','li','blockquote','hr','del','table','thead','tbody',
                  'tr','th','td','a'],
-  ALLOWED_ATTR: ['href','class','data-language','target','rel'],
+  ALLOWED_ATTR: ['href','target','rel','class','data-language'],
   ALLOW_DATA_ATTR: true  // for data-language on code blocks
 });
 ```

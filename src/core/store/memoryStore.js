@@ -161,6 +161,8 @@ export class MemoryStore {
   }
   _importPair(pair) {
     if (!this.pairs.has(pair.id)) {
+      // Backfill new fields for legacy pairs
+      if (!Array.isArray(pair.attachments)) pair.attachments = []
       this.pairs.set(pair.id, pair)
       this.emitter.emit('pair:add', pair)
     }

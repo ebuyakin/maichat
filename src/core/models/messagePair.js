@@ -10,6 +10,7 @@
  * @property {'b'|'g'} colorFlag - simple user flag (b=blue flagged, g=grey unflagged)
  * @property {string} userText
  * @property {string} assistantText - original content (always preserved for context)
+ * @property {string[]|undefined} attachments - image ids attached to the user message (attach order)
  * @property {('idle'|'sending'|'error'|'complete')} lifecycleState
  * @property {string|undefined} errorMessage
  * @property {number|undefined} tokenLength
@@ -46,6 +47,7 @@ export function createMessagePair({
     colorFlag: 'b',
     userText,
     assistantText,
+    attachments: [],
     lifecycleState: 'idle',
     errorMessage: undefined,
     tokenLength: undefined,
