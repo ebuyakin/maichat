@@ -1,11 +1,16 @@
 // pipeline.js moved from send/pipeline.js (Phase 6.5 Compose)
 // Adjusted import paths to new relative locations.
 import { getProvider, ProviderError } from '../../infrastructure/provider/adapter.js'
-import { estimateTokens, estimatePairTokens } from '../../core/context/tokenEstimator.js'
+import {
+  estimateTokens,
+  estimatePairTokens,
+  estimateImageTokens,
+} from '../../core/context/tokenEstimator.js'
 import { getSettings } from '../../core/settings/index.js'
 import { predictHistory, finalizeHistory } from '../../core/context/budgetMath.js'
 import { getApiKey } from '../../infrastructure/api/keys.js'
 import { getModelMeta } from '../../core/models/modelCatalog.js'
+import { get as getImage } from '../images/imageStore.js'
 
 // Note: No global system policy. We rely solely on per-topic system messages.
 
@@ -28,6 +33,7 @@ export async function executeSend({
   userText,
   signal,
   visiblePairs,
+  attachments = [], // NEW: array of imageIds for the new user message
   onDebugPayload,
 }) {
   const settings = getSettings()
@@ -40,6 +46,23 @@ export async function executeSend({
     topic && typeof topic.systemMessage === 'string' ? topic.systemMessage.trim() : ''
   const providerMeta = getModelMeta(model) || { provider: 'openai' }
   const providerId = providerMeta.provider || 'openai'
+  
+  // NEW: Estimate image tokens for the new user message
+  let imageTokens = 0
+  if (attachments.length > 0) {
+    for (const id of attachments) {
+      try {
+        const img = await getImage(id)
+        if (img && img.w && img.h) {
+          imageTokens += estimateImageTokens({ w: img.w, h: img.h }, providerId, model)
+        }
+      } catch (e) {
+        console.warn('[pipeline] failed to load image for token estimation', id, e)
+        // Continue without this image's tokens (graceful degradation)
+      }
+    }
+  }
+  
   // Phase 1: prediction (newest->oldest) reserving URA and provider PARA semantics
   const URA = settings.userRequestAllowance
   const ARA = settings.assistantResponseAllowance
@@ -54,7 +77,7 @@ export async function executeSend({
   })
   // Phase 2: iterative overflow attempts using original predicted set (do not recompute prediction)
   const systemTokens = pred.systemTokens
-  const userTokens = estimateTokens(userText || '', charsPerToken)
+  const userTokens = estimateTokens(userText || '', charsPerToken) + imageTokens // Include image tokens
   if (userTokens + systemTokens > pred.C) {
     const err = new Error('user_prompt_too_large')
     err.code = 'user_prompt_too_large'

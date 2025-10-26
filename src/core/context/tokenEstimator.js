@@ -4,6 +4,28 @@ export function estimateTokens(text, charsPerToken = 4) {
   const len = text.length
   return Math.max(1, Math.ceil(len / charsPerToken))
 }
+
+/**
+ * Estimate tokens for an image using tile-based formula.
+ * Uses OpenAI detail:high formula as conservative baseline for all providers.
+ * Future (Phase 2): will delegate to provider-specific counters via registry.
+ * @param {{ w: number, h: number }} dimensions - image width and height in pixels
+ * @param {string} providerId - e.g., 'openai', 'anthropic' (reserved for future use)
+ * @param {string} model - e.g., 'gpt-4o' (reserved for future use)
+ * @returns {number} estimated tokens
+ */
+export function estimateImageTokens({ w, h }, providerId = 'openai', model = '') {
+  // OpenAI detail:high tile formula (85 base + 170 per 512×512 tile)
+  // Most conservative among providers; safe baseline for budget checks
+  const tiles = Math.ceil(w / 512) * Math.ceil(h / 512)
+  return 85 + tiles * 170
+
+  // Phase 2 (future): delegate to provider-specific counter
+  // const counter = getProviderTokenCounter(providerId);
+  // if (counter?.estimateImage) return counter.estimateImage({ w, h }, model);
+  // return fallback above;
+}
+
 export function estimatePairTokens(pair, charsPerToken = 4) {
   const uLen = (pair.userText || '').length
   const aLen = (pair.assistantText || '').length

@@ -4,7 +4,44 @@ Status
 - Draft for implementation. Scope intentionally minimal, performance-first.
 
 Goals (do a few things very well)
-- Support screenshots/images in user messages for vision-capable models.
+- Support screenshots/images in user messages for vision-capable models (and all models in the current model catalog are vision-capable, no text-only model is expected to be included).
+ - PDF attachments: deferred to next version (out of scope for v1), to keep scope tight and avoid heavy viewer/tokenization work.
+
+### Token estimation architecture (images + text)
+
+**Current approach (Phase 1):**
+- All token estimation centralized in `src/core/context/tokenEstimator.js`.
+- Text: simple heuristic (chars/4).
+- Images: conservative baseline using OpenAI detail:high tile formula (85 + tiles×170).
+  - Tiles = ceil(w/512) × ceil(h/512).
+  - Applied uniformly across all providers.
+- Budget calculation in pipeline uses these estimates to prevent context overflow.
+
+**Future architecture (deferred to Phase 2+):**
+- **Pattern B: Provider adapters** (agreed architectural direction).
+- Provider-specific token counters live in `src/features/providers/{providerId}/tokenCounter.js`.
+- `tokenEstimator.js` delegates to provider adapters when available, else falls back to heuristics.
+- Benefits:
+  - Co-location: token logic lives with provider's sendChat adapter.
+  - Extensibility: add new providers by adding a tokenCounter module; no core changes.
+  - Lazy-loading: heavy tokenizers (tiktoken, etc.) only loaded when needed.
+  - Testability: mock provider counters easily; test core logic independently.
+- Migration path:
+  1. Add `providers/registry.js` to map providerId → tokenCounter.
+  2. Implement provider-specific counters (e.g., `openai/tokenCounter.js` with tiktoken for text, exact tile formula for images).
+  3. Update `estimateTokens()` and `estimateImageTokens()` to call `getProviderTokenCounter(providerId)?.estimate*()` if available.
+  4. No changes to call sites (pipeline, budgetMath continue calling generic functions).
+
+**Image token research summary:**
+- OpenAI: 85 + (tiles × 170) where tiles = ceil(w/512) × ceil(h/512); detail:high mode.
+- Anthropic: ~1200–1500 tokens for typical screenshots; ~2500–3000 for 2048×1536.
+- Gemini: ~260 tokens per 768×768 tile; ~400–1200 for typical images.
+- Conservative estimate: OpenAI formula used as baseline (highest token cost among providers).
+
+**Typical costs (Phase 1 baseline):**
+- 512×512: ~255 tokens
+- 1024×768: ~765 tokens
+- 2048×1536 (our downscale cap): ~2125 tokens
 - Keep history rendering fast (no image I/O while scrolling or re-rendering).
 - Keyboard-first workflow, consistent with code/equations.
 
@@ -21,9 +58,20 @@ Contract (concise)
 - Attachments are referenced by imageIds in attach order: attachments: string[]
 - Images live in a separate IndexedDB store (imageStore) and are not loaded during history rendering.
 
+Token count caching (new)
+- Each MessagePair stores precomputed token counts:
+  - `attachmentTokens`: sum of `estimateImageTokens(w,h)` over all attachments.
+  - `textTokens`: sum of text tokens for `userText` + `assistantText` (using current heuristic estimator).
+- Computed once at send time and persisted with the pair (texts are immutable post-send; safe to cache).
+- Boundary estimation and budget previews use `textTokens + attachmentTokens` (no per-image reads during UI preview).
+- Migration: for existing pairs missing these fields, compute lazily once and persist.
+
 Data model
 - MessagePair additions (user side):
   - attachments?: string[]  // imageIds in attach order (append-only semantics per send)
+  - attachmentTokens?: number // precomputed total image tokens for this pair (sum over attachments)
+  - textTokens?: number // precomputed total text tokens for this pair (userText + assistantText)
+  - responseMs?: number // provider-reported request processing time in milliseconds
 - Images store (IndexedDB):
   - { id: string, blob: Blob, format: 'jpeg'|'png'|'webp', w: number, h: number, bytes: number, createdAt: number, refCount: number }
   - refCount increments on attach, decrements on detach/delete; delete when 0.
@@ -95,6 +143,7 @@ Non-goals (for now)
 - Drag-and-drop, annotations, cropping, image editing.
 - Assistant-generated images.
 - Global gallery or cross-message navigation.
+ - PDF attachments support (deferred; see Goals).
 
 Edge cases
 - Very large images: downscale or reject with guidance.
@@ -116,12 +165,12 @@ Implemented
 - Image store: IndexedDB (maichat-image-store-v1) with blob records, totals, refCount.
 - Ingest: file picker (Ctrl+F) and paste (Cmd+V) in Input mode.
 - Caps: per-message count (≤4) and total bytes (≤30MB) enforced; overflow immediately detached.
-- Input indicator: small icon + count near Send; click clears all; Shift+click removes last.
+- Input indicator: small icon + count near Send; informational only (no delete action).
 
 Not yet implemented
-- History message badge (icon + N) and click-to-open.
-- Image overlay viewer (view/draft) with j/k and Esc.
-- Provider payload mapping (text then images), non-vision prompt, send pipeline wiring.
+- Provider payload mapping (text then images), send pipeline wiring.
+- History message badge (icon + N) and click-to-open (View mode).
+- Image overlay viewer for View mode (read-only) with j/k and Esc.
 - Explicit UI errors/notices for caps/HEIC (currently console warnings only).
 - Tests and keyboard reference updates.
 
@@ -130,70 +179,67 @@ Open question (tracked)
 
 ## Implementation Plan (trackable)
 
-1) Data model & quotas (done)
+1) Data model & quotas (done) [x]
 - MessagePair: attachments?: string[] (imageIds in attach order).
 - Image store schema: { id, blob, format, w, h, bytes, createdAt, refCount }.
 - Quotas: ≤4 images/message; ≤20–30MB/message; ~300–500MB global (warn 80%, block 100%).
 - Migration: existing messages default to attachments = [].
 
-2) Storage module (done)
+2) Storage module (done) [x]
 - features/images/imageStore.js: init, stats, get/getMany, attachFromFiles, attachFromClipboard, detach/purge, encodeToBase64.
 - Downscale/convert on ingest; EXIF orientation normalization; enforce caps; compute metadata; manage refCount.
 - ID: UUID v4 strings; collisions practically impossible.
 
-3) Input mode — attach & manage (done)
+3) Input mode — attach & manage (done) [x]
 - Ctrl+F picker and Cmd+V paste attach paths wired to imageStore.
 - Per-message caps enforced (count and total bytes) with immediate detach of overflow.
 - Minimal indicator in input row (🖼︎ N). Click: clear all. Shift+click: remove last.
 - Paste reliability across browsers (detect items and files).
 
-4) Input mode — view attached images (next)
+4) Input mode — view attached images (next) [x]
 - Overlay viewer for the draft: Ctrl+Shift+O (or Ctrl+Shift+O + digit).
 - In overlay: j/k prev/next, Esc close, Delete/Backspace or x removes the current image from the draft.
 - Lazy blob load; object URL lifecycle (create on show, revoke on close); focus trap & aria labels.
 
-5) Provider capability & payload mapping contracts
-- Capability map: which models accept images, limits per request, accepted mime types.
-- Mapping policy: send [text, ...images] in attach order; convert formats if needed (e.g., HEIC→JPEG).
-- Failure modes: if provider rejects an image, remove from payload and warn; continue sending text.
+5) Token estimator for images. 
+- generic image token estimator for now (with potential extenstion to more accurate provider specific token estimator deferred to the next version). Integration of the images into pipeline (provider-agnostic part). [x]
 
-6) Send pipeline integration
+6) Send pipeline integration (per provider)
 - Compose payload by appending image parts after text; base64 on demand via imageStore.encodeToBase64(id).
-- If model isn’t vision-capable and attachments exist, prompt to switch or continue without images.
 - Abort/cancel: if send is aborted, release any transient buffers promptly.
+ - Record `responseMs` from provider response metadata and persist on the MessagePair (used by daily stats).
 
-7) History rendering (badge only)
+7) Cache attachmentTokens and textTokens for pairs (performance)
+- On send, compute and persist on the new MessagePair:
+  - `attachmentTokens = sum(estimateImageTokens(w,h))` over all attachments
+  - `textTokens = estimateText(userText) + estimateText(assistantText)`
+- Budget math (boundary estimation) uses `textTokens + attachmentTokens` (no image I/O during preview).
+- Lazy migration: for existing pairs missing these fields, compute once and persist.
+
+8) History rendering (badge only)
 - historyView.js: append an end-of-line badge (icon + N) for user messages with attachments; clicking opens overlay. No <img> tags.
 
-8) View mode overlay (after badge)
+9) View mode overlay (after badge)
 - features/history/imageOverlay.js using openModal: j/k navigate, Esc close, optional digit jump.
 - Lazy load blobs via imageStore.get(id); create object URLs; reuse during session; revoke on close.
 - Accessibility: focus trap, aria-labels, keyboard-only operable.
 
-9) Errors & caps UX
+10) Boundary estimation with images
+- computeContextBoundary uses cached `textTokens + attachmentTokens` (fast path).
+- If missing for a given pair, lazily compute and persist (one-time cost).
+
+11) Errors & caps UX
 - Clear messages for per-message/global caps; HEIC guidance; near-quota warnings; unsupported mime fallback.
 
-10) Keys & reference docs
+12) Keys & reference docs
 - Keys: View → i / iN; Input → Ctrl+F (picker), Cmd+V (paste), Ctrl+Shift+O (+digit) open drafted attachments overlay / Nth.
 - Update keyboard_reference.md accordingly.
 
-11) Tests (minimal set)
+13) Tests (minimal set)
 - imageStore ingest, downscale, caps, metadata, refCount lifecycle.
 - Paste & Ctrl+F attach flows; pending meta updates; indicator count.
 - Provider payload order and base64 shape; non-vision prompt.
-- Overlay: open/close, j/k navigation, Nth open; object URL lifecycle and revocation.
-
-Status checkpoints
-- [x] Data model + quotas finalized
-- [x] Storage module scaffold
-- [x] Input attach (Ctrl+F, paste) → attachments[]
-- [x] Indicator in input area (clear/remove last)
-- [ ] Draft overlay viewer (Ctrl+Shift+O, digits; delete current)
-- [ ] Provider mapping and send
-- [ ] History badge (icon + N)
-- [ ] View overlay (i/iN)
-- [ ] Caps & error flows (UI notices; non-vision prompt)
-- [ ] Docs & tests
+- Overlay: open/close, j/k navigation, Nth open; object URL lifecycle and revocation
 
 Additional considerations (quick checklist)
 - Memory: base64 encoding is bounded by caps; no streaming needed; avoid keeping large buffers after send.
@@ -201,6 +247,7 @@ Additional considerations (quick checklist)
 - Privacy: no external fetches; blobs never leave client except via provider API on send.
 - Cross-platform keys: Ctrl+F is safe on macOS (Cmd+F is browser find). On Windows/Linux provide a visible Attach button as fallback if needed.
 - Drag-and-drop: future DnD calls imageStore.attachFromDataTransfer(); pipeline remains unchanged.
+ - Daily stats: compute averages using `responseMs` captured on MessagePairs.
 
 ### RefCount semantics (draft and messages)
 - On attach to draft: imageStore saves record with refCount=1.

@@ -432,6 +432,7 @@ export function createInputKeyHandler({
               userText: text,
               signal: controller.signal,
               visiblePairs: chrono,
+              attachments: pendingMessageMeta.attachments || [], // NEW: pass draft attachments
               boundarySnapshot,
               onDebugPayload: (payload) => {
                 historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount)
