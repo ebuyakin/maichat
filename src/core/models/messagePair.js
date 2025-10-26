@@ -14,8 +14,12 @@
  * @property {('idle'|'sending'|'error'|'complete')} lifecycleState
  * @property {string|undefined} errorMessage
  * @property {number|undefined} tokenLength
+ * @property {number|undefined} textTokens - precomputed total text tokens (userText + assistantText)
+ * @property {number|undefined} attachmentTokens - precomputed total image tokens for all attachments
+ * @property {number|undefined} responseMs - provider-reported request processing time in milliseconds
  * @property {string|undefined} processedContent - content with code block placeholders (optional, only if code detected)
  * @property {Array<CodeBlock>|undefined} codeBlocks - extracted code blocks (optional, only if code detected)
+ * @property {Array<EquationBlock>|undefined} equationBlocks - extracted equation blocks (optional, only if equations detected)
  * @property {string[]|undefined} citations - list of source URLs used to generate the assistant response (optional)
  * @property {{[url:string]: string}|undefined} citationsMeta - optional map of URL -> display title/label (e.g., domain) provided by the model
  * @property {Object|undefined} providerMeta - provider-specific metadata (optional; reserved for future use)
@@ -29,6 +33,14 @@
  * @property {number} lineCount - number of lines in code block
  * @property {number} startPos - start position in original content
  * @property {number} endPos - end position in original content
+ */
+
+/**
+ * @typedef {Object} EquationBlock
+ * @property {number} index - 1-based index within the message
+ * @property {string} raw - raw LaTeX expression
+ * @property {string} unicode - Unicode fallback rendering
+ * @property {'display'|'inline'} mode - display or inline equation
  */
 export function createMessagePair({
   id,

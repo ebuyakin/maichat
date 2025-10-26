@@ -35,6 +35,7 @@ import { openModal } from '../../shared/openModal.js'
 import { setupCopyShortcuts } from '../formatting/copyUtilities.js'
 import { createViewKeyHandler } from './viewKeys.js'
 import { openSourcesOverlay } from '../history/sourcesOverlay.js'
+import { openImageOverlay } from '../images/imageOverlay.js'
 import { createCommandKeyHandler } from './commandKeys.js'
 import { createInputKeyHandler } from './inputKeys.js'
 import { createAppMenuController } from './appMenu.js'
@@ -156,6 +157,12 @@ export function createInteraction({
     handleEditIfErrorActive,
     handleDeleteIfErrorActive,
     openSources: (pairId) => openSourcesOverlay({ store, pairId, modeManager }),
+    openImages: (pairId, startIndex = 0) => {
+      const pair = store.pairs.get(pairId)
+      if (pair && Array.isArray(pair.attachments) && pair.attachments.length) {
+        openImageOverlay({ modeManager, mode: 'view', pair, startIndex })
+      }
+    },
   })
 
   // COMMAND handler extracted

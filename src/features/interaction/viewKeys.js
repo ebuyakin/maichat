@@ -20,6 +20,7 @@ export function createViewKeyHandler({
   handleEditIfErrorActive,
   handleDeleteIfErrorActive,
   openSources,
+  openImages,
 }) {
   return function viewHandler(e) {
     // If link hints are active, handle digits/Esc here and exit on any other key
@@ -50,6 +51,23 @@ export function createViewKeyHandler({
     }
     if (window.modalIsActive && window.modalIsActive()) return false
     window.__lastKey = e.key
+    
+    // 'i' key: open image overlay for active user message
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'i') {
+      const act = activeParts.active()
+      if (!(act && act.role === 'user')) return false  // Must be on user part
+      
+      const pair = store.pairs.get(act.pairId)
+      if (!pair || !Array.isArray(pair.attachments) || !pair.attachments.length) return false
+      
+      // Open overlay at index 0
+      if (typeof openImages === 'function') {
+        openImages(act.pairId, 0)
+        return true
+      }
+      return false
+    }
+    
     // Enter link hints (l): show numbered badges for links in active assistant message
     if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'l') {
       const lh = linkHints && (linkHints.enterForMessage || linkHints.enterForMessage)

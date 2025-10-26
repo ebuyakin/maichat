@@ -1,16 +1,37 @@
-// features/images/draftImageOverlay.js
-// Draft attachments overlay viewer for Input mode
-// - Opens a modal showing the current drafted attachments
+// features/images/imageOverlay.js
+// Image attachments overlay viewer for both Input (draft) and View (history) modes
+// - Opens a modal showing attachments from draft or saved message pair
 // - Navigation: j/k, ArrowLeft/Right, digits 1-9 jump
 // - Close: Esc
-// - Remove current: Delete / Backspace / 'x' (confirm if >1)
+// - Remove current: Delete / Backspace / 'x' (Draft mode only, confirm if >1)
 // - Lazy loads blobs from imageStore and uses object URLs (revoked on close)
 
 import { openModal } from '../../shared/openModal.js'
 import { get as getImage, detach as detachImage } from './imageStore.js'
 
-export function openDraftImageOverlay({ modeManager, pendingMessageMeta, startIndex = 0, onChange }) {
-  const ids = Array.isArray(pendingMessageMeta.attachments) ? pendingMessageMeta.attachments : []
+/**
+ * Open image overlay in draft or view mode
+ * @param {Object} params
+ * @param {Object} params.modeManager - Mode manager instance
+ * @param {'draft'|'view'} [params.mode='draft'] - Overlay mode
+ * @param {Object} [params.pendingMessageMeta] - For draft mode: pending message with attachments array
+ * @param {Object} [params.pair] - For view mode: MessagePair with attachments array
+ * @param {number} [params.startIndex=0] - Initial image index to display
+ * @param {Function} [params.onChange] - Callback for draft mode changes (remove events)
+ */
+export function openImageOverlay({ 
+  modeManager, 
+  mode = 'draft',
+  pendingMessageMeta,
+  pair,
+  startIndex = 0, 
+  onChange 
+}) {
+  // Determine data source based on mode
+  const isDraft = mode === 'draft'
+  const dataSource = isDraft ? pendingMessageMeta : pair
+  const ids = Array.isArray(dataSource?.attachments) ? dataSource.attachments : []
+  
   if (!ids.length) return null
 
   let index = Math.min(Math.max(0, startIndex), ids.length - 1)
@@ -19,7 +40,18 @@ export function openDraftImageOverlay({ modeManager, pendingMessageMeta, startIn
   // Root/backdrop
   const root = document.createElement('div')
   root.className = 'overlay-backdrop centered'
-  root.id = 'draftImagesOverlay'
+  root.id = isDraft ? 'draftImagesOverlay' : 'viewImagesOverlay'
+  
+  // Build header buttons (Remove button only in draft mode)
+  const removeBtn = isDraft 
+    ? `<button type="button" class="btn btn-danger" data-action="remove" title="Remove current (Delete/x)">Remove</button>`
+    : ''
+  
+  // Build footer hint (remove actions only in draft mode)
+  const hintText = isDraft
+    ? 'j/k, ←/→ navigate • digits 1–9 jump • Delete/Backspace/x remove • Esc close'
+    : 'j/k, ←/→ navigate • digits 1–9 jump • Esc close'
+  
   root.innerHTML = `
     <div class="overlay-panel image-viewer-panel" style="width:min(92vw, 980px); height:min(80vh, 720px); display:flex; flex-direction:column;">
       <header class="image-viewer-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -28,7 +60,7 @@ export function openDraftImageOverlay({ modeManager, pendingMessageMeta, startIn
           <span class="count" style="opacity:.75;margin-left:6px;"></span>
         </div>
         <div class="right" style="display:flex;gap:6px;align-items:center;">
-          <button type="button" class="btn btn-danger" data-action="remove" title="Remove current (Delete/x)">Remove</button>
+          ${removeBtn}
           <button type="button" class="btn" data-action="close" title="Close (Esc)">Close</button>
         </div>
       </header>
@@ -38,7 +70,7 @@ export function openDraftImageOverlay({ modeManager, pendingMessageMeta, startIn
         </div>
       </div>
       <footer class="image-viewer-footer" style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="hint" style="opacity:.7;font-size:12px;">j/k, ←/→ navigate • digits 1–9 jump • Delete/Backspace/x remove • Esc close</div>
+        <div class="hint" style="opacity:.7;font-size:12px;">${hintText}</div>
         <div class="meta dim" style="font-size:12px;opacity:.75;"></div>
       </footer>
     </div>
@@ -51,12 +83,12 @@ export function openDraftImageOverlay({ modeManager, pendingMessageMeta, startIn
   try { panel.setAttribute('tabindex', '0') } catch {}
 
   function setCountLabel() {
-    const n = (pendingMessageMeta.attachments || []).length
+    const n = (dataSource.attachments || []).length
     countEl.textContent = n ? `(${index + 1}/${n})` : '(0/0)'
   }
 
   async function showIndex(i) {
-    const list = pendingMessageMeta.attachments || []
+    const list = dataSource.attachments || []
     if (!list.length) return
     index = Math.min(Math.max(0, i), list.length - 1)
     const id = list[index]
@@ -86,7 +118,10 @@ export function openDraftImageOverlay({ modeManager, pendingMessageMeta, startIn
   }
 
   function removeCurrent(withConfirm = true) {
-    const list = pendingMessageMeta.attachments || []
+    // Only allow removal in draft mode
+    if (!isDraft) return
+    
+    const list = dataSource.attachments || []
     if (!list.length) return
     if (withConfirm && list.length > 1) {
       const ok = confirm('Remove this image from the draft?')
@@ -117,7 +152,10 @@ export function openDraftImageOverlay({ modeManager, pendingMessageMeta, startIn
 
   // Wire buttons
   root.querySelector('button[data-action="close"]').addEventListener('click', () => handleClose('button'))
-  root.querySelector('button[data-action="remove"]').addEventListener('click', () => removeCurrent(true))
+  const removeButton = root.querySelector('button[data-action="remove"]')
+  if (removeButton) {
+    removeButton.addEventListener('click', () => removeCurrent(true))
+  }
 
   // Click outside closes
   root.addEventListener('mousedown', (e) => { if (e.target === root) handleClose('backdrop') })
@@ -138,7 +176,7 @@ export function openDraftImageOverlay({ modeManager, pendingMessageMeta, startIn
   // Keyboard inside panel
   panel.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return
-    const list = pendingMessageMeta.attachments || []
+    const list = dataSource.attachments || []
     if (!list.length) return
     if (e.key === 'j' || e.key === 'ArrowRight') {
       e.preventDefault()
@@ -158,7 +196,8 @@ export function openDraftImageOverlay({ modeManager, pendingMessageMeta, startIn
       }
       return
     }
-    if (e.key === 'Delete' || e.key === 'Backspace' || e.key === 'x' || e.key === 'X') {
+    // Delete/Backspace/x only work in draft mode
+    if (isDraft && (e.key === 'Delete' || e.key === 'Backspace' || e.key === 'x' || e.key === 'X')) {
       e.preventDefault()
       removeCurrent(true)
       return
@@ -170,4 +209,9 @@ export function openDraftImageOverlay({ modeManager, pendingMessageMeta, startIn
   showIndex(index)
 
   return { close: () => handleClose('api'), jumpTo: (i) => showIndex(i) }
+}
+
+// Backwards compatibility: export draft-specific function with old name
+export function openDraftImageOverlay(params) {
+  return openImageOverlay({ ...params, mode: 'draft' })
 }

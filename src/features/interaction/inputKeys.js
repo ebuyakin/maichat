@@ -8,7 +8,7 @@ import { extractCodeBlocks } from '../codeDisplay/codeExtractor.js'
 import { extractEquations } from '../codeDisplay/equationExtractor.js'
 import { attachFromFiles, attachFromDataTransfer, getMany as getImagesByIds, detach as detachImage } from '../images/imageStore.js'
 import { estimateTokens, estimateImageTokens } from '../../core/context/tokenEstimator.js'
-import { openDraftImageOverlay } from '../images/draftImageOverlay.js'
+import { openImageOverlay } from '../images/imageOverlay.js'
 import { IMAGE_QUOTAS } from '../images/quotas.js'
 
 // Topic history management (MRU list)
@@ -273,8 +273,9 @@ export function createInputKeyHandler({
       e.preventDefault()
       const list = Array.isArray(pendingMessageMeta.attachments) ? pendingMessageMeta.attachments : []
       if (!list.length) return true
-      const overlay = openDraftImageOverlay({
+      const overlay = openImageOverlay({
         modeManager,
+        mode: 'draft',
         pendingMessageMeta,
         startIndex: 0,
         onChange: () => updateAttachIndicator(),

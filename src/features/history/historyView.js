@@ -88,9 +88,20 @@ export function createHistoryView({ store, onActivePartRendered }) {
       const assistant = msg.parts.find((p) => p.role === 'assistant')
 
       if (user) {
-        // User message block
+        // User message block with optional attachment badge
+        const pair = store.pairs.get(user.pairId)
+        const attachCount = pair && Array.isArray(pair.attachments) ? pair.attachments.length : 0
+        let attachBadge = ''
+        
+        if (attachCount > 0) {
+          // Same SVG icon as input indicator
+          const iconSvg = `<svg class="icon-photo" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2" ry="2"></rect><path d="M7 15l4-4 3.5 3.5 2-2 3 3" /><circle cx="9.5" cy="9" r="1.2" /></svg>`
+          const countText = attachCount > 1 ? ` ${attachCount}` : ''
+          attachBadge = ` <span class="attachment-badge" data-action="view-images" data-pair-id="${user.pairId}" role="button" tabindex="0" aria-label="${attachCount} image${attachCount > 1 ? 's' : ''} attached" title="View attached images (i key)">${iconSvg}${countText}</span>`
+        }
+        
         tokens.push(
-          `<div class="message user" data-message-id="${user.id}" data-part-id="${user.id}" data-pair-id="${user.pairId}" data-role="user">${escapeHtml(user.text || '')}</div>`
+          `<div class="message user" data-message-id="${user.id}" data-part-id="${user.id}" data-pair-id="${user.pairId}" data-role="user">${escapeHtml(user.text || '')}${attachBadge}</div>`
         )
       }
 
@@ -354,6 +365,28 @@ export function bindSourcesActions(rootEl, { onOpen }) {
     rootEl.__sourcesActionsBound = true
   }
 }
+
+export function bindImageBadgeActions(rootEl, { onOpen }) {
+  if (!rootEl.__imageBadgeActionsBound) {
+    rootEl.addEventListener('click', (e) => {
+      const el = e.target.closest('[data-action="view-images"]')
+      if (!el) return
+      const pairId = el.getAttribute('data-pair-id')
+      if (pairId && onOpen) onOpen(pairId)
+    })
+    // Keyboard accessibility: Enter/Space on badge
+    rootEl.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      const el = e.target.closest('[data-action="view-images"]')
+      if (!el) return
+      e.preventDefault()
+      const pairId = el.getAttribute('data-pair-id')
+      if (pairId && onOpen) onOpen(pairId)
+    })
+    rootEl.__imageBadgeActionsBound = true
+  }
+}
+
 function formatTimestamp(ts) {
   const d = new Date(ts)
   const yy = String(d.getFullYear()).slice(-2)
