@@ -6,6 +6,7 @@
 - new keys Ctrl-Shift-s - in view mode - add to Tutorial/F1
 - new keys lN - for the link opening (in new tab) - add to Tutorial/F1
 - new keys Ctrl-Shift-o - open image overlay - add to Tutorial/F1
+- new keys Ctrl-F - file picker - add to Tutorial/F1/keyboard_reference
 - command history (filter command history - make it finite)
 - using localStorage for debugging. - effective, but bad idea
 - hyperlinks in the assistant messages open with lN [x] - add to tutorial/F1
@@ -13,11 +14,12 @@
 - timing of the response - is it saved? expose average time in daily stats?
 - file picker - j/k navigation? default folder, default focus. - tutorial notes about clipboarding
 - also tutorial about working with images - not aiming to upload large files etc... only for snapshots.
+- inherited system message and settings for children topics.
 
 fixes/changes:
 1. vercel analytics and privacy statement update. Decide y/N? [ ]
 2. model catalog updated [x]
-3. in index.html meta tags updated (Gemini added). [x]
+3. in index.html meta tags updated (Gemini added). [x] also add Grok!
 4. update index.html to reflect the new tagline and other content. [x]
 5. feedback collection [x]
 6. tutorial - collapsed sections. [x]

@@ -9,7 +9,7 @@ export function createGeminiAdapter() {
   return {
     /** @param {import('./adapter.js').ChatRequest} req */
     async sendChat(req) {
-      const { model, messages, system, apiKey, signal, options } = req
+      const { model, messages, system, apiKey, signal, options, attachments = [], helpers } = req
       const now =
         (typeof performance !== 'undefined' && performance.now.bind(performance)) || Date.now
       const t0 = now()
@@ -20,13 +20,31 @@ export function createGeminiAdapter() {
       tSerializeStart = now()
 
       // Convert universal format to Gemini format
-      const contents = messages.map(msg => ({
-        parts: [{ text: msg.content }],
-        role: msg.role === 'assistant' ? 'model' : 'user'
+      const contents = messages.map((msg) => ({
+        parts: [{ text: msg.content ?? '' }],
+        role: msg.role === 'assistant' ? 'model' : 'user',
       }))
 
+      // Append images to the last user message as inline_data parts
+      if (attachments && attachments.length > 0 && helpers?.encodeImage) {
+        for (let i = contents.length - 1; i >= 0; i--) {
+          if (contents[i] && contents[i].role === 'user') {
+            const parts = contents[i].parts
+            for (const id of attachments) {
+              try {
+                const { mime, data } = await helpers.encodeImage(id)
+                parts.push({ inline_data: { mime_type: mime, data } })
+              } catch (e) {
+                if (typeof console !== 'undefined') console.warn('[gemini] skip image', id, e)
+              }
+            }
+            break
+          }
+        }
+      }
+
       const body = {
-        contents
+        contents,
       }
 
       // Add system instruction if provided

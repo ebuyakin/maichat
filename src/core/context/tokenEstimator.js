@@ -27,6 +27,13 @@ export function estimateImageTokens({ w, h }, providerId = 'openai', model = '')
 }
 
 export function estimatePairTokens(pair, charsPerToken = 4) {
+  // Fast path: if cached totals exist on the pair, use them.
+  const cachedText = typeof pair.textTokens === 'number' ? pair.textTokens : null
+  const cachedAttach = typeof pair.attachmentTokens === 'number' ? pair.attachmentTokens : null
+  if (cachedText != null || cachedAttach != null) {
+    return (cachedText || 0) + (cachedAttach || 0)
+  }
+  // Fallback: heuristic based on current texts; cache per-charsPerToken in-memory only
   const uLen = (pair.userText || '').length
   const aLen = (pair.assistantText || '').length
   const cache = pair._tokenCache

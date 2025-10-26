@@ -10,7 +10,7 @@ import { getSettings } from '../../core/settings/index.js'
 import { predictHistory, finalizeHistory } from '../../core/context/budgetMath.js'
 import { getApiKey } from '../../infrastructure/api/keys.js'
 import { getModelMeta } from '../../core/models/modelCatalog.js'
-import { get as getImage } from '../images/imageStore.js'
+import { get as getImage, encodeToBase64 } from '../images/imageStore.js'
 
 // Note: No global system policy. We rely solely on per-topic system messages.
 
@@ -226,6 +226,23 @@ export async function executeSend({
       overflow = false
     try {
       const meta = { otpm: (getModelMeta(model) || {}).otpm }
+      // Persist a pre-send debug snapshot to localStorage (provider-agnostic)
+      try {
+        const dbg = {
+          at: Date.now(),
+          provider: providerId,
+          model,
+          systemLen: (topicSystem || '').length,
+          messages: (msgs || []).map((m) => ({
+            role: m.role,
+            // store previews only to limit size
+            contentPreview: typeof m.content === 'string' ? m.content.slice(0, 400) : String(m.content).slice(0, 200),
+            contentLength: typeof m.content === 'string' ? m.content.length : undefined,
+          })),
+          attachmentsCount: Array.isArray(attachments) ? attachments.length : 0,
+        }
+        localStorage.setItem('maichat_dbg_pre_send', JSON.stringify(dbg))
+      } catch {}
       result = await provider.sendChat({
         model,
         messages: msgs,
@@ -235,6 +252,10 @@ export async function executeSend({
         options,
         budget,
         meta,
+        attachments,
+        helpers: {
+          encodeImage: encodeToBase64,
+        },
       })
     } catch (ex) {
       const msg = ((ex && ex.message) || '').toLowerCase()
@@ -245,6 +266,20 @@ export async function executeSend({
       ) {
         overflow = true
       } else {
+        // Persist last error details for inspection
+        try {
+          const errDbg = {
+            at: Date.now(),
+            provider: providerId,
+            model,
+            message: ex && ex.message,
+            kind: ex && ex.kind,
+            status: ex && ex.status,
+            providerCode: ex && ex.providerCode,
+            timing: ex && ex.__timing ? ex.__timing : undefined,
+          }
+          localStorage.setItem('maichat_dbg_last_error', JSON.stringify(errDbg))
+        } catch {}
         emitDebug({
           ...baseDebugCore(),
           status: 'error',

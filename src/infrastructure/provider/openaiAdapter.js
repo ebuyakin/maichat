@@ -13,7 +13,7 @@ export function createOpenAIAdapter() {
   return {
     /** @param {import('./adapter.js').ChatRequest} req */
     async sendChat(req) {
-      const { model, messages, system, apiKey, signal, options } = req
+      const { model, messages, system, apiKey, signal, options, attachments = [], helpers } = req
       const now =
         (typeof performance !== 'undefined' && performance.now.bind(performance)) || Date.now
       const t0 = now()
@@ -23,28 +23,74 @@ export function createOpenAIAdapter() {
       // Responses API: keep system separately in `instructions`; do not inject a system turn
       const msgArr = messages
 
-      // Build Responses API payload
-      const mkContentBlocks = (arr) =>
-        arr.map((m) => ({
-          role: m.role,
-          content: [
-            {
-              type: m.role === 'user' ? 'input_text' : 'output_text',
-              text: m.content,
-            },
-          ],
-        }))
+      // Build Responses API payload with optional image parts on the last user message
+      const mkContentBlocks = async (arr) => {
+        // Find last user index
+        let lastUserIdx = -1
+        for (let i = arr.length - 1; i >= 0; i--) {
+          if (arr[i] && arr[i].role === 'user') {
+            lastUserIdx = i
+            break
+          }
+        }
+        const out = []
+        for (let i = 0; i < arr.length; i++) {
+          const m = arr[i]
+          const base = {
+            role: m.role,
+            content: [
+              {
+                type: m.role === 'user' ? 'input_text' : 'output_text',
+                text: m.content,
+              },
+            ],
+          }
+          // If this is the last user turn and we have attachments, append image parts
+          if (i === lastUserIdx && attachments && attachments.length > 0 && helpers?.encodeImage) {
+            try {
+              for (const id of attachments) {
+                try {
+                  const { mime, data } = await helpers.encodeImage(id)
+                  const url = `data:${mime};base64,${data}`
+                  // OpenAI Responses API expects image_url to be a string (data URL), not an object
+                  base.content.push({ type: 'input_image', image_url: url })
+                } catch (e) {
+                  // Skip failed encodes; continue with remaining images
+                  if (typeof console !== 'undefined') console.warn('[openai] skip image', id, e)
+                }
+              }
+            } catch {}
+          }
+          out.push(base)
+        }
+        return out
+      }
       const baseTools = options && options.webSearch === true
         ? [{ type: 'web_search' }]
         : undefined
       const maxTok = options && typeof options.maxOutputTokens === 'number' ? options.maxOutputTokens : undefined
       const requestBody = {
         model,
-        input: mkContentBlocks(msgArr),
+        input: await mkContentBlocks(msgArr),
         ...(system ? { instructions: system } : {}),
         ...(baseTools ? { tools: baseTools, tool_choice: 'auto' } : {}),
         ...(maxTok != null ? { max_output_tokens: maxTok } : {}),
       }
+
+      // Debug hook: capture last outbound request (sans auth headers)
+      try {
+        if (typeof window !== 'undefined') {
+          window.__maichatLastRequest = {
+            at: Date.now(),
+            provider: 'openai',
+            model,
+            json: payloadStr,
+          }
+          try {
+            localStorage.setItem('maichat_dbg_last_request', payloadStr)
+          } catch {}
+        }
+      } catch {}
 
       let resp
       tSerializeEnd = now()
@@ -81,6 +127,21 @@ export function createOpenAIAdapter() {
             if (j.error.message) msg = j.error.message
             if (j.error.code) code = j.error.code
           }
+          // Debug: capture last error response
+          try {
+            if (typeof window !== 'undefined') {
+              window.__maichatLastResponse = {
+                at: Date.now(),
+                provider: 'openai',
+                model,
+                status: resp.status,
+                json: JSON.stringify(j),
+              }
+              try {
+                localStorage.setItem('maichat_dbg_last_response', JSON.stringify(j))
+              } catch {}
+            }
+          } catch {}
         } catch {}
         const err = new ProviderError(msg, kind, resp.status)
         if (code) err.providerCode = code
@@ -98,6 +159,22 @@ export function createOpenAIAdapter() {
       tParseStart = now()
       data = await resp.json()
       tParseEnd = now()
+
+      // Debug: capture last successful response
+      try {
+        if (typeof window !== 'undefined') {
+          window.__maichatLastResponse = {
+            at: Date.now(),
+            provider: 'openai',
+            model,
+            status: resp.status,
+            json: JSON.stringify(data),
+          }
+          try {
+            localStorage.setItem('maichat_dbg_last_response', JSON.stringify(data))
+          } catch {}
+        }
+      } catch {}
 
       // Parse Responses API content
       let content = ''

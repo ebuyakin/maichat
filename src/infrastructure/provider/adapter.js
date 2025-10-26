@@ -17,6 +17,10 @@
  * @property {AbortSignal} [signal]
  * @property {string} apiKey
  * @property {{ temperature?: number, maxOutputTokens?: number, webSearch?: boolean }} [options]
+ * @property {string[]} [attachments] - imageIds attached to the new user message (attach order)
+ * @property {{ encodeImage?: (id:string)=>Promise<{ mime: string, data: string }> }} [helpers]
+ * @property {{ maxContext?: number, inputTokens?: number, remainingContext?: number }} [budget]
+ * @property {{ otpm?: number }} [meta]
  */
 
 /**

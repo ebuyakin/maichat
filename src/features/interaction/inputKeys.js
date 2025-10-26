@@ -7,6 +7,7 @@ import { sanitizeAssistantText } from './sanitizeAssistant.js'
 import { extractCodeBlocks } from '../codeDisplay/codeExtractor.js'
 import { extractEquations } from '../codeDisplay/equationExtractor.js'
 import { attachFromFiles, attachFromDataTransfer, getMany as getImagesByIds, detach as detachImage } from '../images/imageStore.js'
+import { estimateTokens, estimateImageTokens } from '../../core/context/tokenEstimator.js'
 import { openDraftImageOverlay } from '../images/draftImageOverlay.js'
 import { IMAGE_QUOTAS } from '../images/quotas.js'
 
@@ -389,7 +390,7 @@ export function createInputKeyHandler({
         try {
           window.__hud && window.__hud.setReadingMode && window.__hud.setReadingMode(false)
         } catch {}
-        let id
+  let id
         if (editingId) {
           const old = store.pairs.get(editingId)
           if (old) {
@@ -400,6 +401,14 @@ export function createInputKeyHandler({
         } else {
           id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
         }
+
+        // Persist attachments immediately; tokens will be computed asynchronously in the send task below
+        try {
+          const att = Array.isArray(pendingMessageMeta.attachments)
+            ? pendingMessageMeta.attachments.slice()
+            : []
+          store.updatePair(id, { attachments: att })
+        } catch {}
 
         // new message treatment.
         ;(async () => {
@@ -425,6 +434,27 @@ export function createInputKeyHandler({
             boundaryMgr.setModel(model)
             boundaryMgr.applySettings(getSettings())
             const boundarySnapshot = boundaryMgr.getBoundary()
+            const tStart = Date.now()
+            // Compute and cache attachmentTokens and user-side textTokens before calling provider
+            try {
+              const att = Array.isArray(pendingMessageMeta.attachments)
+                ? pendingMessageMeta.attachments.slice()
+                : []
+              let attachmentTokens = 0
+              if (att.length) {
+                const imgs = await getImagesByIds(att)
+                for (const img of imgs) {
+                  if (img && typeof img.w === 'number' && typeof img.h === 'number') {
+                    attachmentTokens += estimateImageTokens({ w: img.w, h: img.h })
+                  }
+                }
+              }
+              const textTokensUser = estimateTokens(text || '', getSettings().charsPerToken || 4)
+              store.updatePair(id, {
+                attachmentTokens,
+                textTokens: textTokensUser,
+              })
+            } catch {}
             const execResult = await executeSend({
               store,
               model,
@@ -440,6 +470,7 @@ export function createInputKeyHandler({
                 historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length)
               },
             })
+            const responseMs = Math.max(0, Date.now() - tStart)
             const rawText = execResult.content // keep original for assistantText (context fidelity)
             // 1. Code extraction first
             const codeExtraction = extractCodeBlocks(rawText)
@@ -484,6 +515,17 @@ export function createInputKeyHandler({
               codeExtraction.hasCode || eqResult.hasEquations
                 ? finalDisplay
                 : sanitizeAssistantText(rawText)
+
+            // Update tokens cache and response timing
+            try {
+              const addAssistantTokens = estimateTokens(rawText || '', getSettings().charsPerToken || 4)
+              const existing = store.pairs.get(id)
+              const currentTextTok = (existing && typeof existing.textTokens === 'number')
+                ? existing.textTokens
+                : estimateTokens((existing?.userText) || '', getSettings().charsPerToken || 4)
+              updateData.textTokens = currentTextTok + addAssistantTokens
+              updateData.responseMs = responseMs
+            } catch {}
 
             store.updatePair(id, updateData)
             clearTimeout(timeoutId)

@@ -204,17 +204,18 @@ Open question (tracked)
 5) Token estimator for images. 
 - generic image token estimator for now (with potential extenstion to more accurate provider specific token estimator deferred to the next version). Integration of the images into pipeline (provider-agnostic part). [x]
 
+7) Cache attachmentTokens and textTokens for pairs (performance) (swapped order with 6)
+- On send, compute and persist on the new MessagePair:
+  - `attachmentTokens = sum(estimateImageTokens(w,h))` over all attachments
+  - `textTokens = estimateText(userText) + estimateText(assistantText)`
+- Budget math (boundary estimation) uses `textTokens + attachmentTokens` (no image I/O during preview).
+- Lazy migration: for existing pairs missing these fields, compute once and persist. [x]
+
 6) Send pipeline integration (per provider)
 - Compose payload by appending image parts after text; base64 on demand via imageStore.encodeToBase64(id).
 - Abort/cancel: if send is aborted, release any transient buffers promptly.
  - Record `responseMs` from provider response metadata and persist on the MessagePair (used by daily stats).
 
-7) Cache attachmentTokens and textTokens for pairs (performance)
-- On send, compute and persist on the new MessagePair:
-  - `attachmentTokens = sum(estimateImageTokens(w,h))` over all attachments
-  - `textTokens = estimateText(userText) + estimateText(assistantText)`
-- Budget math (boundary estimation) uses `textTokens + attachmentTokens` (no image I/O during preview).
-- Lazy migration: for existing pairs missing these fields, compute once and persist.
 
 8) History rendering (badge only)
 - historyView.js: append an end-of-line badge (icon + N) for user messages with attachments; clicking opens overlay. No <img> tags.
@@ -261,3 +262,19 @@ Additional considerations (quick checklist)
 - Color: use a muted foreground var (e.g., var(--text-dim) or equivalent), with hover state slightly brighter; no fill.
 - Form: simple photo frame glyph or landscape outline; single-weight stroke (~1px). Avoid visual noise.
 - Accessibility: aria-label on the indicator/badge; count shown as adjacent text (e.g., “🖼︎ 3” or icon + 3).
+
+
+# BE AWARE OF THE FILES IN ACTIVE DEVELOPMENT (RECENTLY CHANGED):
+
+docs/image_messages_spec.md
+src/core/context/tokenEstimator.js
+src/core/models/messagePair.js
+src/core/store/memoryStore.js
+src/features/compose/pipeline.js
+src/features/images/draftImageOverlay.js
+src/features/images/imageStore.js
+src/features/images/quotas.js
+src/features/interaction/inputKeys.js
+src/main.js
+src/runtime/runtimeSetup.js
+src/styles/components/input.css

@@ -9,7 +9,18 @@ export function createAnthropicAdapter() {
   return {
     /** @param {import('./adapter.js').ChatRequest} req */
     async sendChat(req) {
-      const { model, messages, system, apiKey, signal, options, budget, userOverrides } = req
+      const {
+        model,
+        messages,
+        system,
+        apiKey,
+        signal,
+        options,
+        budget,
+        userOverrides,
+        attachments = [],
+        helpers,
+      } = req
       if (!apiKey) throw new ProviderError('missing api key', 'auth', 401)
       // Translate universal envelope to Anthropic schema
       // Enforce Anthropic role alternation: insert placeholder assistant turns between consecutive user messages.
@@ -29,10 +40,33 @@ export function createAnthropicAdapter() {
         }
         normalized.push(m)
       }
-      const msgPayload = normalized.map((m) => ({
-        role: m.role,
-        content: [{ type: 'text', text: m.content }],
-      }))
+      // Build Messages API payload and append image blocks to the last user turn (if any)
+      let lastUserIdx = -1
+      for (let i = normalized.length - 1; i >= 0; i--) {
+        if (normalized[i] && normalized[i].role === 'user') {
+          lastUserIdx = i
+          break
+        }
+      }
+      const msgPayload = []
+      for (let i = 0; i < normalized.length; i++) {
+        const m = normalized[i]
+        const entry = {
+          role: m.role,
+          content: [{ type: 'text', text: m.content }],
+        }
+        if (i === lastUserIdx && attachments && attachments.length > 0 && helpers?.encodeImage) {
+          for (const id of attachments) {
+            try {
+              const { mime, data } = await helpers.encodeImage(id)
+              entry.content.push({ type: 'image', source: { type: 'base64', media_type: mime, data } })
+            } catch (e) {
+              if (typeof console !== 'undefined') console.warn('[anthropic] skip image', id, e)
+            }
+          }
+        }
+        msgPayload.push(entry)
+      }
       const body = { model, messages: msgPayload }
       if (system) body.system = system
       if (options && typeof options.temperature === 'number') body.temperature = options.temperature
