@@ -11,6 +11,8 @@ export function createTopic({
   requestParams,
   sortIndex,
   lastActiveAt,
+  defaultModel,
+  webSearchOverride,
 } = {}) {
   const now = Date.now()
   return {
@@ -24,6 +26,10 @@ export function createTopic({
     lastActiveAt: typeof lastActiveAt === 'number' ? lastActiveAt : 0,
     systemMessage,
     requestParams: normalizeRequestParams(requestParams),
+    // Optional: default model for this topic (applies when topic selected in Input mode)
+    defaultModel: typeof defaultModel === 'string' && defaultModel ? defaultModel : undefined,
+    // Optional: web search override for this topic (overrides model's default setting)
+    webSearchOverride: typeof webSearchOverride === 'boolean' ? webSearchOverride : undefined,
   }
 }
 

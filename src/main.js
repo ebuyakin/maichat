@@ -98,11 +98,11 @@ appEl.innerHTML = `
       <div class="row second">
         <div class="input-meta-left">
           <div id="modeIndicator" class="mode-label"></div>
-          <span id="pendingModel" title="Model"></span>
-          <span id="pendingTopic" title="Topic"></span>
+          <span id="pendingModel" title="Model • Ctrl+M"></span>
+          <span id="pendingTopic" title="Topic • Ctrl+T"></span>
         </div>
         <div class="input-meta-right">
-          <span id="attachIndicator" class="attach-indicator" hidden title="Attached images">
+          <span id="attachIndicator" class="attach-indicator" hidden title="Attached images • Ctrl+Shift+O">
             <span class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3.5" y="5.5" width="17" height="13" rx="2" ry="2"></rect>

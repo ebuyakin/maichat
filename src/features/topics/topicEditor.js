@@ -1,6 +1,7 @@
 // topicEditor.js moved from ui/topicEditor.js (Phase 6.4 Topics)
 import { openModal } from '../../shared/openModal.js'
 import { getSettings, saveSettings } from '../../core/settings/index.js'
+import { listModels } from '../../core/models/modelCatalog.js'
 
 export function openTopicEditor({ store, onSelect, onClose }) {
   let filter = ''
@@ -55,6 +56,20 @@ export function openTopicEditor({ store, onSelect, onClose }) {
                 <label>Max output tokens</label>
                 <input type="number" min="1" class="te-input" data-field="maxTokens"/>
               </div>
+              <div class="te-field">
+                <label>Default Model</label>
+                <select class="te-select" data-field="defaultModel">
+                  <option value="">None (use current pending)</option>
+                </select>
+              </div>
+              <div class="te-field">
+                <label>Web Search Override</label>
+                <select class="te-select" data-field="webSearchOverride">
+                  <option value="">None (use model default)</option>
+                  <option value="true">Force Enable</option>
+                  <option value="false">Force Disable</option>
+                </select>
+              </div>
             </div>
             <div class="te-actions">
               <button class="te-btn" data-act="insert-path">Insert topic (Ctrl+I)</button>
@@ -77,9 +92,25 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   const sysTextarea = backdrop.querySelector('.te-textarea')
   const tempInput = backdrop.querySelector('input[data-field="temperature"]')
   const maxTokInput = backdrop.querySelector('input[data-field="maxTokens"]')
+  const defaultModelSelect = backdrop.querySelector('select[data-field="defaultModel"]')
+  const webSearchOverrideSelect = backdrop.querySelector('select[data-field="webSearchOverride"]')
   const applyBtn = backdrop.querySelector('.te-primary-actions .te-apply')
   const cancelBtn = backdrop.querySelector('.te-primary-actions .te-cancel')
   const warningEl = backdrop.querySelector('.te-warning')
+  
+  // Populate model dropdown with enabled models only
+  try {
+    const models = listModels().filter(m => m.enabled)
+    models.forEach(m => {
+      const option = document.createElement('option')
+      option.value = m.id
+      option.textContent = m.id
+      defaultModelSelect.appendChild(option)
+    })
+  } catch (e) {
+    console.error('[topicEditor] Failed to populate model dropdown', e)
+  }
+  
   // Remove the legacy 'System message' label and let the textarea move up
   try {
     backdrop.querySelector('.te-field > label')?.remove()
@@ -255,6 +286,8 @@ export function openTopicEditor({ store, onSelect, onClose }) {
       sysTextarea.value = ''
       tempInput.value = ''
       maxTokInput.value = ''
+      defaultModelSelect.value = ''
+      webSearchOverrideSelect.value = ''
       pathEl.textContent = 'Edit topic system message:'
       return
     }
@@ -266,6 +299,8 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     const rp = t.requestParams || {}
     tempInput.value = typeof rp.temperature === 'number' ? String(rp.temperature) : '0.7'
     maxTokInput.value = typeof rp.maxOutputTokens === 'number' ? String(rp.maxOutputTokens) : ''
+    defaultModelSelect.value = typeof t.defaultModel === 'string' ? t.defaultModel : ''
+    webSearchOverrideSelect.value = typeof t.webSearchOverride === 'boolean' ? String(t.webSearchOverride) : ''
     setDirty(false)
   }
   function saveDetails() {
@@ -282,6 +317,24 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     if (Number.isFinite(tokVal) && tokVal > 0) rp.maxOutputTokens = tokVal
     else delete rp.maxOutputTokens
     patch.requestParams = rp
+    
+    // Save defaultModel and webSearchOverride
+    const defaultModelVal = defaultModelSelect.value.trim()
+    if (defaultModelVal) {
+      patch.defaultModel = defaultModelVal
+    } else {
+      patch.defaultModel = undefined
+    }
+    
+    const webSearchVal = webSearchOverrideSelect.value.trim()
+    if (webSearchVal === 'true') {
+      patch.webSearchOverride = true
+    } else if (webSearchVal === 'false') {
+      patch.webSearchOverride = false
+    } else {
+      patch.webSearchOverride = undefined
+    }
+    
     store.updateTopic(t.id, patch)
     setDirty(false)
     sessionDirty = true

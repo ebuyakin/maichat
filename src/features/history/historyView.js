@@ -144,7 +144,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
                   <path d=\"M10 13a5 5 0 0 1 0-7L11.5 4.5a5 5 0 0 1 7 7L17 12\"/>
                   <path d=\"M14 11a5 5 0 0 1 0 7L12.5 19.5a5 5 0 0 1-7-7L7 12\"/>
                 </svg>`
-              sourcesBadge = `<span class="badge sources" data-action="sources" title="Sources (${count})" aria-label="Sources (${count})" role="button">${icon}<span class="sources-count">${display}</span></span>`
+              sourcesBadge = `<span class="badge sources" data-action="sources" title="Sources (${count}) • Ctrl+Shift+S" aria-label="Sources (${count})" role="button">${icon}<span class="sources-count">${display}</span></span>`
             }
           } catch {}
 
@@ -248,7 +248,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
                 <path d=\"M10 13a5 5 0 0 1 0-7L11.5 4.5a5 5 0 0 1 7 7L17 12\"/>
                 <path d=\"M14 11a5 5 0 0 1 0 7L12.5 19.5a5 5 0 0 1-7-7L7 12\"/>
               </svg>`
-            sourcesBadge = `<span class="badge sources" data-action="sources" title="Sources (${count})" aria-label="Sources (${count})" role="button">${icon}<span class="sources-count">${display}</span></span>`
+            sourcesBadge = `<span class="badge sources" data-action="sources" title="Sources (${count}) • Ctrl+Shift+S" aria-label="Sources (${count})" role="button">${icon}<span class="sources-count">${display}</span></span>`
           }
         } catch {}
 

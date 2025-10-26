@@ -82,6 +82,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | m | View equation in overlay | Single equation: opens immediately. Multiple equations: wait for digit (m1, m2, m3...) |
 | l | Show link hints in active assistant message | Displays ephemeral numeric badges on links; 1–9 opens link in new tab; Esc cancels |
 | Ctrl+Shift+S | Open Sources overlay for active assistant message | Shows sources (citations); j/k move focus between links; Enter opens; c copies all URLs; Esc / outside click closes |
+| i | Open image overlay for active user message | Views attached images; j/k navigate; digits 1-9 jump to Nth image; Esc closes |
 | * | Cycle star (0→1→2→3→0) | Affects active pair |
 | 1 / 2 / 3 | Set star to 1 / 2 / 3 | Direct rating |
 | Space | Set star to 0 | Clear rating |
@@ -94,6 +95,8 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 - After `y` press: Copy equation N  
 - After `v` press: View code block N in overlay
 - After `m` press: View equation N in overlay
+- After `l` press: Open link N in new tab (link hints mode)
+- After `i` press: Jump to image N in overlay
 - Without prefix: Set star rating (1/2/3 only)
 - Pending state clears after 3 seconds or unrelated keypress
 
@@ -107,6 +110,9 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Escape | Return to VIEW | Restores active selection |
 | Ctrl+v / Ctrl+d / Ctrl+i | Direct mode switch | Overrides cycle |
 | Ctrl+P | Open chrono topic picker | Quick access to recent topics; sets pending topic for next message |
+| Ctrl+F | Open file picker for image attachment | Attach images to draft message (up to 4 images, 30MB total) |
+| Cmd+V / Ctrl+V | Paste images from clipboard | Attach copied images to draft message |
+| Ctrl+Shift+O | Open draft image overlay | View/remove attached images before sending; j/k navigate; digits 1-9 jump; Delete/x remove current |
 | Ctrl+A | Move cursor to start of line | Emacs-style editing |
 | Ctrl+E | Move cursor to end of line | Emacs-style editing |
 | Ctrl+U | Delete from line start to cursor | Emacs-style editing |
