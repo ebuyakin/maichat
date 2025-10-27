@@ -5,7 +5,8 @@
 - model badge in the input zone - expand to fit the longer model names [x]
 - command history (filter command history - make it finite) [x]
 - hyperlinks in the assistant messages open with lN [x] - add to tutorial/F1
-- link topic to model (set combo: topic+model+search settings)
+- link topic to model (set combo: topic+model+search settings) [x]
+- Topic editor redesign (layout, navigation)
 - timing of the response - is it saved? expose average time in daily stats?
 - file picker - j/k navigation? default folder, default focus. - tutorial notes about clipboarding
 - inherited system message and settings for children topics. [-]
@@ -13,6 +14,7 @@
 - using localStorage for debugging. - effective, but bad idea
 
 For Tutorial:
+- tutorial about web search . 
 - also tutorial about working with images - not aiming to upload large files etc... only for snapshots.
 - new keys Ctrl-Shift-s - view links overlay in view mode - add to Tutorial/F1
 - new keys lN - for the link opening (in new tab) - add to Tutorial/F1

@@ -56,6 +56,8 @@ export function openTopicEditor({ store, onSelect, onClose }) {
                 <label>Max output tokens</label>
                 <input type="number" min="1" class="te-input" data-field="maxTokens"/>
               </div>
+            </div>
+            <div class="te-grid-right">
               <div class="te-field">
                 <label>Default Model</label>
                 <select class="te-select" data-field="defaultModel">
@@ -70,10 +72,6 @@ export function openTopicEditor({ store, onSelect, onClose }) {
                   <option value="false">Force Disable</option>
                 </select>
               </div>
-            </div>
-            <div class="te-actions">
-              <button class="te-btn" data-act="insert-path">Insert topic (Ctrl+I)</button>
-              <button class="te-btn" data-act="reset">Reset (Ctrl+R)</button>
             </div>
           </div>
           <div class="te-primary-actions">
@@ -902,20 +900,6 @@ export function openTopicEditor({ store, onSelect, onClose }) {
         saveDetails()
         return
       }
-      if (e.ctrlKey && (e.key === 'r' || e.key === 'R')) {
-        e.preventDefault()
-        e.stopPropagation()
-        e.stopImmediatePropagation()
-        resetTemplate()
-        return
-      }
-      if (e.ctrlKey && (e.key === 'i' || e.key === 'I')) {
-        e.preventDefault()
-        e.stopPropagation()
-        e.stopImmediatePropagation()
-        insertPath()
-        return
-      }
       if (inDetails && e.key === 'Escape') {
         e.preventDefault()
         e.stopPropagation()
@@ -964,11 +948,7 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   // No autosave on blur; explicit Apply (Ctrl+S) to save changes.
   detailsEl.addEventListener('click', (e) => {
     const act = e.target.getAttribute && e.target.getAttribute('data-act')
-    if (act === 'reset') {
-      resetTemplate()
-    } else if (act === 'insert-path') {
-      insertPath()
-    } else if (act === 'save') {
+    if (act === 'save') {
       saveDetails()
     } else if (act === 'cancel') {
       teardown()
