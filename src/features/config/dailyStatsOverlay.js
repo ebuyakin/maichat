@@ -33,8 +33,8 @@ export function computeDailyCounts(pairs) {
     count: data.count,
     medianResponseTime: median(data.responseTimes)
   }))
-  // Ascending order (oldest at top, newest at bottom) to match message history chronology
-  rows.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0))
+  // Descending order (newest at top) for easier access to recent data
+  rows.sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0))
   return rows
 }
 
@@ -73,8 +73,16 @@ export function openDailyStatsOverlay({ store, activeParts, historyRuntime, mode
   
   function renderContent() {
     const rows = viewMode === 'daily' ? computeDailyCounts(visiblePairs) : computeModelCounts(visiblePairs)
+    const { headerHtml, tableHtml, footerHtml } = rows.length ? generateTableAndFooter(rows, viewMode, visiblePairs) : emptyHtml()
+    
+    const headerEl = root.querySelector('.stats-header-container')
+    headerEl.innerHTML = headerHtml
+    
     const bodyEl = root.querySelector('.stats-body')
-    bodyEl.innerHTML = rows.length ? tableHtml(rows, viewMode) : emptyHtml()
+    bodyEl.innerHTML = tableHtml
+    
+    const footerEl = root.querySelector('.stats-footer-container')
+    footerEl.innerHTML = footerHtml
     
     // Update tab styling
     root.querySelectorAll('.tab-btn').forEach(btn => {
@@ -89,13 +97,16 @@ export function openDailyStatsOverlay({ store, activeParts, historyRuntime, mode
   root.id = 'dailyStatsOverlayRoot'
   root.className = 'overlay-backdrop centered'
   root.innerHTML = `
-    <div class="overlay-panel compact daily-stats-panel" style="width:520px;max-width:90vw;">
+    <div class="overlay-panel compact daily-stats-panel" style="width:420px;max-width:90vw;">
       <header>Activity Stats (respects current filter)</header>
       <div class="stats-tabs" style="display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid #222;">
         <button class="tab-btn active" data-view="daily">By Date</button>
         <button class="tab-btn" data-view="model">By Model</button>
       </div>
-      <div class="stats-body" style="height:400px;overflow:auto;padding:5px;"></div>
+      <div class="stats-header-container"></div>
+      <div class="stats-body" style="height:395px;overflow:auto;padding:5px;"></div>
+      <div class="stats-footer-container"></div>
+      <div class="stats-hint">MRT - median response time • h/l or [ ] switch tabs • j/k navigate • g/G jump to first/last • Enter or Esc to close</div>
       <div class="buttons" style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;padding:8px 9px 5px 9px;">
         <button class="btn" type="button" data-action="close">Close</button>
       </div>
@@ -112,7 +123,7 @@ export function openDailyStatsOverlay({ store, activeParts, historyRuntime, mode
     tbody = panel.querySelector('.stats-table tbody')
     rowEls = tbody ? Array.from(tbody.querySelectorAll('tr')) : []
     focusableCells = rowEls.map((tr) => tr.querySelector('td')).filter(Boolean)
-    activeRowIndex = viewMode === 'daily' ? (focusableCells.length - 1) : 0
+    activeRowIndex = 0  // Always focus first row (most recent/most used)
     
     focusableCells.forEach((td, i) => {
       td.setAttribute('tabindex', i === activeRowIndex ? '0' : '-1')
@@ -233,13 +244,13 @@ export function openDailyStatsOverlay({ store, activeParts, historyRuntime, mode
   }
 }
 
-function tableHtml(rows, viewMode) {
+function generateTableAndFooter(rows, viewMode, visiblePairs) {
   const total = rows.reduce((s, r) => s + r.count, 0)
-  // Calculate overall median response time across all rows
+  // Calculate overall median response time from ALL individual messages (not median of medians)
   const allResponseTimes = []
-  for (const r of rows) {
-    if (r.medianResponseTime != null) {
-      allResponseTimes.push(r.medianResponseTime)
+  for (const p of visiblePairs) {
+    if (typeof p.responseMs === 'number') {
+      allResponseTimes.push(p.responseMs)
     }
   }
   const overallMedian = median(allResponseTimes)
@@ -247,27 +258,37 @@ function tableHtml(rows, viewMode) {
   const firstColHeader = viewMode === 'daily' ? 'Date' : 'Model'
   const firstColKey = viewMode === 'daily' ? 'day' : 'model'
   
-  return `
+  const headerHtml = `
+    <div class="stats-header">
+      <span class="stats-header-label">${firstColHeader}</span>
+      <span class="stats-header-count">Count</span>
+      <span class="stats-header-time">MRT</span>
+    </div>`
+  
+  const tableHtml = `
     <table class="stats-table" style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;">
-      <thead><tr>
-        <th style="text-align:left;padding:4px 8px;font-weight:400;width:40%;">${firstColHeader}</th>
-        <th style="text-align:right;padding:4px 8px;font-weight:400;width:30%;">Count</th>
-        <th style="text-align:right;padding:4px 8px;font-weight:400;width:30%;">Response Time</th>
-      </tr></thead>
       <tbody>
         ${rows.map((r) => `<tr>
-          <td style="padding:2px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r[firstColKey]}</td>
-          <td style="padding:2px 8px;text-align:right;">${r.count}</td>
-          <td style="padding:2px 8px;text-align:right;">${formatResponseTime(r.medianResponseTime)}</td>
+          <td style="padding:2px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:51%;">${r[firstColKey]}</td>
+          <td style="padding:2px 8px;text-align:right;width:26%;">${r.count}</td>
+          <td style="padding:2px 8px;text-align:right;width:23%;">${formatResponseTime(r.medianResponseTime)}</td>
         </tr>`).join('')}
       </tbody>
-      <tfoot><tr>
-        <td style="padding:6px 8px;font-weight:400;">Total</td>
-        <td style="padding:6px 8px;text-align:right;font-weight:400;">${total}</td>
-        <td style="padding:6px 8px;text-align:right;font-weight:400;">${formatResponseTime(overallMedian)}</td>
-      </tr></tfoot>
     </table>`
+  
+  const footerHtml = `
+    <div class="stats-footer">
+      <span class="stats-footer-label">Total</span>
+      <span class="stats-footer-count">${total}</span>
+      <span class="stats-footer-time">${formatResponseTime(overallMedian)}</span>
+    </div>`
+  
+  return { headerHtml, tableHtml, footerHtml }
 }
 function emptyHtml() {
-  return '<div style="opacity:.7;font-size:12px;">No messages in the current view.</div>'
+  return {
+    headerHtml: '',
+    tableHtml: '<div style="opacity:.7;font-size:12px;padding:20px;text-align:center;">No messages in the current view.</div>',
+    footerHtml: ''
+  }
 }
