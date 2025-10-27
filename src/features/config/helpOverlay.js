@@ -40,32 +40,9 @@ export function openHelpOverlay({ onClose, modeManager }) {
           <div class="help-k">Ctrl+M</div><div class="help-d">Model Selector</div>
           <div class="help-k">Ctrl+T</div><div class="help-d">Topic picker (full tree)</div>
           <div class="help-k">Ctrl+P</div><div class="help-d">Recent topics picker</div>
-        </section>
-        <section class="help-col">
-          <div class="help-title">View Mode</div>
-          <div class="help-k">Enter</div><div class="help-d">Switch to Input Mode</div>
-          <div class="help-k">Esc</div><div class="help-d">Switch to Command Mode</div>
-          <div class="help-k">j / ArrowDown</div><div class="help-d">Scroll down</div>
-          <div class="help-k">k / ArrowUp</div><div class="help-d">Scroll up</div>
-          <div class="help-k">J</div><div class="help-d">Scroll down (big step)</div>
-          <div class="help-k">K</div><div class="help-d">Scroll up (big step)</div>
-          <div class="help-k">u</div><div class="help-d">Jump to previous message</div>
-          <div class="help-k">d</div><div class="help-d">Jump to next message</div>
-          <div class="help-k">U</div><div class="help-d">Scroll current message to top</div>
-          <div class="help-k">g</div><div class="help-d">Move to first message part</div>
-          <div class="help-k">G</div><div class="help-d">Move to last message part</div>
-          <div class="help-k">o / O</div><div class="help-d">Jump to context boundary</div>
-          <div class="help-k">c / c1-9</div><div class="help-d">Copy code block(s)</div>
-          <div class="help-k">y / y1-9</div><div class="help-d">Copy equation(s)</div>
-          <div class="help-k">Y</div><div class="help-d">Copy entire message</div>
-          <div class="help-k">v / v1-9</div><div class="help-d">View code in overlay</div>
-          <div class="help-k">m / m1-9</div><div class="help-d">View equation in overlay</div>
-          <div class="help-k">1 / 2 / 3</div><div class="help-d">Set star rating of the message</div>
-          <div class="help-k">Space</div><div class="help-d">Clear star rating</div>
-          <div class="help-k">a</div><div class="help-d">Toggle color code</div>
-          <div class="help-k">e</div><div class="help-d">Edit & resend (error row)</div>
-          <div class="help-k">w</div><div class="help-d">Delete (error row)</div>
-          <div class="help-k">Ctrl+T</div><div class="help-d">Topic picker (full tree)</div>
+          <div class="help-k">Ctrl+F</div><div class="help-d">Attach images (file picker)</div>
+          <div class="help-k">Cmd/Ctrl+V</div><div class="help-d">Paste images from clipboard</div>
+          <div class="help-k">Ctrl+Shift+O</div><div class="help-d">View draft images</div>
         </section>
         <section class="help-col">
           <div class="help-title">Command Mode</div>
@@ -79,6 +56,45 @@ export function openHelpOverlay({ onClose, modeManager }) {
           <div class="help-k">Ctrl+W</div><div class="help-d">Delete word left</div>
           <div class="help-k">Ctrl+Shift+F</div><div class="help-d">Forward one word</div>
           <div class="help-k">Ctrl+Shift+B</div><div class="help-d">Backward one word</div>
+        </section>
+      </div>
+      <div class="help-grid help-grid-view">
+        <section class="help-col">
+          <div class="help-title">View: Navigation</div>
+          <div class="help-k">Enter</div><div class="help-d">Switch to Input Mode</div>
+          <div class="help-k">Esc</div><div class="help-d">Switch to Command Mode</div>
+          <div class="help-k">j / ArrowDown</div><div class="help-d">Scroll down</div>
+          <div class="help-k">k / ArrowUp</div><div class="help-d">Scroll up</div>
+          <div class="help-k">J</div><div class="help-d">Scroll down (big step)</div>
+          <div class="help-k">K</div><div class="help-d">Scroll up (big step)</div>
+          <div class="help-k">u</div><div class="help-d">Jump to previous message</div>
+          <div class="help-k">d</div><div class="help-d">Jump to next message</div>
+          <div class="help-k">U</div><div class="help-d">Scroll current message to top</div>
+          <div class="help-k">g</div><div class="help-d">Move to first message part</div>
+          <div class="help-k">G</div><div class="help-d">Move to last message part</div>
+          <div class="help-k">o / O</div><div class="help-d">Jump to context boundary</div>
+        </section>
+        <section class="help-col">
+          <div class="help-title">View: Actions</div>
+          <div class="help-k">c / c1-9</div><div class="help-d">Copy code block(s)</div>
+          <div class="help-k">y / y1-9</div><div class="help-d">Copy equation(s)</div>
+          <div class="help-k">Y</div><div class="help-d">Copy entire message</div>
+          <div class="help-k">v / v1-9</div><div class="help-d">View code in overlay</div>
+          <div class="help-k">m / m1-9</div><div class="help-d">View equation in overlay</div>
+          <div class="help-k">l</div><div class="help-d">Show link hints (1-9 to open)</div>
+          <div class="help-k">Ctrl+Shift+S</div><div class="help-d">Open Sources overlay</div>
+          <div class="help-k">i / i1-9</div><div class="help-d">View message images</div>
+          <div class="help-k">Ctrl+Shift+O</div><div class="help-d">View draft images</div>
+          <div class="help-k">Ctrl+T</div><div class="help-d">Topic picker (reassign)</div>
+          <div class="help-k">e</div><div class="help-d">Edit & resend (error row)</div>
+          <div class="help-k">w</div><div class="help-d">Delete (error row)</div>
+        </section>
+        <section class="help-col">
+          <div class="help-title">View: Rating & Flags</div>
+          <div class="help-k">1 / 2 / 3</div><div class="help-d">Set star rating</div>
+          <div class="help-k">*</div><div class="help-d">Cycle star rating (0→1→2→3→0)</div>
+          <div class="help-k">Space</div><div class="help-d">Clear star rating</div>
+          <div class="help-k">a</div><div class="help-d">Toggle color flag</div>
         </section>
       </div>
       <div class="help-buttons">

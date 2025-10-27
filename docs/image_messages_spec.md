@@ -1,7 +1,7 @@
 # Image Messages (Phases 3–4)
 
 Status
-- Draft for implementation. Scope intentionally minimal, performance-first.
+- Implemented. Scope intentionally minimal, performance-first.
 
 Goals (do a few things very well)
 - Support screenshots/images in user messages for vision-capable models (and all models in the current model catalog are vision-capable, no text-only model is expected to be included).
@@ -265,7 +265,6 @@ Additional considerations (quick checklist)
 
 
 # BE AWARE OF THE FILES IN ACTIVE DEVELOPMENT (RECENTLY CHANGED):
-
 docs/image_messages_spec.md
 src/core/context/tokenEstimator.js
 src/core/models/messagePair.js
