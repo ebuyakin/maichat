@@ -464,6 +464,7 @@ export function createInputKeyHandler({
               signal: controller.signal,
               visiblePairs: chrono,
               attachments: pendingMessageMeta.attachments || [], // NEW: pass draft attachments
+              topicWebSearchOverride: pendingMessageMeta.webSearchOverride, // NEW: pass topic override
               boundarySnapshot,
               onDebugPayload: (payload) => {
                 historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount)

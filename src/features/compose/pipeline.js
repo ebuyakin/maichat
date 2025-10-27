@@ -34,6 +34,7 @@ export async function executeSend({
   signal,
   visiblePairs,
   attachments = [], // NEW: array of imageIds for the new user message
+  topicWebSearchOverride, // NEW: optional boolean to override model's webSearch setting
   onDebugPayload,
 }) {
   const settings = getSettings()
@@ -196,8 +197,16 @@ export async function executeSend({
   const rp = (topic && topic.requestParams) || {}
   if (typeof rp.temperature === 'number') options.temperature = rp.temperature
   if (typeof rp.maxOutputTokens === 'number') options.maxOutputTokens = rp.maxOutputTokens
-  // Add webSearch from model metadata if available
-  if (typeof providerMeta.webSearch === 'boolean') options.webSearch = providerMeta.webSearch
+  
+  // Web search: topic override takes precedence over model default
+  let webSearch = providerMeta.webSearch  // Start with model default
+  if (typeof topicWebSearchOverride === 'boolean') {
+    webSearch = topicWebSearchOverride  // Topic override wins
+  }
+  if (typeof webSearch === 'boolean') {
+    options.webSearch = webSearch
+  }
+  
   // Stage 3: provider retry loop (context overflow at provider tokenizer)
   let attemptsUsed = 0
   let T_provider = 0

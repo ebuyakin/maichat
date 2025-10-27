@@ -22,7 +22,7 @@ import { openModelSelector } from '../config/modelSelector.js'
 import { openModelEditor } from '../config/modelEditor.js'
 import { openHelpOverlay } from '../config/helpOverlay.js'
 import { openDailyStatsOverlay } from '../config/dailyStatsOverlay.js'
-import { getActiveModel } from '../../core/models/modelCatalog.js'
+import { getActiveModel, getModelMeta } from '../../core/models/modelCatalog.js'
 // Compose pipeline not yet moved (Phase 6.5). Use current send/ path.
 // Compose pipeline moved (Phase 6.5) to features/compose
 import { executeSend } from '../compose/pipeline.js'
@@ -253,6 +253,25 @@ export function createInteraction({
             localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId)
           } catch {}
 
+          // NEW: Apply topic defaults (defaultModel and webSearchOverride)
+          const topic = store.topics.get(topicId)
+          if (topic) {
+            // Apply default model if configured and enabled
+            if (topic.defaultModel) {
+              const modelMeta = getModelMeta(topic.defaultModel)
+              if (modelMeta && modelMeta.enabled) {
+                pendingMessageMeta.model = topic.defaultModel
+                renderPendingMeta()
+              }
+            }
+            // Apply web search override if configured
+            if (typeof topic.webSearchOverride === 'boolean') {
+              pendingMessageMeta.webSearchOverride = topic.webSearchOverride
+            } else {
+              delete pendingMessageMeta.webSearchOverride
+            }
+          }
+
           // Add to topic history
           addToTopicHistory(topicId)
 
@@ -323,6 +342,25 @@ export function createInteraction({
           try {
             localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId)
           } catch {}
+
+          // NEW: Apply topic defaults (defaultModel and webSearchOverride)
+          const topic = store.topics.get(topicId)
+          if (topic) {
+            // Apply default model if configured and enabled
+            if (topic.defaultModel) {
+              const modelMeta = getModelMeta(topic.defaultModel)
+              if (modelMeta && modelMeta.enabled) {
+                pendingMessageMeta.model = topic.defaultModel
+                renderPendingMeta()
+              }
+            }
+            // Apply web search override if configured
+            if (typeof topic.webSearchOverride === 'boolean') {
+              pendingMessageMeta.webSearchOverride = topic.webSearchOverride
+            } else {
+              delete pendingMessageMeta.webSearchOverride
+            }
+          }
 
           // Add to topic history
           addToTopicHistory(topicId)

@@ -959,6 +959,8 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   sysTextarea.addEventListener('input', () => setDirty(true))
   tempInput.addEventListener('input', () => setDirty(true))
   maxTokInput.addEventListener('input', () => setDirty(true))
+  defaultModelSelect.addEventListener('change', () => setDirty(true))
+  webSearchOverrideSelect.addEventListener('change', () => setDirty(true))
   // No autosave on blur; explicit Apply (Ctrl+S) to save changes.
   detailsEl.addEventListener('click', (e) => {
     const act = e.target.getAttribute && e.target.getAttribute('data-act')
