@@ -6,9 +6,9 @@
 - command history (filter command history - make it finite) [x]
 - hyperlinks in the assistant messages open with lN [x] - add to tutorial/F1
 - link topic to model (set combo: topic+model+search settings) [x]
-- Topic editor redesign (layout, navigation)
-- timing of the response - is it saved? expose average time in daily stats?
-- file picker - j/k navigation? default folder, default focus. - tutorial notes about clipboarding
+- Topic editor redesign (layout, navigation) [x]
+- Stats overlay: model stat in addition to daily stat, median response time by date / by model [x]
+- file picker - no customization allowed. - tutorial notes about clipboarding
 - inherited system message and settings for children topics. [-]
 - clearing debug code. local storage
 - using localStorage for debugging. - effective, but bad idea

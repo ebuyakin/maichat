@@ -88,9 +88,6 @@ export function processMessagePair(messagePair) {
   if (extraction.hasCode) {
     messagePair.processedContent = extraction.displayText
     messagePair.codeBlocks = extraction.codeBlocks
-    console.log(
-      `[CodeExtractor] Processed message ${messagePair.id}: found ${extraction.codeBlocks.length} code blocks`
-    )
   }
   // Equation extraction (hybrid simple/complex) builds on processedContent if present
   applyEquationsToPair(messagePair)

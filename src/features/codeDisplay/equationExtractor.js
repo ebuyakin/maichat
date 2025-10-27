@@ -161,9 +161,6 @@ export function applyEquationsToPair(messagePair) {
     messagePair.processedContent = displayText
     if (equationBlocks.length) messagePair.equationBlocks = equationBlocks
     if (inlineSimple.length) messagePair.inlineSimpleEquations = inlineSimple // not rendered yet
-    console.log(
-      `[EquationExtractor] Processed message ${messagePair.id}: equations=${equationBlocks.length}, inlineSimple=${inlineSimple.length}`
-    )
   }
   return messagePair
 }

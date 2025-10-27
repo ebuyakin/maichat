@@ -143,10 +143,6 @@ export function createEquationOverlay({ modeManager }) {
       true
     )
     focus()
-    console.log(
-      '[EquationOverlay] Opened modal for block:',
-      currentBlock.display ? 'display' : 'inline'
-    )
   }
 
   function focus() {
@@ -162,7 +158,6 @@ export function createEquationOverlay({ modeManager }) {
     try {
       modalHandle.close(trigger)
     } catch {}
-    console.log('[EquationOverlay] Closed')
   }
   function isVisible() {
     return !!modalHandle

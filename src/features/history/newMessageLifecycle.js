@@ -79,22 +79,6 @@ export function createNewMessageLifecycle({
         const currentMode = modeMgr ? modeMgr.mode || modeMgr.current : null
         // Spec: only switch to VIEW when reply does NOT fit the viewport (not merely when partitioned)
         const shouldSwitch = currentMode === 'input' && inputEmpty && !fits
-        if (window.__focusDebug) {
-          console.log('[focus-debug-reply]', {
-            replyHeight,
-            logicalReplyHeight,
-            paneH,
-            clippedTop,
-            fits,
-            multiPart,
-            inputEmpty,
-            mode: currentMode,
-            shouldSwitch,
-            parts: replyParts.length,
-            paneScrollH: pane.scrollHeight,
-            paneClientH: pane.clientHeight,
-          })
-        }
         if (shouldSwitch && modeMgr && MODES) {
           if (typeof modeMgr.set === 'function') modeMgr.set(MODES.VIEW)
           // Focus first assistant part and align it to top via policy (no animation)
@@ -134,7 +118,7 @@ export function createNewMessageLifecycle({
           }
         }
       } catch (err) {
-        if (window.__focusDebug) console.log('[focus-debug-error]', err)
+        // Focus management error (non-critical, silently handled)
       }
     })
   }

@@ -154,7 +154,6 @@ export function createCodeOverlay({ modeManager }) {
       true
     )
     focusCode()
-    console.log('[CodeOverlay] Opened modal for block:', codeBlock.language)
   }
 
   function focusCode() {
@@ -172,7 +171,6 @@ export function createCodeOverlay({ modeManager }) {
       modalHandle.close(trigger)
     } catch {}
     // beforeClose hook handles nulling references
-    console.log('[CodeOverlay] Closed')
   }
 
   function isVisible() {
