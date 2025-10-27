@@ -277,7 +277,31 @@
   opacity: 0;
 }
 
-/* Daily Stats Panel */
+/* Daily stats table */
+.daily-stats-panel .stats-tabs { 
+  display: flex; 
+  gap: 6px; 
+  padding: 8px 12px; 
+  border-bottom: 1px solid #222; 
+}
+.daily-stats-panel .stats-tabs .tab-btn { 
+  background: #1a1a1a; 
+  border: 1px solid #2c2c2c; 
+  color: var(--text-dim); 
+  padding: 4px 10px; 
+  border-radius: 4px; 
+  font-size: 11px; 
+  letter-spacing: .5px; 
+  cursor: pointer; 
+}
+.daily-stats-panel .stats-tabs .tab-btn.active { 
+  color: var(--text); 
+  border-color: #3a3a3a; 
+  background: #202020; 
+}
+.daily-stats-panel .stats-tabs .tab-btn:focus { 
+  border-color: var(--accent); 
+}
 .daily-stats-panel .stats-table tr.active td { 
   background: #162234; 
 }
