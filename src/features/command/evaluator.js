@@ -67,6 +67,9 @@ export function evaluate(ast, pairs, opts = {}) {
           (p) =>
             p.lifecycleState === 'error' || (p.errorMessage && String(p.errorMessage).trim() !== '')
         )
+      case 'i':
+        // Filter pairs with attachments (images)
+        return pairs.filter((p) => Array.isArray(p.attachments) && p.attachments.length > 0)
       case 't': {
         // Check if value is a number -> tN (last N messages of current topic)
         if (value != null && /^\d+$/.test(String(value))) {

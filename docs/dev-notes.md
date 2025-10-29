@@ -10,8 +10,11 @@
 - Stats overlay: model stat in addition to daily stat, median response time by date / by model [x]
 - file picker - no customization allowed. - tutorial notes about clipboarding
 - inherited system message and settings for children topics. [-]
-- clearing debug code. local storage
+- clearing debug code. local storage [x]
+- filtering by messages with attachments [x]
+- delete messages and attachments! []
 - using localStorage for debugging. - effective, but bad idea
+- parallel usage in several tabs - tutorial
 
 For Tutorial:
 - tutorial about web search . 

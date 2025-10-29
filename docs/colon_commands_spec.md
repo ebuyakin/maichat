@@ -1,7 +1,7 @@
 # Colon Commands Specification (M22 – part 2)
 
 Status: Implemented
-Scope: Colon commands in the shared input act on the currently filtered set. Phase 1 commands: `export`, `tchange`.
+Scope: Colon commands in the shared input act on the currently filtered set. Phase 1 commands: `export`, `tchange`, `delete`
 See also: `docs/cli_filtering_language.md` (Filtering Language) — both documents cross-reference each other.
 
 ## Summary
@@ -92,6 +92,33 @@ Behavior
 Examples
 - `t'AI...' :tchange`
 - `t'*Neural*' :tchange "AI > Planning" --dry-run`
+
+### delete
+Purpose: Permanently delete the selected pairs.
+
+Syntax
+- `:delete`                   → delete all filtered pairs (confirmation required)
+- `:delete --force`          → delete >50 pairs (requires force flag)
+
+Flags
+- `--force` (required for >50 pairs)
+
+Behavior
+- Safety limit: refuses to delete more than 50 pairs without `--force`
+- Always requires confirmation (no bypass); shows count and "cannot be undone" warning
+- Dynamic filter blocking: refuses filters containing `r` (recent), `o` (context), `t` (bare/tN)
+  - These filters are dynamic and would show different messages after deletion
+  - Error: "Delete-incompatible filter (no r, o, t/tN)"
+- After deletion: filter remains active, shows empty view (visual confirmation)
+- User presses Esc to clear filter and see remaining messages
+
+Examples
+- `e :delete`                                # Delete all error pairs
+- `t'temp' & i :delete`                      # Delete attachments from temp topic
+- `d<2024-01-01 :delete --force`             # Delete old messages (>50)
+- `s0 & !i :delete`                          # Delete unrated non-attachment messages
+
+Safe filters: `t'name'`, `d<7d`, `m'model'`, `c'text'`, `s>=2`, `e`, `b`, `g`, `i`
 
 ## Errors and Validation
 - Filter parse errors: show inline; do not run command.

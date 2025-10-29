@@ -1,6 +1,7 @@
 // Moved from src/store/memoryStore.js (Phase 5 core move)
 import { createMessagePair } from '../models/messagePair.js'
 import { createTopic } from '../models/topic.js'
+import { detach as detachImage } from '../../features/images/imageStore.js'
 class Emitter {
   constructor() {
     this.listeners = {}
@@ -122,6 +123,16 @@ export class MemoryStore {
   removePair(id) {
     const pair = this.pairs.get(id)
     if (!pair) return false
+    
+    // Clean up image attachments (decrement refCount; delete if reaches 0)
+    if (Array.isArray(pair.attachments) && pair.attachments.length > 0) {
+      for (const imageId of pair.attachments) {
+        detachImage(imageId).catch((e) => {
+          console.warn('[store] failed to detach image on pair removal', imageId, e)
+        })
+      }
+    }
+    
     this.pairs.delete(id)
     this._decrementCountsForTopic(pair.topicId)
     this._recalcLastActiveForTopicSubtree(pair.topicId)

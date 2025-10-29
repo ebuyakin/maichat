@@ -176,6 +176,25 @@ d2025-01-01           # exactly on Jan 1, 2025 (local day)
 d25-03-04             # exactly on Mar 4, 2025 (two-digit year)
 ```
 
+### Messages with Attachments (`i`)
+
+**Purpose**: Filter messages by presence of image attachments
+
+**Syntax**: `i`
+
+**Semantics**: 
+- Includes pairs where the `attachments` array is non-empty (has one or more images)
+- Useful for managing storage, finding visual content, or cleaning up attachment-heavy conversations
+
+**Examples**:
+```
+i                       # Only messages with attachments
+!i                      # Messages without attachments
+i & t'Screenshots'      # Attachments in Screenshots topic
+i & d<30d               # Attachments from last 30 days
+i | e                   # Messages with attachments OR errors
+```
+
 ### Content Search (`c`)
 
 Filter by message content (user+assistant text concatenated per pair).

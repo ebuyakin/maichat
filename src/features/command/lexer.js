@@ -1,7 +1,7 @@
 // Moved from src/filter/lexer.js (Phase 6.3) – original now re-export stub.
 // Lexer (subset Phase 4 MVP) - tokens: COMMAND, NUMBER, STRING, OP, PAREN, EOF
 
-const COMMANDS = new Set(['s', 'r', 't', 'm', 'b', 'g', 'c', 'd', 'e', 'o'])
+const COMMANDS = new Set(['s', 'r', 't', 'm', 'b', 'g', 'c', 'd', 'e', 'o', 'i'])
 
 /** @typedef {{type:string,value?:string,start:number,end:number}} Token */
 

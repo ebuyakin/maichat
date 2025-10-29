@@ -241,6 +241,7 @@ export function createCommandKeyHandler({
             currentModel: currentBareModel,
             currentTopicId: pendingMessageMeta.topicId || getCurrentTopicId(),
             currentTopicPath,
+            lastFilterInput: filterStr,
           }
           const ui = {
             notify: (msg) => {
@@ -292,6 +293,18 @@ export function createCommandKeyHandler({
                 // Topic change: re-render to update badges, preserve scroll
                 historyRuntime.renderCurrentView({ preserveActive: true })
                 // No scroll - preserveActive maintains position
+                commandErrEl.textContent = ''
+                commandInput.value = filterStr
+                pushCommandHistory(`${filterStr}`)
+                setFilterActive(!!filterStr)
+                modeManager.set('view')
+                return
+              }
+              
+              if (cmd.name === 'delete') {
+                // Delete: re-render with filter active (shows empty as confirmation)
+                historyRuntime.renderCurrentView({ preserveActive: false })
+                // Keep filter active to show empty view (visual confirmation)
                 commandErrEl.textContent = ''
                 commandInput.value = filterStr
                 pushCommandHistory(`${filterStr}`)
@@ -477,6 +490,7 @@ export function createCommandKeyHandler({
     if (e.key === 'Escape') {
       if (commandInput.value) {
         commandInput.value = ''
+        commandErrEl.textContent = ''
         return true
       }
       return true
