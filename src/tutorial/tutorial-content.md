@@ -1116,15 +1116,12 @@ Set system messages in the Topic Editor (`Ctrl+Shift+T`), then press `Ctrl+E` on
 
 ## Working with Images {#images}
 
-MaiChat supports image attachments for vision-capable AI models, making it easy to get help with screenshots, diagrams, code snippets, UI mockups, and other visual content.
+MaiChat supports image attachments for all models in the catalogue, making it easy to get help with screenshots, diagrams, code snippets, UI mockups, and other visual content.
 
 ### Overview
 
-**Vision-capable models:**
-- **OpenAI**: GPT-4o, GPT-4o-mini (and future vision models)
-- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus
-- **Google**: Gemini 1.5 Pro, Gemini 1.5 Flash
-- **xAI**: grok-vision-beta
+**Vision support:**
+All base models in MaiChat's catalogue support vision (image understanding). This is a standard capability across OpenAI, Anthropic, Google, and xAI models.
 
 **Common use cases:**
 - Getting help with error messages shown in screenshots
@@ -1259,6 +1256,104 @@ i & t'temp' :delete
 3. Press `i` on any message to view its images
 4. Use `j`/`k` in the overlay to browse all images in sequence
 
+## Web Search & Sources {#search}
+
+AI models can search the web in real-time and cite their sources. MaiChat makes it easy to enable search and review citations, giving you transparency into where information comes from.
+
+### Overview
+
+**Search support:**
+All base models in MaiChat's catalogue support web search with citations. This is a standard capability provided by the LLM providers (OpenAI, Anthropic, Google, xAI).
+
+**Use cases:**
+- Getting current information (news, events, stock prices)
+- Fact-checking with verifiable sources
+- Research with citations
+- Finding recent documentation or updates
+- Asking about recent developments in any field
+
+### Enabling Web Search
+
+Search is controlled per-model in the Model Editor:
+
+1. Press `Ctrl+M` to open model selector
+2. Navigate to any model
+3. Press `Enter` to edit the model
+4. Check the **"Search Enabled"** checkbox
+5. Press `Ctrl+S` to save
+
+**When to enable search:**
+- Research topics requiring current information
+- Fact-checking and verification workflows
+- Questions about recent events or updates
+- Any query where sources matter
+
+**When to disable search:**
+- Creative writing or brainstorming
+- Code generation (unless checking current APIs)
+- General conversation
+- When speed is more important than sources
+
+> **Performance note:** Enabling search slightly increases response time as the model searches before generating.
+
+### Viewing Citations (View Mode)
+
+When a model uses web search, it includes numbered citations in the response like `[1]`, `[2]`, etc.
+
+**Open Sources overlay (Ctrl+Shift+S):**
+1. Navigate to a message with citations (look for `[1]`, `[2]` in text)
+2. Press `Ctrl+Shift+S` in View Mode
+3. The Sources overlay opens showing all cited URLs
+
+**Sources overlay features:**
+- **List view**: All sources numbered with titles and URLs
+- **Navigate**: Use `j`/`k` or arrow keys to scroll
+- **Copy URL**: Click the copy button or select text
+- **Open link**: Click the URL to open in browser (or use link hints)
+- **Close**: Press `Esc` to return
+
+**Visual indicator:**
+- Messages with search results may show additional metadata
+- Look for `[1]`, `[2]`, `[3]` inline citations in the response
+
+### Link Hints
+
+MaiChat provides vim-style link hints to open any link in the response without using your mouse:
+
+**Activate link hints (l):**
+1. In View Mode, navigate to a message with links
+2. Press `l` (lowercase L)
+3. Numbers appear next to each link
+4. Press `1`, `2`, `3`, etc. to open that link
+5. Links open in a new browser tab
+
+**Works with:**
+- Citation links from web search
+- Any URLs in the assistant response
+- Markdown links
+- Plain text URLs
+
+> **Tip:** Combine with `Ctrl+Shift+S` for full citation workflow: press `Ctrl+Shift+S` to see all sources, then `l` to quickly open any link.
+
+### How It Works
+
+**Behind the scenes:**
+1. You send a message to a search-enabled model
+2. The model performs web searches before generating the response
+3. Search results are analyzed and relevant content is extracted
+4. The model generates a response using the search results
+5. Citations are added inline: `[1]`, `[2]`, `[3]`
+6. Full URLs are stored and accessible via `Ctrl+Shift+S`
+
+**Citation format:**
+- Inline: `According to recent studies [1], the approach has proven effective [2].`
+- Sources overlay: Shows full titles and URLs for each number
+
+**Performance impact:**
+- Adds 2-5 seconds to response time (depending on query complexity)
+- Uses additional tokens (search results are part of context)
+- Slightly higher API costs
+
 ## API Keys and Model Catalogue {#models}
 
 MaiChat connects to AI providers through their APIs. To use the app, you need to set up API keys and understand how to manage your model catalog.
@@ -1280,11 +1375,12 @@ MaiChat is **completely free** — you pay nothing to use the app itself. Instea
 - **OpenAI:** No free tier; pay per token (roughly $2-20 per 1M tokens depending on model. 1M tokens corresponds to 1200-1500 typical chat messages)
 - **Anthropic:** Some credits for new users; similar pricing to OpenAI
 - **Google (Gemini):** Generous free tier (15 requests/min, 1M tokens/day for Gemini 1.5 Flash)
+- **xAI:** Pay-as-you-go pricing; check console.x.ai for current rates
 - **Typical usage:** Light use might cost $5-20/month; heavy use $50-100+/month
 
 Check each provider's website for current pricing and free tier details.
 
-MaiChat supports three major AI providers. You need at least one API key to use the app.
+MaiChat supports four major AI providers. You need at least one API key to use the app.
 
 **Opening API Keys settings:**
 - Press `Ctrl+K` from any mode
@@ -1303,6 +1399,10 @@ MaiChat supports three major AI providers. You need at least one API key to use 
 3. **Google** (Gemini models)
    - Get your key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
    - Models: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite
+
+4. **xAI** (Grok models)
+   - Get your key at [console.x.ai](https://console.x.ai)
+   - Models: grok-4-fast-non-reasoning, grok-4-fast-reasoning, grok-code-fast-1
 
 **Security and privacy:**
 
@@ -1344,9 +1444,14 @@ A table showing all available models with:
 - GPT-5 nano (OpenAI) — 128K context
 - Claude 3.5 Haiku (Anthropic) — 200K context
 - Gemini 2.5 Flash-Lite (Google) — 1M context
+- grok-4-fast-non-reasoning (xAI) — Fast inference without extended reasoning
 
 **Reasoning models** (specialized):
 - o4-mini (OpenAI) — Extended thinking time
+- grok-4-fast-reasoning (xAI) — Fast inference with reasoning capabilities
+
+**Coding models** (specialized):
+- grok-code-fast-1 (xAI) — Optimized for code generation and analysis
 
 ### Managing Models
 
@@ -1374,9 +1479,9 @@ Click on any field to edit:
 
 ### Adding More Models
 
-By default, MaiChat includes only the most popular and relevant models from each provider. However, you can add any other official model from OpenAI, Anthropic, or Google.
+By default, MaiChat includes only the most popular and relevant models from each provider. However, you can add any other official model from OpenAI, Anthropic, Google, or xAI.
 
-**Important:** You can only add models from the three supported providers. You cannot add models from other providers or use custom/fine-tuned models (those typically have different API endpoints).
+**Important:** You can only add models from the four supported providers. You cannot add models from other providers or use custom/fine-tuned models (those typically have different API endpoints).
 
 **How to add a model:**
 
@@ -1480,9 +1585,14 @@ Whichever is smaller becomes the actual constraint.
 - Very generous free tier: 250K-1M TPM depending on model
 - Output tokens don't count toward TPM
 
+**xAI (Grok):**
+- Uses TPM limit similar to OpenAI
+- Only input tokens count toward TPM
+- Check console.x.ai for your plan's specific limits
+
 **What this means for you:**
 
-- **OpenAI/Gemini:** Set TPM to your plan's input token limit
+- **OpenAI/Gemini/xAI:** Set TPM to your plan's input token limit
 - **Anthropic:** Set TPM to your plan's input token limit (MaiChat handles output limits separately)
 
 **Setting TPM correctly:**
@@ -1493,6 +1603,7 @@ Whichever is smaller becomes the actual constraint.
    - **OpenAI:** platform.openai.com → Settings → Limits (look for "Tokens per minute")
    - **Anthropic:** console.anthropic.com → Settings → Limits (look for "Input tokens per minute")
    - **Google:** Check your tier — Free tier has very high limits (250K-1M TPM)
+   - **xAI:** console.x.ai → Check your account limits
 
 2. Open Model Editor (`Ctrl+Shift+M`)
 
@@ -1540,7 +1651,7 @@ MaiChat ships with conservative defaults that should work for most paid plans. H
 
 ### Best Practices
 
-✓ **Set up all three providers** if possible — gives you flexibility and backup options  
+✓ **Set up all four providers** if possible — gives you flexibility and backup options  
 ✓ **Start with free tier** (Gemini) to experiment before committing budget  
 ✓ **Monitor your costs** using provider dashboards and Daily Stats (`Ctrl+Shift+D`)  
 ✓ **Disable models you don't use** — keeps the selector clean  
@@ -1593,30 +1704,48 @@ Configure app-wide behavior and appearance through the Settings panel.
 
 **Storage location:** Settings, API keys, model catalog, and topic tree are stored in **localStorage**. Conversation history (message pairs) is stored in **IndexedDB** for better performance with large datasets.
 
-### Daily Statistics
+### Activity Statistics
 
-View basic activity breakdown for your currently filtered conversations.
+View activity breakdown for your currently filtered conversations with two different perspectives: by date or by model.
 
-**Access:** Press `Ctrl+Shift+D` from any mode, or use menu (`Ctrl+.` → Daily Stats)
+**Access:** Press `Ctrl+Shift+D` from any mode, or use menu (`Ctrl+.` → Activity Stats)
 
-**What you see:**
+**Two tabs available:**
+
+**1. By Date tab:**
 - Date-by-date message count breakdown
-- Total count for filtered view
-- Simple table sorted chronologically
+- Shows which days you were most active
+- Includes median response time per day
+- Sorted chronologically
+
+**2. By Model tab:**
+- Message count breakdown by AI model
+- Shows which models you use most
+- Includes median response time per model
+- Sorted by usage count
+
+**Navigation:**
+- **Switch tabs:** Press `h` / `l` or `[` / `]` keys
+- **Navigate rows:** Use `j` / `k` or arrow keys
+- **Jump:** `g` to top, `G` to bottom
+- **Close:** Press `Esc`
 
 **Features:**
-- **Respects current filter** — Shows stats only for visible messages
-- **Keyboard navigation:** j/k or arrows to navigate rows, g/G to jump to top/bottom
+- **Respects current filter** — Shows stats only for visible messages (filtered set)
+- **Response times** — Median time gives you sense of model speed and API performance
+- **Context-aware** — Filter to a topic first, then check stats for that topic only
+
+**Use cases:**
+- Quick activity overview across time or models
+- Compare model performance (speed) side-by-side
+- Verify filter is working as expected
+- Identify usage patterns (which models for which topics)
+- See which days or models had slower responses
 
 **What it's NOT:**
 - Not a cost tracker (no pricing/spending data)
-- Not a detailed analytics tool (no breakdown by model/provider)
-- Not exportable or historical (shows only current data)
-
-**When to use:**
-- Quick activity overview
-- Verify filter is working as expected
-- See when you've been most active
+- Not exportable (shows only current data in overlay
+- Not historical in the sense of trends over time
 
 **Note:** Data comes from IndexedDB (where conversation history is stored). Clearing browser data will delete this history.
 
