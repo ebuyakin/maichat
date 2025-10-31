@@ -1,6 +1,6 @@
 ## What is MaiChat {#overview}
 
-MaiChat is a keyboard-centric interface for ChatGPT, Claude, and Gemini that puts you in control. Unlike standard chat interfaces, MaiChat organizes your conversations into a hierarchical topic tree, lets you filter message history with a powerful CLI-like language, and gives you precise control over what context gets sent to each model. It's designed for power users who want to work faster, stay organized, and maintain complete control over their AI interactions.
+MaiChat is a keyboard-centric interface for ChatGPT, Claude, Gemini, and Grok that puts you in control. Unlike standard chat interfaces, MaiChat organizes your conversations into a hierarchical topic tree, lets you filter message history with a powerful CLI-like language, and gives you precise control over what context gets sent to each model. It's designed for power users who want to work faster, stay organized, and maintain complete control over their AI interactions.
 
 ## Quickstart (5 minutes) {#quickstart}
 
@@ -10,13 +10,14 @@ Get MaiChat running and send your first message. This guide covers everything yo
 
 ### Step 1: Set up your API key
 
-MaiChat needs API keys to connect to LLM providers (OpenAI, Anthropic, Google).
+MaiChat needs API keys to connect to LLM providers (OpenAI, Anthropic, Google, xAI).
 
 1. Press `Ctrl+K` to open API Keys settings
 2. Enter your API key for at least one provider:
-   - **OpenAI**: Get your key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-   - **Anthropic**: Get your key at [console.anthropic.com](https://console.anthropic.com)
-   - **Google**: Get your key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+   - **OpenAI (ChatGPT)**: Get your key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+   - **Anthropic (Claude)**: Get your key at [console.anthropic.com](https://console.anthropic.com)
+   - **Google (Gemini)**: Get your key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+   - **xAI (Grok)**: Get your key at [console.x.ai](https://console.x.ai)
 3. Click Save
 
 > **Note:** API keys are stored locally in your browser and never leave your device.
@@ -30,6 +31,7 @@ Before sending your first message, select which AI model to use:
    - **OpenAI**: GPT-5, GPT-5 mini, GPT-5 nano, o4-mini
    - **Anthropic**: Claude Sonnet 4.5, Claude Opus 4.1, Claude 3.5 Haiku
    - **Google**: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite
+   - **xAI**: Grok-4-fast-non-reasoning, Grok-4-fast-reasoning, Grok-code-fast-1
 3. Select a model and press `Enter`
 
 The selected model will be used for all messages until you change it.
@@ -91,6 +93,7 @@ You now know the basics! Here's what to explore next:
 - **[Topics](#topics)** — learn to structure your conversations with topic trees
 - **[Search & Filtering](#filtering)** — master the powerful CLI filter language
 - **[Context Management](#context)** — control what the model sees in each request
+- **[Working with Images](#images)** — attach and manage images in your conversations
 
 > **Quick reference:** Press `F1` anytime to see all keyboard shortcuts.
 
@@ -179,6 +182,14 @@ Beyond navigation, View Mode lets you manage your messages:
 - `e` — Edit and resend (only works on error messages)
 - `d` — Delete message (only works on error messages)
 
+**Viewing images:**
+- `i` — View image(s) in active message (opens immediately for single image)
+- `i1` / `i2` / `i3` / ... / `i9` — Jump directly to specific image
+
+**Viewing links:**
+- `l` — Show link hints with numbers (press 1-9 to open link)
+- `Ctrl+Shift+S` — Open Sources overlay (view citations from web search)
+
 ### Input Mode Shortcuts
 
 When composing messages, these editing shortcuts speed up your workflow:
@@ -199,6 +210,11 @@ When composing messages, these editing shortcuts speed up your workflow:
 - `Ctrl+Shift+B` — Move cursor backward one word
 
 > **Note:** These same Emacs-style shortcuts work in Command Mode too!
+
+**Attaching images:**
+- `Ctrl+F` — Open file picker to select images
+- `Cmd+V` (macOS) / `Ctrl+V` (Windows/Linux) — Paste images from clipboard
+- `Ctrl+Shift+O` — View/manage attached images before sending
 
 ### Command Mode Usage
 
@@ -558,6 +574,11 @@ Each filter targets a specific attribute of your message pairs (user request + a
 - `g` — grey circle flag
 - Use flags for quick visual organization
 
+**Attachments:** `i`
+- Show only messages with image attachments
+- Useful for finding visual content or managing storage
+- Combine with topic or date filters to narrow down
+
 **Errors:** `e`
 - Show only message pairs where the assistant response failed
 - Useful for troubleshooting API issues
@@ -749,6 +770,12 @@ Failed requests from the last week.
 t'Python...' & c'error' & !e
 ```
 Python discussions mentioning "error" but not actual API failures.
+
+**Find screenshot messages from last month:**
+```
+i & d<30d & t'Screenshots...'
+```
+Image attachments from Screenshots topic within 30 days.
 
 **Weekly review of all topics:**
 ```
@@ -1086,6 +1113,151 @@ Set system messages in the Topic Editor (`Ctrl+Shift+T`), then press `Ctrl+E` on
 ✓ **URA setting** balances new message space vs history inclusion  
 ✓ **Visual dimming** shows off-context messages clearly  
 ✓ **Token trimming** is automatic when predictions are slightly off
+
+## Working with Images {#images}
+
+MaiChat supports image attachments for vision-capable AI models, making it easy to get help with screenshots, diagrams, code snippets, UI mockups, and other visual content.
+
+### Overview
+
+**Vision-capable models:**
+- **OpenAI**: GPT-4o, GPT-4o-mini (and future vision models)
+- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus
+- **Google**: Gemini 1.5 Pro, Gemini 1.5 Flash
+- **xAI**: grok-vision-beta
+
+**Common use cases:**
+- Getting help with error messages shown in screenshots
+- Analyzing charts, graphs, or diagrams
+- Asking questions about code in images
+- Describing or discussing UI/UX designs
+- OCR (extracting text from images)
+
+**Limits:**
+- Up to 4 images per message
+- Maximum 30MB total per message
+- Supported formats: JPEG, PNG, GIF, WebP
+
+### Attaching Images (Input Mode)
+
+You can attach images to your message in three ways:
+
+**1. File picker (Ctrl+F):**
+1. Press `Ctrl+F` in Input Mode
+2. Select one or more images from your file system
+3. Images are added to your draft message
+
+**2. Paste from clipboard (Cmd/Ctrl+V):**
+1. Copy an image to your clipboard (screenshot, image from web, etc.)
+2. In Input Mode, press `Cmd+V` (macOS) or `Ctrl+V` (Windows/Linux)
+3. The image is immediately added to your draft
+
+> **Tip:** This is the fastest way to attach screenshots! Use `Cmd+Shift+4` (macOS) or `Win+Shift+S` (Windows) to capture a screenshot, then paste it directly into MaiChat.
+
+**3. Drag and drop:**
+- Simply drag image files from your file system into the MaiChat window
+- Works in any mode; drops are automatically handled
+
+**Visual indicator:**
+- The input area shows `📎 N images` when you have attachments
+- Hover to see image filenames
+
+### Managing Draft Images
+
+Before sending, you can review and manage your attached images:
+
+**View draft images (Ctrl+Shift+O):**
+1. Press `Ctrl+Shift+O` in Input Mode
+2. Image overlay opens showing all attached images
+3. Navigate with `j`/`k` or arrow keys
+4. Press `Delete` or `x` to remove the current image
+5. Press `Esc` to close the overlay
+
+**Remove all images:**
+- Clear the message input (Ctrl+U) — also clears attachments
+
+### Viewing Message Images (View Mode)
+
+After sending a message with images, you can view them anytime:
+
+**Quick view (i):**
+- Press `i` on any message part with images
+- If there's only one image, it opens immediately
+- If there are multiple images, overlay opens to the first image
+
+**Jump to specific image (i1-i9):**
+- Press `i1` to jump to first image
+- Press `i2` to jump to second image
+- Continue with `i3`, `i4`, etc. up to `i9`
+
+**Visual indicator:**
+- Messages with images show `📎 N` in the metadata line
+
+### Image Overlay Navigation
+
+When viewing images in the overlay:
+
+**Navigate between images:**
+- `j` / `k` — Next / previous image
+- `1` / `2` / `3` ... `9` — Jump to specific image by number
+- Arrow keys — Also work for navigation
+
+**Manage images (draft only):**
+- `Delete` or `x` — Remove current image from draft
+- (Only works when viewing draft images via Ctrl+Shift+O)
+
+**Close overlay:**
+- `Esc` — Close and return to previous mode
+
+### Image Limits and Storage
+
+**Technical limits:**
+- **Per-message limit**: 4 images
+- **Size limit**: 30MB total per message
+- **Supported formats**: JPEG, PNG, GIF, WebP
+
+**Storage:**
+- Images are stored locally in your browser's IndexedDB
+- They never leave your device except when sent to AI providers
+- Large image collections can consume browser storage
+
+**Managing storage:**
+- Use the `i` filter to find all messages with attachments: `i`
+- Combine with date filters to find old images: `i & d<2024-01-01`
+- Delete messages with attachments to free space (see [Deletion Examples](#deletion-examples))
+
+### Common Workflows
+
+**Screenshot workflow:**
+1. Capture screenshot (`Cmd+Shift+4` on macOS, `Win+Shift+S` on Windows)
+2. Switch to MaiChat (Input Mode)
+3. Paste with `Cmd+V` / `Ctrl+V`
+4. Type your question
+5. Press `Enter` to send
+
+**Multiple images:**
+1. Press `Ctrl+F` to open file picker
+2. Select multiple images (Shift+click or Cmd+click)
+3. All images attach at once
+4. Preview with `Ctrl+Shift+O` before sending
+
+**Finding and cleaning up images:**
+```
+# Find all messages with images
+i
+
+# Find old screenshot messages
+i & t'Screenshots...' & d<90d
+
+# Delete old temporary images (requires confirmation)
+i & t'temp' :delete
+```
+
+**Review images from a conversation:**
+1. Filter to your topic: `t'Project X...'`
+2. Navigate with `j`/`k` in View Mode
+3. Press `i` on any message to view its images
+4. Use `j`/`k` in the overlay to browse all images in sequence
 
 ## API Keys and Model Catalogue {#models}
 
