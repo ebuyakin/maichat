@@ -808,21 +808,21 @@ Find unrated messages: `s0 & d<7d` — rate them while fresh.
 **Combine with View Mode actions:**
 Filter to a set, then navigate (`j`/`k`) and rate (`1`/`2`/`3`) or flag (`a`) them.
 
-### Actions on Filtered Sets (Colon Commands)
+### Actions on Filtered Sets 
 
 Once you've filtered messages, you can perform bulk actions on the filtered set using colon commands.
 
-**Syntax:** `<filter> :<command> [arguments] [flags]`
+**Syntax:** `filter :command [arguments] [flags]`
 
 Where:
-- `<filter>` — Any filter expression (or `*` for all messages)
-- `:<command>` — The action to perform on filtered pairs
+- `filter` — Any filter expression (or `*` for all messages)
+- `:command` — The action to perform on filtered pairs
 - `[arguments]` — Optional command-specific arguments
 - `[flags]` — Optional command flags (e.g., `--force`, `--no-confirm`)
 
 **Available commands:**
 
-#### :tchange - Bulk Topic Change
+**:tchange** - Bulk Topic Change
 
 Change the topic for all filtered message pairs.
 
@@ -852,7 +852,7 @@ c'python' & t'General' :tchange "Work > Python"
 4. Confirm the action (shows count)
 5. Messages are reassigned, view refreshes
 
-#### :delete - Bulk Deletion
+**:delete** - Bulk Deletion
 
 Permanently delete all filtered message pairs.
 
@@ -929,7 +929,7 @@ i & s0 :delete                 # Attachments unrated
 5. Messages deleted, empty view shows (confirmation)
 6. Press `Esc` to clear filter and continue
 
-#### :export - Export to File
+**:export** - Export to File
 
 Export filtered messages to JSON, Markdown, or plain text files.
 

@@ -275,7 +275,8 @@ p {
 }
 
 ul, ol { 
-  margin: 12px 0 20px 24px; 
+  margin: 12px 0 20px 24px;
+  list-style-position: inside;
 }
 
 li { 

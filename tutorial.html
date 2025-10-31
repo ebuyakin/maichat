@@ -284,7 +284,8 @@ html[data-page="tutorial"] p {
 }
 
 html[data-page="tutorial"] ul, ol { 
-  margin: 12px 0 20px 24px; 
+  margin: 12px 0 20px 24px;
+  list-style-position: inside;
 }
 
 html[data-page="tutorial"] li { 
@@ -596,6 +597,9 @@ html[data-page="tutorial"] th {
       </li>
       <li class="nav-item">
         <a href="#workflow-tips">Workflow Tips</a>
+      </li>
+      <li class="nav-item">
+        <a href="#actions-on-filtered-sets">Actions on Filtered Sets</a>
       </li>
       <li class="nav-item">
         <a href="#command-mode-shortcuts">Command Mode Shortcuts</a>
@@ -1546,6 +1550,129 @@ html[data-page="tutorial"] th {
         Find unrated messages: <code>s0 & d<7d</code> — rate them while fresh.</p>
         <p><strong>Combine with View Mode actions:</strong>
         Filter to a set, then navigate (<kbd>j</kbd>/<kbd>k</kbd>) and rate (<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>) or flag (<kbd>a</kbd>) them.</p>
+        <h3 id="actions-on-filtered-sets">Actions on Filtered Sets</h3>
+        <p>Once you&#39;ve filtered messages, you can perform bulk actions on the filtered set using colon commands.</p>
+        <p><strong>Syntax:</strong> <code>filter :command [arguments] [flags]</code></p>
+        <p>Where:</p>
+        <ul>
+        <li><code>filter</code> — Any filter expression (or <code>*</code> for all messages)</li>
+        <li><code>:command</code> — The action to perform on filtered pairs</li>
+        <li><code>[arguments]</code> — Optional command-specific arguments</li>
+        <li><code>[flags]</code> — Optional command flags (e.g., <code>--force</code>, <code>--no-confirm</code>)</li>
+        </ul>
+        <p><strong>Available commands:</strong></p>
+        <p><strong>:tchange</strong> - Bulk Topic Change</p>
+        <p>Change the topic for all filtered message pairs.</p>
+        <p><strong>Syntax:</strong></p>
+        <ul>
+        <li><code>:tchange</code> — Change to your currently selected topic (from topic selector)</li>
+        <li><code>:tchange "Topic Name"</code> — Change to specified topic by name or path</li>
+        </ul>
+        <p><strong>Examples:</strong></p>
+        <pre><code># Move all errors to &quot;Debug&quot; topic
+        e :tchange &quot;Debug&quot;
+
+        # Move recent unrated messages to current topic
+        r20 &amp; s0 :tchange
+
+        # Move old messages to Archive
+        d&lt;2024-01-01 :tchange &quot;Archive&quot;
+
+        # Move Python discussions to organized topic
+        c&#39;python&#39; &amp; t&#39;General&#39; :tchange &quot;Work &gt; Python&quot;
+        </code></pre>
+        <p><strong>Workflow:</strong></p>
+        <ol>
+        <li>Apply filter to find messages you want to move</li>
+        <li>Verify the filtered set in View Mode</li>
+        <li>Execute <code>:tchange</code> with target topic</li>
+        <li>Confirm the action (shows count)</li>
+        <li>Messages are reassigned, view refreshes</li>
+        </ol>
+        <p><strong>:delete</strong> - Bulk Deletion</p>
+        <p>Permanently delete all filtered message pairs.</p>
+        <p><strong>Syntax:</strong></p>
+        <ul>
+        <li><code>:delete</code> — Delete all filtered pairs (requires confirmation)</li>
+        <li><code>:delete --force</code> — Delete more than 50 pairs (requires force flag)</li>
+        </ul>
+        <p><strong>Safety restrictions:</strong></p>
+        <p>Cannot use with <strong>dynamic filters</strong> (they would show different messages after deletion):</p>
+        <ul>
+        <li><kbd>r</kbd> / <code>rN</code> — Recent messages (relative)</li>
+        <li><kbd>o</kbd> / <code>oN</code> — Context boundary (changes based on content)</li>
+        <li><kbd>t</kbd> — Bare current topic (UI state)</li>
+        <li><code>tN</code> — Last N from topic (relative)</li>
+        </ul>
+        <p><strong>Safe filters for deletion:</strong></p>
+        <ul>
+        <li><code>t'Topic Name'</code> — Explicit topic name ✓</li>
+        <li><code>d<7d</code> — Date ranges ✓</li>
+        <li><code>m'model'</code> — Model name ✓</li>
+        <li><code>c'text'</code> — Content search ✓</li>
+        <li><code>s>=2</code> — Star ratings ✓</li>
+        <li><kbd>e</kbd> — Errors only ✓</li>
+        <li><kbd>b</kbd> / <kbd>g</kbd> — Flags ✓</li>
+        <li><kbd>i</kbd> — Attachments ✓</li>
+        </ul>
+        <p><strong>Examples:</strong></p>
+        <pre><code># Delete all error messages
+        e :delete
+
+        # Delete old images to free space
+        i &amp; d&lt;2024-01-01 :delete --force
+
+        # Delete temporary topic content
+        t&#39;temp&#39; :delete
+
+        # Delete unrated non-image messages
+        s0 &amp; !i :delete
+
+        # Clean up low-quality old messages
+        d&lt;2023-01-01 &amp; s0 :delete --force
+        </code></pre>
+        <p><strong>Flags:</strong></p>
+        <ul>
+        <li><code>--force</code> — Required for deleting more than 50 pairs</li>
+        </ul>
+        <p><strong>Safety features:</strong></p>
+        <ul>
+        <li>Always requires confirmation (no bypass)</li>
+        <li>Limit of 50 pairs without <code>--force</code></li>
+        <li>Blocks dynamic filters with clear error message</li>
+        <li>Shows count before confirming</li>
+        <li>After deletion, filter remains active showing empty view (confirmation)</li>
+        <li>Press <kbd>Esc</kbd> to clear filter and see remaining messages</li>
+        </ul>
+        <p><strong>Error examples:</strong></p>
+        <pre><code># ✗ These will be blocked:
+        r10 :delete                    # Error: no &#39;r&#39;
+        t &amp; s0 :delete                 # Error: no &#39;t&#39; (bare)
+        t5 :delete                     # Error: no &#39;tN&#39;
+        o &amp; e :delete                  # Error: no &#39;o&#39;
+
+        # ✓ These work:
+        t&#39;Coding...&#39; &amp; s0 :delete      # Explicit topic name
+        d&lt;30d &amp; e :delete              # Date + errors
+        i &amp; s0 :delete                 # Attachments unrated
+        </code></pre>
+        <p><strong>Workflow:</strong></p>
+        <ol>
+        <li>Apply filter to find messages to delete</li>
+        <li>Verify filtered set carefully in View Mode</li>
+        <li>Execute <code>:delete</code> (add <code>--force</code> if &gt;50 pairs)</li>
+        <li>Confirm deletion (shows count and &quot;cannot be undone&quot;)</li>
+        <li>Messages deleted, empty view shows (confirmation)</li>
+        <li>Press <kbd>Esc</kbd> to clear filter and continue</li>
+        </ol>
+        <p><strong>:export</strong> - Export to File</p>
+        <p>Export filtered messages to JSON, Markdown, or plain text files.</p>
+        <p>For full details, see <a href="#export-data">Export Data</a> section.</p>
+        <p><strong>Quick syntax:</strong></p>
+        <pre><code>s&gt;=2 :export              # Export starred as JSON
+        d&lt;7d :export md           # Export week as Markdown
+        t&#39;Python...&#39; :export txt  # Export topic as text
+        </code></pre>
         <h3 id="command-mode-shortcuts">Command Mode Shortcuts</h3>
         <p>When typing filters in Command Mode:</p>
         <ul>
@@ -1867,11 +1994,6 @@ html[data-page="tutorial"] th {
         <blockquote>
         <p><strong>Tip:</strong> This is the fastest way to attach screenshots! Use <kbd>Cmd+Shift+4</kbd> (macOS) or <kbd>Win+Shift+S</kbd> (Windows) to capture a screenshot, then paste it directly into MaiChat.</p>
         </blockquote>
-        <p><strong>3. Drag and drop:</strong></p>
-        <ul>
-        <li>Simply drag image files from your file system into the MaiChat window</li>
-        <li>Works in any mode; drops are automatically handled</li>
-        </ul>
         <p><strong>Visual indicator:</strong></p>
         <ul>
         <li>The input area shows <code>📎 N images</code> when you have attachments</li>
@@ -1887,10 +2009,6 @@ html[data-page="tutorial"] th {
         <li>Press <code>Delete</code> or <kbd>x</kbd> to remove the current image</li>
         <li>Press <kbd>Esc</kbd> to close the overlay</li>
         </ol>
-        <p><strong>Remove all images:</strong></p>
-        <ul>
-        <li>Clear the message input (Ctrl+U) — also clears attachments</li>
-        </ul>
         <h3 id="viewing-message-images-view-mode">Viewing Message Images (View Mode)</h3>
         <p>After sending a message with images, you can view them anytime:</p>
         <p><strong>Quick view (i):</strong></p>
@@ -1995,7 +2113,7 @@ html[data-page="tutorial"] th {
         <li>Asking about recent developments in any field</li>
         </ul>
         <h3 id="enabling-web-search">Enabling Web Search</h3>
-        <p>Search is controlled per-model in the Model Editor:</p>
+        <p>Search is controlled per-model in the Model Editor (search is enabled by default for all models):</p>
         <ol>
         <li>Press <kbd>Ctrl+M</kbd> to open model selector</li>
         <li>Navigate to any model</li>
