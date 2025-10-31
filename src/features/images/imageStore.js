@@ -275,7 +275,7 @@ export async function attachFromFiles(fileList, options = {}) {
         h: processed.h,
         bytes: processed.bytes,
         createdAt: Date.now(),
-        refCount: 1, // initial reference (attached to draft)
+        // refCount removed: one image = one message (direct ownership)
       }
       await putImageRecord(rec)
       results.ids.push(id)
@@ -315,6 +315,7 @@ export async function attachFromDataTransfer(dataTransfer) {
 }
 
 export async function detach(id) {
+  // Simplified: direct delete without refCount (one image = one message)
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const tx = db.transaction([STORE_IMAGES, STORE_META], 'readwrite')
@@ -324,56 +325,30 @@ export async function detach(id) {
     g.onsuccess = () => {
       const rec = g.result
       if (!rec) return resolve(false)
-      const newRef = Math.max(0, (rec.refCount || 0) - 1)
-      if (newRef > 0) {
-        rec.refCount = newRef
-        const p = images.put(rec)
-        p.onsuccess = () => resolve(true)
-        p.onerror = () => reject(p.error)
-      } else {
-        // delete and update totals
-        const del = images.delete(id)
-        del.onsuccess = () => {
-          const getTotalsReq = meta.get(META_TOTALS_KEY)
-          getTotalsReq.onsuccess = () => {
-            const totals = getTotalsReq.result || { totalBytes: 0, imageCount: 0 }
-            const newTotals = {
-              totalBytes: Math.max(0, (totals.totalBytes || 0) - (rec.bytes || 0)),
-              imageCount: Math.max(0, (totals.imageCount || 1) - 1),
-            }
-            const setReq = meta.put(newTotals, META_TOTALS_KEY)
-            setReq.onsuccess = () => resolve(true)
-            setReq.onerror = () => reject(setReq.error)
+      // Delete image and update totals
+      const del = images.delete(id)
+      del.onsuccess = () => {
+        const getTotalsReq = meta.get(META_TOTALS_KEY)
+        getTotalsReq.onsuccess = () => {
+          const totals = getTotalsReq.result || { totalBytes: 0, imageCount: 0 }
+          const newTotals = {
+            totalBytes: Math.max(0, (totals.totalBytes || 0) - (rec.bytes || 0)),
+            imageCount: Math.max(0, (totals.imageCount || 1) - 1),
           }
-          getTotalsReq.onerror = () => reject(getTotalsReq.error)
+          const setReq = meta.put(newTotals, META_TOTALS_KEY)
+          setReq.onsuccess = () => resolve(true)
+          setReq.onerror = () => reject(setReq.error)
         }
-        del.onerror = () => reject(del.error)
+        getTotalsReq.onerror = () => reject(getTotalsReq.error)
       }
-    }
-    g.onerror = () => reject(g.error)
-  })
-}
-
-export async function incrementRef(id) {
-  const db = await openDB()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction([STORE_IMAGES], 'readwrite')
-    const images = tx.objectStore(STORE_IMAGES)
-    const g = images.get(id)
-    g.onsuccess = () => {
-      const rec = g.result
-      if (!rec) return resolve(false)
-      rec.refCount = (rec.refCount || 0) + 1
-      const p = images.put(rec)
-      p.onsuccess = () => resolve(true)
-      p.onerror = () => reject(p.error)
+      del.onerror = () => reject(del.error)
     }
     g.onerror = () => reject(g.error)
   })
 }
 
 export async function purge(id) {
-  // force delete without refCount decrement (use carefully)
+  // Alias for detach() - kept for compatibility; both do direct delete now
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const tx = db.transaction([STORE_IMAGES, STORE_META], 'readwrite')

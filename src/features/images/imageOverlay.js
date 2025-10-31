@@ -128,18 +128,24 @@ export function openImageOverlay({
       if (!ok) return
     }
     const id = list[index]
-    // Remove from draft and detach from store
+    // Remove from draft array
     list.splice(index, 1)
+    // Delete from store (direct delete now, no refCount)
     ;(async () => { try { await detachImage(id) } catch {} })()
-    // Adjust index and view
+    
+    // Always notify about removal before closing (fix: was after empty check)
+    if (typeof onChange === 'function') {
+      try { onChange({ type: 'remove', id, index }) } catch {}
+    }
+    
+    // Check if empty and close
     if (!list.length) {
       handleClose('empty')
       return
     }
+    
+    // Adjust index and view for remaining images
     if (index >= list.length) index = list.length - 1
-    if (typeof onChange === 'function') {
-      try { onChange({ type: 'remove', id, index }) } catch {}
-    }
     showIndex(index)
   }
 

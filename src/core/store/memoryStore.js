@@ -120,19 +120,19 @@ export class MemoryStore {
     }
     return true
   }
-  removePair(id) {
+  removePair(id, skipImageCleanup = false) {
     const pair = this.pairs.get(id)
     if (!pair) return false
-    
-    // Clean up image attachments (decrement refCount; delete if reaches 0)
-    if (Array.isArray(pair.attachments) && pair.attachments.length > 0) {
+
+    // Clean up image attachments (direct delete, no refCount) unless skipped (edit-resend transfer)
+    if (!skipImageCleanup && Array.isArray(pair.attachments) && pair.attachments.length > 0) {
       for (const imageId of pair.attachments) {
         detachImage(imageId).catch((e) => {
           console.warn('[store] failed to detach image on pair removal', imageId, e)
         })
       }
     }
-    
+
     this.pairs.delete(id)
     this._decrementCountsForTopic(pair.topicId)
     this._recalcLastActiveForTopicSubtree(pair.topicId)

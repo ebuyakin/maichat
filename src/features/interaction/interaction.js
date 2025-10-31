@@ -819,9 +819,34 @@ export function createInteraction({
     inputField.value = pair.userText || ''
     pendingMessageMeta.topicId = pair.topicId
     // Model intentionally NOT copied - preserve user's current model selection
+    // Copy attachments into draft so edit-resend preserves images
+    try {
+      if (!Array.isArray(pendingMessageMeta.attachments)) pendingMessageMeta.attachments = []
+      const src = Array.isArray(pair.attachments) ? pair.attachments : []
+      pendingMessageMeta.attachments = src.slice()
+      // Update small attachments indicator (icon + count)
+      try {
+        const ind = document.getElementById('attachIndicator')
+        const cnt = document.getElementById('attachCount')
+        const n = pendingMessageMeta.attachments.length
+        if (ind && cnt) {
+          if (n === 0) {
+            cnt.textContent = ''
+            ind.setAttribute('aria-label', 'No images attached')
+            ind.style.display = 'none'
+            ind.hidden = false
+          } else {
+            cnt.textContent = n > 1 ? String(n) : ''
+            ind.setAttribute('aria-label', n === 1 ? '1 image attached' : `${n} images attached`)
+            ind.style.display = 'inline-flex'
+            ind.hidden = false
+          }
+        }
+      } catch {}
+    } catch {}
     renderPendingMeta()
-    // Delete the original pair after copying its content
-    store.removePair(pair.id)
+    // Delete the original pair after copying its content, but keep images (transfer on resend)
+    store.removePair(pair.id, true)
     historyRuntime.renderCurrentView({ preserveActive: true })
     // Focus on last message and scroll to bottom
     try {

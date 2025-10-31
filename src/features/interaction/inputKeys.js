@@ -112,6 +112,28 @@ export function createInputKeyHandler({
     } catch {}
   }
 
+  // Helper: validate and clean up stale attachment references
+  async function cleanStaleAttachments() {
+    if (!Array.isArray(pendingMessageMeta.attachments)) return
+    const validIds = []
+    for (const id of pendingMessageMeta.attachments) {
+      try {
+        const rec = await getImagesByIds([id])
+        if (rec && rec[0]) {
+          validIds.push(id)
+        } else {
+          console.warn('[attach] removed stale reference:', id)
+        }
+      } catch {
+        console.warn('[attach] removed stale reference:', id)
+      }
+    }
+    if (validIds.length !== pendingMessageMeta.attachments.length) {
+      pendingMessageMeta.attachments = validIds
+      updateAttachIndicator()
+    }
+  }
+
   // Note: attach indicator is informational only; removal is handled in the overlay UI.
 
   // Bind hidden file input change → attach images to pending draft (no caps yet)
@@ -273,15 +295,21 @@ export function createInputKeyHandler({
       e.preventDefault()
       const list = Array.isArray(pendingMessageMeta.attachments) ? pendingMessageMeta.attachments : []
       if (!list.length) return true
-      const overlay = openImageOverlay({
-        modeManager,
-        mode: 'draft',
-        pendingMessageMeta,
-        startIndex: 0,
-        onChange: () => updateAttachIndicator(),
-      })
-      // Expose a temporary jump helper while the overlay is open
-      try { window.__mcDraftOverlay = overlay } catch {}
+      // Clean stale references before opening overlay
+      ;(async () => {
+        await cleanStaleAttachments()
+        const validList = Array.isArray(pendingMessageMeta.attachments) ? pendingMessageMeta.attachments : []
+        if (!validList.length) return
+        const overlay = openImageOverlay({
+          modeManager,
+          mode: 'draft',
+          pendingMessageMeta,
+          startIndex: 0,
+          onChange: () => updateAttachIndicator(),
+        })
+        // Expose a temporary jump helper while the overlay is open
+        try { window.__mcDraftOverlay = overlay } catch {}
+      })()
       return true
     }
     // Topic history picker (Ctrl+P opens chrono picker)
@@ -374,6 +402,11 @@ export function createInputKeyHandler({
         const editingId = window.__editingPairId
         const topicId = pendingMessageMeta.topicId || getCurrentTopicId()
         const model = pendingMessageMeta.model || getActiveModel()
+        
+        // Capture attachments before clearing draft (used throughout async send)
+        const attachmentsCopy = Array.isArray(pendingMessageMeta.attachments)
+          ? pendingMessageMeta.attachments.slice()
+          : []
 
         // Add topic to history on send
         addToTopicHistory(topicId)
@@ -395,7 +428,8 @@ export function createInputKeyHandler({
         if (editingId) {
           const old = store.pairs.get(editingId)
           if (old) {
-            store.removePair(editingId)
+            // Old pair may still exist if not removed earlier; remove but keep images for transfer
+            store.removePair(editingId, true)
           }
           id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
           window.__editingPairId = null
@@ -405,10 +439,7 @@ export function createInputKeyHandler({
 
         // Persist attachments immediately; tokens will be computed asynchronously in the send task below
         try {
-          const att = Array.isArray(pendingMessageMeta.attachments)
-            ? pendingMessageMeta.attachments.slice()
-            : []
-          store.updatePair(id, { attachments: att })
+          store.updatePair(id, { attachments: attachmentsCopy })
         } catch {}
 
         // new message treatment.
@@ -438,12 +469,9 @@ export function createInputKeyHandler({
             const tStart = Date.now()
             // Compute and cache attachmentTokens and user-side textTokens before calling provider
             try {
-              const att = Array.isArray(pendingMessageMeta.attachments)
-                ? pendingMessageMeta.attachments.slice()
-                : []
               let attachmentTokens = 0
-              if (att.length) {
-                const imgs = await getImagesByIds(att)
+              if (attachmentsCopy.length) {
+                const imgs = await getImagesByIds(attachmentsCopy)
                 for (const img of imgs) {
                   if (img && typeof img.w === 'number' && typeof img.h === 'number') {
                     attachmentTokens += estimateImageTokens({ w: img.w, h: img.h })
@@ -463,7 +491,7 @@ export function createInputKeyHandler({
               userText: text,
               signal: controller.signal,
               visiblePairs: chrono,
-              attachments: pendingMessageMeta.attachments || [], // NEW: pass draft attachments
+              attachments: attachmentsCopy, // Use captured copy (draft may be cleared by now)
               topicWebSearchOverride: pendingMessageMeta.webSearchOverride, // NEW: pass topic override
               boundarySnapshot,
               onDebugPayload: (payload) => {
@@ -600,6 +628,8 @@ export function createInputKeyHandler({
           }
         })()
         inputField.value = ''
+        pendingMessageMeta.attachments = []  // Clear draft attachments after send
+        updateAttachIndicator()
         historyRuntime.renderCurrentView({ preserveActive: true })
         // Focus the new pair's last user part explicitly (meta remains non-focusable)
         try {
