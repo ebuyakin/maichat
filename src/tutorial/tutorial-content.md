@@ -808,6 +808,140 @@ Find unrated messages: `s0 & d<7d` — rate them while fresh.
 **Combine with View Mode actions:**
 Filter to a set, then navigate (`j`/`k`) and rate (`1`/`2`/`3`) or flag (`a`) them.
 
+### Actions on Filtered Sets (Colon Commands)
+
+Once you've filtered messages, you can perform bulk actions on the filtered set using colon commands.
+
+**Syntax:** `<filter> :<command> [arguments] [flags]`
+
+Where:
+- `<filter>` — Any filter expression (or `*` for all messages)
+- `:<command>` — The action to perform on filtered pairs
+- `[arguments]` — Optional command-specific arguments
+- `[flags]` — Optional command flags (e.g., `--force`, `--no-confirm`)
+
+**Available commands:**
+
+#### :tchange - Bulk Topic Change
+
+Change the topic for all filtered message pairs.
+
+**Syntax:**
+- `:tchange` — Change to your currently selected topic (from topic selector)
+- `:tchange "Topic Name"` — Change to specified topic by name or path
+
+**Examples:**
+```
+# Move all errors to "Debug" topic
+e :tchange "Debug"
+
+# Move recent unrated messages to current topic
+r20 & s0 :tchange
+
+# Move old messages to Archive
+d<2024-01-01 :tchange "Archive"
+
+# Move Python discussions to organized topic
+c'python' & t'General' :tchange "Work > Python"
+```
+
+**Workflow:**
+1. Apply filter to find messages you want to move
+2. Verify the filtered set in View Mode
+3. Execute `:tchange` with target topic
+4. Confirm the action (shows count)
+5. Messages are reassigned, view refreshes
+
+#### :delete - Bulk Deletion
+
+Permanently delete all filtered message pairs.
+
+**Syntax:**
+- `:delete` — Delete all filtered pairs (requires confirmation)
+- `:delete --force` — Delete more than 50 pairs (requires force flag)
+
+**Safety restrictions:**
+
+Cannot use with **dynamic filters** (they would show different messages after deletion):
+- `r` / `rN` — Recent messages (relative)
+- `o` / `oN` — Context boundary (changes based on content)
+- `t` — Bare current topic (UI state)
+- `tN` — Last N from topic (relative)
+
+**Safe filters for deletion:**
+- `t'Topic Name'` — Explicit topic name ✓
+- `d<7d` — Date ranges ✓
+- `m'model'` — Model name ✓
+- `c'text'` — Content search ✓
+- `s>=2` — Star ratings ✓
+- `e` — Errors only ✓
+- `b` / `g` — Flags ✓
+- `i` — Attachments ✓
+
+**Examples:**
+```
+# Delete all error messages
+e :delete
+
+# Delete old images to free space
+i & d<2024-01-01 :delete --force
+
+# Delete temporary topic content
+t'temp' :delete
+
+# Delete unrated non-image messages
+s0 & !i :delete
+
+# Clean up low-quality old messages
+d<2023-01-01 & s0 :delete --force
+```
+
+**Flags:**
+- `--force` — Required for deleting more than 50 pairs
+
+**Safety features:**
+- Always requires confirmation (no bypass)
+- Limit of 50 pairs without `--force`
+- Blocks dynamic filters with clear error message
+- Shows count before confirming
+- After deletion, filter remains active showing empty view (confirmation)
+- Press `Esc` to clear filter and see remaining messages
+
+**Error examples:**
+```
+# ✗ These will be blocked:
+r10 :delete                    # Error: no 'r'
+t & s0 :delete                 # Error: no 't' (bare)
+t5 :delete                     # Error: no 'tN'
+o & e :delete                  # Error: no 'o'
+
+# ✓ These work:
+t'Coding...' & s0 :delete      # Explicit topic name
+d<30d & e :delete              # Date + errors
+i & s0 :delete                 # Attachments unrated
+```
+
+**Workflow:**
+1. Apply filter to find messages to delete
+2. Verify filtered set carefully in View Mode
+3. Execute `:delete` (add `--force` if >50 pairs)
+4. Confirm deletion (shows count and "cannot be undone")
+5. Messages deleted, empty view shows (confirmation)
+6. Press `Esc` to clear filter and continue
+
+#### :export - Export to File
+
+Export filtered messages to JSON, Markdown, or plain text files.
+
+For full details, see [Export Data](#export-data) section.
+
+**Quick syntax:**
+```
+s>=2 :export              # Export starred as JSON
+d<7d :export md           # Export week as Markdown
+t'Python...' :export txt  # Export topic as text
+```
+
 ### Command Mode Shortcuts
 
 When typing filters in Command Mode:
@@ -1151,10 +1285,6 @@ You can attach images to your message in three ways:
 
 > **Tip:** This is the fastest way to attach screenshots! Use `Cmd+Shift+4` (macOS) or `Win+Shift+S` (Windows) to capture a screenshot, then paste it directly into MaiChat.
 
-**3. Drag and drop:**
-- Simply drag image files from your file system into the MaiChat window
-- Works in any mode; drops are automatically handled
-
 **Visual indicator:**
 - The input area shows `📎 N images` when you have attachments
 - Hover to see image filenames
@@ -1169,9 +1299,6 @@ Before sending, you can review and manage your attached images:
 3. Navigate with `j`/`k` or arrow keys
 4. Press `Delete` or `x` to remove the current image
 5. Press `Esc` to close the overlay
-
-**Remove all images:**
-- Clear the message input (Ctrl+U) — also clears attachments
 
 ### Viewing Message Images (View Mode)
 
@@ -1274,7 +1401,7 @@ All base models in MaiChat's catalogue support web search with citations. This i
 
 ### Enabling Web Search
 
-Search is controlled per-model in the Model Editor:
+Search is controlled per-model in the Model Editor (search is enabled by default for all models):
 
 1. Press `Ctrl+M` to open model selector
 2. Navigate to any model

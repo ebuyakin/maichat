@@ -652,6 +652,58 @@ html[data-page="tutorial"] th {
   <li class="nav-item has-children collapsed">
     <div class="nav-item-header">
       <span class="nav-item-toggle">›</span>
+      <a href="#images">Working with Images</a>
+    </div>
+    <ul class="nav-sub-items">
+      <li class="nav-item">
+        <a href="#overview">Overview</a>
+      </li>
+      <li class="nav-item">
+        <a href="#attaching-images-input-mode">Attaching Images (Input Mode)</a>
+      </li>
+      <li class="nav-item">
+        <a href="#managing-draft-images">Managing Draft Images</a>
+      </li>
+      <li class="nav-item">
+        <a href="#viewing-message-images-view-mode">Viewing Message Images (View Mode)</a>
+      </li>
+      <li class="nav-item">
+        <a href="#image-overlay-navigation">Image Overlay Navigation</a>
+      </li>
+      <li class="nav-item">
+        <a href="#image-limits-and-storage">Image Limits and Storage</a>
+      </li>
+      <li class="nav-item">
+        <a href="#common-workflows">Common Workflows</a>
+      </li>
+    </ul>
+  </li>
+  <li class="nav-item has-children collapsed">
+    <div class="nav-item-header">
+      <span class="nav-item-toggle">›</span>
+      <a href="#search">Web Search & Sources</a>
+    </div>
+    <ul class="nav-sub-items">
+      <li class="nav-item">
+        <a href="#overview">Overview</a>
+      </li>
+      <li class="nav-item">
+        <a href="#enabling-web-search">Enabling Web Search</a>
+      </li>
+      <li class="nav-item">
+        <a href="#viewing-citations-view-mode">Viewing Citations (View Mode)</a>
+      </li>
+      <li class="nav-item">
+        <a href="#link-hints">Link Hints</a>
+      </li>
+      <li class="nav-item">
+        <a href="#how-it-works">How It Works</a>
+      </li>
+    </ul>
+  </li>
+  <li class="nav-item has-children collapsed">
+    <div class="nav-item-header">
+      <span class="nav-item-toggle">›</span>
       <a href="#models">API Keys and Model Catalogue</a>
     </div>
     <ul class="nav-sub-items">
@@ -691,7 +743,7 @@ html[data-page="tutorial"] th {
         <a href="#settings">Settings</a>
       </li>
       <li class="nav-item">
-        <a href="#daily-statistics">Daily Statistics</a>
+        <a href="#activity-statistics">Activity Statistics</a>
       </li>
       <li class="nav-item">
         <a href="#export-data">Export Data</a>
@@ -732,7 +784,7 @@ html[data-page="tutorial"] th {
 
       <section id="overview">
 <h2 id="overview">What is MaiChat</h2>
-        <p>MaiChat is a keyboard-centric interface for ChatGPT, Claude, and Gemini that puts you in control. Unlike standard chat interfaces, MaiChat organizes your conversations into a hierarchical topic tree, lets you filter message history with a powerful CLI-like language, and gives you precise control over what context gets sent to each model. It&#39;s designed for power users who want to work faster, stay organized, and maintain complete control over their AI interactions.</p>
+        <p>MaiChat is a keyboard-centric interface for ChatGPT, Claude, Gemini, and Grok that puts you in control. Unlike standard chat interfaces, MaiChat organizes your conversations into a hierarchical topic tree, lets you filter message history with a powerful CLI-like language, and gives you precise control over what context gets sent to each model. It&#39;s designed for power users who want to work faster, stay organized, and maintain complete control over their AI interactions.</p>
       </section>
 
       <section id="quickstart">
@@ -742,13 +794,14 @@ html[data-page="tutorial"] th {
         <p><strong>Important:</strong> MaiChat is designed for keyboard-first navigation with Vim-style commands (<kbd>j</kbd>/<kbd>k</kbd> for scrolling, <kbd>u</kbd>/<kbd>d</kbd> for jumping between messages, etc.). While you can use your mouse, learning the keyboard shortcuts will make you much more efficient. Press <kbd>F1</kbd> anytime to see the full reference.</p>
         </blockquote>
         <h3 id="step-1-set-up-your-api-key">Step 1: Set up your API key</h3>
-        <p>MaiChat needs API keys to connect to LLM providers (OpenAI, Anthropic, Google).</p>
+        <p>MaiChat needs API keys to connect to LLM providers (OpenAI, Anthropic, Google, xAI).</p>
         <ol>
         <li>Press <kbd>Ctrl+K</kbd> to open API Keys settings</li>
         <li>Enter your API key for at least one provider:<ul>
-        <li><strong>OpenAI</strong>: Get your key at <a href="https://platform.openai.com/api-keys">platform.openai.com/api-keys</a></li>
-        <li><strong>Anthropic</strong>: Get your key at <a href="https://console.anthropic.com">console.anthropic.com</a></li>
-        <li><strong>Google</strong>: Get your key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a></li>
+        <li><strong>OpenAI (ChatGPT)</strong>: Get your key at <a href="https://platform.openai.com/api-keys">platform.openai.com/api-keys</a></li>
+        <li><strong>Anthropic (Claude)</strong>: Get your key at <a href="https://console.anthropic.com">console.anthropic.com</a></li>
+        <li><strong>Google (Gemini)</strong>: Get your key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a></li>
+        <li><strong>xAI (Grok)</strong>: Get your key at <a href="https://console.x.ai">console.x.ai</a></li>
         </ul>
         </li>
         <li>Click Save</li>
@@ -764,6 +817,7 @@ html[data-page="tutorial"] th {
         <li><strong>OpenAI</strong>: GPT-5, GPT-5 mini, GPT-5 nano, o4-mini</li>
         <li><strong>Anthropic</strong>: Claude Sonnet 4.5, Claude Opus 4.1, Claude 3.5 Haiku</li>
         <li><strong>Google</strong>: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite</li>
+        <li><strong>xAI</strong>: Grok-4-fast-non-reasoning, Grok-4-fast-reasoning, Grok-code-fast-1</li>
         </ul>
         </li>
         <li>Select a model and press <kbd>Enter</kbd></li>
@@ -826,6 +880,7 @@ html[data-page="tutorial"] th {
         <li><strong><a href="#topics">Topics</a></strong> — learn to structure your conversations with topic trees</li>
         <li><strong><a href="#filtering">Search &amp; Filtering</a></strong> — master the powerful CLI filter language</li>
         <li><strong><a href="#context">Context Management</a></strong> — control what the model sees in each request</li>
+        <li><strong><a href="#images">Working with Images</a></strong> — attach and manage images in your conversations</li>
         </ul>
         <blockquote>
         <p><strong>Quick reference:</strong> Press <kbd>F1</kbd> anytime to see all keyboard shortcuts.</p>
@@ -922,6 +977,16 @@ html[data-page="tutorial"] th {
         <li><kbd>e</kbd> — Edit and resend (only works on error messages)</li>
         <li><kbd>d</kbd> — Delete message (only works on error messages)</li>
         </ul>
+        <p><strong>Viewing images:</strong></p>
+        <ul>
+        <li><kbd>i</kbd> — View image(s) in active message (opens immediately for single image)</li>
+        <li><code>i1</code> / <code>i2</code> / <code>i3</code> / ... / <code>i9</code> — Jump directly to specific image</li>
+        </ul>
+        <p><strong>Viewing links:</strong></p>
+        <ul>
+        <li><kbd>l</kbd> — Show link hints with numbers (press 1-9 to open link)</li>
+        <li><kbd>Ctrl+Shift+S</kbd> — Open Sources overlay (view citations from web search)</li>
+        </ul>
         <h3 id="input-mode-shortcuts">Input Mode Shortcuts</h3>
         <p>When composing messages, these editing shortcuts speed up your workflow:</p>
         <p><strong>Basic actions:</strong></p>
@@ -944,6 +1009,12 @@ html[data-page="tutorial"] th {
         <blockquote>
         <p><strong>Note:</strong> These same Emacs-style shortcuts work in Command Mode too!</p>
         </blockquote>
+        <p><strong>Attaching images:</strong></p>
+        <ul>
+        <li><kbd>Ctrl+F</kbd> — Open file picker to select images</li>
+        <li><code>Cmd+V</code> (macOS) / <kbd>Ctrl+V</kbd> (Windows/Linux) — Paste images from clipboard</li>
+        <li><kbd>Ctrl+Shift+O</kbd> — View/manage attached images before sending</li>
+        </ul>
         <h3 id="command-mode-usage">Command Mode Usage</h3>
         <p>Command Mode is for searching and filtering. See the <a href="#filtering">Search &amp; Filtering</a> section for detailed filter syntax.</p>
         <p><strong>Filter actions:</strong></p>
@@ -1285,6 +1356,12 @@ html[data-page="tutorial"] th {
         <li><kbd>g</kbd> — grey circle flag</li>
         <li>Use flags for quick visual organization</li>
         </ul>
+        <p><strong>Attachments:</strong> <kbd>i</kbd></p>
+        <ul>
+        <li>Show only messages with image attachments</li>
+        <li>Useful for finding visual content or managing storage</li>
+        <li>Combine with topic or date filters to narrow down</li>
+        </ul>
         <p><strong>Errors:</strong> <kbd>e</kbd></p>
         <ul>
         <li>Show only message pairs where the assistant response failed</li>
@@ -1442,6 +1519,10 @@ html[data-page="tutorial"] th {
         <pre><code>t&#39;Python...&#39; &amp; c&#39;error&#39; &amp; !e
         </code></pre>
         <p>Python discussions mentioning &quot;error&quot; but not actual API failures.</p>
+        <p><strong>Find screenshot messages from last month:</strong></p>
+        <pre><code>i &amp; d&lt;30d &amp; t&#39;Screenshots...&#39;
+        </code></pre>
+        <p>Image attachments from Screenshots topic within 30 days.</p>
         <p><strong>Weekly review of all topics:</strong></p>
         <pre><code>d&gt;=7d &amp; d&lt;14d
         </code></pre>
@@ -1749,6 +1830,260 @@ html[data-page="tutorial"] th {
         <p>✓ <strong>The context boundary</strong> determines what gets sent — press <kbd>o</kbd> to see it<br>✓ <strong>The message counter</strong> (<code>X/Y</code>) shows predicted context size<br>✓ <strong>Filters control context</strong> — apply them before sending<br>✓ <strong>Different models</strong> have different context windows<br>✓ <strong>URA setting</strong> balances new message space vs history inclusion<br>✓ <strong>Visual dimming</strong> shows off-context messages clearly<br>✓ <strong>Token trimming</strong> is automatic when predictions are slightly off</p>
       </section>
 
+      <section id="images">
+<h2 id="images">Working with Images</h2>
+        <p>MaiChat supports image attachments for all models in the catalogue, making it easy to get help with screenshots, diagrams, code snippets, UI mockups, and other visual content.</p>
+        <h3 id="overview">Overview</h3>
+        <p><strong>Vision support:</strong>
+        All base models in MaiChat&#39;s catalogue support vision (image understanding). This is a standard capability across OpenAI, Anthropic, Google, and xAI models.</p>
+        <p><strong>Common use cases:</strong></p>
+        <ul>
+        <li>Getting help with error messages shown in screenshots</li>
+        <li>Analyzing charts, graphs, or diagrams</li>
+        <li>Asking questions about code in images</li>
+        <li>Describing or discussing UI/UX designs</li>
+        <li>OCR (extracting text from images)</li>
+        </ul>
+        <p><strong>Limits:</strong></p>
+        <ul>
+        <li>Up to 4 images per message</li>
+        <li>Maximum 30MB total per message</li>
+        <li>Supported formats: JPEG, PNG, GIF, WebP</li>
+        </ul>
+        <h3 id="attaching-images-input-mode">Attaching Images (Input Mode)</h3>
+        <p>You can attach images to your message in three ways:</p>
+        <p><strong>1. File picker (Ctrl+F):</strong></p>
+        <ol>
+        <li>Press <kbd>Ctrl+F</kbd> in Input Mode</li>
+        <li>Select one or more images from your file system</li>
+        <li>Images are added to your draft message</li>
+        </ol>
+        <p><strong>2. Paste from clipboard (Cmd/Ctrl+V):</strong></p>
+        <ol>
+        <li>Copy an image to your clipboard (screenshot, image from web, etc.)</li>
+        <li>In Input Mode, press <code>Cmd+V</code> (macOS) or <kbd>Ctrl+V</kbd> (Windows/Linux)</li>
+        <li>The image is immediately added to your draft</li>
+        </ol>
+        <blockquote>
+        <p><strong>Tip:</strong> This is the fastest way to attach screenshots! Use <kbd>Cmd+Shift+4</kbd> (macOS) or <kbd>Win+Shift+S</kbd> (Windows) to capture a screenshot, then paste it directly into MaiChat.</p>
+        </blockquote>
+        <p><strong>3. Drag and drop:</strong></p>
+        <ul>
+        <li>Simply drag image files from your file system into the MaiChat window</li>
+        <li>Works in any mode; drops are automatically handled</li>
+        </ul>
+        <p><strong>Visual indicator:</strong></p>
+        <ul>
+        <li>The input area shows <code>📎 N images</code> when you have attachments</li>
+        <li>Hover to see image filenames</li>
+        </ul>
+        <h3 id="managing-draft-images">Managing Draft Images</h3>
+        <p>Before sending, you can review and manage your attached images:</p>
+        <p><strong>View draft images (Ctrl+Shift+O):</strong></p>
+        <ol>
+        <li>Press <kbd>Ctrl+Shift+O</kbd> in Input Mode</li>
+        <li>Image overlay opens showing all attached images</li>
+        <li>Navigate with <kbd>j</kbd>/<kbd>k</kbd> or arrow keys</li>
+        <li>Press <code>Delete</code> or <kbd>x</kbd> to remove the current image</li>
+        <li>Press <kbd>Esc</kbd> to close the overlay</li>
+        </ol>
+        <p><strong>Remove all images:</strong></p>
+        <ul>
+        <li>Clear the message input (Ctrl+U) — also clears attachments</li>
+        </ul>
+        <h3 id="viewing-message-images-view-mode">Viewing Message Images (View Mode)</h3>
+        <p>After sending a message with images, you can view them anytime:</p>
+        <p><strong>Quick view (i):</strong></p>
+        <ul>
+        <li>Press <kbd>i</kbd> on any message part with images</li>
+        <li>If there&#39;s only one image, it opens immediately</li>
+        <li>If there are multiple images, overlay opens to the first image</li>
+        </ul>
+        <p><strong>Jump to specific image (i1-i9):</strong></p>
+        <ul>
+        <li>Press <code>i1</code> to jump to first image</li>
+        <li>Press <code>i2</code> to jump to second image</li>
+        <li>Continue with <code>i3</code>, <code>i4</code>, etc. up to <code>i9</code></li>
+        </ul>
+        <p><strong>Visual indicator:</strong></p>
+        <ul>
+        <li>Messages with images show <code>📎 N</code> in the metadata line</li>
+        </ul>
+        <h3 id="image-overlay-navigation">Image Overlay Navigation</h3>
+        <p>When viewing images in the overlay:</p>
+        <p><strong>Navigate between images:</strong></p>
+        <ul>
+        <li><kbd>j</kbd> / <kbd>k</kbd> — Next / previous image</li>
+        <li><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> ... <kbd>9</kbd> — Jump to specific image by number</li>
+        <li>Arrow keys — Also work for navigation</li>
+        </ul>
+        <p><strong>Manage images (draft only):</strong></p>
+        <ul>
+        <li><code>Delete</code> or <kbd>x</kbd> — Remove current image from draft</li>
+        <li>(Only works when viewing draft images via Ctrl+Shift+O)</li>
+        </ul>
+        <p><strong>Close overlay:</strong></p>
+        <ul>
+        <li><kbd>Esc</kbd> — Close and return to previous mode</li>
+        </ul>
+        <h3 id="image-limits-and-storage">Image Limits and Storage</h3>
+        <p><strong>Technical limits:</strong></p>
+        <ul>
+        <li><strong>Per-message limit</strong>: 4 images</li>
+        <li><strong>Size limit</strong>: 30MB total per message</li>
+        <li><strong>Supported formats</strong>: JPEG, PNG, GIF, WebP</li>
+        </ul>
+        <p><strong>Storage:</strong></p>
+        <ul>
+        <li>Images are stored locally in your browser&#39;s IndexedDB</li>
+        <li>They never leave your device except when sent to AI providers</li>
+        <li>Large image collections can consume browser storage</li>
+        </ul>
+        <p><strong>Managing storage:</strong></p>
+        <ul>
+        <li>Use the <kbd>i</kbd> filter to find all messages with attachments: <kbd>i</kbd></li>
+        <li>Combine with date filters to find old images: <code>i & d<2024-01-01</code></li>
+        <li>Delete messages with attachments to free space (see <a href="#deletion-examples">Deletion Examples</a>)</li>
+        </ul>
+        <h3 id="common-workflows">Common Workflows</h3>
+        <p><strong>Screenshot workflow:</strong></p>
+        <ol>
+        <li>Capture screenshot (<kbd>Cmd+Shift+4</kbd> on macOS, <kbd>Win+Shift+S</kbd> on Windows)</li>
+        <li>Switch to MaiChat (Input Mode)</li>
+        <li>Paste with <code>Cmd+V</code> / <kbd>Ctrl+V</kbd></li>
+        <li>Type your question</li>
+        <li>Press <kbd>Enter</kbd> to send</li>
+        </ol>
+        <p><strong>Multiple images:</strong></p>
+        <ol>
+        <li>Press <kbd>Ctrl+F</kbd> to open file picker</li>
+        <li>Select multiple images (Shift+click or Cmd+click)</li>
+        <li>All images attach at once</li>
+        <li>Preview with <kbd>Ctrl+Shift+O</kbd> before sending</li>
+        </ol>
+        <p><strong>Finding and cleaning up images:</strong></p>
+        <pre><code># Find all messages with images
+        i
+
+        # Find old screenshot messages
+        i &amp; t&#39;Screenshots...&#39; &amp; d&lt;90d
+
+        # Delete old temporary images (requires confirmation)
+        i &amp; t&#39;temp&#39; :delete
+        </code></pre>
+        <p><strong>Review images from a conversation:</strong></p>
+        <ol>
+        <li>Filter to your topic: <code>t'Project X...'</code></li>
+        <li>Navigate with <kbd>j</kbd>/<kbd>k</kbd> in View Mode</li>
+        <li>Press <kbd>i</kbd> on any message to view its images</li>
+        <li>Use <kbd>j</kbd>/<kbd>k</kbd> in the overlay to browse all images in sequence</li>
+        </ol>
+      </section>
+
+      <section id="search">
+<h2 id="search">Web Search & Sources</h2>
+        <p>AI models can search the web in real-time and cite their sources. MaiChat makes it easy to enable search and review citations, giving you transparency into where information comes from.</p>
+        <h3 id="overview">Overview</h3>
+        <p><strong>Search support:</strong>
+        All base models in MaiChat&#39;s catalogue support web search with citations. This is a standard capability provided by the LLM providers (OpenAI, Anthropic, Google, xAI).</p>
+        <p><strong>Use cases:</strong></p>
+        <ul>
+        <li>Getting current information (news, events, stock prices)</li>
+        <li>Fact-checking with verifiable sources</li>
+        <li>Research with citations</li>
+        <li>Finding recent documentation or updates</li>
+        <li>Asking about recent developments in any field</li>
+        </ul>
+        <h3 id="enabling-web-search">Enabling Web Search</h3>
+        <p>Search is controlled per-model in the Model Editor:</p>
+        <ol>
+        <li>Press <kbd>Ctrl+M</kbd> to open model selector</li>
+        <li>Navigate to any model</li>
+        <li>Press <kbd>Enter</kbd> to edit the model</li>
+        <li>Check the <strong>&quot;Search Enabled&quot;</strong> checkbox</li>
+        <li>Press <kbd>Ctrl+S</kbd> to save</li>
+        </ol>
+        <p><strong>When to enable search:</strong></p>
+        <ul>
+        <li>Research topics requiring current information</li>
+        <li>Fact-checking and verification workflows</li>
+        <li>Questions about recent events or updates</li>
+        <li>Any query where sources matter</li>
+        </ul>
+        <p><strong>When to disable search:</strong></p>
+        <ul>
+        <li>Creative writing or brainstorming</li>
+        <li>Code generation (unless checking current APIs)</li>
+        <li>General conversation</li>
+        <li>When speed is more important than sources</li>
+        </ul>
+        <blockquote>
+        <p><strong>Performance note:</strong> Enabling search slightly increases response time as the model searches before generating.</p>
+        </blockquote>
+        <h3 id="viewing-citations-view-mode">Viewing Citations (View Mode)</h3>
+        <p>When a model uses web search, it includes numbered citations in the response like <code>[1]</code>, <code>[2]</code>, etc.</p>
+        <p><strong>Open Sources overlay (Ctrl+Shift+S):</strong></p>
+        <ol>
+        <li>Navigate to a message with citations (look for <code>[1]</code>, <code>[2]</code> in text)</li>
+        <li>Press <kbd>Ctrl+Shift+S</kbd> in View Mode</li>
+        <li>The Sources overlay opens showing all cited URLs</li>
+        </ol>
+        <p><strong>Sources overlay features:</strong></p>
+        <ul>
+        <li><strong>List view</strong>: All sources numbered with titles and URLs</li>
+        <li><strong>Navigate</strong>: Use <kbd>j</kbd>/<kbd>k</kbd> or arrow keys to scroll</li>
+        <li><strong>Copy URL</strong>: Click the copy button or select text</li>
+        <li><strong>Open link</strong>: Click the URL to open in browser (or use link hints)</li>
+        <li><strong>Close</strong>: Press <kbd>Esc</kbd> to return</li>
+        </ul>
+        <p><strong>Visual indicator:</strong></p>
+        <ul>
+        <li>Messages with search results may show additional metadata</li>
+        <li>Look for <code>[1]</code>, <code>[2]</code>, <code>[3]</code> inline citations in the response</li>
+        </ul>
+        <h3 id="link-hints">Link Hints</h3>
+        <p>MaiChat provides vim-style link hints to open any link in the response without using your mouse:</p>
+        <p><strong>Activate link hints (l):</strong></p>
+        <ol>
+        <li>In View Mode, navigate to a message with links</li>
+        <li>Press <kbd>l</kbd> (lowercase L)</li>
+        <li>Numbers appear next to each link</li>
+        <li>Press <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, etc. to open that link</li>
+        <li>Links open in a new browser tab</li>
+        </ol>
+        <p><strong>Works with:</strong></p>
+        <ul>
+        <li>Citation links from web search</li>
+        <li>Any URLs in the assistant response</li>
+        <li>Markdown links</li>
+        <li>Plain text URLs</li>
+        </ul>
+        <blockquote>
+        <p><strong>Tip:</strong> Combine with <kbd>Ctrl+Shift+S</kbd> for full citation workflow: press <kbd>Ctrl+Shift+S</kbd> to see all sources, then <kbd>l</kbd> to quickly open any link.</p>
+        </blockquote>
+        <h3 id="how-it-works">How It Works</h3>
+        <p><strong>Behind the scenes:</strong></p>
+        <ol>
+        <li>You send a message to a search-enabled model</li>
+        <li>The model performs web searches before generating the response</li>
+        <li>Search results are analyzed and relevant content is extracted</li>
+        <li>The model generates a response using the search results</li>
+        <li>Citations are added inline: <code>[1]</code>, <code>[2]</code>, <code>[3]</code></li>
+        <li>Full URLs are stored and accessible via <kbd>Ctrl+Shift+S</kbd></li>
+        </ol>
+        <p><strong>Citation format:</strong></p>
+        <ul>
+        <li>Inline: <code>According to recent studies [1], the approach has proven effective [2].</code></li>
+        <li>Sources overlay: Shows full titles and URLs for each number</li>
+        </ul>
+        <p><strong>Performance impact:</strong></p>
+        <ul>
+        <li>Adds 2-5 seconds to response time (depending on query complexity)</li>
+        <li>Uses additional tokens (search results are part of context)</li>
+        <li>Slightly higher API costs</li>
+        </ul>
+      </section>
+
       <section id="models">
 <h2 id="models">API Keys and Model Catalogue</h2>
         <p>MaiChat connects to AI providers through their APIs. To use the app, you need to set up API keys and understand how to manage your model catalog.</p>
@@ -1767,10 +2102,11 @@ html[data-page="tutorial"] th {
         <li><strong>OpenAI:</strong> No free tier; pay per token (roughly $2-20 per 1M tokens depending on model. 1M tokens corresponds to 1200-1500 typical chat messages)</li>
         <li><strong>Anthropic:</strong> Some credits for new users; similar pricing to OpenAI</li>
         <li><strong>Google (Gemini):</strong> Generous free tier (15 requests/min, 1M tokens/day for Gemini 1.5 Flash)</li>
+        <li><strong>xAI:</strong> Pay-as-you-go pricing; check console.x.ai for current rates</li>
         <li><strong>Typical usage:</strong> Light use might cost $5-20/month; heavy use $50-100+/month</li>
         </ul>
         <p>Check each provider&#39;s website for current pricing and free tier details.</p>
-        <p>MaiChat supports three major AI providers. You need at least one API key to use the app.</p>
+        <p>MaiChat supports four major AI providers. You need at least one API key to use the app.</p>
         <p><strong>Opening API Keys settings:</strong></p>
         <ul>
         <li>Press <kbd>Ctrl+K</kbd> from any mode</li>
@@ -1794,6 +2130,12 @@ html[data-page="tutorial"] th {
         <ul>
         <li>Get your key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a></li>
         <li>Models: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite</li>
+        </ul>
+        </li>
+        <li><p><strong>xAI</strong> (Grok models)</p>
+        <ul>
+        <li>Get your key at <a href="https://console.x.ai">console.x.ai</a></li>
+        <li>Models: grok-4-fast-non-reasoning, grok-4-fast-reasoning, grok-code-fast-1</li>
         </ul>
         </li>
         </ol>
@@ -1838,10 +2180,16 @@ html[data-page="tutorial"] th {
         <li>GPT-5 nano (OpenAI) — 128K context</li>
         <li>Claude 3.5 Haiku (Anthropic) — 200K context</li>
         <li>Gemini 2.5 Flash-Lite (Google) — 1M context</li>
+        <li>grok-4-fast-non-reasoning (xAI) — Fast inference without extended reasoning</li>
         </ul>
         <p><strong>Reasoning models</strong> (specialized):</p>
         <ul>
         <li>o4-mini (OpenAI) — Extended thinking time</li>
+        <li>grok-4-fast-reasoning (xAI) — Fast inference with reasoning capabilities</li>
+        </ul>
+        <p><strong>Coding models</strong> (specialized):</p>
+        <ul>
+        <li>grok-code-fast-1 (xAI) — Optimized for code generation and analysis</li>
         </ul>
         <h3 id="managing-models">Managing Models</h3>
         <p><strong>Enable/disable models:</strong></p>
@@ -1868,8 +2216,8 @@ html[data-page="tutorial"] th {
         </ul>
         <p><strong>Important:</strong> You must set TPM to match YOUR plan, not the model&#39;s advertised capacity. MaiChat uses TPM to calculate how much context fits in each message.</p>
         <h3 id="adding-more-models">Adding More Models</h3>
-        <p>By default, MaiChat includes only the most popular and relevant models from each provider. However, you can add any other official model from OpenAI, Anthropic, or Google.</p>
-        <p><strong>Important:</strong> You can only add models from the three supported providers. You cannot add models from other providers or use custom/fine-tuned models (those typically have different API endpoints).</p>
+        <p>By default, MaiChat includes only the most popular and relevant models from each provider. However, you can add any other official model from OpenAI, Anthropic, Google, or xAI.</p>
+        <p><strong>Important:</strong> You can only add models from the four supported providers. You cannot add models from other providers or use custom/fine-tuned models (those typically have different API endpoints).</p>
         <p><strong>How to add a model:</strong></p>
         <ol>
         <li>Open Model Editor (<kbd>Ctrl+Shift+M</kbd>)</li>
@@ -1979,9 +2327,15 @@ html[data-page="tutorial"] th {
         <li>Very generous free tier: 250K-1M TPM depending on model</li>
         <li>Output tokens don&#39;t count toward TPM</li>
         </ul>
+        <p><strong>xAI (Grok):</strong></p>
+        <ul>
+        <li>Uses TPM limit similar to OpenAI</li>
+        <li>Only input tokens count toward TPM</li>
+        <li>Check console.x.ai for your plan&#39;s specific limits</li>
+        </ul>
         <p><strong>What this means for you:</strong></p>
         <ul>
-        <li><strong>OpenAI/Gemini:</strong> Set TPM to your plan&#39;s input token limit</li>
+        <li><strong>OpenAI/Gemini/xAI:</strong> Set TPM to your plan&#39;s input token limit</li>
         <li><strong>Anthropic:</strong> Set TPM to your plan&#39;s input token limit (MaiChat handles output limits separately)</li>
         </ul>
         <p><strong>Setting TPM correctly:</strong></p>
@@ -1992,6 +2346,7 @@ html[data-page="tutorial"] th {
         <li><strong>OpenAI:</strong> platform.openai.com → Settings → Limits (look for &quot;Tokens per minute&quot;)</li>
         <li><strong>Anthropic:</strong> console.anthropic.com → Settings → Limits (look for &quot;Input tokens per minute&quot;)</li>
         <li><strong>Google:</strong> Check your tier — Free tier has very high limits (250K-1M TPM)</li>
+        <li><strong>xAI:</strong> console.x.ai → Check your account limits</li>
         </ul>
         </li>
         <li><p>Open Model Editor (<kbd>Ctrl+Shift+M</kbd>)</p>
@@ -2044,7 +2399,7 @@ html[data-page="tutorial"] th {
         <li>Switch to larger models only for final versions</li>
         </ul>
         <h3 id="best-practices">Best Practices</h3>
-        <p>✓ <strong>Set up all three providers</strong> if possible — gives you flexibility and backup options<br>✓ <strong>Start with free tier</strong> (Gemini) to experiment before committing budget<br>✓ <strong>Monitor your costs</strong> using provider dashboards and Daily Stats (<kbd>Ctrl+Shift+D</kbd>)<br>✓ <strong>Disable models you don&#39;t use</strong> — keeps the selector clean<br>✓ <strong>Start with mini/flash models</strong> — upgrade to flagship only when needed<br>✓ <strong>Check the message counter</strong> before sending expensive flagship models<br>✓ <strong>Add more models</strong> as providers release new ones<br>✓ <strong>Set realistic TPM limits</strong> to control context size per message<br>✓ <strong>Press <kbd>o</kbd> after switching models</strong> to see the new context boundary</p>
+        <p>✓ <strong>Set up all four providers</strong> if possible — gives you flexibility and backup options<br>✓ <strong>Start with free tier</strong> (Gemini) to experiment before committing budget<br>✓ <strong>Monitor your costs</strong> using provider dashboards and Daily Stats (<kbd>Ctrl+Shift+D</kbd>)<br>✓ <strong>Disable models you don&#39;t use</strong> — keeps the selector clean<br>✓ <strong>Start with mini/flash models</strong> — upgrade to flagship only when needed<br>✓ <strong>Check the message counter</strong> before sending expensive flagship models<br>✓ <strong>Add more models</strong> as providers release new ones<br>✓ <strong>Set realistic TPM limits</strong> to control context size per message<br>✓ <strong>Press <kbd>o</kbd> after switching models</strong> to see the new context boundary</p>
       </section>
 
       <section id="settings">
@@ -2094,31 +2449,50 @@ html[data-page="tutorial"] th {
         <li>Context: Next message send (recalculates boundary)</li>
         </ul>
         <p><strong>Storage location:</strong> Settings, API keys, model catalog, and topic tree are stored in <strong>localStorage</strong>. Conversation history (message pairs) is stored in <strong>IndexedDB</strong> for better performance with large datasets.</p>
-        <h3 id="daily-statistics">Daily Statistics</h3>
-        <p>View basic activity breakdown for your currently filtered conversations.</p>
-        <p><strong>Access:</strong> Press <kbd>Ctrl+Shift+D</kbd> from any mode, or use menu (<kbd>Ctrl+.</kbd> → Daily Stats)</p>
-        <p><strong>What you see:</strong></p>
+        <h3 id="activity-statistics">Activity Statistics</h3>
+        <p>View activity breakdown for your currently filtered conversations with two different perspectives: by date or by model.</p>
+        <p><strong>Access:</strong> Press <kbd>Ctrl+Shift+D</kbd> from any mode, or use menu (<kbd>Ctrl+.</kbd> → Activity Stats)</p>
+        <p><strong>Two tabs available:</strong></p>
+        <p><strong>1. By Date tab:</strong></p>
         <ul>
         <li>Date-by-date message count breakdown</li>
-        <li>Total count for filtered view</li>
-        <li>Simple table sorted chronologically</li>
+        <li>Shows which days you were most active</li>
+        <li>Includes median response time per day</li>
+        <li>Sorted chronologically</li>
+        </ul>
+        <p><strong>2. By Model tab:</strong></p>
+        <ul>
+        <li>Message count breakdown by AI model</li>
+        <li>Shows which models you use most</li>
+        <li>Includes median response time per model</li>
+        <li>Sorted by usage count</li>
+        </ul>
+        <p><strong>Navigation:</strong></p>
+        <ul>
+        <li><strong>Switch tabs:</strong> Press <kbd>h</kbd> / <kbd>l</kbd> or <code>[</code> / <code>]</code> keys</li>
+        <li><strong>Navigate rows:</strong> Use <kbd>j</kbd> / <kbd>k</kbd> or arrow keys</li>
+        <li><strong>Jump:</strong> <kbd>g</kbd> to top, <kbd>G</kbd> to bottom</li>
+        <li><strong>Close:</strong> Press <kbd>Esc</kbd></li>
         </ul>
         <p><strong>Features:</strong></p>
         <ul>
-        <li><strong>Respects current filter</strong> — Shows stats only for visible messages</li>
-        <li><strong>Keyboard navigation:</strong> j/k or arrows to navigate rows, g/G to jump to top/bottom</li>
+        <li><strong>Respects current filter</strong> — Shows stats only for visible messages (filtered set)</li>
+        <li><strong>Response times</strong> — Median time gives you sense of model speed and API performance</li>
+        <li><strong>Context-aware</strong> — Filter to a topic first, then check stats for that topic only</li>
+        </ul>
+        <p><strong>Use cases:</strong></p>
+        <ul>
+        <li>Quick activity overview across time or models</li>
+        <li>Compare model performance (speed) side-by-side</li>
+        <li>Verify filter is working as expected</li>
+        <li>Identify usage patterns (which models for which topics)</li>
+        <li>See which days or models had slower responses</li>
         </ul>
         <p><strong>What it&#39;s NOT:</strong></p>
         <ul>
         <li>Not a cost tracker (no pricing/spending data)</li>
-        <li>Not a detailed analytics tool (no breakdown by model/provider)</li>
-        <li>Not exportable or historical (shows only current data)</li>
-        </ul>
-        <p><strong>When to use:</strong></p>
-        <ul>
-        <li>Quick activity overview</li>
-        <li>Verify filter is working as expected</li>
-        <li>See when you&#39;ve been most active</li>
+        <li>Not exportable (shows only current data in overlay</li>
+        <li>Not historical in the sense of trends over time</li>
         </ul>
         <p><strong>Note:</strong> Data comes from IndexedDB (where conversation history is stored). Clearing browser data will delete this history.</p>
         <h3 id="export-data">Export Data</h3>
