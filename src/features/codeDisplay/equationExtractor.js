@@ -150,6 +150,11 @@ function escapeHtmlAttr(str) {
   )
 }
 
+/**
+ * DEPRECATED: applyEquationsToPair
+ * Legacy wrapper used only by the deprecated processMessagePair; modern
+ * pipeline calls extractEquations directly and manages markers/blocks.
+ */
 export function applyEquationsToPair(messagePair) {
   // Legacy helper retained (now returns markers) but not used in new pipeline.
   if (!messagePair || !messagePair.assistantText) return messagePair

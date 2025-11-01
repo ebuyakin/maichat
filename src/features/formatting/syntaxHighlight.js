@@ -1,5 +1,8 @@
 // Lazy-loaded syntax highlighting using Prism.js
 // Only loads when first code block is encountered
+// DEPRECATED for the modern inline rendering path (useInlineFormatting = true):
+// This module is only referenced by the legacy DOM-time enhancer and is not
+// used by the current string-time renderer that composes a full HTML string.
 
 let prismLoaded = false
 

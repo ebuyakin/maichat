@@ -2,7 +2,7 @@
 import { escapeHtml } from '../../shared/util.js'
 import { flattenMessagesToParts } from './messageList.js'
 import { shouldUseMessageView } from './featureFlags.js'
-import { renderMarkdownInline, enhanceRenderedMessage } from '../formatting/markdownRenderer.js'
+import { renderMarkdownInline } from '../formatting/markdownRenderer.js'
 import { getSettings } from '../../core/settings/index.js'
 
 // Regex to match code placeholders: [language-number] (language lowercase alphanum/underscore), e.g. [python-1], [code-2]

@@ -78,7 +78,12 @@ export function extractCodeBlocks(content) {
  * @param {object} messagePair - The message pair to process
  * @returns {object} The processed message pair (modified in place)
  */
-export function processMessagePair(messagePair) {
+/**
+ * DEPRECATED: processMessagePair
+ * Legacy helper retained only for reference; modern send pipeline calls
+ * extractCodeBlocks/extractEquations directly and stores processedContent.
+ */
+function processMessagePair(messagePair) {
   if (!messagePair || !messagePair.assistantText) {
     return messagePair
   }

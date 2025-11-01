@@ -1,5 +1,8 @@
 // Lazy-loaded math rendering using KaTeX
 // Only loads when first math expression is encountered
+// DEPRECATED in modern inline rendering path (useInlineFormatting = true):
+// This module is only referenced by the legacy DOM-time enhancer and is
+// not used by the current renderer that composes a full HTML string.
 
 let katexLoaded = false
 

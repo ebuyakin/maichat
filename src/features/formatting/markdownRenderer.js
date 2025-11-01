@@ -276,7 +276,13 @@ function enforceAnchorTargets(html) {
  * Called after DOM insertion to add syntax highlighting and math rendering
  * @param {HTMLElement} messageElement - The .message.assistant element
  */
-export function enhanceRenderedMessage(messageElement) {
+/**
+ * DEPRECATED: enhanceRenderedMessage
+ * Legacy DOM-time enhancement (syntax highlighting + KaTeX auto-render).
+ * Not used by the modern inline rendering path (useInlineFormatting = true).
+ * Kept temporarily for reference; not exported and not invoked.
+ */
+function enhanceRenderedMessage(messageElement) {
   if (!messageElement) return
 
   // Check for code blocks and lazy load syntax highlighting
