@@ -75,7 +75,9 @@ Owner: Investigation only (no code changes)
 - `markdownRenderer.enhanceRenderedMessage(element)` (DOM-time enhancements) appears unused by the current `renderMessages()` path.
 - `formatting/mathRenderer.js` (KaTeX auto-render) is only used by `enhanceRenderedMessage`.
 - `formatting/syntaxHighlight.js` lazy load is only used by `enhanceRenderedMessage`.
-- `codeDisplay/applyEquationsToPair` is marked as “legacy helper retained” and mirrors the newer extraction flow used in `inputKeys.js`.
+// Update 2025-11-01: `codeDisplay/applyEquationsToPair` and `processMessagePair` were removed
+// as part of legacy cleanup. Modern pipeline uses `extractCodeBlocks` and `extractEquations`
+// directly and stores `processedContent`/metadata without the wrappers.
 
 ## Summary matrix (today)
 - useInlineFormatting = true (default)

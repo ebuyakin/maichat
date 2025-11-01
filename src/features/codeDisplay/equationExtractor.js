@@ -155,17 +155,4 @@ function escapeHtmlAttr(str) {
  * Legacy wrapper used only by the deprecated processMessagePair; modern
  * pipeline calls extractEquations directly and manages markers/blocks.
  */
-export function applyEquationsToPair(messagePair) {
-  // Legacy helper retained (now returns markers) but not used in new pipeline.
-  if (!messagePair || !messagePair.assistantText) return messagePair
-  const base = messagePair.processedContent || messagePair.assistantText
-  const { displayText, equationBlocks, inlineSimple, hasEquations } = extractEquations(base, {
-    inlineMode: 'markers',
-  })
-  if (hasEquations) {
-    messagePair.processedContent = displayText
-    if (equationBlocks.length) messagePair.equationBlocks = equationBlocks
-    if (inlineSimple.length) messagePair.inlineSimpleEquations = inlineSimple // not rendered yet
-  }
-  return messagePair
-}
+// (applyEquationsToPair removed)

@@ -1,7 +1,7 @@
 // Simple test for code extraction Phase 0
 // Run with: node tests/test-code-extraction.js
 
-import { extractCodeBlocks, processMessagePair, getDisplayContent, getContextContent } from '../src/features/codeDisplay/codeExtractor.js';
+import { extractCodeBlocks, getDisplayContent, getContextContent } from '../src/features/codeDisplay/codeExtractor.js';
 
 function runTests() {
   console.log('🧪 Testing Code Extraction Phase 0\n');
@@ -46,7 +46,7 @@ Done!`;
   console.log('✅ Languages:', result2.codeBlocks.map(b => b.language));
   console.log();
   
-  // Test 3: MessagePair processing
+  // Test 3: MessagePair processing (manual, since legacy helper was removed)
   console.log('Test 3: MessagePair processing');
   const testPair = {
     id: 'test-123',
@@ -63,7 +63,11 @@ Hope that helps!`,
     model: 'test-model'
   };
   
-  processMessagePair(testPair);
+  const ex3 = extractCodeBlocks(testPair.assistantText);
+  if (ex3.hasCode) {
+    testPair.processedContent = ex3.displayText;
+    testPair.codeBlocks = ex3.codeBlocks;
+  }
   console.log('✅ Original assistantText preserved:', !!testPair.assistantText);
   console.log('✅ Has processedContent:', !!testPair.processedContent);
   console.log('✅ Has codeBlocks:', !!testPair.codeBlocks);
@@ -78,7 +82,11 @@ Hope that helps!`,
     assistantText: 'Just regular text with no code blocks.'
   };
   
-  processMessagePair(noCodePair);
+  const ex4 = extractCodeBlocks(noCodePair.assistantText);
+  if (ex4.hasCode) {
+    noCodePair.processedContent = ex4.displayText;
+    noCodePair.codeBlocks = ex4.codeBlocks;
+  }
   console.log('✅ No processedContent added:', !noCodePair.processedContent);
   console.log('✅ No codeBlocks added:', !noCodePair.codeBlocks);
   console.log('✅ Display fallback works:', getDisplayContent(noCodePair));

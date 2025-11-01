@@ -1,5 +1,5 @@
 // Code snippet detection and extraction module
-import { applyEquationsToPair } from './equationExtractor.js'
+// (applyEquationsToPair removed)
 // Phase 0: Infrastructure - no UI changes yet
 
 /**
@@ -78,26 +78,7 @@ export function extractCodeBlocks(content) {
  * @param {object} messagePair - The message pair to process
  * @returns {object} The processed message pair (modified in place)
  */
-/**
- * DEPRECATED: processMessagePair
- * Legacy helper retained only for reference; modern send pipeline calls
- * extractCodeBlocks/extractEquations directly and stores processedContent.
- */
-function processMessagePair(messagePair) {
-  if (!messagePair || !messagePair.assistantText) {
-    return messagePair
-  }
-
-  const extraction = extractCodeBlocks(messagePair.assistantText)
-
-  if (extraction.hasCode) {
-    messagePair.processedContent = extraction.displayText
-    messagePair.codeBlocks = extraction.codeBlocks
-  }
-  // Equation extraction (hybrid simple/complex) builds on processedContent if present
-  applyEquationsToPair(messagePair)
-  return messagePair
-}
+// (processMessagePair removed)
 
 /**
  * Gets display content for rendering (with placeholders)
