@@ -32,6 +32,47 @@ import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
 import { init as initImageStore } from './features/images/imageStore.js'
 
+// Read draft state BEFORE first paint to avoid input flicker
+function readLocalDraft() {
+  let text = ''
+  let attachments = []
+  try {
+    const t = localStorage.getItem('maichat_draft_text')
+    if (typeof t === 'string') text = t
+  } catch {}
+  try {
+    const a = localStorage.getItem('maichat_draft_attachments')
+    if (a) {
+      const parsed = JSON.parse(a)
+      if (Array.isArray(parsed)) attachments = parsed.filter((x) => typeof x === 'string')
+    }
+  } catch {}
+  return { text, attachments }
+}
+
+function escapeHtmlForTextNode(str) {
+  // Textarea textContent: escape only special chars that would break HTML literal
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+const __localDraft = readLocalDraft()
+const __draftTextEscaped = escapeHtmlForTextNode(__localDraft.text || '')
+const __draftAttachCount = Array.isArray(__localDraft.attachments)
+  ? __localDraft.attachments.length
+  : 0
+const __attachIndicatorStyle = __draftAttachCount === 0 ? 'display:none' : 'display:inline-flex'
+const __attachAria =
+  __draftAttachCount === 0
+    ? 'No images attached'
+    : __draftAttachCount === 1
+    ? '1 image attached'
+    : `${__draftAttachCount} images attached`
+const __attachCountText = __draftAttachCount > 1 ? String(__draftAttachCount) : ''
+
+
 window.addEventListener('error', (e) => {
   try {
     console.error('[MaiChat] window error', e.error || e.message || e)
@@ -93,7 +134,7 @@ appEl.innerHTML = `
   <div id="inputBar" class="zone" data-mode="input">
     <div class="inputBar-inner">
       <div class="row first">
-        <textarea id="inputField" placeholder="Type message... (Enter to send)" autocomplete="off" rows="2"></textarea>
+        <textarea id="inputField" placeholder="Type message... (Enter to send)" autocomplete="off" rows="2">${__draftTextEscaped}</textarea>
       </div>
       <div class="row second">
         <div class="input-meta-left">
@@ -102,7 +143,7 @@ appEl.innerHTML = `
           <span id="pendingTopic" title="Topic • Ctrl+T"></span>
         </div>
         <div class="input-meta-right">
-          <span id="attachIndicator" class="attach-indicator" hidden title="Attached images • Ctrl+Shift+O">
+          <span id="attachIndicator" class="attach-indicator" ${__draftAttachCount === 0 ? 'hidden' : ''} title="Attached images • Ctrl+Shift+O" aria-label="${__attachAria}" style="${__attachIndicatorStyle}">
             <span class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3.5" y="5.5" width="17" height="13" rx="2" ry="2"></rect>
@@ -110,7 +151,7 @@ appEl.innerHTML = `
                 <circle cx="9.5" cy="9" r="1.2" />
               </svg>
             </span>
-            <span id="attachCount"></span>
+            <span id="attachCount">${__attachCountText}</span>
           </span>
           <button id="sendBtn" disabled>Send</button>
           <input id="attachFileInput" type="file" accept="image/*" multiple hidden />
@@ -139,6 +180,12 @@ document.body.appendChild(loadingEl)
 const __runtime = initRuntime() // InStep1 
 
 const { store, persistence, activeParts, pendingMessageMeta } = __runtime
+// Hydrate draft attachments into runtime BEFORE interaction wiring
+try {
+  if (Array.isArray(__localDraft.attachments)) {
+    pendingMessageMeta.attachments = __localDraft.attachments.slice()
+  }
+} catch {}
 const historyRuntime = createHistoryRuntime(__runtime) // calls initRuntime
 
 const {

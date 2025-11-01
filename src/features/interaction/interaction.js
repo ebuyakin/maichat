@@ -824,6 +824,11 @@ export function createInteraction({
       if (!Array.isArray(pendingMessageMeta.attachments)) pendingMessageMeta.attachments = []
       const src = Array.isArray(pair.attachments) ? pair.attachments : []
       pendingMessageMeta.attachments = src.slice()
+      // Persist draft state to survive reload (no typing listeners)
+      try {
+        localStorage.setItem('maichat_draft_attachments', JSON.stringify(pendingMessageMeta.attachments))
+        localStorage.setItem('maichat_draft_text', inputField.value || '')
+      } catch {}
       // Update small attachments indicator (icon + count)
       try {
         const ind = document.getElementById('attachIndicator')

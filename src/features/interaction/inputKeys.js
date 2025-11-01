@@ -112,6 +112,16 @@ export function createInputKeyHandler({
     } catch {}
   }
 
+  // Persist draft attachments to localStorage (no typing listeners; call on attach/remove/send)
+  function persistDraftAttachments() {
+    try {
+      const ids = Array.isArray(pendingMessageMeta.attachments)
+        ? pendingMessageMeta.attachments
+        : []
+      localStorage.setItem('maichat_draft_attachments', JSON.stringify(ids))
+    } catch {}
+  }
+
   // Helper: validate and clean up stale attachment references
   async function cleanStaleAttachments() {
     if (!Array.isArray(pendingMessageMeta.attachments)) return
@@ -197,6 +207,7 @@ export function createInputKeyHandler({
           // Reset input so selecting the same file again is detected by browsers
           fileInput.value = ''
           updateAttachIndicator()
+          persistDraftAttachments()
         } catch (err) {
           console.error('[attach] failed to attach files', err)
         }
@@ -266,6 +277,7 @@ export function createInputKeyHandler({
           if (allowedIds.length) {
             current.push(...allowedIds)
             updateAttachIndicator()
+            persistDraftAttachments()
           }
         } catch (err) {
           console.error('[paste] failed to attach images', err)
@@ -305,7 +317,10 @@ export function createInputKeyHandler({
           mode: 'draft',
           pendingMessageMeta,
           startIndex: 0,
-          onChange: () => updateAttachIndicator(),
+          onChange: () => {
+            updateAttachIndicator()
+            persistDraftAttachments()
+          },
         })
         // Expose a temporary jump helper while the overlay is open
         try { window.__mcDraftOverlay = overlay } catch {}
@@ -629,6 +644,10 @@ export function createInputKeyHandler({
         })()
         inputField.value = ''
         pendingMessageMeta.attachments = []  // Clear draft attachments after send
+        try {
+          localStorage.removeItem('maichat_draft_attachments')
+          localStorage.removeItem('maichat_draft_text')
+        } catch {}
         updateAttachIndicator()
         historyRuntime.renderCurrentView({ preserveActive: true })
         // Focus the new pair's last user part explicitly (meta remains non-focusable)
