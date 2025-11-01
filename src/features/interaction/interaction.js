@@ -262,6 +262,7 @@ export function createInteraction({
               if (modelMeta && modelMeta.enabled) {
                 pendingMessageMeta.model = topic.defaultModel
                 renderPendingMeta()
+                try { localStorage.setItem('maichat_pending_model', pendingMessageMeta.model) } catch {}
               }
             }
             // Apply web search override if configured
@@ -352,6 +353,7 @@ export function createInteraction({
               if (modelMeta && modelMeta.enabled) {
                 pendingMessageMeta.model = topic.defaultModel
                 renderPendingMeta()
+                try { localStorage.setItem('maichat_pending_model', pendingMessageMeta.model) } catch {}
               }
             }
             // Apply web search override if configured
@@ -686,6 +688,7 @@ export function createInteraction({
           onClose: ({ dirty } = {}) => {
             pendingMessageMeta.model = getActiveModel()
             renderPendingMeta()
+              try { localStorage.setItem('maichat_pending_model', pendingMessageMeta.model) } catch {}
             if (dirty) {
               // Re-render to update model badges in history (no scrolling needed)
               historyRuntime.renderCurrentView({ preserveActive: true })
@@ -701,6 +704,7 @@ export function createInteraction({
           onClose: ({ dirty } = {}) => {
             pendingMessageMeta.model = getActiveModel()
             renderPendingMeta()
+              try { localStorage.setItem('maichat_pending_model', pendingMessageMeta.model) } catch {}
             if (dirty) {
               // Check if there's an unargumented 'm' filter active
               const currentFilter = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : ''

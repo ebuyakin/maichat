@@ -31,6 +31,7 @@ import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
 import { init as initImageStore } from './features/images/imageStore.js'
+import { registerInspector } from './instrumentation/inspector.js'
 import { preloadState } from './runtime/preloadState.js'
 import { buildAppHTML } from './runtime/appTemplate.js'
 
@@ -78,6 +79,12 @@ const __preloadedState = await preloadState(store, { loadHistoryCount: true })
 pendingMessageMeta.topicId = __preloadedState.pendingTopicId
 if (Array.isArray(__preloadedState.attachmentIds)) {
   pendingMessageMeta.attachments = __preloadedState.attachmentIds.slice()
+}
+// Also hydrate pending model so later renderPendingMeta doesn't overwrite template value
+if (__preloadedState.pendingModel) {
+  try {
+    pendingMessageMeta.model = __preloadedState.pendingModel
+  } catch {}
 }
 
 // Build and inject complete HTML with all values populated
@@ -174,6 +181,9 @@ const interaction = createInteraction({
   requestDebug,
   hudRuntime,
 })
+
+// Optional console inspector (non-intrusive utility)
+try { registerInspector(__runtime) } catch {}
 
 bindHistoryErrorActions(document.getElementById('history'), {
   onResend: (pairId) => {

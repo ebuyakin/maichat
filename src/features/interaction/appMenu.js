@@ -184,6 +184,7 @@ export function createAppMenuController({
         onClose: ({ dirty } = {}) => {
           pendingMessageMeta.model = getActiveModel()
           renderPendingMeta()
+          try { localStorage.setItem('maichat_pending_model', pendingMessageMeta.model) } catch {}
           if (dirty) {
             historyRuntime.renderCurrentView({ preserveActive: true })
             try {
