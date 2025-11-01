@@ -89,9 +89,9 @@ export function renderMathToString(html) {
       }
     })
 
-    // Process inline math ($...$)
-    // Pattern: $...$ (but not $$)
-    result = result.replace(/\$([^\n$]+?)\$/g, (match, mathContent) => {
+    // Process inline math ($...$), guard: closing $ must not be followed by a digit
+    // Pattern: $...$(?!digit) (but not $$)
+    result = result.replace(/\$([^\n$]+?)\$(?!\d)/g, (match, mathContent) => {
       try {
         const rendered = window.katex.renderToString(mathContent.trim(), {
           displayMode: false,

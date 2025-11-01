@@ -62,8 +62,8 @@ export function renderMarkdownInline(markdown, options = {}) {
       return `ⱮATHDISPLAY${index}ƤLACEHOLDER`
     })
 
-    // Extract inline math: $...$ (single line only to avoid false positives)
-    textWithPlaceholders = textWithPlaceholders.replace(/\$([^\n$]+?)\$/g, (match, content) => {
+    // Extract inline math: $...$ (single line only). Guard: closing $ must not be followed by a digit.
+    textWithPlaceholders = textWithPlaceholders.replace(/\$([^\n$]+?)\$(?!\d)/g, (match, content) => {
       const index = mathExpressions.length
       mathExpressions.push({ type: 'inline', content: match })
       return `ⱮATHINLINE${index}ƤLACEHOLDER`
