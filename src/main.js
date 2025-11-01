@@ -4,6 +4,7 @@ import './styles/index.css'
 import 'katex/dist/katex.min.css'
 import katex from 'katex'
 import Prism from 'prismjs'
+import 'prismjs/themes/prism-tomorrow.css'
 
 // Import common Prism language grammars
 import 'prismjs/components/prism-python'
@@ -14,6 +15,12 @@ import 'prismjs/components/prism-json'
 import 'prismjs/components/prism-sql'
 import 'prismjs/components/prism-yaml'
 import 'prismjs/components/prism-markdown'
+// Additional languages for broader coverage
+import 'prismjs/components/prism-clike'
+import 'prismjs/components/prism-java'
+import 'prismjs/components/prism-c'
+import 'prismjs/components/prism-cpp'
+import 'prismjs/components/prism-csharp'
 
 // Expose globally for enhancement functions
 window.katex = katex

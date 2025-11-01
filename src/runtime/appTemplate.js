@@ -59,7 +59,7 @@ export function buildAppHTML({
         <ul>
           <li data-action="topic-editor"><span class="label">Topic Editor</span><span class="hint">Ctrl+Shift+T</span></li>
           <li data-action="model-editor"><span class="label">Model Editor</span><span class="hint">Ctrl+Shift+M</span></li>
-          <li data-action="daily-stats"><span class="label">Daily Stats</span><span class="hint">Ctrl+Shift+D</span></li>
+          <li data-action="daily-stats"><span class="label">Activity Stats</span><span class="hint">Ctrl+Shift+D</span></li>
           <li data-action="settings"><span class="label">Settings</span><span class="hint">Ctrl+,</span></li>
           <li data-action="api-keys"><span class="label">API Keys</span><span class="hint">Ctrl+K</span></li>
           <li data-action="tutorial"><span class="label">Tutorial</span><span class="hint">Ctrl+Shift+H</span></li>

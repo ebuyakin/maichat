@@ -4,10 +4,6 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { enhanceHTMLString } from './stringEnhancer.js'
 
-// Track lazy-loaded features
-let prismLoadPromise = null
-let katexLoadPromise = null
-
 /**
  * Configure marked with sensible defaults for LLM output
  */
@@ -150,6 +146,9 @@ export function renderMarkdownInline(markdown, options = {}) {
       if (index < codeBlockLanguages.length) {
         const lang = codeBlockLanguages[index]
         pre.setAttribute('data-language', lang)
+        // Also add class to <code> child for Prism compatibility
+        const code = pre.querySelector('code')
+        if (code) code.classList.add(`language-${lang}`)
       }
     })
 
@@ -271,110 +270,8 @@ function enforceAnchorTargets(html) {
   })
 }
 
-/**
- * Enhance rendered message with lazy-loaded features
- * Called after DOM insertion to add syntax highlighting and math rendering
- * @param {HTMLElement} messageElement - The .message.assistant element
- */
-/**
- * DEPRECATED: enhanceRenderedMessage
- * Legacy DOM-time enhancement (syntax highlighting + KaTeX auto-render).
- * Not used by the modern inline rendering path (useInlineFormatting = true).
- * Kept temporarily for reference; not exported and not invoked.
- */
-function enhanceRenderedMessage(messageElement) {
-  if (!messageElement) return
-
-  // Check for code blocks and lazy load syntax highlighting
-  const codeBlocks = messageElement.querySelectorAll('pre code[class*="language-"]')
-  if (codeBlocks.length > 0) {
-    lazyLoadSyntaxHighlighting(codeBlocks)
-  }
-
-  // Check for math delimiters and lazy load KaTeX
-  const textContent = messageElement.textContent || ''
-  if (textContent.includes('$') || textContent.includes('\\[') || textContent.includes('\\(')) {
-    lazyLoadMathRendering(messageElement).then(() => {
-      // After KaTeX renders, number standalone display equations
-      numberStandaloneEquations(messageElement)
-    })
-  }
-}
-
-/**
- * Number standalone display equations
- * Only equations that are alone in their paragraph get numbered
- * @param {HTMLElement} messageElement - The message element
- */
-function numberStandaloneEquations(messageElement) {
-  const displayEquations = messageElement.querySelectorAll('.katex-display')
-
-  displayEquations.forEach((display) => {
-    const parent = display.parentElement
-    if (!parent) return
-
-    // Get all text content in the parent, excluding the equation itself
-    const allText = parent.textContent || ''
-    const equationText = display.textContent || ''
-    const otherText = allText.replace(equationText, '').trim()
-
-    // If there's very little other text (less than 10 chars), consider it standalone
-    if (otherText.length < 10) {
-      display.classList.add('numbered')
-    }
-  })
-}
-
-/**
- * Lazy load Prism.js for syntax highlighting
- * @param {NodeList} codeBlocks - Code elements to highlight
- */
-function lazyLoadSyntaxHighlighting(codeBlocks) {
-  if (!prismLoadPromise) {
-    prismLoadPromise = import('./syntaxHighlight.js')
-      .then((module) => {
-        module.highlightCodeBlocks(codeBlocks)
-      })
-      .catch((error) => {
-        console.warn('Failed to load syntax highlighting:', error)
-        prismLoadPromise = null // Allow retry
-      })
-  } else {
-    // Prism already loaded or loading, just highlight these blocks
-    prismLoadPromise.then(() => {
-      if (window.Prism) {
-        codeBlocks.forEach((block) => {
-          window.Prism.highlightElement(block)
-        })
-      }
-    })
-  }
-}
-
-/**
- * Lazy load KaTeX for math rendering
- * @param {HTMLElement} element - Container element to search for math
- * @returns {Promise} - Promise that resolves when rendering is complete
- */
-function lazyLoadMathRendering(element) {
-  if (!katexLoadPromise) {
-    katexLoadPromise = import('./mathRenderer.js')
-      .then((module) => {
-        return module.renderMathInElement(element)
-      })
-      .catch((error) => {
-        console.warn('Failed to load math rendering:', error)
-        katexLoadPromise = null // Allow retry
-      })
-    return katexLoadPromise
-  } else {
-    // KaTeX already loaded or loading, just render this element
-    return katexLoadPromise.then(() => {
-      // Re-import and call render
-      return import('./mathRenderer.js').then((m) => m.renderMathInElement(element))
-    })
-  }
-}
+// Legacy DOM-time enhancement functions removed (enhanceRenderedMessage and helpers)
+// Modern path uses string-time rendering only (renderMarkdownInline + enhanceHTMLString)
 
 /**
  * Fallback HTML escaping

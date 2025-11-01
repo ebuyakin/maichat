@@ -57,6 +57,37 @@ Owner: Investigation only (no code changes)
 
 ## Providers and content shapes
 - Adapters normalize responses to a single string `content` (stored as `assistantText`).
+
+## KaTeX and Prism: load and usage (current)
+
+- Where they are loaded
+  - KaTeX: bundled in `src/main.js`
+    - `import 'katex/dist/katex.min.css'`
+    - `import katex from 'katex'`
+    - `window.katex = katex`
+  - Prism: bundled in `src/main.js`
+    - `import Prism from 'prismjs'`
+    - Common grammars imported (python, javascript, typescript, bash, json, sql, yaml, markdown)
+    - `window.Prism = Prism`
+    - Note: no Prism theme CSS is imported; without a theme, Prism’s token markup renders as monochrome.
+
+- How they’re used in the modern path (useInlineFormatting = true)
+  - `renderMarkdownInline()` builds a single HTML string and adds `class="language-…"` to `<code>` for Prism compatibility.
+  - `enhanceHTMLString()` then:
+    - Calls `applySyntaxHighlightToString()` only if `window.Prism` exists.
+    - Calls `renderMathToString()` only if `window.katex` exists.
+  - Because KaTeX and Prism are exposed on `window` by `main.js`, both functions are eligible to run at string-time.
+  - Visible code colors require a Prism theme CSS (e.g., `prismjs/themes/prism-tomorrow.css`). Without it, code appears correctly formatted but uncolored (by app CSS only).
+
+- Architecture alignment
+  - No DOM-time mutations; all work is string-time, preserving the single-paint rule.
+  - Legacy DOM enhancers and lazy loaders were removed; Vite import errors were resolved by deleting dead dynamic imports.
+
+## Practical follow-ups (non-breaking)
+
+- If visible code colors are desired, import one Prism theme CSS once (e.g., in `src/main.js`):
+  - `import 'prismjs/themes/prism-tomorrow.css'`
+  - This is purely presentational; no change to logic, order of operations, or DOM write count.
   - OpenAI (Responses), Anthropic (Messages), Gemini (GenerateContent), Grok (Chat Completions): all return string `content` in our current adapters.
 - The inline renderer consumes this string; the legacy placeholder path uses the stored `processedContent` from the post-send extraction.
 
@@ -87,7 +118,7 @@ Owner: Investigation only (no code changes)
   - Single DOM write guarantee: respected (full HTML string composed, then injected once).
 - useInlineFormatting = false (legacy)
   - Markdown: no
-  - Code: placeholder tokens styled (no Prism by default in current path)
+  - Code: placeholder tokens styled (no ePrism by default in current path)
   - Math: placeholder tokens (`[eq-N]`) and simple inline unicode; no KaTeX in current path
   - Single DOM write guarantee: respected
 
