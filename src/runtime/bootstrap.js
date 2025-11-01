@@ -24,7 +24,7 @@ import { openApiKeysOverlay } from '../features/config/apiKeysOverlay.js'
  * @param {HTMLElement} opts.loadingEl overlay element to remove when ready
  */
 
-export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl }) {
+export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl, skipPersistenceInit = false, skipInitialRender = false }) {
   const { store, persistence, pendingMessageMeta, lifecycle } = ctx
   const {
     applySpacingStyles,
@@ -43,7 +43,9 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
   registerProvider('anthropic', createAnthropicAdapter())
   registerProvider('gemini', createGeminiAdapter())
   registerProvider('grok', createGrokAdapter())
-  await persistence.init()
+  if (!skipPersistenceInit) {
+    await persistence.init()
+  }
   ensureCatalogLoaded()
   applySpacingStyles(getSettings())
 
@@ -65,18 +67,24 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl })
     ? commandHistory[commandHistory.length - 1] 
     : null
 
-  if (storedFilter) {
-    // Restore filter BEFORE rendering (single render with filter applied)
+  if (!skipInitialRender) {
+    if (storedFilter) {
+      // Restore filter BEFORE rendering (single render with filter applied)
+      lifecycle.setFilterQuery(storedFilter)
+      const commandInput = document.getElementById('commandInput')
+      if (commandInput) commandInput.value = storedFilter
+      renderCurrentView({ preserveActive: false })
+    } else {
+      // No filter - normal render
+      renderCurrentView()
+    }
+  } else if (storedFilter) {
+    // We performed an initial render already, but a stored filter exists.
+    // Apply it now and re-render once.
     lifecycle.setFilterQuery(storedFilter)
-    
-    // Also update command input UI to show the filter
     const commandInput = document.getElementById('commandInput')
     if (commandInput) commandInput.value = storedFilter
-    
     renderCurrentView({ preserveActive: false })
-  } else {
-    // No filter - normal render
-    renderCurrentView()
   }
 
   renderStatus()

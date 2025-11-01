@@ -56,37 +56,46 @@ import { createNewMessageLifecycle } from '../features/history/newMessageLifecyc
 import { createBoundaryManager } from '../core/context/boundaryManager.js'
 
 // launch of the application NB!
-export function initRuntime() {
-  const store = createStore() // indexDB loader
+// Phase 1: DOM-independent core setup
+export function initRuntimeCore() {
+  const store = createStore()
   attachIndexes(store)
   const persistence = attachContentPersistence(store, createIndexedDbAdapter())
-  const historyPaneEl = document.getElementById('historyPane')
-  const historyEl = document.getElementById('history')
-  const activeParts = new ActivePartController() // controls active message
-  const scrollController = createScrollController({ container: historyEl })
-
-  const historyView = createHistoryView({ store, onActivePartRendered: () => {} }) // InStep2
+  const activeParts = new ActivePartController()
   const boundaryMgr = createBoundaryManager()
 
   // Pending message metadata (topic + model) initially set after catalog load; fallback model default.
-  const pendingMessageMeta = { topicId: null, model: getActiveModel() || 'gpt-5-mini', attachments: [] }
+  const pendingMessageMeta = {
+    topicId: null,
+    model: getActiveModel() || 'gpt-5-mini',
+    attachments: [],
+  }
 
-  // Lifecycle handles send state & new reply focus heuristics.
+  // Stub scrollController; will be populated in attachDomBindings while keeping reference identity.
+  const scrollController = {
+    alignTo: () => {},
+    scrollToBottom: () => {},
+    isProgrammaticScroll: () => false,
+    setActiveIndex: () => {},
+    remeasure: () => {},
+    ensureVisible: () => {},
+  }
+
   const lifecycle = createNewMessageLifecycle({
     store,
     activeParts,
-    commandInput: null, // assigned later by interaction module
+    commandInput: null,
     renderHistory: () => {},
     applyActiveMessage: () => {},
     alignTo: (id, pos, anim) => scrollController.alignTo && scrollController.alignTo(id, pos, anim),
-    scrollController, // Pass the full controller so lifecycle can access scrollToBottom
+    scrollController, // mutate methods later
   })
 
   const ctx = {
     store,
     persistence,
     activeParts,
-    historyView,
+    // historyView will be attached later
     scrollController,
     boundaryMgr,
     lifecycle,
@@ -95,20 +104,36 @@ export function initRuntime() {
     getActiveModel,
   }
 
-  // Expose for diagnostics in development when explicitly enabled via URL flag.
-  // Enabled if (a) Vite dev mode AND (b) URL contains `debug=1` (or `dbg=1`).
+  // Dev diagnostics
   try {
     const isDev = typeof import.meta !== 'undefined' && import.meta?.env?.DEV
     const params = new URLSearchParams(window.location?.search || '')
     const debugOn = params.get('debug') === '1' || params.get('dbg') === '1'
     if (isDev && debugOn) {
-      window.__scrollController = scrollController
       window.__store = store
     }
-  } catch (_) {
-    // ignore – safe no-op for non-browser/test contexts
-  }
+  } catch {}
   return ctx
+}
+
+// Phase 2: Attach DOM-dependent bindings (must be called after layout is rendered)
+export function attachDomBindings(core) {
+  const historyPaneEl = document.getElementById('historyPane')
+  const historyEl = document.getElementById('history')
+  if (!historyPaneEl || !historyEl) throw new Error('History DOM not ready')
+
+  const realSC = createScrollController({ container: historyEl })
+  // Mutate the stub to preserve reference identity used by lifecycle
+  Object.assign(core.scrollController, realSC)
+
+  const historyView = createHistoryView({ store: core.store, onActivePartRendered: () => {} })
+  return { ...core, historyView }
+}
+
+// Back-compat wrapper: preserve initRuntime API for legacy callers
+export function initRuntime() {
+  const core = initRuntimeCore()
+  return attachDomBindings(core)
 }
 
 // Note: history rendering and active-part application are owned by historyRuntime now.

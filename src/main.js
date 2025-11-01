@@ -19,7 +19,7 @@ import 'prismjs/components/prism-markdown'
 window.katex = katex
 window.Prism = Prism
 
-import { initRuntime } from './runtime/runtimeSetup.js'
+import { initRuntimeCore, attachDomBindings } from './runtime/runtimeSetup.js'
 import { createModeManager, MODES } from './features/interaction/modes.js'
 import { bindHistoryErrorActions, bindSourcesActions, bindImageBadgeActions } from './features/history/historyView.js'
 import { openSourcesOverlay } from './features/history/sourcesOverlay.js'
@@ -31,47 +31,8 @@ import { createInteraction } from './features/interaction/interaction.js'
 import { bootstrap } from './runtime/bootstrap.js'
 import { installPointerModeSwitcher } from './features/interaction/pointerModeSwitcher.js'
 import { init as initImageStore } from './features/images/imageStore.js'
-
-// Read draft state BEFORE first paint to avoid input flicker
-function readLocalDraft() {
-  let text = ''
-  let attachments = []
-  try {
-    const t = localStorage.getItem('maichat_draft_text')
-    if (typeof t === 'string') text = t
-  } catch {}
-  try {
-    const a = localStorage.getItem('maichat_draft_attachments')
-    if (a) {
-      const parsed = JSON.parse(a)
-      if (Array.isArray(parsed)) attachments = parsed.filter((x) => typeof x === 'string')
-    }
-  } catch {}
-  return { text, attachments }
-}
-
-function escapeHtmlForTextNode(str) {
-  // Textarea textContent: escape only special chars that would break HTML literal
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
-
-const __localDraft = readLocalDraft()
-const __draftTextEscaped = escapeHtmlForTextNode(__localDraft.text || '')
-const __draftAttachCount = Array.isArray(__localDraft.attachments)
-  ? __localDraft.attachments.length
-  : 0
-const __attachIndicatorStyle = __draftAttachCount === 0 ? 'display:none' : 'display:inline-flex'
-const __attachAria =
-  __draftAttachCount === 0
-    ? 'No images attached'
-    : __draftAttachCount === 1
-    ? '1 image attached'
-    : `${__draftAttachCount} images attached`
-const __attachCountText = __draftAttachCount > 1 ? String(__draftAttachCount) : ''
-
+import { preloadState } from './runtime/preloadState.js'
+import { buildAppHTML } from './runtime/appTemplate.js'
 
 window.addEventListener('error', (e) => {
   try {
@@ -96,97 +57,47 @@ const modeManager = createModeManager()
 window.__modeManager = modeManager
 window.__MODES = MODES
 
-// Root layout
+// ──────────────────────────────────────────────────────────────────────────
+// SINGLE-PAINT RENDERING: Load all state, then render once
+// ──────────────────────────────────────────────────────────────────────────
+
+// Initialize runtime core (no DOM access yet)
+const __core = initRuntimeCore()
+const { store, persistence, activeParts, pendingMessageMeta } = __core
+
+// Ensure persistence is initialized before preloading so store has topics/pairs
+try {
+  await __core.persistence.init()
+} catch (e) {
+  console.warn('[MaiChat] persistence init failed (continuing)', e)
+}
+// Preload all state needed for complete initial render
+const __preloadedState = await preloadState(store, { loadHistoryCount: true })
+
+// Hydrate runtime with preloaded metadata (for later use by interaction layer)
+pendingMessageMeta.topicId = __preloadedState.pendingTopicId
+if (Array.isArray(__preloadedState.attachmentIds)) {
+  pendingMessageMeta.attachments = __preloadedState.attachmentIds.slice()
+}
+
+// Build and inject complete HTML with all values populated
 const appEl = document.querySelector('#app')
 if (!appEl) {
   console.error('[MaiChat] #app element missing')
 }
-appEl.innerHTML = `
-  <div id="topBar" class="zone" data-mode="command">
-    <div id="commandWrapper">
-  <input id="commandInput" placeholder="filter:command" autocomplete="off"
-             spellcheck="false" autocorrect="off" autocapitalize="off"
-             data-gramm="false" data-gramm_editor="false" data-lt-active="false" />
-    </div>
-    <div id="statusRight">
-  <span id="commandError"></span>
-      <span id="messagePosition" title="Current message position" class="mc">-</span>
-      <span id="messageCount" title="Visible message pairs" class="mc">0</span>
-      <button id="appMenuBtn" aria-haspopup="true" aria-expanded="false" title="Menu (Ctrl+.)" class="menu-btn" tabindex="0">⋮</button>
-      <div id="appMenu" class="app-menu" hidden>
-        <ul>
-          <li data-action="topic-editor"><span class="label">Topic Editor</span><span class="hint">Ctrl+Shift+T</span></li>
-          <li data-action="model-editor"><span class="label">Model Editor</span><span class="hint">Ctrl+Shift+M</span></li>
-          <li data-action="daily-stats"><span class="label">Daily Stats</span><span class="hint">Ctrl+Shift+D</span></li>
-          <li data-action="settings"><span class="label">Settings</span><span class="hint">Ctrl+,</span></li>
-          <li data-action="api-keys"><span class="label">API Keys</span><span class="hint">Ctrl+K</span></li>
-          <li data-action="tutorial"><span class="label">Tutorial</span><span class="hint">Ctrl+Shift+H</span></li>
-          <li data-action="help"><span class="label">Help</span><span class="hint">F1</span></li>
-        </ul>
-      </div>
-    </div>
-  </div>
-  <div id="historyPane" class="zone" data-mode="view">
-    <div class="gradientOverlayTop"></div>
-    <div id="history" class="history"></div>
-    <div class="gradientOverlayBottom"></div>
-  </div>
-  <div id="inputBar" class="zone" data-mode="input">
-    <div class="inputBar-inner">
-      <div class="row first">
-        <textarea id="inputField" placeholder="Type message... (Enter to send)" autocomplete="off" rows="2">${__draftTextEscaped}</textarea>
-      </div>
-      <div class="row second">
-        <div class="input-meta-left">
-          <div id="modeIndicator" class="mode-label"></div>
-          <span id="pendingModel" title="Model • Ctrl+M"></span>
-          <span id="pendingTopic" title="Topic • Ctrl+T"></span>
-        </div>
-        <div class="input-meta-right">
-          <span id="attachIndicator" class="attach-indicator" ${__draftAttachCount === 0 ? 'hidden' : ''} title="Attached images • Ctrl+Shift+O" aria-label="${__attachAria}" style="${__attachIndicatorStyle}">
-            <span class="icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3.5" y="5.5" width="17" height="13" rx="2" ry="2"></rect>
-                <path d="M7 15l4-4 3.5 3.5 2-2 3 3" />
-                <circle cx="9.5" cy="9" r="1.2" />
-              </svg>
-            </span>
-            <span id="attachCount">${__attachCountText}</span>
-          </span>
-          <button id="sendBtn" disabled>Send</button>
-          <input id="attachFileInput" type="file" accept="image/*" multiple hidden />
-        </div>
-      </div>
-    </div>
-  </div>
-`
+appEl.innerHTML = buildAppHTML(__preloadedState)
 
-// Loading guard overlay (removed after bootstrap)
+// Create loading overlay for bootstrap to remove (keeps bootstrap API unchanged)
 const loadingEl = document.createElement('div')
 loadingEl.id = 'appLoading'
-loadingEl.style.position = 'fixed'
-loadingEl.style.inset = '0'
-loadingEl.style.display = 'flex'
-loadingEl.style.alignItems = 'center'
-loadingEl.style.justifyContent = 'center'
-loadingEl.style.background = 'rgba(0,0,0,0.4)'
-loadingEl.style.fontSize = '0.9rem'
-loadingEl.style.letterSpacing = '0.05em'
-loadingEl.style.fontFamily = 'inherit'
-loadingEl.textContent = 'Loading…'
+loadingEl.style.display = 'none' // Hidden since we already painted
 document.body.appendChild(loadingEl)
 
-// Runtime context
-const __runtime = initRuntime() // InStep1 
-
-const { store, persistence, activeParts, pendingMessageMeta } = __runtime
-// Hydrate draft attachments into runtime BEFORE interaction wiring
-try {
-  if (Array.isArray(__localDraft.attachments)) {
-    pendingMessageMeta.attachments = __localDraft.attachments.slice()
-  }
-} catch {}
-const historyRuntime = createHistoryRuntime(__runtime) // calls initRuntime
+// ──────────────────────────────────────────────────────────────────────────
+// Attach DOM-dependent pieces & wire runtime components
+// ──────────────────────────────────────────────────────────────────────────
+const __runtime = attachDomBindings(__core)
+const historyRuntime = createHistoryRuntime(__runtime)
 
 const {
   layoutHistoryPane,
@@ -196,6 +107,8 @@ const {
   renderStatus,
 } = historyRuntime
 
+// Do initial history render synchronously to avoid extra paints later
+renderCurrentView({ preserveActive: false })
 requestAnimationFrame(layoutHistoryPane)
 // (currentTopicId handled inside interaction module now)
 
@@ -344,7 +257,7 @@ function renderTopics() {
 }
 
 // App starter.
-bootstrap({ ctx: __runtime, historyRuntime, interaction, loadingEl }).then(() => {
+bootstrap({ ctx: __runtime, historyRuntime, interaction, loadingEl, skipPersistenceInit: true, skipInitialRender: true }).then(() => {
   try {
     // Filter restoration now handled by bootstrap for cleaner initial load
     // (restoreLastFilter() still available for user actions)

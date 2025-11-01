@@ -52,12 +52,24 @@ Cross-cutting enablers
 
 ## Layered overview
 
-- Entry
-  - `src/main.js` — slim entry; imports `src/styles/index.css`, mounts DOM shell, and calls runtime/bootstrap.
+ - Entry
+   - `src/main.js` — slim orchestrator; single‑paint startup:
+     1) Build DOM‑independent core via `initRuntimeCore()`
+     2) Initialize persistence (`persistence.init()`) before any render
+     3) Preload first‑paint data via `runtime/preloadState.js`
+     4) Render full template once via `runtime/appTemplate.js`
+     5) Attach DOM‑dependent bindings via `attachDomBindings(core)`
+     6) Create history runtime and do the initial history render
+     7) Call `bootstrap()` with flags to skip duplicate init/render
 
-- Runtime (startup wiring)
-  - `src/runtime/runtimeSetup.js` — builds service container (store, indexes, persistence, history runtime, scroll controller, lifecycle hooks, pending meta).
-  - `src/runtime/bootstrap.js` — ordered startup (providers → persistence init → catalog ensure → optional seeding → first render → layout sizing).
+ - Runtime (startup wiring)
+   - `src/runtime/runtimeSetup.js` — two‑phase setup:
+     - `initRuntimeCore()` builds the DOM‑independent container (store, indexes, persistence, boundaryMgr, lifecycle, pending meta)
+     - `attachDomBindings(core)` runs after the template is in the DOM; attaches `historyView` and a real `scrollController`
+     - `initRuntime()` remains as a back‑compat wrapper calling both
+   - `src/runtime/preloadState.js` — reads settings/draft/pending meta (+ counts) for first paint and applies spacing CSS vars to avoid CLS
+   - `src/runtime/appTemplate.js` — pure template builder for the initial DOM
+   - `src/runtime/bootstrap.js` — post‑wiring startup (providers → optional persistence init → catalog ensure → optional seeding → filter restore → layout sizing). Flags: `skipPersistenceInit`, `skipInitialRender`.
 
 - Core (domain & storage)
   - `src/core/models/` — factories: MessagePair, Topic.
@@ -115,7 +127,9 @@ Cross-cutting enablers
 
 ## Core flows
 
-- Startup: runtimeSetup → bootstrap (providers, persistence, catalog, seed, render, layout).
+- Startup (single‑paint): `initRuntimeCore()` → `persistence.init()` → `preloadState()` → `buildAppHTML()` (render once) → `attachDomBindings()` → `createHistoryRuntime()` → `bootstrap()` (skip duplicate init/render; may apply stored filter)
+  - Spacing CSS vars are applied during preload; first paint uses final values (no CLS)
+  - If a stored filter exists, `bootstrap()` may re‑render once to apply it (optional future: restore filter pre‑render)
 - Filtering: Enter in COMMAND → lexer/parser/evaluator → visible IDs → history render.
 - Navigation: j/k/arrows move active part; default Ensure‑Visible; optional Typewriter Regime centers on j/k; only middle pane scrolls.
 - Send: Enter in INPUT → compose pipeline attempts → store update → focus rules via newMessageLifecycle.

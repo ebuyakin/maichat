@@ -112,13 +112,21 @@ export function createInputKeyHandler({
     } catch {}
   }
 
-  // Persist draft attachments to localStorage (no typing listeners; call on attach/remove/send)
+  // Persist draft attachments (and, by policy, current draft text) to localStorage.
+  // Called only on explicit user actions (attach/paste/overlay remove), never on typing.
   function persistDraftAttachments() {
     try {
       const ids = Array.isArray(pendingMessageMeta.attachments)
         ? pendingMessageMeta.attachments
         : []
       localStorage.setItem('maichat_draft_attachments', JSON.stringify(ids))
+      // Policy: when attachments exist, also persist current draft text for reload restore.
+      // When attachments are cleared, remove the draft text key to avoid restoring stale text alone.
+      if (ids.length > 0) {
+        try { localStorage.setItem('maichat_draft_text', inputField.value || '') } catch {}
+      } else {
+        try { localStorage.removeItem('maichat_draft_text') } catch {}
+      }
     } catch {}
   }
 
