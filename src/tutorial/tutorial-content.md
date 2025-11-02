@@ -1876,6 +1876,53 @@ View activity breakdown for your currently filtered conversations with two diffe
 
 **Note:** Data comes from IndexedDB (where conversation history is stored). Clearing browser data will delete this history.
 
+### Browser and Multi-Tab Usage
+
+MaiChat stores all data locally in your browser using IndexedDB (messages, topics) and localStorage (API keys, settings). Understanding how this works helps you use the app effectively across tabs and browsers.
+
+**Multiple Browser Tabs**
+
+You can open MaiChat in multiple tabs within the same browser to work on parallel conversations:
+
+**Benefits:**
+- Compare responses from different models side-by-side
+- Run long requests in background tabs without blocking your main workflow
+- Organize work by topic or project (one tab per conversation stream)
+- Switch contexts quickly without losing your place
+
+**How it works:**
+- All tabs share the same IndexedDB database and localStorage
+- Messages sent from any tab are immediately persisted
+- API keys and settings are shared across tabs
+
+**Important limitations:**
+- **No real-time sync** — Each tab has its own in-memory state. If you send a message in Tab A, Tab B won't see it automatically
+- **Refresh to sync** — Reload a tab (F5 or Ctrl+R) to see messages created in other tabs
+- **Avoid simultaneous edits** — Don't edit the same message or topic from multiple tabs at once (last write wins)
+
+**Recommended workflow:**
+- Use different topics or models per tab to minimize confusion
+- Periodically refresh tabs if you want to see cross-tab changes
+- Think of each tab as an independent session that shares underlying storage
+
+**Browser Isolation**
+
+Your MaiChat data is specific to each browser and browser profile:
+
+**What this means:**
+- Chrome, Firefox, Safari, and Edge each have completely separate data
+- Even different Chrome profiles (personal vs work) have isolated databases
+- API keys entered in one browser won't appear in another
+- Your conversation history is not shared across browsers
+
+**Practical implications:**
+- **Privacy/separation** — Use different browsers for work vs personal conversations
+- **Data recovery** — If you "lose" your data, check if you're in the right browser/profile
+- **Fresh start** — Want to start over? Use a different browser or profile
+- **No cloud sync** — MaiChat is a pure client app; there's no automatic backup or cross-device sync
+
+**Tip:** If you need to transfer data between browsers, use the Export feature (`:export json`) and save the file, then manually import it in the other browser (when import functionality is added) or keep it as a backup.
+
 ### Export Data
 
 Download your conversations as files for backup, sharing, or analysis.

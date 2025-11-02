@@ -750,6 +750,9 @@ html[data-page="tutorial"] th {
         <a href="#activity-statistics">Activity Statistics</a>
       </li>
       <li class="nav-item">
+        <a href="#browser-and-multi-tab-usage">Browser and Multi-Tab Usage</a>
+      </li>
+      <li class="nav-item">
         <a href="#export-data">Export Data</a>
       </li>
     </ul>
@@ -2613,6 +2616,52 @@ html[data-page="tutorial"] th {
         <li>Not historical in the sense of trends over time</li>
         </ul>
         <p><strong>Note:</strong> Data comes from IndexedDB (where conversation history is stored). Clearing browser data will delete this history.</p>
+        <h3 id="browser-and-multi-tab-usage">Browser and Multi-Tab Usage</h3>
+        <p>MaiChat stores all data locally in your browser using IndexedDB (messages, topics) and localStorage (API keys, settings). Understanding how this works helps you use the app effectively across tabs and browsers.</p>
+        <p><strong>Multiple Browser Tabs</strong></p>
+        <p>You can open MaiChat in multiple tabs within the same browser to work on parallel conversations:</p>
+        <p><strong>Benefits:</strong></p>
+        <ul>
+        <li>Compare responses from different models side-by-side</li>
+        <li>Run long requests in background tabs without blocking your main workflow</li>
+        <li>Organize work by topic or project (one tab per conversation stream)</li>
+        <li>Switch contexts quickly without losing your place</li>
+        </ul>
+        <p><strong>How it works:</strong></p>
+        <ul>
+        <li>All tabs share the same IndexedDB database and localStorage</li>
+        <li>Messages sent from any tab are immediately persisted</li>
+        <li>API keys and settings are shared across tabs</li>
+        </ul>
+        <p><strong>Important limitations:</strong></p>
+        <ul>
+        <li><strong>No real-time sync</strong> — Each tab has its own in-memory state. If you send a message in Tab A, Tab B won&#39;t see it automatically</li>
+        <li><strong>Refresh to sync</strong> — Reload a tab (F5 or Ctrl+R) to see messages created in other tabs</li>
+        <li><strong>Avoid simultaneous edits</strong> — Don&#39;t edit the same message or topic from multiple tabs at once (last write wins)</li>
+        </ul>
+        <p><strong>Recommended workflow:</strong></p>
+        <ul>
+        <li>Use different topics or models per tab to minimize confusion</li>
+        <li>Periodically refresh tabs if you want to see cross-tab changes</li>
+        <li>Think of each tab as an independent session that shares underlying storage</li>
+        </ul>
+        <p><strong>Browser Isolation</strong></p>
+        <p>Your MaiChat data is specific to each browser and browser profile:</p>
+        <p><strong>What this means:</strong></p>
+        <ul>
+        <li>Chrome, Firefox, Safari, and Edge each have completely separate data</li>
+        <li>Even different Chrome profiles (personal vs work) have isolated databases</li>
+        <li>API keys entered in one browser won&#39;t appear in another</li>
+        <li>Your conversation history is not shared across browsers</li>
+        </ul>
+        <p><strong>Practical implications:</strong></p>
+        <ul>
+        <li><strong>Privacy/separation</strong> — Use different browsers for work vs personal conversations</li>
+        <li><strong>Data recovery</strong> — If you &quot;lose&quot; your data, check if you&#39;re in the right browser/profile</li>
+        <li><strong>Fresh start</strong> — Want to start over? Use a different browser or profile</li>
+        <li><strong>No cloud sync</strong> — MaiChat is a pure client app; there&#39;s no automatic backup or cross-device sync</li>
+        </ul>
+        <p><strong>Tip:</strong> If you need to transfer data between browsers, use the Export feature (<code>:export json</code>) and save the file, then manually import it in the other browser (when import functionality is added) or keep it as a backup.</p>
         <h3 id="export-data">Export Data</h3>
         <p>Download your conversations as files for backup, sharing, or analysis.</p>
         <p><strong>How it works:</strong></p>
@@ -2875,7 +2924,7 @@ html[data-page="tutorial"] th {
 
       <div class="footer">
         <p><a href="index.html">← Home</a> | <a href="https://github.com/ebuyakin/maichat">GitHub</a></p>
-        <p class="small">MaiChat Tutorial • Last updated October 2025</p>
+        <p class="small">MaiChat Tutorial • Last updated November 2025</p>
       </div>
 
     </main>
