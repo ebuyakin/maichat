@@ -18,12 +18,12 @@ Deploy your own instance:
   <strong>Keyboard-First LLM Client for Power Users</strong>
   <br>
   <br>
-  A unified interface for ChatGPT, Claude, and Gemini with advanced conversation organization, search capabilities, and precise context control.
+  A unified interface for GPT-4o, Claude, Gemini, and Grok with advanced conversation organization, web search, image support, and precise context control.
   <br>
   <br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-  [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](CHANGELOG.md)
+  [![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](CHANGELOG.md)
   
 </div>
 
@@ -35,7 +35,10 @@ Deploy your own instance:
 - **⌨️ Keyboard-Centric Workflow** - Vim-inspired modal interface (Input/View/Command), zero mouse required
 - **🔍 Powerful Search & Filtering** - CLI-style query language with boolean operators, filter by topic/model/date/content/rating
 - **🎯 Context Control** - Visual context boundary, precise token management, filter before sending
-- **🤖 Multi-Model Support** - OpenAI (GPT-4o, o1), Anthropic Claude, Google Gemini - all in one interface
+- **🤖 Multi-Model Support** - OpenAI (GPT-4o, o1), Anthropic Claude, Google Gemini, xAI Grok - all in one interface
+- **🖼️ Image Attachments** - Send screenshots and images to vision-capable models (GPT-4o, Claude 3.5, Gemini, Grok)
+- **🌐 Web Search** - Native search integration for all providers with citations
+- **📊 Activity Statistics** - Track usage by date and model with response time analytics
 - **🔒 Privacy First** - 100% client-side, all data stored locally, no backend, open source (MIT)
 A keyboard-first, minimal, client-side app for organizing and running conversations with multiple LLMs in one unified interface.
 
@@ -121,7 +124,7 @@ npm run tutorial:watch
 
 ### Powerful Search & Filtering
 - **CLI-style queries** - `t'work' & d<7d | s>=3` (topic "work" AND last 7 days OR 3+ stars)
-- **Multi-dimensional** - filter by topic, model, date, content, rating, color flags
+- **Multi-dimensional** - filter by topic, model, date, content, rating, color flags, images
 - **Boolean operators** - AND (&), OR (|), NOT (!), grouping with parentheses
 - **Command history** - Ctrl+P/N to reuse previous queries
 - **Instant results** - see filtered view immediately
@@ -138,6 +141,7 @@ npm run tutorial:watch
 - **Anthropic:** Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
 - **Google:** Gemini 1.5 Pro, Gemini 1.5 Flash
 - Easy model switching, per-topic defaults
+ - **xAI:** Grok (text) and Grok Vision (images + text)
 
 ## 🗂️ Project Structure
 

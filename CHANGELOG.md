@@ -5,6 +5,60 @@ All notable changes to MaiChat will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-11-02
+
+### Added
+
+#### Grok/xAI Integration
+- Added support for xAI's Grok models (grok-beta, grok-vision-beta)
+- Native integration with X/Twitter search capabilities
+- Vision support for image analysis
+
+#### Web Search for All Providers
+- **Gemini:** Grounding with Google Search integration
+- **Grok:** Built-in X/Twitter search (native)
+- **OpenAI:** Migrated to Response API with native web search support
+- **Anthropic:** Added web search capability via recent API updates
+- Search toggle in Model Editor for per-model search configuration
+- Sources overlay (`Ctrl+Shift+S`) to view citations and search results
+- Link hints system (`l` key) to open citations in new tabs
+
+#### Image Attachments
+- Support for image attachments in conversations (JPEG, PNG)
+- Multiple attachment methods:
+  - Keyboard dialog (`Ctrl+F`) with file picker
+  - Clipboard paste (`Cmd/Ctrl+V`) for screenshots
+  - Drag-and-drop support
+- Image preview overlay (`Ctrl+Shift+O` in Input, `i` in View)
+- Image storage in IndexedDB with efficient base64 encoding
+- Vision support for GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro/Flash, Grok
+- Image indicators in message metadata
+- Filter messages by image attachments (`hasImage` filter)
+
+#### Message Management
+- `:delete` command to remove messages from history
+- Automatic cleanup of orphaned image attachments
+- Cascade deletion of images when parent message is deleted
+
+#### Activity Statistics
+- New Activity Stats overlay (`Ctrl+Shift+D`)
+- Two views: by date and by model
+- Message counts and median response times
+- Respects current filter for context-aware statistics
+- Keyboard navigation: `h`/`l` to switch views, `j`/`k` to navigate
+
+### Changed
+- Updated Model Catalog with latest model versions and capabilities
+- Enhanced code syntax highlighting with additional language support (C++, Java, C#, etc.)
+- Improved math rendering to avoid false positives with currency symbols
+- Tutorial comprehensively updated with all new features
+
+### Fixed
+- Math equation rendering edge cases with dollar signs followed by digits
+- Model persistence when reloading with topic-model combinations
+- Message draft preservation on reload when attachments are present
+- Image lifecycle management to prevent orphaned attachments
+
 ## [1.0.0] - 2025-10-18
 
 ### Initial Release

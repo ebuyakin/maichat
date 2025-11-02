@@ -5,9 +5,9 @@
 - Grok - markdown recognition...[x]
 - utilities functions - show the filtered history in console. Show orphaned images? [x]
 - daily stats - activity stats [x]
-- filter help
+- filter help [x]
 - changelog/readme
-- multiple tabs / separate browsers
+- multiple tabs / separate browsers [x]
 
 # reminders:
 - tooltips for new (and check old) controls: link counter, image counter, topic picker, model picker [x]
@@ -97,6 +97,7 @@ c'tomorrow*weather' - wild card search
 c'tomorrow' + c'weather' - messages containing either word
 
 r10 - 10 recent messages (all topics)
+
 t s2 - messages from current topic with 2 stars
 t d<3 - messages from current topic for the last 3 days
 t + t'My topic' - messages from current topic or "My topic"
