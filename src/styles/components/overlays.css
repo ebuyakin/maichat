@@ -145,15 +145,18 @@
 .topic-editor .te-warning.visible { opacity:1; }
 
 /* Help overlay */
-.help-panel { width:1520px; max-width:98vw; max-height:90vh; box-sizing:border-box; overflow:hidden; }
-.help-panel .help-body { padding:12px 18px 10px; display:flex; flex-direction:column; gap:10px; font:var(--size-base)/1.45 var(--font-ui); color:var(--text); overflow:auto; }
+.help-panel { width:1520px; max-width:98vw; height:850px; max-height:90vh; box-sizing:border-box; overflow:hidden; }
+.help-panel .help-body { padding:12px 18px 20px; display:flex; flex-direction:column; gap:10px; font:var(--size-base)/1.45 var(--font-ui); color:var(--text); overflow:auto; height:100%; }
 .help-panel .help-body { font-size: clamp(11px, 1.4vw, 14px); }
 .help-panel .help-body section { font-weight:400; letter-spacing:.2px; }
 .help-panel .help-body strong { font-weight:500; color: var(--text); }
 
+/* Help content wrapper - fills available space */
+.help-content { flex:1; min-height:0; display:flex; flex-direction:column; }
+
 .help-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px 20px; align-items:start; }
 .help-grid-view { margin-top:0px; }
-.help-col { display:grid; grid-template-columns:auto 1fr; column-gap:16px; row-gap:5px; align-content:start; border:1px solid var(--border); border-radius:6px; padding:5px 8px; background:transparent; }
+.help-col { display:grid; column-gap:16px; row-gap:5px; align-content:start; border:1px solid var(--border); border-radius:6px; padding:5px 8px; background:transparent; }
 .help-title { grid-column:1 / -1; font-weight:400; color:var(--text-dim); margin-bottom:1px; }
 .help-subtitle { grid-column:1 / -1; margin:0; font-size:inherit; color:var(--text-dim); }
 .help-k { color:var(--text); background:transparent; border:none; border-radius:0; padding:0; line-height:1.45; white-space:nowrap; }
@@ -164,7 +167,35 @@
 @media (max-width:720px){ .help-grid{ grid-template-columns: 1fr; } }
 @media (max-height:820px){ .help-panel .help-body{ font-size: clamp(11px, 1.3vh, var(--size-base)); } }
 .help-panel .help-hint { font-size:11px; opacity:.6; letter-spacing:.4px; }
-.help-panel .help-buttons { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+.help-panel .help-buttons { display:flex; justify-content:flex-end; gap:8px; margin-top:auto; }
+
+/* Help overlay tabs - match Settings/Daily Stats styling */
+.help-tabs { display:flex; gap:6px; padding:2px 12px 4px 5px; border-bottom:1px solid #222; align-items:center; flex-wrap:wrap; }
+.help-tab { background:#1a1a1a; border:1px solid #2c2c2c; color:var(--text-dim); padding:4px 10px; border-radius:4px; font-size:11px; letter-spacing:.5px; cursor:pointer; }
+.help-tab:hover { background:#202020; color:var(--text); border-color:#3a3a3a; }
+.help-tab.active { color:var(--text); border-color:#3a3a3a; background:#202020; }
+.help-tab:focus { outline:none; border-color:var(--accent); }
+.help-tab.active:focus { border-color:#3a3a3a; }
+.help-tab-hint { margin-left:auto; font-size:11px; color:var(--text-dim); opacity:0.6; }
+
+/* Tab-specific grid layouts */
+.help-grid-filters { grid-template-columns: repeat(2, 1fr); }
+@media (max-width:800px){ .help-grid-filters{ grid-template-columns: 1fr; } }
+
+/* Tab-specific column widths - EXPLICIT AND FINAL */
+.help-grid:not(.help-grid-filters) .help-col { 
+  grid-template-columns: 160px 1fr;
+  padding-bottom:15px; 
+}
+.help-grid-filters .help-col { 
+  grid-template-columns: 260px 1fr; 
+}
+
+/* Tab-specific header colors */
+.help-grid:not(.help-grid-filters) .help-title,
+.help-grid-filters .help-title { 
+  color:var(--accent); 
+}
 
 /* Menu overlay variant: backdrop for app menu (non-centered, anchored to button) */
 .overlay-backdrop.menu-overlay {

@@ -1,5 +1,14 @@
 ## current tasks, notes and comments.
 
+# bugs:
+- Ctrl-P - choose a topic with default model. Then Reload - the model is changed to something else. [x]
+- Grok - markdown recognition...[x]
+- utilities functions - show the filtered history in console. Show orphaned images? [x]
+- daily stats - activity stats [x]
+- filter help
+- changelog/readme
+- multiple tabs / separate browsers
+
 # reminders:
 - tooltips for new (and check old) controls: link counter, image counter, topic picker, model picker [x]
 - model badge in the input zone - expand to fit the longer model names [x]
@@ -8,17 +17,18 @@
 - link topic to model (set combo: topic+model+search settings) [x]
 - Topic editor redesign (layout, navigation) [x]
 - Stats overlay: model stat in addition to daily stat, median response time by date / by model [x]
-- file picker - no customization allowed. - tutorial notes about clipboarding
+- file picker - no customization allowed. - tutorial notes about clipboarding [x]
 - inherited system message and settings for children topics. [-]
 - clearing debug code. local storage [x]
 - filtering by messages with attachments [x]
-- delete messages and attachments! []
+- delete messages and attachments! [x]
 - using localStorage for debugging. - effective, but bad idea
-- parallel usage in several tabs - tutorial
+- parallel usage in several tabs - tutorial 
 
-For Tutorial:
+For Tutorial: [xj]
 - tutorial about web search . 
 - also tutorial about working with images - not aiming to upload large files etc... only for snapshots.
+- delete command
 - new keys Ctrl-Shift-s - view links overlay in view mode - add to Tutorial/F1
 - new keys lN - for the link opening (in new tab) - add to Tutorial/F1
 - new keys Ctrl-Shift-o - open image overlay in input mode - add to Tutorial/F1
@@ -59,4 +69,35 @@ also, what about the width/height of the image overlay? is it fixed? is it deriv
 
 
 
+filter help:
+
+t - current topic (all)
+t10 - current topic (last 10 messages)
+t'My topic' - all messages from My topic
+t'My topic...' - My topic and its children
+t'*learning' - wild card (topic ending with "learning")
+
+d<7 - last 7 days
+d<3h - last 3 hours
+d25-10-11 - messages on that date
+d>25-10-01 & d<=25-10-10 - messages from specific date range
+
+s1 - ranked 1 star
+s>2 - ranked 2 stars and higher
+
+b - messages with blue color marks
+g - messages with grey color marks
+
+m'gpt-5-mini' - messages from specific model
+m'gpt*' - messages from model start with "gpt"
+
+
+c'python' - message contains word "python"
+c'tomorrow*weather' - wild card search
+c'tomorrow' + c'weather' - messages containing either word
+
+r10 - 10 recent messages (all topics)
+t s2 - messages from current topic with 2 stars
+t d<3 - messages from current topic for the last 3 days
+t + t'My topic' - messages from current topic or "My topic"
 
