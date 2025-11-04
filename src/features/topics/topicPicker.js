@@ -114,6 +114,12 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }) {
     buildFlat()
     if (activeIndex >= flat.length) activeIndex = flat.length ? flat.length - 1 : 0
     treeEl.innerHTML = flat.map((row, i) => renderRow(row, i === activeIndex)).join('')
+    
+    // Scroll active row into view
+    const activeRow = treeEl.querySelector('.tp-row.active')
+    if (activeRow) {
+      activeRow.scrollIntoView({ block: 'nearest', behavior: 'auto' })
+    }
   }
   function renderRow({ topic, depth }, active) {
     const hasChildren = (store.children.get(topic.id) || []).size > 0
@@ -237,6 +243,61 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }) {
     render()
   })
   rootEl.addEventListener('keydown', onKey)
+  
+  // Mouse click: marker → expand/collapse, name → select
+  treeEl.addEventListener('click', (e) => {
+    const row = e.target.closest('.tp-row')
+    if (!row) return
+    
+    const topicId = row.getAttribute('data-id')
+    const idx = flat.findIndex(r => r.topic.id === topicId)
+    if (idx < 0) return
+    
+    // Determine if this topic has children
+    const topic = flat[idx].topic
+    const hasChildren = (store.children.get(topic.id) || []).size > 0
+    
+    if (!hasChildren) {
+      // No children → always select
+      teardown()
+      onSelect && onSelect(topicId)
+      return
+    }
+    
+    // Has children → check if clicked on marker area (left 24px)
+    const clickX = e.clientX
+    const rowRect = row.getBoundingClientRect()
+    const markerZone = 24 // marker + small padding
+    
+    if (clickX - rowRect.left < markerZone) {
+      // Clicked marker → toggle expand/collapse
+      activeIndex = idx
+      if (expanded.has(topicId)) {
+        expanded.delete(topicId)
+      } else {
+        expanded.add(topicId)
+      }
+      render()
+    } else {
+      // Clicked name → select
+      teardown()
+      onSelect && onSelect(topicId)
+    }
+  })
+  
+  // Mouse hover: update active index for visual feedback
+  treeEl.addEventListener('mouseover', (e) => {
+    const row = e.target.closest('.tp-row')
+    if (row) {
+      const rows = treeEl.querySelectorAll('.tp-row')
+      const index = Array.from(rows).indexOf(row)
+      if (index >= 0 && index !== activeIndex) {
+        activeIndex = index
+        render()
+      }
+    }
+  })
+  
   const modal = openModal({ modeManager, root: rootEl, closeKeys: [], restoreMode: true })
   function teardown() {
     modal.close('manual')

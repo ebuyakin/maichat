@@ -74,7 +74,9 @@ export function renderMathToString(html) {
     // Pattern: $$...$$
     result = result.replace(/\$\$([\s\S]+?)\$\$/g, (match, mathContent) => {
       try {
-        const rendered = window.katex.renderToString(mathContent.trim(), {
+        // Decode HTML entities (markdown renderer's DOM step encodes them)
+        const decodedMath = decodeHTMLEntities(mathContent.trim())
+        const rendered = window.katex.renderToString(decodedMath, {
           displayMode: true,
           throwOnError: false,
           errorColor: '#cc0000',
@@ -93,7 +95,9 @@ export function renderMathToString(html) {
     // Pattern: $...$(?!digit) (but not $$)
     result = result.replace(/\$([^\n$]+?)\$(?!\d)/g, (match, mathContent) => {
       try {
-        const rendered = window.katex.renderToString(mathContent.trim(), {
+        // Decode HTML entities (markdown renderer's DOM step encodes them)
+        const decodedMath = decodeHTMLEntities(mathContent.trim())
+        const rendered = window.katex.renderToString(decodedMath, {
           displayMode: false,
           throwOnError: false,
           errorColor: '#cc0000',
@@ -110,7 +114,9 @@ export function renderMathToString(html) {
     // Process LaTeX bracket notation: \[...\] (display)
     result = result.replace(/\\\[([\s\S]+?)\\\]/g, (match, mathContent) => {
       try {
-        const rendered = window.katex.renderToString(mathContent.trim(), {
+        // Decode HTML entities (markdown renderer's DOM step encodes them)
+        const decodedMath = decodeHTMLEntities(mathContent.trim())
+        const rendered = window.katex.renderToString(decodedMath, {
           displayMode: true,
           throwOnError: false,
           errorColor: '#cc0000',
@@ -128,7 +134,9 @@ export function renderMathToString(html) {
     // Process LaTeX parenthesis notation: \(...\) (inline)
     result = result.replace(/\\\((.+?)\\\)/g, (match, mathContent) => {
       try {
-        const rendered = window.katex.renderToString(mathContent.trim(), {
+        // Decode HTML entities (markdown renderer's DOM step encodes them)
+        const decodedMath = decodeHTMLEntities(mathContent.trim())
+        const rendered = window.katex.renderToString(decodedMath, {
           displayMode: false,
           throwOnError: false,
           errorColor: '#cc0000',
