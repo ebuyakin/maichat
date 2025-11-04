@@ -59,7 +59,7 @@ export const SETTINGS_SCHEMA = {
   },
   
   gutterRPx: {
-    defaultValue: 7,
+    defaultValue: 10,
     renderAction: 'restyle',
     control: { type: 'number', min: 0, max: 60, step: 1 },
     ui: { label: 'Gutter Right (px)', tab: 'spacing' },

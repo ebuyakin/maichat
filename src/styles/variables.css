@@ -33,4 +33,7 @@ html[data-page="app"] {
 
   /* Transition defaults */
   --fade-transition-ms: 120ms; /* default transition for opacity */
+  
+  /* History background lightness (0-15%, currently 10% to reduce contrast) */
+  --history-bg: hsl(0, 0%, 7%);
 }
