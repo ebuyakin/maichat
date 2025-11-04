@@ -9,6 +9,7 @@ export function applySpacingStyles(settings) {
     metaGapPx,
     gutterLPx,
     gutterRPx,
+    historyBgLightness,
     fadeInMs = 120,
     fadeOutMs = 120,
     fadeTransitionMs = 120,
@@ -24,6 +25,9 @@ export function applySpacingStyles(settings) {
   if (Number.isFinite(metaGapPx)) root.style.setProperty('--meta-gap', `${metaGapPx}px`)
   if (Number.isFinite(gutterLPx)) root.style.setProperty('--gutter-l', `${gutterLPx}px`)
   if (Number.isFinite(gutterRPx)) root.style.setProperty('--gutter-r', `${gutterRPx}px`)
+  if (Number.isFinite(historyBgLightness)) {
+    root.style.setProperty('--history-bg', `hsl(0, 0%, ${historyBgLightness}%)`)
+  }
 
   // Update topBar and inputBar padding dynamically
   if (

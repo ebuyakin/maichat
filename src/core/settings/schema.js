@@ -65,6 +65,13 @@ export const SETTINGS_SCHEMA = {
     ui: { label: 'Gutter Right (px)', tab: 'spacing' },
   },
   
+  historyBgLightness: {
+    defaultValue: 7,
+    renderAction: 'restyle',
+    control: { type: 'number', min: 0, max: 20, step: 1 },
+    ui: { label: 'History Background Lightness (%)', tab: 'spacing' },
+  },
+  
   useInlineFormatting: {
     defaultValue: true,
     renderAction: 'rebuild',

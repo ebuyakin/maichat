@@ -150,6 +150,7 @@ export function openSettingsOverlay({ onClose }) {
     const metaGapPx = clampRange(parseInt(fd.get('metaGapPx')), 0, 48)
     const gutterLPx = clampRange(parseInt(fd.get('gutterLPx')), 0, 60)
     const gutterRPx = clampRange(parseInt(fd.get('gutterRPx')), 0, 60)
+    const historyBgLightness = clampRange(parseInt(fd.get('historyBgLightness')), 0, 20)
     const scrollAnimMs = clampRange(parseInt(fd.get('scrollAnimMs')), 0, 2000)
     const scrollAnimDynamic = fd.get('scrollAnimDynamic') === 'true'
     const scrollAnimMinMs = clampRange(parseInt(fd.get('scrollAnimMinMs')), 0, 1000)
@@ -178,6 +179,7 @@ export function openSettingsOverlay({ onClose }) {
       metaGapPx,
       gutterLPx,
       gutterRPx,
+      historyBgLightness,
       scrollAnimMs,
       scrollAnimDynamic,
       scrollAnimMinMs,
@@ -229,6 +231,7 @@ export function openSettingsOverlay({ onClose }) {
     setNum('metaGapPx', s.metaGapPx)
     setNum('gutterLPx', s.gutterLPx)
     setNum('gutterRPx', s.gutterRPx)
+    setNum('historyBgLightness', s.historyBgLightness)
     const uif = form.querySelector('input[name="useInlineFormatting"]')
     if (uif) uif.checked = !!s.useInlineFormatting
     // Scroll

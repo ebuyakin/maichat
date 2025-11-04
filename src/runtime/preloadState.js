@@ -60,7 +60,7 @@ function readPendingMeta(store) {
   }
 
   if (!model) {
-    model = getActiveModel() || 'gpt-4o-mini'
+    model = getActiveModel() || 'gpt-5-mini'
   }
 
   // Format topic path for display
@@ -90,6 +90,9 @@ function applySpacingVars(settings) {
     // Set all spacing vars that affect layout
     if (typeof s.gutterLPx === 'number') root.setProperty('--gutter-l', s.gutterLPx + 'px')
     if (typeof s.gutterRPx === 'number') root.setProperty('--gutter-r', s.gutterRPx + 'px')
+    if (typeof s.historyBgLightness === 'number') {
+      root.setProperty('--history-bg', `hsl(0, 0%, ${s.historyBgLightness}%)`)
+    }
     if (typeof s.messagePaddingPx === 'number') root.setProperty('--message-padding', s.messagePaddingPx + 'px')
     if (typeof s.fadeZonePx === 'number') root.setProperty('--fade-zone', s.fadeZonePx + 'px')
     if (typeof s.messageGapPx === 'number') root.setProperty('--message-gap', s.messageGapPx + 'px')
