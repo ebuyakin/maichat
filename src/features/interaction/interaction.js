@@ -737,7 +737,7 @@ export function createInteraction({
           },
         })
       }
-    } else if (k === 'k') {
+    } else if (k === ';' || e.code === 'Semicolon') {
       e.preventDefault()
       const prevMode = modeManager.mode
       openApiKeysOverlay({

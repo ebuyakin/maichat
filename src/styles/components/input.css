@@ -2,7 +2,7 @@
 #inputBar .row.second { justify-content:space-between; margin-top:2px; }
 #inputBar input, #inputBar textarea { flex:1; background:var(--bg-alt); border:none; color:var(--text); padding:10px 0 10px 0; font:var(--size-base)/1.5 var(--font-ui); font-weight: inherit; border-radius:4px; resize:none; overflow-y:auto; }
 #inputBar textarea { min-height:calc(var(--size-base) * 1.5 * 2 + 20px); max-height:calc(var(--size-base) * 1.5 * 3 + 20px); }
-#sendBtn { background:var(--bg-alt); color:var(--text); border:1px solid #2a2a2a; padding:4px 16px; height:34px; cursor:pointer; font-size:12px; border-radius:4px; font-weight:inherit; min-width:134px; display:inline-flex; justify-content:flex-end; align-items:center; font-family:var(--font-ui); letter-spacing:.3px; position:relative; box-sizing:border-box; }
+#sendBtn { background:var(--bg-alt); color:var(--text); border:1px solid #2a2a2a; padding:4px 16px; height:34px; cursor:pointer; font-size:12px; border-radius:4px; font-weight:inherit; min-width:134px; display:inline-flex; justify-content:center; align-items:center; font-family:var(--font-ui); letter-spacing:.3px; position:relative; box-sizing:border-box; }
 #sendBtn:disabled { opacity:.5; cursor:default; }
 #sendBtn.pending { opacity:1 !important; justify-content:flex-start; background: var(--focus-ring); border-color: var(--focus-ring); color:#fff; font-weight:inherit; text-align:left; padding-left:12px; }
 #sendBtn.pending .lbl { font-family: var(--font-ui); font-size:12px; letter-spacing:.3px; text-align:left; }

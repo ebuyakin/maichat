@@ -15,7 +15,7 @@ Covered overlays:
 1. Topic Editor (Ctrl+E)
 2. Model Editor (Ctrl+Shift+M)
 3. Model Selector (Ctrl+M – INPUT only by design)
-4. API Keys Overlay (Ctrl+K or menu, or auto-open on missing/invalid key)
+4. API Keys Overlay (Ctrl+; or menu, or auto-open on missing/invalid key)
 5. Help Overlay (F1)
 6. Settings Overlay (Ctrl+,)
 7. Topic Quick Picker (Ctrl+T: VIEW/INPUT only per spec)
@@ -51,7 +51,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+T | Open topic quick picker (VIEW: reassign active pair topic, INPUT: set pending topic) | Full topic tree overlay (restores prev mode) |
 | Ctrl+P | Open chrono topic picker (VIEW/INPUT: quick access to recent topics) | Recent topics list overlay (restores prev mode) |
 | Ctrl+Shift+T | Open topic editor | Overlay (Edit) (restores prev mode) |
-| Ctrl+K | Open API Keys overlay | Overlay (Edit) (restores prev mode) |
+| Ctrl+; | Open API Keys overlay | Overlay (Edit) (restores prev mode) |
 | Ctrl+M | Open model selector (INPUT mode only; chooses pending message model) | Overlay (Selection) (restores prev mode) |
 | Ctrl+Shift+M | Open model editor (all modes) | Enable/disable models (j/k move · Space toggle · Enter/Esc close) (restores prev mode) |
 | Ctrl+, | Open settings overlay | Adjust preferences (restores prev mode) |

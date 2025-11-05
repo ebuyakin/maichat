@@ -27,7 +27,7 @@ export function openHelpOverlay({ onClose, modeManager }) {
             <div class="help-k">Ctrl+Shift+T</div><div class="help-d">Topic Editor</div>
             <div class="help-k">Ctrl+Shift+M</div><div class="help-d">Model Editor</div>
             <div class="help-k">Ctrl+Shift+D</div><div class="help-d">Daily Stats</div>
-            <div class="help-k">Ctrl+K</div><div class="help-d">API Keys</div>
+            <div class="help-k">Ctrl+;</div><div class="help-d">API Keys</div>
           </section>
           <section class="help-col">
             <div class="help-title">Input Mode</div>

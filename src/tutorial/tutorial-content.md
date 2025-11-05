@@ -12,7 +12,7 @@ Get MaiChat running and send your first message. This guide covers everything yo
 
 MaiChat needs API keys to connect to LLM providers (OpenAI, Anthropic, Google, xAI).
 
-1. Press `Ctrl+K` to open API Keys settings
+1. Press `Ctrl+;` to open API Keys settings
 2. Enter your API key for at least one provider:
    - **OpenAI (ChatGPT)**: Get your key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
    - **Anthropic (Claude)**: Get your key at [console.anthropic.com](https://console.anthropic.com)
@@ -1510,7 +1510,7 @@ Check each provider's website for current pricing and free tier details.
 MaiChat supports four major AI providers. You need at least one API key to use the app.
 
 **Opening API Keys settings:**
-- Press `Ctrl+K` from any mode
+- Press `Ctrl+;` from any mode
 - Or use the menu: `Ctrl+.` → API Keys
 
 **Supported providers:**
@@ -2041,7 +2041,7 @@ MaiChat categorizes errors into 5 types based on the error message from the prov
   - "Unauthorized" or "401" response
   - "Forbidden" response
 - **How to fix:**
-  1. Press `Ctrl+K` to open API Keys
+  1. Press `Ctrl+;` to open API Keys
   2. Check that the correct API key is entered
   3. Verify the key is active on the provider's website
   4. Generate a new key if needed

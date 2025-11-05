@@ -429,7 +429,7 @@ export function createHistoryRuntime(ctx) {
     const modeEl = document.getElementById('modeIndicator')
     if (!modeEl) return
     const m = (window.__modeManager && window.__modeManager.mode) || 'view'
-    modeEl.textContent = `[${m.toUpperCase()}]`
+    modeEl.textContent = `[${m}]`
     modeEl.classList.remove('mode-view', 'mode-command', 'mode-input')
     if (m === 'command') modeEl.classList.add('mode-command')
     else if (m === 'input') modeEl.classList.add('mode-input')
