@@ -53,6 +53,8 @@ export function createHistoryRuntime(ctx) {
   let lastPredictedCount = 0
   let lastTrimmedCount = 0
   let lastViewportH = window.innerHeight
+  // Track the last (most recent) pair id in the current filtered set (LFS)
+  let lastFilteredPairId = null
 
   function setSendDebug(predictedMessageCount, trimmedCount) {
     if (typeof predictedMessageCount === 'number') lastPredictedCount = predictedMessageCount
@@ -219,6 +221,8 @@ export function createHistoryRuntime(ctx) {
     try { linkHints.exit && linkHints.exit() } catch {}
     // section 1
     pairs = [...pairs].sort((a, b) => a.createdAt - b.createdAt) // pairs - coming from storage, indexDb
+    // Update LFS (last in filtered set) based on the final set passed for rendering
+    lastFilteredPairId = pairs.length ? pairs[pairs.length - 1].id : null
     const settings = getSettings()
     const cpt = settings.charsPerToken || 3.5
     const activeModel = pendingMessageMeta.model || getActiveModel() || 'gpt'
@@ -520,5 +524,8 @@ export function createHistoryRuntime(ctx) {
     getPredictedCount: () => lastPredictedCount,
     getTrimmedCount: () => lastTrimmedCount,
     getIncludedIds: () => new Set(lastContextIncludedIds),
+    // LFS helpers
+    getLastFilteredPairId: () => lastFilteredPairId,
+    isLastInFiltered: (pairId) => !!pairId && pairId === lastFilteredPairId,
   }
 }

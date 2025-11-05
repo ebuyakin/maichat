@@ -114,6 +114,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
         const modelName = pair && pair.model ? pair.model : '(model)'
         let stateBadge = ''
         let errActions = ''
+        let normalActions = ''
 
         if (pair && pair.lifecycleState === 'sending')
           stateBadge = '<span class="badge state" data-state="sending">…</span>'
@@ -121,6 +122,16 @@ export function createHistoryView({ store, onActivePartRendered }) {
           const label = classifyErrLabel(pair)
           stateBadge = `<span class=\"badge state error\" title=\"${escapeHtml(pair.errorMessage || 'error')}\">${label}</span>`
           errActions = `<span class=\"err-actions\"><button class=\"btn btn-icon resend\" data-action=\"resend\" title=\"Re-ask: copy to input and resend (E key)\">↻</button><button class=\"btn btn-icon del\" data-action=\"delete\" title=\"Delete this error message (W key)\">✕</button></span>`
+        } else if (pair) {
+          // For normal messages, show re-ask button only when this pair is last in filtered set (LFS)
+          try {
+            const hr = window.__historyRuntime
+            if (hr && typeof hr.isLastInFiltered === 'function' && hr.isLastInFiltered(pair.id)) {
+              const pending = !!(window.__pendingReaskPairId && window.__pendingReaskPairId === pair.id)
+              const disabledAttr = pending ? ' disabled aria-disabled="true"' : ''
+              normalActions = `<span class=\"norm-actions\"><button class=\"btn btn-icon reask\" data-action=\"reask-normal\" title=\"Re-ask (E key)\"${disabledAttr}>↻</button></span>`
+            }
+          } catch {}
         }
 
         // This is main conversion algorithn for the assistant response (NB!)
@@ -157,9 +168,10 @@ export function createHistoryView({ store, onActivePartRendered }) {
                 <span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span>
               </div>
               <div class="meta-right">
-                ${stateBadge}${errActions}
+                ${stateBadge}
                 <span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span>
                 ${sourcesBadge}
+                ${errActions}${normalActions}
                 <span class="badge model">${escapeHtml(modelName)}</span>
                 <span class="badge timestamp" data-ts="${pair ? pair.createdAt : ''}">${ts}</span>
               </div>
@@ -192,12 +204,22 @@ export function createHistoryView({ store, onActivePartRendered }) {
       const modelName = pair.model || '(model)'
       let stateBadge = ''
       let errActions = ''
+      let normalActions = ''
       if (pair.lifecycleState === 'sending')
         stateBadge = '<span class="badge state" data-state="sending">…</span>'
       else if (pair.lifecycleState === 'error') {
         const label = classifyErrLabel(pair)
         stateBadge = `<span class="badge state error" title="${escapeHtml(pair.errorMessage || 'error')}">${label}</span>`
         errActions = `<span class="err-actions"><button class="btn btn-icon resend" data-action="resend" title="Re-ask: copy to input and resend (E key)">↻</button><button class="btn btn-icon del" data-action="delete" title="Delete this error message (W key)">✕</button></span>`
+      } else {
+        try {
+          const hr = window.__historyRuntime
+          if (hr && typeof hr.isLastInFiltered === 'function' && hr.isLastInFiltered(pair.id)) {
+            const pending = !!(window.__pendingReaskPairId && window.__pendingReaskPairId === pair.id)
+            const disabledAttr = pending ? ' disabled aria-disabled="true"' : ''
+            normalActions = `<span class="norm-actions"><button class="btn btn-icon reask" data-action="reask-normal" title="Re-ask (E key)"${disabledAttr}>↻</button></span>`
+          }
+        } catch {}
       }
       if (!shouldUseMessageView()) {
         return `<div class="part meta" data-part-id="${pt.id}" data-role="meta" data-pair-id="${pt.pairId}" data-meta="1" tabindex="-1" aria-hidden="true"><div class="part-inner">
@@ -207,7 +229,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
 						<span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span>
 					</div>
 					<div class="meta-right">
-					${stateBadge}${errActions}
+					${stateBadge}${errActions}${normalActions}
 						<span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span>
 						<span class="badge model">${escapeHtml(modelName)}</span>
 						<span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
@@ -260,9 +282,10 @@ export function createHistoryView({ store, onActivePartRendered }) {
 						<span class="badge topic" title="${escapeHtml(topicPath)}">${escapeHtml(middleTruncate(topicPath, 72))}</span>
 					</div>
           <div class="meta-right">
-            ${stateBadge}${errActions}
+            ${stateBadge}
             <span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span>
             ${sourcesBadge}
+            ${errActions}${normalActions}
             <span class="badge model">${escapeHtml(modelName)}</span>
             <span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
           </div>
@@ -324,6 +347,20 @@ export function classifyErrorCode(message) {
   if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed'))
     return 'error: net'
   return 'error: unknown'
+}
+// Bind normal re-ask button actions (non-error). Caller provides onReask(pairId)
+export function bindNormalReaskActions(rootEl, { onReask }) {
+  if (!rootEl.__normalReaskBound) {
+    rootEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action="reask-normal"]')
+      if (!btn) return
+      const host = btn.closest('.message.assistant[data-pair-id], .part.assistant[data-pair-id]')
+      if (!host) return
+      const pairId = host.getAttribute('data-pair-id')
+      if (pairId && typeof onReask === 'function') onReask(pairId)
+    })
+    rootEl.__normalReaskBound = true
+  }
 }
 export function bindHistoryErrorActions(rootEl, { onResend, onDelete }) {
   if (!rootEl.__errActionsBound) {

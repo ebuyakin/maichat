@@ -35,6 +35,8 @@ import { openModal } from '../../shared/openModal.js'
 import { setupCopyShortcuts } from '../formatting/copyUtilities.js'
 import { createViewKeyHandler } from './viewKeys.js'
 import { openSourcesOverlay } from '../history/sourcesOverlay.js'
+import { openReaskOverlay } from '../history/reaskOverlay.js'
+import { bindNormalReaskActions } from '../history/historyView.js'
 import { openImageOverlay } from '../images/imageOverlay.js'
 import { createCommandKeyHandler } from './commandKeys.js'
 import { createInputKeyHandler } from './inputKeys.js'
@@ -162,6 +164,32 @@ export function createInteraction({
       if (pair && Array.isArray(pair.attachments) && pair.attachments.length) {
         openImageOverlay({ modeManager, mode: 'view', pair, startIndex })
       }
+    },
+    openReaskIfAllowed: () => {
+      const act = activeParts.active()
+      if (!act) return false
+      const pair = store.pairs.get(act.pairId)
+      if (!pair || pair.lifecycleState === 'error') return false
+      if (!historyRuntime.isLastInFiltered || !historyRuntime.isLastInFiltered(pair.id)) return false
+      if (window.modalIsActive && window.modalIsActive()) return false
+      const defModel = (ctx.pendingMessageMeta && ctx.pendingMessageMeta.model) || getActiveModel()
+      openReaskOverlay({
+        modeManager,
+        defaultModel: defModel,
+        onConfirm: (model) => {
+          reAskInPlace(pair.id, model)
+        },
+      })
+      return true
+    },
+    restorePreviousIfAllowed: () => {
+      const act = activeParts.active()
+      if (!act) return false
+      const pair = store.pairs.get(act.pairId)
+      if (!pair || pair.lifecycleState === 'error') return false
+      if (!pair.previousAssistantText) return false
+      restorePrevious(pair.id)
+      return true
     },
   })
 
@@ -634,6 +662,25 @@ export function createInteraction({
       }
     } catch {}
   })
+  // Bind normal re-ask button clicks
+  try {
+    const histRoot = document.getElementById('history')
+    bindNormalReaskActions(histRoot, {
+      onReask: (pairId) => {
+        const pair = store.pairs.get(pairId)
+        if (!pair || pair.lifecycleState === 'error') return
+        if (!historyRuntime.isLastInFiltered || !historyRuntime.isLastInFiltered(pair.id)) return
+        const defModel = (ctx.pendingMessageMeta && ctx.pendingMessageMeta.model) || getActiveModel()
+        openReaskOverlay({
+          modeManager,
+          defaultModel: defModel,
+          onConfirm: (model) => {
+            reAskInPlace(pair.id, model)
+          },
+        })
+      },
+    })
+  } catch {}
   window.addEventListener('keydown', (e) => {
     if (!e.ctrlKey) return
     const k = e.key.toLowerCase()
@@ -887,6 +934,202 @@ export function createInteraction({
       // If no parts remain (empty history), no focus needed
     }
   }
+  async function reAskInPlace(pairId, model) {
+    const pair = store.pairs.get(pairId)
+    if (!pair) return
+    // Mark pending re-ask to disable the button (no spinner badge in history)
+    try { window.__pendingReaskPairId = pair.id } catch {}
+    // Show input pending UI for consistency with normal send
+    lifecycle.beginSend()
+    updateSendDisabled()
+    // Switch to input mode and align to bottom (consistency: like new send)
+    try { modeManager.set('input') } catch {}
+    try {
+      // Focus user's part of this pair if available and bottom-align it (parity with new send UX)
+      const pane = document.getElementById('historyPane')
+      const userEl = pane && pane.querySelector(`.message[data-pair-id="${pair.id}"][data-role="user"], .part[data-pair-id="${pair.id}"][data-role="user"]`)
+      const uid = userEl && userEl.getAttribute('data-part-id')
+      if (uid) {
+        activeParts.setActiveById(uid)
+        historyRuntime.applyActiveMessage()
+        if (ctx.scrollController && ctx.scrollController.alignTo) {
+          ctx.scrollController.alignTo(uid, 'bottom', false)
+        }
+      }
+    } catch {}
+    const controller = new AbortController()
+    const settings = getSettings()
+    const timeoutSec = settings.requestTimeoutSec || 120
+    const timeoutMs = timeoutSec * 1000
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+    if (!window.__maichat) window.__maichat = {}
+    window.__maichat.requestController = controller
+    try {
+      // Build WYSIWYG visible pairs chrono
+      const currentPairs = activeParts.parts
+        .map((pt) => store.pairs.get(pt.pairId))
+        .filter(Boolean)
+      const chrono = [...new Set(currentPairs)].sort((a, b) => a.createdAt - b.createdAt)
+      boundaryMgr.updateVisiblePairs(chrono)
+      boundaryMgr.setModel(model || getActiveModel())
+      boundaryMgr.applySettings(getSettings())
+      const boundarySnapshot = boundaryMgr.getBoundary()
+      const tStart = Date.now()
+      const execResult = await executeSend({
+        store,
+        model: model || getActiveModel(),
+        topicId: pair.topicId,
+        userText: pair.userText || '',
+        signal: controller.signal,
+        visiblePairs: chrono,
+        attachments: Array.isArray(pair.attachments) ? pair.attachments.slice() : [],
+        topicWebSearchOverride: undefined,
+        boundarySnapshot,
+        onDebugPayload: (payload) => {
+          historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount)
+          requestDebug.setPayload(payload)
+          historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length)
+        },
+      })
+  const responseMs = Math.max(0, Date.now() - tStart)
+      const rawText = execResult.content
+      // Extract code and equations, then sanitize display
+      const codeExtraction = extractCodeBlocks(rawText)
+      const afterCode = codeExtraction.hasCode ? codeExtraction.displayText : rawText
+      const eqResult = extractEquations(afterCode, { inlineMode: 'markers' })
+      const afterEq = eqResult.displayText
+      const sanitized = sanitizeDisplayPreservingTokens(afterEq)
+      let finalDisplay = sanitized
+      if (eqResult.inlineSimple && eqResult.inlineSimple.length) {
+        for (const item of eqResult.inlineSimple) {
+          const span = `<span class="eq-inline" data-tex="${escapeHtmlAttr(item.raw)}">${escapeHtml(item.unicode)}</span>`
+          finalDisplay = finalDisplay.replaceAll(item.marker, span)
+        }
+      }
+      finalDisplay = finalDisplay.replace(/\s*\[([a-z0-9_]+-\d+|eq-\d+)\]\s*/gi, ' [$1] ')
+      finalDisplay = finalDisplay.replace(/ {2,}/g, ' ')
+      // Compute new token counts (user + assistant only)
+      let textTokens = 0
+      try {
+        const userTok = estimateTokens((pair.userText || ''), getSettings().charsPerToken || 4)
+        const asstTok = estimateTokens((rawText || ''), getSettings().charsPerToken || 4)
+        textTokens = userTok + asstTok
+      } catch {}
+      const updateData = {
+        previousAssistantText: pair.assistantText || '',
+        previousModel: pair.model || undefined,
+        replacedAt: Date.now(),
+        replacedBy: model || getActiveModel(),
+        assistantText: rawText,
+        model: model || getActiveModel(),
+        lifecycleState: 'complete',
+        errorMessage: undefined,
+        textTokens,
+        responseMs,
+      }
+      if (Array.isArray(execResult.citations) && execResult.citations.length) {
+        updateData.citations = execResult.citations
+      }
+      if (execResult.citationsMeta && typeof execResult.citationsMeta === 'object') {
+        updateData.citationsMeta = execResult.citationsMeta
+      }
+      if (codeExtraction.hasCode) updateData.codeBlocks = codeExtraction.codeBlocks
+      if (eqResult.equationBlocks && eqResult.equationBlocks.length)
+        updateData.equationBlocks = eqResult.equationBlocks
+      updateData.processedContent =
+        codeExtraction.hasCode || eqResult.hasEquations ? finalDisplay : sanitizeAssistantText(rawText)
+      store.updatePair(pair.id, updateData)
+      clearTimeout(timeoutId)
+      window.__maichat.requestController = null
+      // Clear pending and pending UI
+      try { window.__pendingReaskPairId = null } catch {}
+      lifecycle.completeSend()
+      updateSendDisabled()
+      historyRuntime.renderCurrentView({ preserveActive: true })
+      lifecycle.handleNewAssistantReply(pair.id)
+    } catch (ex) {
+      clearTimeout(timeoutId)
+      window.__maichat.requestController = null
+      let errMsg
+      if (ex.name === 'AbortError') errMsg = 'Request aborted'
+      else errMsg = ex && ex.message ? ex.message : 'error'
+      store.updatePair(pair.id, { lifecycleState: 'error', errorMessage: errMsg, assistantText: '' })
+      try { window.__pendingReaskPairId = null } catch {}
+      lifecycle.completeSend()
+      updateSendDisabled()
+      historyRuntime.renderCurrentView({ preserveActive: true })
+    }
+  }
+  function restorePrevious(pairId) {
+    const pair = store.pairs.get(pairId)
+    if (!pair || !pair.previousAssistantText) return
+    const curAsst = pair.assistantText || ''
+    const curModel = pair.model || undefined
+    const prevAsst = pair.previousAssistantText
+    const prevModel = pair.previousModel || curModel
+    // Re-extract for display
+    const codeExtraction = extractCodeBlocks(prevAsst)
+    const afterCode = codeExtraction.hasCode ? codeExtraction.displayText : prevAsst
+    const eqResult = extractEquations(afterCode, { inlineMode: 'markers' })
+    const afterEq = eqResult.displayText
+    const sanitized = sanitizeDisplayPreservingTokens(afterEq)
+    let finalDisplay = sanitized
+    if (eqResult.inlineSimple && eqResult.inlineSimple.length) {
+      for (const item of eqResult.inlineSimple) {
+        const span = `<span class="eq-inline" data-tex="${escapeHtmlAttr(item.raw)}">${escapeHtml(item.unicode)}</span>`
+        finalDisplay = finalDisplay.replaceAll(item.marker, span)
+      }
+    }
+    finalDisplay = finalDisplay.replace(/\s*\[([a-z0-9_]+-\d+|eq-\d+)\]\s*/gi, ' [$1] ')
+    finalDisplay = finalDisplay.replace(/ {2,}/g, ' ')
+    let textTokens = 0
+    try {
+      const userTok = estimateTokens((pair.userText || ''), getSettings().charsPerToken || 4)
+      const asstTok = estimateTokens((prevAsst || ''), getSettings().charsPerToken || 4)
+      textTokens = userTok + asstTok
+    } catch {}
+    store.updatePair(pair.id, {
+      assistantText: prevAsst,
+      model: prevModel,
+      previousAssistantText: curAsst,
+      previousModel: curModel,
+      processedContent: codeExtraction.hasCode || eqResult.hasEquations ? finalDisplay : sanitizeAssistantText(prevAsst),
+      codeBlocks: codeExtraction.hasCode ? codeExtraction.codeBlocks : undefined,
+      equationBlocks: (eqResult.equationBlocks && eqResult.equationBlocks.length) ? eqResult.equationBlocks : undefined,
+      textTokens,
+      lifecycleState: 'complete',
+      errorMessage: undefined,
+    })
+    historyRuntime.renderCurrentView({ preserveActive: true })
+    // After restoring, align the assistant message depending on fit: top if too tall, bottom if it fits
+    try {
+      const pane = document.getElementById('historyPane')
+      if (!pane) return
+      const nodes = Array.from(
+        pane.querySelectorAll(
+          `.message[data-pair-id="${pair.id}"][data-role="assistant"], .part[data-pair-id="${pair.id}"][data-role="assistant"]`
+        )
+      )
+      if (!nodes || !nodes.length) return
+      const first = nodes[0]
+      const last = nodes[nodes.length - 1]
+      const firstRect = first.getBoundingClientRect()
+      const lastRect = last.getBoundingClientRect()
+      const paneRect = pane.getBoundingClientRect()
+      const replyHeight = lastRect.bottom - firstRect.top
+      const clippedTop = Math.max(0, paneRect.top - firstRect.top)
+      const logicalReplyHeight = replyHeight + clippedTop
+      const fits = logicalReplyHeight <= paneRect.height - 2
+      const assistantId = first.getAttribute('data-part-id')
+      if (assistantId) {
+        activeParts.setActiveById(assistantId)
+        historyRuntime.applyActiveMessage()
+        if (ctx.scrollController && ctx.scrollController.alignTo) {
+          ctx.scrollController.alignTo(assistantId, fits ? 'bottom' : 'top', false)
+        }
+      }
+    } catch {}
+  }
   return {
     keyRouter,
     updateSendDisabled,
@@ -897,5 +1140,7 @@ export function createInteraction({
     deletePairWithFocus,
     isErrorPair,
     restoreLastFilter,
+    reAskInPlace,
+    restorePrevious,
   }
 }

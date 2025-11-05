@@ -61,6 +61,7 @@
 #history .message.assistant .assistant-meta .badge.model{ color: inherit; }
 #history .message.assistant .assistant-meta .badge.state{ color: inherit; }
 #history .message.assistant .assistant-meta .badge.offctx{ color: inherit; }
+#history .message.assistant .assistant-meta .badge.offctx[data-offctx="0"]{ display:none !important; }
 #history .message.assistant .assistant-meta .badge.include{ color: inherit; }
 
 /* History pane: top/bottom padding controlled in layout; ensure zero here */

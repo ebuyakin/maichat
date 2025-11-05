@@ -21,6 +21,8 @@ export function createViewKeyHandler({
   handleDeleteIfErrorActive,
   openSources,
   openImages,
+  openReaskIfAllowed,
+  restorePreviousIfAllowed,
 }) {
   return function viewHandler(e) {
     // If link hints are active, handle digits/Esc here and exit on any other key
@@ -369,12 +371,16 @@ export function createViewKeyHandler({
       setStarRating(0)
       return true
     }
-    // VIEW-only fast keys for error pairs
+    // VIEW-only fast keys for error pairs and re-ask/restore for normal LFS pairs
     if (e.key === 'e') {
       if (handleEditIfErrorActive()) return true
+      if (openReaskIfAllowed && openReaskIfAllowed()) return true
     }
     if (e.key === 'w') {
       if (handleDeleteIfErrorActive()) return true
+    }
+    if (e.key === 'E' && e.shiftKey) {
+      if (restorePreviousIfAllowed && restorePreviousIfAllowed()) return true
     }
 
     // Copy code blocks: c (single block) or c1, c2, etc. (specific block)

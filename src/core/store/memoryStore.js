@@ -105,11 +105,23 @@ export class MemoryStore {
     if (!existing) return false
     const oldTopicId = existing.topicId
     const beforeCreatedAt = existing.createdAt
+    // Track potential text changes to invalidate token cache
+    const beforeUser = existing.userText
+    const beforeAssistant = existing.assistantText
     Object.assign(existing, patch)
 
     // Note: Code processing now happens in interaction.js before sanitization
 
     this.emitter.emit('pair:update', existing)
+    // Invalidate per-pair token cache if text changed
+    try {
+      if (
+        (Object.prototype.hasOwnProperty.call(patch, 'userText') && patch.userText !== beforeUser) ||
+        (Object.prototype.hasOwnProperty.call(patch, 'assistantText') && patch.assistantText !== beforeAssistant)
+      ) {
+        if (existing._tokenCache) delete existing._tokenCache
+      }
+    } catch {}
     if (patch.topicId && patch.topicId !== oldTopicId) {
       this._decrementCountsForTopic(oldTopicId)
       this._incrementCountsForTopic(existing.topicId)

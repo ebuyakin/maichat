@@ -17,6 +17,10 @@
  * @property {number|undefined} textTokens - precomputed total text tokens (userText + assistantText)
  * @property {number|undefined} attachmentTokens - precomputed total image tokens for all attachments
  * @property {number|undefined} responseMs - provider-reported request processing time in milliseconds
+ * @property {string|undefined} previousAssistantText - previous assistant answer preserved after in-place re-ask (optional)
+ * @property {string|undefined} previousModel - model used to produce the previous answer (optional)
+ * @property {number|undefined} replacedAt - timestamp (ms) when in-place replacement occurred (optional)
+ * @property {string|undefined} replacedBy - actor/model that initiated replacement (optional)
  * @property {string|undefined} processedContent - content with code block placeholders (optional, only if code detected)
  * @property {Array<CodeBlock>|undefined} codeBlocks - extracted code blocks (optional, only if code detected)
  * @property {Array<EquationBlock>|undefined} equationBlocks - extracted equation blocks (optional, only if equations detected)

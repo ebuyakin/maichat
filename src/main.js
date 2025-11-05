@@ -112,6 +112,7 @@ document.body.appendChild(loadingEl)
 // ──────────────────────────────────────────────────────────────────────────
 const __runtime = attachDomBindings(__core)
 const historyRuntime = createHistoryRuntime(__runtime)
+try { window.__historyRuntime = historyRuntime } catch {}
 
 const {
   layoutHistoryPane,
