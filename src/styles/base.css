@@ -1,9 +1,13 @@
 html[data-page="app"],
 html[data-page="app"] body { margin:0; padding:0; height:100%; overscroll-behavior:none; }
 
-html[data-page="app"] body { min-height:100vh; overflow:hidden; font-family: var(--font-ui); font-size: var(--size-base); line-height: 1.45; color: var(--text); background: var(--history-bg); font-weight: 10; }
+html[data-page="app"] body { min-height:100vh; overflow:hidden; font-family: var(--font-ui); font-size: var(--size-base); line-height: 1.45; color: var(--text); background: var(--history-bg); font-weight: var(--font-w-normal); }
 
 html[data-page="app"] #app { height:100vh; width:100%; position:relative; }
+
+/* Typography emphasis */
+html[data-page="app"] strong,
+html[data-page="app"] b { font-weight: var(--font-w-strong); }
 
 /* Reduce selection flash */
 html[data-page="app"] ::selection { background: #25527a; }

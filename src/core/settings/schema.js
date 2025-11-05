@@ -71,6 +71,26 @@ export const SETTINGS_SCHEMA = {
     control: { type: 'number', min: 0, max: 20, step: 1 },
     ui: { label: 'History Background Lightness (%)', tab: 'spacing' },
   },
+
+  // Typography (user-facing)
+  textLightnessPct: {
+    defaultValue: 74,
+    renderAction: 'restyle',
+    control: { type: 'number', min: 50, max: 90, step: 1 },
+    ui: { label: 'Text Lightness (%)', tab: 'spacing' },
+  },
+  fontWeightNormal: {
+    defaultValue: 200,
+    renderAction: 'restyle',
+    control: { type: 'number', min: 1, max: 900, step: 1 },
+    ui: { label: 'Font Weight – Normal', tab: 'spacing' },
+  },
+  fontWeightStrong: {
+    defaultValue: 300,
+    renderAction: 'restyle',
+    control: { type: 'number', min: 1, max: 900, step: 1 },
+    ui: { label: 'Font Weight – Strong', tab: 'spacing' },
+  },
   
   useInlineFormatting: {
     defaultValue: true,

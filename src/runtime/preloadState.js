@@ -93,6 +93,16 @@ function applySpacingVars(settings) {
     if (typeof s.historyBgLightness === 'number') {
       root.setProperty('--history-bg', `hsl(0, 0%, ${s.historyBgLightness}%)`)
     }
+    // Typography (apply before first paint to avoid flicker)
+    if (typeof s.textLightnessPct === 'number') {
+      root.setProperty('--text', `hsl(0, 0%, ${s.textLightnessPct}%)`)
+    }
+    if (typeof s.fontWeightNormal === 'number') {
+      root.setProperty('--font-w-normal', String(s.fontWeightNormal))
+    }
+    if (typeof s.fontWeightStrong === 'number') {
+      root.setProperty('--font-w-strong', String(s.fontWeightStrong))
+    }
     if (typeof s.messagePaddingPx === 'number') root.setProperty('--message-padding', s.messagePaddingPx + 'px')
     if (typeof s.fadeZonePx === 'number') root.setProperty('--fade-zone', s.fadeZonePx + 'px')
     if (typeof s.messageGapPx === 'number') root.setProperty('--message-gap', s.messageGapPx + 'px')

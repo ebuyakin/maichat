@@ -151,6 +151,9 @@ export function openSettingsOverlay({ onClose }) {
     const gutterLPx = clampRange(parseInt(fd.get('gutterLPx')), 0, 60)
     const gutterRPx = clampRange(parseInt(fd.get('gutterRPx')), 0, 60)
     const historyBgLightness = clampRange(parseInt(fd.get('historyBgLightness')), 0, 20)
+  const textLightnessPct = clampRange(parseInt(fd.get('textLightnessPct')), 50, 90)
+  const fontWeightNormal = clampRange(parseInt(fd.get('fontWeightNormal')), 1, 900)
+  const fontWeightStrong = clampRange(parseInt(fd.get('fontWeightStrong')), 1, 900)
     const scrollAnimMs = clampRange(parseInt(fd.get('scrollAnimMs')), 0, 2000)
     const scrollAnimDynamic = fd.get('scrollAnimDynamic') === 'true'
     const scrollAnimMinMs = clampRange(parseInt(fd.get('scrollAnimMinMs')), 0, 1000)
@@ -180,6 +183,9 @@ export function openSettingsOverlay({ onClose }) {
       gutterLPx,
       gutterRPx,
       historyBgLightness,
+  textLightnessPct,
+  fontWeightNormal,
+  fontWeightStrong,
       scrollAnimMs,
       scrollAnimDynamic,
       scrollAnimMinMs,
@@ -232,6 +238,9 @@ export function openSettingsOverlay({ onClose }) {
     setNum('gutterLPx', s.gutterLPx)
     setNum('gutterRPx', s.gutterRPx)
     setNum('historyBgLightness', s.historyBgLightness)
+  setNum('textLightnessPct', s.textLightnessPct)
+  setNum('fontWeightNormal', s.fontWeightNormal)
+  setNum('fontWeightStrong', s.fontWeightStrong)
     const uif = form.querySelector('input[name="useInlineFormatting"]')
     if (uif) uif.checked = !!s.useInlineFormatting
     // Scroll

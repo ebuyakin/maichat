@@ -5,6 +5,7 @@ html[data-page="app"] {
   --border: #232323;
   --border-active: #454545;
   --accent: #5fa8ff;
+  /* Default text color fallback (≈ 74% lightness) */
   --text: #bcbcbc;
   --text-dim: #7a7a7a;
   --text-offctx: #8a8f98;
@@ -36,4 +37,8 @@ html[data-page="app"] {
   
   /* History background lightness (0-15%, currently 10% to reduce contrast) */
   --history-bg: hsl(0, 0%, 7%);
+
+  /* Typography fallbacks (overridden by settings at runtime) */
+  --font-w-normal: 200;
+  --font-w-strong: 300;
 }

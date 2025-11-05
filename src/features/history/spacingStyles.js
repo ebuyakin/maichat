@@ -10,6 +10,9 @@ export function applySpacingStyles(settings) {
     gutterLPx,
     gutterRPx,
     historyBgLightness,
+    textLightnessPct,
+    fontWeightNormal,
+    fontWeightStrong,
     fadeInMs = 120,
     fadeOutMs = 120,
     fadeTransitionMs = 120,
@@ -27,6 +30,15 @@ export function applySpacingStyles(settings) {
   if (Number.isFinite(gutterRPx)) root.style.setProperty('--gutter-r', `${gutterRPx}px`)
   if (Number.isFinite(historyBgLightness)) {
     root.style.setProperty('--history-bg', `hsl(0, 0%, ${historyBgLightness}%)`)
+  }
+  if (Number.isFinite(textLightnessPct)) {
+    root.style.setProperty('--text', `hsl(0, 0%, ${textLightnessPct}%)`)
+  }
+  if (Number.isFinite(fontWeightNormal)) {
+    root.style.setProperty('--font-w-normal', String(fontWeightNormal))
+  }
+  if (Number.isFinite(fontWeightStrong)) {
+    root.style.setProperty('--font-w-strong', String(fontWeightStrong))
   }
 
   // Update topBar and inputBar padding dynamically
