@@ -20,6 +20,7 @@
     color: var(--text);
     padding: 6px 0 6px 0;
     font: var(--size-base)/1.5 var(--font-ui);
+    font-weight: inherit;
 }
 
 #commandWrapper {
