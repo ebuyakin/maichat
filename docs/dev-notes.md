@@ -2,10 +2,16 @@
 
 
 ### Bugs
-1. right gutter default setting - 7 to 10
+1. right gutter default setting - 7 to 10 [x]
 2. 'Send' label on the button - aligned to the right - shall be to the middle
 3. Math formatting in Gemini (see example) [x]
-4. topic picker scrolling [x]
+4. topic picker scrolling and mouse selection [x]
+5. Loading... text on reload [x]
+6. rounding of the blue border 
+7. scrolling on API key overlay open.
+8. Settings overlay overflow.
+9. background color and font width settings?
+10. tutorial 'reading experience' configuration section
 
 ### Requirements for version 1.2
 0. re-ask for any request!

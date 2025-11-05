@@ -69,7 +69,7 @@ export const SETTINGS_SCHEMA = {
     defaultValue: 7,
     renderAction: 'restyle',
     control: { type: 'number', min: 0, max: 20, step: 1 },
-    ui: { label: 'History Background Lightness (%)', tab: 'spacing' },
+    ui: { label: 'History Background Lightness (%)', tab: 'reading' },
   },
 
   // Typography (user-facing)
@@ -77,26 +77,26 @@ export const SETTINGS_SCHEMA = {
     defaultValue: 74,
     renderAction: 'restyle',
     control: { type: 'number', min: 50, max: 90, step: 1 },
-    ui: { label: 'Text Lightness (%)', tab: 'spacing' },
+    ui: { label: 'Text Lightness (%)', tab: 'reading' },
   },
   fontWeightNormal: {
     defaultValue: 200,
     renderAction: 'restyle',
     control: { type: 'number', min: 1, max: 900, step: 1 },
-    ui: { label: 'Font Weight – Normal', tab: 'spacing' },
+    ui: { label: 'Font Weight – Normal', tab: 'reading' },
   },
   fontWeightStrong: {
     defaultValue: 300,
     renderAction: 'restyle',
     control: { type: 'number', min: 1, max: 900, step: 1 },
-    ui: { label: 'Font Weight – Strong', tab: 'spacing' },
+    ui: { label: 'Font Weight – Strong', tab: 'reading' },
   },
   
   useInlineFormatting: {
     defaultValue: true,
     renderAction: 'rebuild',
     control: { type: 'checkbox' },
-    ui: { label: 'Inline Markdown Formatting', tab: 'spacing' },
+    ui: { label: 'Inline Markdown Formatting', tab: 'reading' },
   },
   
   // ========================================

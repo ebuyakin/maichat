@@ -64,13 +64,16 @@ export function openSettingsOverlay({ onClose }) {
     <div class="overlay-panel settings-panel compact">
       <header>Settings</header>
       <div class="settings-tabs" role="tablist">
-  ${['spacing', 'scroll', 'context'].map((t, i) => `<button type="button" class="tab-btn${i === 0 ? ' active' : ''}" data-tab="${t}" role="tab" aria-selected="${i === 0}" aria-controls="tab-${t}">${t}</button>`).join('')}
+  ${['spacing', 'reading', 'scroll', 'context'].map((t, i) => `<button type="button" class="tab-btn${i === 0 ? ' active' : ''}" data-tab="${t}" role="tab" aria-selected="${i === 0}" aria-controls="tab-${t}">${t}</button>`).join('')}
       </div>
       <div class="settings-body">
         <form id="settingsForm" autocomplete="off">
           <div class="tab-section" data-tab-section="spacing" id="tab-spacing">
             ${generateControlsForTab('spacing', existing)}
-            <div class="tab-hint" data-tab-hint="spacing">Shift+1..3 switch tabs • h/l or [ ] cycle • j/k move • +/- adjust • Ctrl+S - Save & Close • Esc - Cancel & Close</div>
+            <div class="tab-hint" data-tab-hint="spacing">Shift+1..4 switch tabs • h/l or [ ] cycle • j/k move • +/- adjust • Ctrl+S - Save & Close • Esc - Cancel & Close</div>
+          </div>
+          <div class="tab-section" data-tab-section="reading" id="tab-reading" hidden>
+            ${generateControlsForTab('reading', existing)}
           </div>
           <div class="tab-section" data-tab-section="scroll" id="tab-scroll" hidden>
             ${generateControlsForTab('scroll', existing)}
