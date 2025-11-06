@@ -1,6 +1,6 @@
 # Re-ask Replaces Answer — Minimal Spec (Source of Truth)
 
-Status: Draft for implementation review
+Status: Implemented (MVP)
 Scope: In-place re-ask that replaces the assistant answer of the last visible pair; no variants, no families
 Out of scope: Multi-variant storage, primary flags, family/grouping UIs, filter grammar changes
 
@@ -45,7 +45,8 @@ Notes:
   - Delete (only for error messages): ✕ (title: “Delete error (w)”).
 - Visibility rules (render-time):
   - Error messages: show both ↻ and ✕ regardless of position in the list.
-  - Normal messages: show ↻ only if the pair is the last in the current filtered set (LFS); otherwise hide both buttons.
+  - Normal messages: show ↻ only if the pair is the last in the current filtered set (LFS); otherwise hide the ↻ button.
+  - While a re-ask is pending for that pair, keep ↻ visible but disabled.
   - The colon command `:delete` remains available for deleting normal messages; we do not show ✕ for normal messages.
   - Visibility is recomputed on normal re-render (filter change, new message, settings rebuild).
 
@@ -58,12 +59,12 @@ Notes:
   3) A new message pair is created with a fresh `createdAt` (chronological append); normal post-processing (code/equations/citations).
   4) Re-render view (preserveActive where sensible); focus moves to the new last message.
 - In-place replacement flow (normal pair):
-  1) Pair enters `sending` state; UI shows spinner badge.
+  1) Begin send: show the standard “AI is thinking…” pending badge in the input zone; keep history static and disable the re‑ask icon for that pair (no spinner in history).
   2) On success:
-     - Move `assistantText` → `previousAssistantText`; set `previousModel`.
-     - Set `assistantText` to the new content; update `model`, `lifecycleState='complete'`.
-     - Re-run code/equation extraction and citations processing as today.
-     - Set `replacedAt = Date.now()`, `replacedBy = selected model`.
+    - Move `assistantText` → `previousAssistantText`; set `previousModel`.
+    - Set `assistantText` to the new content; update `model`, `lifecycleState='complete'`.
+    - Re-run code/equation extraction and citations processing as today.
+    - Set `replacedAt = Date.now()`, `replacedBy = selected model`.
   3) On error: set `lifecycleState='error'`; do not modify `previousAssistantText`.
   4) Rendering update: call `renderCurrentView({ preserveActive: true })` after state changes.
 
@@ -75,13 +76,21 @@ Notes:
   - New pair gets a fresh `createdAt` at send/response time; it will appear at the end chronologically.
   - This mirrors the user explicitly re-sending the question as new.
 
+### Alignment policy (MVP)
+- On confirm (re-ask start): bottom-align the user part of the re-asked pair (parity with normal send).
+- On response arrival: if the assistant reply fits the viewport, bottom-align and keep INPUT mode; if it doesn’t, switch to VIEW and align the reply to top (same as normal send lifecycle).
+
+### Modal behavior
+- The Re-ask overlay intentionally does not restore the previous mode on confirm (exception to the general overlay rule). It keeps INPUT mode active until the response arrives to preserve standard alignment semantics.
+
 ## Rendering (history)
 - No composition changes. Each pair renders as today (user/meta/assistant).
 - No extra badges for "previous" in MVP. The restore feature is keyboard-only.
 
-\- `e` — re-ask action.
+- `e` — re-ask action.
   - Error: always available; deletes the error pair and pre-fills input (no overlay); user sends as usual; new pair is created.
   - Normal: only on the last pair in the current filtered set (LFS); opens the dedicated Re-ask overlay; otherwise no action.
+  - Pending: shows input-zone pending badge; keeps ↻ visible but disabled; no spinner in history.
 - `Shift+E` — restore previous answer (normal-only); otherwise no-op.
 - `w` — delete error messages (matches current behavior). For normal messages, prefer `:delete`; no UI delete button.
 - Existing keys (`j/k/u/d/g/G`, `r`, etc.) unchanged.
@@ -124,6 +133,7 @@ Notes:
 ## Acceptance criteria (MVP)
 - `e` on error: deletes the error, pre-fills input, sends as a new pair with fresh timestamp.
 - `e` on normal (last-only): replaces assistant in-place; previous answer stored; `Shift+E` can restore.
+  Pending state uses the input-zone badge; no history spinner; ↻ disabled while pending.
 - No filter or ordering changes for normal replacements; navigation (`j/k/u/d/g/G`) and alignment behave as before.
 - Error and success flows use the same overlay/pipeline pattern and keep the UI responsive.
 
