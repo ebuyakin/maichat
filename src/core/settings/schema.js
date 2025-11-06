@@ -54,14 +54,14 @@ export const SETTINGS_SCHEMA = {
   gutterLPx: {
     defaultValue: 15,
     renderAction: 'restyle',
-    control: { type: 'number', min: 0, max: 60, step: 1 },
+    control: { type: 'number', min: 0, max: 400, step: 1 },
     ui: { label: 'Gutter Left (px)', tab: 'spacing' },
   },
   
   gutterRPx: {
     defaultValue: 10,
     renderAction: 'restyle',
-    control: { type: 'number', min: 0, max: 60, step: 1 },
+    control: { type: 'number', min: 0, max: 400, step: 1 },
     ui: { label: 'Gutter Right (px)', tab: 'spacing' },
   },
   
@@ -97,6 +97,20 @@ export const SETTINGS_SCHEMA = {
     renderAction: 'rebuild',
     control: { type: 'checkbox' },
     ui: { label: 'Inline Markdown Formatting', tab: 'reading' },
+  },
+
+  // Assistant reading layout
+  twoColumns: {
+    defaultValue: false,
+    renderAction: 'restyle',
+    control: { type: 'checkbox' },
+    ui: { label: 'Two Columns (Assistant Text)', tab: 'reading' },
+  },
+  justifyColumns: {
+    defaultValue: false,
+    renderAction: 'restyle',
+    control: { type: 'checkbox' },
+    ui: { label: 'Justify Text (Two Columns)', tab: 'reading' },
   },
   
   // ========================================

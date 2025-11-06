@@ -49,6 +49,33 @@
 #history .message.assistant .assistant-meta .meta-left{ display:flex; gap:10px; align-items:center; }
 #history .message.assistant .assistant-meta .meta-right{ display:flex; gap:10px; align-items:center; margin-left:auto; }
 #history .message.assistant .assistant-body{ display:block; margin:0; padding-top:6px; white-space:pre-wrap; }
+
+/* Production: assistant reading layout via CSS variables */
+.assistant-body {
+  column-count: var(--assistant-columns, 1);
+  column-gap: 18px;
+  column-fill: balance;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+  text-align: var(--assistant-text-align, left);
+}
+/* Keep structured blocks left-aligned regardless of justification */
+.assistant-body pre,
+.assistant-body code,
+.assistant-body .code-block,
+.assistant-body .katex-display,
+.assistant-body table {
+  text-align: left;
+}
+
+/* Lists indentation adapts to columns (defaults preserved when columns=1) */
+.assistant-body ul { padding-left: var(--assistant-list-ul-padding, 2em); }
+.assistant-body ol { padding-left: var(--assistant-list-ol-padding, 2em); }
+.assistant-body li > ul,
+.assistant-body li > ol { padding-left: var(--assistant-list-nested-padding, 1.5em); }
+
+/* (Experimental class-based rules removed) */
 #history .message.active{ outline:1px solid var(--focus-ring); outline-offset:-1px; box-shadow: 0 0 0 1px var(--focus-ring) inset; }
 
 /* Assistant meta: unified typography (UI font, smaller size, grey color) */

@@ -16,6 +16,8 @@ export function applySpacingStyles(settings) {
     fadeInMs = 120,
     fadeOutMs = 120,
     fadeTransitionMs = 120,
+    twoColumns,
+    justifyColumns,
   } = settings
   const baseFadeMs = Math.max(fadeInMs || 0, fadeOutMs || 0, fadeTransitionMs || 0)
   const root = document.documentElement
@@ -34,6 +36,16 @@ export function applySpacingStyles(settings) {
   if (Number.isFinite(textLightnessPct)) {
     root.style.setProperty('--text', `hsl(0, 0%, ${textLightnessPct}%)`)
   }
+  // Assistant reading layout (columns + justification)
+  try {
+    root.style.setProperty('--assistant-columns', twoColumns ? '2' : '1')
+    // Only meaningful when columns > 1; safe fallback is 'left'
+    root.style.setProperty('--assistant-text-align', justifyColumns ? 'justify' : 'left')
+    // Lists indentation tuned for columns
+    root.style.setProperty('--assistant-list-ul-padding', twoColumns ? '1.2em' : '2em')
+    root.style.setProperty('--assistant-list-ol-padding', twoColumns ? '1.6em' : '2em')
+    root.style.setProperty('--assistant-list-nested-padding', twoColumns ? '1.1em' : '1.5em')
+  } catch {}
   if (Number.isFinite(fontWeightNormal)) {
     root.style.setProperty('--font-w-normal', String(fontWeightNormal))
   }

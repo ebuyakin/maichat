@@ -240,7 +240,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
       return ''
     }
     // Process assistant content for code placeholders, regular escaping for user content
-    const processedContent =
+  const processedContent =
       pt.role === 'assistant' ? processCodePlaceholders(pt.text) : escapeHtml(pt.text)
     if (pt.role === 'assistant' && shouldUseMessageView()) {
       const pair = store.pairs.get(pt.pairId)
@@ -290,7 +290,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
             <span class="badge timestamp" data-ts="${pair.createdAt}">${ts}</span>
           </div>
 				</div>
-				<div class="assistant-body">${processedContent}</div>
+  <div class="assistant-body">${processedContent}</div>
 			</div></div>`
     }
     return `<div class="part ${pt.role}" data-part-id="${pt.id}" data-role="${pt.role}" data-pair-id="${pt.pairId}"><div class="part-inner">${processedContent}</div></div>`

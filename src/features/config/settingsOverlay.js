@@ -151,8 +151,8 @@ export function openSettingsOverlay({ onClose }) {
     const assistantGapPx = clampRange(parseInt(fd.get('assistantGapPx')), 0, 60)
     const messagePaddingPx = clampRange(parseInt(fd.get('messagePaddingPx')), 0, 48)
     const metaGapPx = clampRange(parseInt(fd.get('metaGapPx')), 0, 48)
-    const gutterLPx = clampRange(parseInt(fd.get('gutterLPx')), 0, 60)
-    const gutterRPx = clampRange(parseInt(fd.get('gutterRPx')), 0, 60)
+  const gutterLPx = clampRange(parseInt(fd.get('gutterLPx')), 0, 400)
+  const gutterRPx = clampRange(parseInt(fd.get('gutterRPx')), 0, 400)
     const historyBgLightness = clampRange(parseInt(fd.get('historyBgLightness')), 0, 20)
   const textLightnessPct = clampRange(parseInt(fd.get('textLightnessPct')), 50, 90)
   const fontWeightNormal = clampRange(parseInt(fd.get('fontWeightNormal')), 1, 900)
@@ -177,6 +177,9 @@ export function openSettingsOverlay({ onClose }) {
     const requestTimeoutSec = clampRange(parseInt(fd.get('requestTimeoutSec')), 5, 600)
     const topicOrderMode = fd.get('topicOrderMode') || 'manual'
     const useInlineFormatting = fd.get('useInlineFormatting') === 'on'
+    // Reading – assistant layout
+    const twoColumns = fd.get('twoColumns') === 'on'
+    const justifyColumns = fd.get('justifyColumns') === 'on'
     return {
       fadeZonePx,
       messageGapPx,
@@ -205,6 +208,8 @@ export function openSettingsOverlay({ onClose }) {
       requestTimeoutSec,
       topicOrderMode,
       useInlineFormatting,
+      twoColumns,
+      justifyColumns,
     }
   }
   function shallowEqual(a, b) {
@@ -246,6 +251,10 @@ export function openSettingsOverlay({ onClose }) {
   setNum('fontWeightStrong', s.fontWeightStrong)
     const uif = form.querySelector('input[name="useInlineFormatting"]')
     if (uif) uif.checked = !!s.useInlineFormatting
+  const tc = form.querySelector('input[name="twoColumns"]')
+  if (tc) tc.checked = !!s.twoColumns
+  const jc = form.querySelector('input[name="justifyColumns"]')
+  if (jc) jc.checked = !!s.justifyColumns
     // Scroll
     setNum('scrollAnimMs', s.scrollAnimMs)
     const sad = form.querySelector('select[name="scrollAnimDynamic"]')

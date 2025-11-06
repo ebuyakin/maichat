@@ -8,9 +8,11 @@
   background: rgba(255, 255, 255, 0.05);
   padding: 2px 6px;
   border-radius: 3px;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
+  font-weight: inherit;
   font-size: 0.9em;
-  color: #85db87;
+  color: #85db87; /* fallback */
+  color: color-mix(in srgb, #85db87 65%, var(--text) 35%);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -51,7 +53,7 @@
 .assistant-body h5,
 .assistant-body h6 {
   margin: 1em 0 0.5em 0;
-  font-weight: 600;
+  font-weight: var(--font-w-strong);
   line-height: 1.3;
   color: var(--text-bright);
 }
@@ -96,7 +98,7 @@
 .assistant-body ul,
 .assistant-body ol {
   margin: 1em 0;
-  padding-left: 2em;
+  padding-left: 2em; /* default; may be overridden by variables in history.css */
   line-height: 1.6;
 }
 

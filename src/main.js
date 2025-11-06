@@ -65,6 +65,8 @@ const modeManager = createModeManager()
 window.__modeManager = modeManager
 window.__MODES = MODES
 
+// Experimental URL flags removed – production settings control columns/justify inline code now
+
 // ──────────────────────────────────────────────────────────────────────────
 // SINGLE-PAINT RENDERING: Load all state, then render once
 // ──────────────────────────────────────────────────────────────────────────
