@@ -80,13 +80,13 @@ export const SETTINGS_SCHEMA = {
     ui: { label: 'Text Lightness (%)', tab: 'reading' },
   },
   fontWeightNormal: {
-    defaultValue: 200,
+    defaultValue: 300,
     renderAction: 'restyle',
     control: { type: 'number', min: 1, max: 900, step: 1 },
     ui: { label: 'Font Weight – Normal', tab: 'reading' },
   },
   fontWeightStrong: {
-    defaultValue: 300,
+    defaultValue: 400,
     renderAction: 'restyle',
     control: { type: 'number', min: 1, max: 900, step: 1 },
     ui: { label: 'Font Weight – Strong', tab: 'reading' },

@@ -56,8 +56,9 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl, s
   } catch {}
 
   // One-time onboarding seeding (replaces demo seeding)
+  let __seeded = false
   try {
-    if (shouldRunInitialSeeding(store)) runInitialSeeding({ store })
+    if (shouldRunInitialSeeding(store)) __seeded = !!runInitialSeeding({ store })
   } catch {}
 
   // Check for stored filter - if exists, set it BEFORE rendering
@@ -78,12 +79,14 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl, s
       // No filter - normal render
       renderCurrentView()
     }
-  } else if (storedFilter) {
-    // We performed an initial render already, but a stored filter exists.
-    // Apply it now and re-render once.
-    lifecycle.setFilterQuery(storedFilter)
-    const commandInput = document.getElementById('commandInput')
-    if (commandInput) commandInput.value = storedFilter
+  } else if (storedFilter || __seeded) {
+    // We performed an initial render already. If a stored filter exists, apply it;
+    // if we just seeded, ensure a single render so the welcome pair appears on first load.
+    if (storedFilter) {
+      lifecycle.setFilterQuery(storedFilter)
+      const commandInput = document.getElementById('commandInput')
+      if (commandInput) commandInput.value = storedFilter
+    }
     renderCurrentView({ preserveActive: false })
   }
 

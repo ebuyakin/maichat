@@ -5,6 +5,31 @@ All notable changes to MaiChat will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-11-07
+
+### Added
+- Second Opinion flow: `E` to re-ask with another model; `Shift+E` toggles last two answers (no extra history clutter).
+- Reading Experience customization (columns, gutters, lightness, weights) documented in tutorial.
+- Seeded topic tree with varied system messages (General, Daily news, Random questions, Learning depth, Coding, Health, Debating club, Naked truth).
+- Copy-on-create system message inheritance (new child topic inherits parent message once at creation).
+- Privacy-friendly Vercel Web Analytics on landing pages (index & tutorial) – cookie-less visit counts.
+
+### Changed
+- Tutorial expanded: Second Opinion step, System Messages & customization guidance.
+- Initial load improvement: welcome message visible on very first fresh load (post-seed conditional render).
+
+### Fixed
+- Empty first-load history (seeding previously occurred after initial render without repaint).
+
+### Internal
+- Replaced legacy seed tree with new hierarchy and concise per-topic system messages.
+- Added analytics disclosure to Security & Privacy section.
+- Small fixes and code optimizations across settings and styling defaults.
+
+### Notes
+- Font weight change applies only to new profiles; existing users retain stored settings.
+- No breaking changes; minor version bump reflects new visible capabilities.
+
 ## [1.1.0] - 2025-11-02
 
 ### Added

@@ -6,6 +6,8 @@
   <title>MaiChat Tutorial - Getting Started Guide</title>
   <meta name="description" content="Learn to use MaiChat: a keyboard-first interface for ChatGPT, Claude, and Gemini with topic organization and powerful filtering." />
   <link rel="icon" type="image/x-icon" href="/maichat-logo.ico" />
+  <!-- Vercel Web Analytics -->
+  <script defer src="https://vercel.com/analytics/script.js"></script>
   <style>
 /* MaiChat Tutorial Styles */
 
@@ -646,7 +648,7 @@ html[data-page="tutorial"] th {
         <a href="#common-patterns">Common Patterns</a>
       </li>
       <li class="nav-item">
-        <a href="#advanced-context-and-system-messages">Advanced: Context and System Messages</a>
+        <a href="#context-and-system-messages">Context and System Messages</a>
       </li>
       <li class="nav-item">
         <a href="#troubleshooting">Troubleshooting</a>
@@ -711,7 +713,7 @@ html[data-page="tutorial"] th {
   <li class="nav-item has-children collapsed">
     <div class="nav-item-header">
       <span class="nav-item-toggle">›</span>
-      <a href="#reading">Customizing Your Reading Experience</a>
+      <a href="#reading">Customizing Reading Experience</a>
     </div>
     <ul class="nav-sub-items">
       <li class="nav-item">
@@ -907,8 +909,8 @@ html[data-page="tutorial"] th {
         <p>Press <kbd>Esc</kbd> in Command Mode to clear filters and see all history.</p>
         <h3 id="step-7-get-a-second-opinion">Step 7: Get a Second Opinion</h3>
         <p>Not satisfied with the first answer? Press <kbd>E</kbd> (on the last message in your current view). MaiChat opens a model picker—choose a different model and confirm (<kbd>Enter</kbd>). The new response replaces the current one in place.</p>
-        <p>To restore the previous answer, press <kbd>Shift+E</kbd>.</p>
-        <p><strong>Why this matters:</strong> Quickly compare models (Claude vs GPT-4) without creating duplicate messages or breaking your flow.</p>
+        <p>You can keep re‑asking with other models. Each new send replaces the current answer and the app always retains the previous one. Press <kbd>Shift+E</kbd> anytime to flip between the latest and the previously replaced answer.</p>
+        <p><strong>Why this matters:</strong> Quickly compare multiple models without cluttering history or copying text.</p>
         <h3 id="whats-next">What's next?</h3>
         <p>You now know the basics! Here&#39;s what to explore next:</p>
         <ul>
@@ -1949,8 +1951,10 @@ html[data-page="tutorial"] th {
         <li>Check if important messages are dimmed</li>
         <li>Adjust filter or URA settings</li>
         </ul>
-        <h3 id="advanced-context-and-system-messages">Advanced: Context and System Messages</h3>
-        <p>If your current topic (or any ancestor) has a <strong>system message</strong> set:</p>
+        <h3 id="context-and-system-messages">Context and System Messages</h3>
+        <p>System messages are your always‑on guardrails: they set role, tone, and constraints that apply to every request in the current topic. Use them to encode stable intent (e.g., “be concise, show steps, prefer TypeScript”) so you don’t repeat it in each prompt—keep them short and specific to preserve room for useful history.</p>
+        <p>On first launch MaiChat seeds topics with varied system messages (general, tutoring, coding, debate, direct mode) so you can immediately experience different answer styles. Treat them as starting points only: edit, delete, or radically reshape them. Small changes (“show full derivation before summary”, “give 3 counterarguments”, “prefer historical context”) can transform response quality and workflow. Experiment aggressively—system messages are the highest-leverage customization you have.</p>
+        <p>If your current topic has a <strong>system message</strong> set:</p>
         <ul>
         <li>It&#39;s automatically included in every request</li>
         <li>It doesn&#39;t count against your URA</li>
@@ -2235,7 +2239,7 @@ html[data-page="tutorial"] th {
       </section>
 
       <section id="reading">
-<h2 id="reading">Customizing Your Reading Experience</h2>
+<h2 id="reading">Customizing Reading Experience</h2>
         <p>Most chat interfaces give you a fixed, narrow column and endless scrolling. MaiChat takes a different approach: it lets you tune how you read. There is no single “optimal” layout — the classic ~70 character line length is an average, not a universal truth. People differ in how they scan text: some prefer wider lines (fewer vertical scroll interruptions), others prefer narrow columns (shorter horizontal eye movements), and many change their preference by task or time of day.</p>
         <h3 id="why-adjust-it">Why Adjust It?</h3>
         <ul>

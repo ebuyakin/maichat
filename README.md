@@ -23,7 +23,7 @@ Deploy your own instance:
   <br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-  [![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](CHANGELOG.md)
+  [![Version](https://img.shields.io/badge/version-1.2.0-green.svg)](CHANGELOG.md)
   
 </div>
 
@@ -35,7 +35,7 @@ Deploy your own instance:
 - **⌨️ Keyboard-Centric Workflow** - Vim-inspired modal interface (Input/View/Command), zero mouse required
 - **🔍 Powerful Search & Filtering** - CLI-style query language with boolean operators, filter by topic/model/date/content/rating
 - **🎯 Context Control** - Visual context boundary, precise token management, filter before sending
-- **🤖 Multi-Model Support** - OpenAI (GPT-4o, o1), Anthropic Claude, Google Gemini, xAI Grok - all in one interface
+- **🤖 Multi-Model Support** - OpenAI (GPT‑5 family), Anthropic Claude (latest 4.x), Google Gemini 2.x, xAI Grok 4 – all in one interface
 - **🖼️ Image Attachments** - Send screenshots and images to vision-capable models (GPT-4o, Claude 3.5, Gemini, Grok)
 - **🌐 Web Search** - Native search integration for all providers with citations
 - **📊 Activity Statistics** - Track usage by date and model with response time analytics
@@ -137,11 +137,11 @@ npm run tutorial:watch
 - **Multi-model** - compare context sizes across different models
 
 ### Multi-Model Support
-- **OpenAI:** GPT-4o, GPT-4o-mini, o1-preview, o1-mini
-- **Anthropic:** Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
-- **Google:** Gemini 1.5 Pro, Gemini 1.5 Flash
+- **OpenAI:** GPT‑5, GPT‑5 mini, GPT‑5 nano, o4‑mini
+- **Anthropic:** Claude Sonnet 4.5, Claude Opus 4.1, Claude Haiku 4.5
+- **Google:** Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.0 Flash
+- **xAI:** Grok 4 Fast (reasoning & non‑reasoning), Grok Code Fast 1
 - Easy model switching, per-topic defaults
- - **xAI:** Grok (text) and Grok Vision (images + text)
 
 ## 🗂️ Project Structure
 
@@ -181,10 +181,10 @@ maichat/
 
 ## 🔒 Privacy & Security
 
-- **100% Client-Side** - No backend, no server, no tracking
+- **100% Client-Side** - No backend; we do not collect or store your conversations
 - **Local Storage** - All conversations stored in browser IndexedDB
 - **Your Keys, Your Control** - API keys stored in localStorage, sent only to providers you choose
-- **No Data Collection** - Zero telemetry, analytics, or third-party scripts
+- **Privacy-Friendly Analytics (landing pages only)** - We use Vercel Web Analytics on index/tutorial pages to measure visits. It’s cookie‑less and does not collect personal data. The in‑app chat UI has no analytics.
 - **Open Source** - MIT licensed, audit the code yourself
 
 ## 🤝 Contributing
