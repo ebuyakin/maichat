@@ -48,14 +48,14 @@ function readPendingMeta(store) {
 
   // Fallback to defaults if not found
   if (!topicId) {
-    // Prefer 'General talk' if present; else root
+    // Defer choosing a real topic until after seeding; avoid assigning root (not a conversational topic)
     try {
       const match = Array.from(store.topics.values()).find(
-        (t) => t.parentId === store.rootTopicId && t.name === 'General talk'
+        (t) => t.parentId === store.rootTopicId && t.name === 'General'
       )
-      topicId = match ? match.id : store.rootTopicId
+      topicId = match ? match.id : null
     } catch {
-      topicId = store.rootTopicId
+      topicId = null
     }
   }
 
@@ -63,16 +63,18 @@ function readPendingMeta(store) {
     model = getActiveModel() || 'gpt-5-mini'
   }
 
-  // Format topic path for display
+  // Format topic path for display (skip if unresolved/null)
   let topicPath = ''
-  try {
-    const topic = store.topics.get(topicId)
-    if (topic) {
-      const parts = store.getTopicPath(topicId)
-      if (parts[0] === 'Root') parts.shift()
-      topicPath = parts.join(' > ')
-    }
-  } catch {}
+  if (topicId && topicId !== store.rootTopicId) {
+    try {
+      const topic = store.topics.get(topicId)
+      if (topic) {
+        const parts = store.getTopicPath(topicId)
+        if (parts[0] === 'Root') parts.shift()
+        topicPath = parts.join(' > ')
+      }
+    } catch {}
+  }
 
   return { topicId, model, topicPath }
 }

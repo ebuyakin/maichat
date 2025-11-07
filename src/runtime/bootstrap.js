@@ -99,16 +99,37 @@ export async function bootstrap({ ctx, historyRuntime, interaction, loadingEl, s
   applyActiveMessage()
 
   if (!pendingMessageMeta.topicId) {
-    // Prefer 'General talk' if present on first load; else root
+    // Prefer 'General' if present on first load; else root
     try {
       const match = Array.from(store.topics.values()).find(
-        (t) => t.parentId === store.rootTopicId && t.name === 'General talk'
+        (t) => t.parentId === store.rootTopicId && t.name === 'General'
       )
       pendingMessageMeta.topicId = match ? match.id : store.rootTopicId
     } catch {
       pendingMessageMeta.topicId = store.rootTopicId
     }
   }
+    if (!pendingMessageMeta.topicId) {
+      // Pre-seed: try to pick General if it already exists (rare on first paint)
+      try {
+        const match = Array.from(store.topics.values()).find(
+          (t) => t.parentId === store.rootTopicId && t.name === 'General'
+        )
+        if (match) pendingMessageMeta.topicId = match.id
+      } catch {}
+    }
+    // After seeding, ensure pending topic is a valid top-level topic (never Root)
+    try {
+      const id = pendingMessageMeta.topicId
+      const invalid = !id || id === store.rootTopicId || !store.topics.has(id)
+      if (invalid) {
+        // Prefer 'General'; else first top-level topic
+        const all = Array.from(store.topics.values())
+        const general = all.find((t) => t.parentId === store.rootTopicId && t.name === 'General')
+        const firstTop = general || all.find((t) => t.parentId === store.rootTopicId)
+        if (firstTop) pendingMessageMeta.topicId = firstTop.id
+      }
+    } catch {}
   try {
     localStorage.setItem('maichat_pending_topic', pendingMessageMeta.topicId)
   } catch {}
