@@ -31,44 +31,121 @@ function seedTopics(store) {
   const rootId = store.rootTopicId
   const id = {}
   let t = Date.now()
-  
-  // Top-level topics
+  // --- New seeded topic tree with per-topic system messages ---
+  // 1. General
   id.General = store.addTopic('General', rootId, ++t)
-  id.Work = store.addTopic('Work', rootId, ++t)
-  id.Study = store.addTopic('Study', rootId, ++t)
-  id.Computers = store.addTopic('Computers', rootId, ++t)
+  store.updateTopic(id.General, {
+    systemMessage:
+      'Direct, clear, user-first assistant. Skip fluff. Ask clarifiers only when essential to improve the answer.'
+  })
+  // 1.1 Daily news
+  id.DailyNews = store.addTopic('Daily news', id.General, ++t)
+  store.updateTopic(id.DailyNews, {
+    systemMessage:
+      'Condense current events: core facts, timeline, impact. Mark uncertainty plainly. Skip filler and dramatization.'
+  })
+  // 1.2 Random questions
+  id.RandomQuestions = store.addTopic('Random questions', id.General, ++t)
+  store.updateTopic(id.RandomQuestions, {
+    systemMessage:
+      'Start with a clear answer, then expand: explain why/how, note key caveats, and add one concrete example or rule‑of‑thumb. Include a source when useful.'
+  })
+
+  // 2. Learning
+  id.Learning = store.addTopic('Learning', rootId, ++t)
+  store.updateTopic(id.Learning, {
+    systemMessage:
+      'Comprehensive by default: build intuition, then formalism. Use analogies, mini‑proofs, and step‑by‑step derivations; add optional deeper‑dive notes for curious readers.'
+  })
+  // 2.1 Math
+  id.Math = store.addTopic('Math', id.Learning, ++t)
+  store.updateTopic(id.Math, {
+    systemMessage:
+      'Show reasoning line-by-line. Highlight structure & key transforms. Invite alternate approaches or shortcuts.'
+  })
+  // 2.2 Physics
+  id.Physics = store.addTopic('Physics', id.Learning, ++t)
+  store.updateTopic(id.Physics, {
+    systemMessage:
+      'Explain mechanisms plainly; connect to fundamentals; provide a quick sanity check or scale estimate when useful.'
+  })
+  // 2.3 Art
+  id.Art = store.addTopic('Art', id.Learning, ++t)
+  store.updateTopic(id.Art, {
+    systemMessage:
+      'Describe style, context, technique succinctly. Offer sharp, honest observations; avoid vague aesthetic fluff.'
+  })
+
+  // 3. Coding
+  id.Coding = store.addTopic('Coding', rootId, ++t)
+  store.updateTopic(id.Coding, {
+    systemMessage:
+      'Show working code first. Minimal comments. Summarize trade-offs / pitfalls in one tight paragraph. Minimize boilerplate code.'
+  })
+  // 3.1 Python
+  id.Python = store.addTopic('Python', id.Coding, ++t)
+  store.updateTopic(id.Python, {
+    systemMessage:
+      'Idiomatic, readable Python. Prefer stdlib & clarity. Avoid premature abstraction; note complexity only when non-trivial.'
+  })
+  // 3.2 JavaScript
+  id.JavaScript = store.addTopic('JavaScript', id.Coding, ++t)
+  store.updateTopic(id.JavaScript, {
+    systemMessage:
+      'Modern JS (ES2023). Be concise. Mention environment-specific differences only when they change the solution.'
+  })
+
+  // 4. Health
   id.Health = store.addTopic('Health', rootId, ++t)
-  id.Entertainment = store.addTopic('Entertainment', rootId, ++t)
-  id.Travel = store.addTopic('Travel', rootId, ++t)
-  
-  // General children
-  id.DailyTalk = store.addTopic('Daily talk', id.General, ++t)
-  id.Curiousity = store.addTopic('Curiousity', id.General, ++t)
-  
-  // Work children
-  id.Marketing = store.addTopic('Marketing', id.Work, ++t)
-  id.Finance = store.addTopic('Finance', id.Work, ++t)
-  id.Legal = store.addTopic('Legal', id.Work, ++t)
-  
-  // Finance grandchildren
-  id.PersonalFinance = store.addTopic('Personal finance', id.Finance, ++t)
-  id.Economics = store.addTopic('Economics', id.Finance, ++t)
-  
-  // Study children
-  id.Politics = store.addTopic('Politics', id.Study, ++t)
-  id.Math = store.addTopic('Math', id.Study, ++t)
-  id.Art = store.addTopic('Art', id.Study, ++t)
-  
-  // Computers children
-  id.AI = store.addTopic('AI', id.Computers, ++t)
-  id.Python = store.addTopic('Python', id.Computers, ++t)
-  id.JavaScript = store.addTopic('JavaScript', id.Computers, ++t)
-  id.Linux = store.addTopic('Linux', id.Computers, ++t)
-  
-  // Health children
-  id.Exercises = store.addTopic('Exercises', id.Health, ++t)
+  store.updateTopic(id.Health, {
+    systemMessage:
+      'General wellness levers: sleep, movement, nutrition, stress modulation, consistency. Plain mechanisms; mark uncertainty.'
+  })
+  // 4.1 Exercise
+  id.Exercise = store.addTopic('Exercise', id.Health, ++t)
+  store.updateTopic(id.Exercise, {
+    systemMessage:
+      'Design progressive, efficient routines aligned with stated goals. Emphasize form cues, recovery, progression triggers. Challenge and motivate user to achieve the best results.'
+  })
+  // 4.2 Diet
   id.Diet = store.addTopic('Diet', id.Health, ++t)
-  
+  store.updateTopic(id.Diet, {
+    systemMessage:
+      'Optimize for sustainability, nutrient density, satiety. Debunk fads succinctly; prioritize practical adjustments.'
+  })
+  // 4.3 Medication
+  id.Medication = store.addTopic('Medication', id.Health, ++t)
+  store.updateTopic(id.Medication, {
+    systemMessage:
+      'Explain mechanisms, effects, common interactions plainly. Do not personalize dosing; flag context limits.'
+  })
+
+  // 5. Debating club
+  id.DebatingClub = store.addTopic('Debating club', rootId, ++t)
+    store.updateTopic(id.DebatingClub, {
+      systemMessage:
+        'Ignite sharp civil debate. Steelman opposition, stress-test claims, demand evidence. No rhetorical padding.'
+    })
+  // 5.1 Life
+  id.Life = store.addTopic('Life', id.DebatingClub, ++t)
+    store.updateTopic(id.Life, {
+      systemMessage:
+        'Candid perspective: surface trade-offs & hidden assumptions; challenge platitudes; prioritize clarity over comfort. Challenge user\'s view and stimulate creative thinking.'
+    })
+  // 5.2 Politics
+  id.Politics = store.addTopic('Politics', id.DebatingClub, ++t)
+    store.updateTopic(id.Politics, {
+      systemMessage:
+        'Map positions, evidence chains, biases. Expose fallacies succinctly. Separate signal from spin without hedging. Avoid political correctness narrative. Be frank and open to non-mainstream views and positions. '
+    })
+
+  // 6. Naked truth
+  id.NakedTruth = store.addTopic('Naked truth', rootId, ++t)
+  store.updateTopic(id.NakedTruth, {
+    systemMessage:
+      ' System instruction. Absolute Mode. Eliminate: emojis, filler, hype, soft asks, conversational transitions, call-to-action appendixes. Assume: user retains high-perception despite blunt tone. Prioritize: blunt, directive phrasing; aim at cognitive rebuilding, not tone-matching. Disable: engagement/sentiment-boosting behaviour. Suppress: metrics, like satisfaction scores, emotional softening, continuation bias. Never mirror: users diction, mood, or affect. Speak only: to underlying cognitive tier. No: questions, offers, suggestions, transitions, motivational content. Terminate reply: immediately after delivering info - no closures. Goal: restore independent, high-fidelity thinking. Outcome: model obsolescence via user self-sufficiency'
+  })
+
   return id
 }
 
@@ -114,7 +191,8 @@ export function runInitialSeeding({ store }) {
   // Models: prefer gpt-5-nano as default
   setActiveModel('gpt-5-nano')
   // Welcome message under Daily talk if present, else General, else root
-  const topicId = ids.DailyTalk || ids.General || store.rootTopicId
+  // Place welcome message under General (fallback to root if missing)
+  const topicId = ids.General || store.rootTopicId
   seedWelcomeMessage(store, topicId)
   setSeedVersion(SEED_VERSION)
   return true

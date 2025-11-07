@@ -80,10 +80,17 @@ As your history grows, use filters to find messages:
    - `t'Learning...'` — show all messages in "Learning MaiChat" topic and subtopics
    - `d<7` - show all messages of the last 7 days
    - `c'happy'` - show all messages with word 'happy' in them.
-
 4. Press `Enter` to apply the filter. The conversation history will be filtered and display only messages matching the filter.
 
 Press `Esc` in Command Mode to clear filters and see all history.
+
+### Step 7: Get a Second Opinion
+
+Not satisfied with the first answer? Press `E` (on the last message in your current view). MaiChat opens a model picker—choose a different model and confirm (`Enter`). The new response replaces the current one in place.
+
+You can keep re‑asking with other models. Each new send replaces the current answer and the app always retains the previous one. Press `Shift+E` anytime to flip between the latest and the previously replaced answer.
+
+**Why this matters:** Quickly compare multiple models without cluttering history or copying text.
 
 ### What's next?
 
@@ -1205,9 +1212,13 @@ Only last 5 pairs — fast and cheap for simple follow-ups.
 - Check if important messages are dimmed
 - Adjust filter or URA settings
 
-### Advanced: Context and System Messages
+### Context and System Messages
 
-If your current topic (or any ancestor) has a **system message** set:
+System messages are your always‑on guardrails: they set role, tone, and constraints that apply to every request in the current topic. Use them to encode stable intent (e.g., “be concise, show steps, prefer TypeScript”) so you don’t repeat it in each prompt—keep them short and specific to preserve room for useful history.
+
+On first launch MaiChat seeds topics with varied system messages (general, tutoring, coding, debate, direct mode) so you can immediately experience different answer styles. Treat them as starting points only: edit, delete, or radically reshape them. Small changes (“show full derivation before summary”, “give 3 counterarguments”, “prefer historical context”) can transform response quality and workflow. Experiment aggressively—system messages are the highest-leverage customization you have.
+
+If your current topic has a **system message** set:
 - It's automatically included in every request
 - It doesn't count against your URA
 - It appears at the beginning of the context
@@ -1252,7 +1263,7 @@ Set system messages in the Topic Editor (`Ctrl+Shift+T`), then press `Ctrl+E` on
 
 MaiChat supports image attachments for all models in the catalogue, making it easy to get help with screenshots, diagrams, code snippets, UI mockups, and other visual content.
 
-### Overview
+### Overview {#images-overview}
 
 **Vision support:**
 All base models in MaiChat's catalogue support vision (image understanding). This is a standard capability across OpenAI, Anthropic, Google, and xAI models.
@@ -1387,7 +1398,7 @@ i & t'temp' :delete
 
 AI models can search the web in real-time and cite their sources. MaiChat makes it easy to enable search and review citations, giving you transparency into where information comes from.
 
-### Overview
+### Overview {#search-overview}
 
 **Search support:**
 All base models in MaiChat's catalogue support web search with citations. This is a standard capability provided by the LLM providers (OpenAI, Anthropic, Google, xAI).
@@ -1480,6 +1491,50 @@ MaiChat provides vim-style link hints to open any link in the response without u
 - Adds 2-5 seconds to response time (depending on query complexity)
 - Uses additional tokens (search results are part of context)
 - Slightly higher API costs
+
+## Customizing Reading Experience {#reading}
+
+Most chat interfaces give you a fixed, narrow column and endless scrolling. MaiChat takes a different approach: it lets you tune how you read. There is no single “optimal” layout — the classic ~70 character line length is an average, not a universal truth. People differ in how they scan text: some prefer wider lines (fewer vertical scroll interruptions), others prefer narrow columns (shorter horizontal eye movements), and many change their preference by task or time of day.
+
+### Why Adjust It?
+- **Reduce friction:** Fewer scroll stops can help when skimming long analytical or technical answers.
+- **Improve focus:** Narrowing the field can help when you want to concentrate deeply or avoid peripheral distraction.
+- **Match your hardware:** Wide monitors waste space in single-column UIs; two columns reclaim density.
+- **Adapt to fatigue:** Dimmer text and lighter background can reduce contrast strain in long sessions.
+
+### Controls Overview
+Open Settings (`Ctrl+,`) and use two tabs:
+
+**Reading tab**
+- **Two Columns (Assistant Text):** Enable a dual-column layout for assistant responses. Great on large screens for high information density. Disable if it feels visually busy.
+- **Justify Text (Two Columns):** Optional. Some users like the even edges; others find it introduces uneven spacing “rivers.” Toggle and decide.
+- **Text Lightness / Font Weights:** Adjust perceived contrast and emphasis. Very light weights (200) produce minimalist feel; heavier (400+) increase legibility when skimming.
+- **Background Lightness:** Subtly reduce contrast for comfort or increase it for clarity under bright ambient light.
+
+**Spacing tab**
+- **Left / Right Gutters (0–400px):** Narrow the reading field or let it breathe edge-to-edge. Large gutters recreate narrower columns without forcing a global layout.
+- **Message / Assistant Gaps:** Vertical rhythm. Tight gaps = density; larger gaps = segmentation and easier scanning.
+- **Message Padding / Meta Gap:** Adjust internal padding around text and spacing between metadata badges and body.
+
+### Experiment Strategy
+1. Start extreme: set gutters to 280–320px, enable two columns, dim text. See how it feels.
+2. Back off one control at a time: disable columns; brighten text; reduce gutters.
+3. Identify what actually improves speed vs what just “looks clean.”
+4. Revisit settings at different times (morning vs late evening) — preferences often shift.
+
+### Useful Starting Points
+- **Dense Research Reading:** Two columns ON, gutters 40–80px, moderate text lightness, compact vertical gaps.
+- **Focused Deep Work:** Single column, gutters 200–300px, lighter weight (200–250), slightly dim text.
+- **Casual Browsing:** Single column, minimal gutters, standard contrast, medium gaps.
+- **Code / Technical Review:** Single column, moderate gutters (80–140px), higher contrast for inline code clarity.
+
+### Tips
+- If two columns feel “too jumpy,” reduce column count (off) or increase gutters instead of forcing justification.
+- Large gutters + single column can mimic traditional document widths without losing flexibility.
+- Justification is purely aesthetic here; disable it if spacing artifacts distract you.
+
+### Key Takeaway
+There is no mandated reading layout in MaiChat. Use the controls to shape a workspace that lets **you** read faster and stay comfortable longer. Revisit the settings as your tasks and environment change.
 
 ## API Keys and Model Catalogue {#models}
 

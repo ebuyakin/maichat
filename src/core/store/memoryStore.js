@@ -38,6 +38,21 @@ export class MemoryStore {
   addTopic(name, parentId, createdAt) {
     const id = crypto.randomUUID()
     const topic = createTopic({ id, name, parentId, createdAt: createdAt || Date.now() })
+    // Copy-on-create system message inheritance: if parent has a custom systemMessage, inherit it.
+    try {
+      if (parentId) {
+        const parent = this.topics.get(parentId)
+        if (
+          parent &&
+          typeof parent.systemMessage === 'string' &&
+          parent.systemMessage.trim().length > 0
+        ) {
+          topic.systemMessage = parent.systemMessage
+        }
+      }
+    } catch {
+      // Fail-safe: ignore inheritance errors silently.
+    }
     topic.directCount = 0
     topic.totalCount = 0
     this.topics.set(id, topic)

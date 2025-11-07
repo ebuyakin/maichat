@@ -482,6 +482,9 @@ html[data-page="tutorial"] th {
         <a href="#step-6-filter-your-history">Step 6: Filter your history</a>
       </li>
       <li class="nav-item">
+        <a href="#step-7-get-a-second-opinion">Step 7: Get a Second Opinion</a>
+      </li>
+      <li class="nav-item">
         <a href="#whats-next">What's next?</a>
       </li>
     </ul>
@@ -660,7 +663,7 @@ html[data-page="tutorial"] th {
     </div>
     <ul class="nav-sub-items">
       <li class="nav-item">
-        <a href="#overview">Overview</a>
+        <a href="#images-overview">Overview</a>
       </li>
       <li class="nav-item">
         <a href="#attaching-images-input-mode">Attaching Images (Input Mode)</a>
@@ -689,7 +692,7 @@ html[data-page="tutorial"] th {
     </div>
     <ul class="nav-sub-items">
       <li class="nav-item">
-        <a href="#overview">Overview</a>
+        <a href="#search-overview">Overview</a>
       </li>
       <li class="nav-item">
         <a href="#enabling-web-search">Enabling Web Search</a>
@@ -702,6 +705,32 @@ html[data-page="tutorial"] th {
       </li>
       <li class="nav-item">
         <a href="#how-it-works">How It Works</a>
+      </li>
+    </ul>
+  </li>
+  <li class="nav-item has-children collapsed">
+    <div class="nav-item-header">
+      <span class="nav-item-toggle">›</span>
+      <a href="#reading">Customizing Your Reading Experience</a>
+    </div>
+    <ul class="nav-sub-items">
+      <li class="nav-item">
+        <a href="#why-adjust-it">Why Adjust It?</a>
+      </li>
+      <li class="nav-item">
+        <a href="#controls-overview">Controls Overview</a>
+      </li>
+      <li class="nav-item">
+        <a href="#experiment-strategy">Experiment Strategy</a>
+      </li>
+      <li class="nav-item">
+        <a href="#useful-starting-points">Useful Starting Points</a>
+      </li>
+      <li class="nav-item">
+        <a href="#tips">Tips</a>
+      </li>
+      <li class="nav-item">
+        <a href="#key-takeaway">Key Takeaway</a>
       </li>
     </ul>
   </li>
@@ -803,7 +832,7 @@ html[data-page="tutorial"] th {
         <h3 id="step-1-set-up-your-api-key">Step 1: Set up your API key</h3>
         <p>MaiChat needs API keys to connect to LLM providers (OpenAI, Anthropic, Google, xAI).</p>
         <ol>
-        <li>Press <kbd>Ctrl+K</kbd> to open API Keys settings</li>
+        <li>Press <kbd>Ctrl+;</kbd> to open API Keys settings</li>
         <li>Enter your API key for at least one provider:<ul>
         <li><strong>OpenAI (ChatGPT)</strong>: Get your key at <a href="https://platform.openai.com/api-keys">platform.openai.com/api-keys</a></li>
         <li><strong>Anthropic (Claude)</strong>: Get your key at <a href="https://console.anthropic.com">console.anthropic.com</a></li>
@@ -863,12 +892,9 @@ html[data-page="tutorial"] th {
         <h3 id="step-6-filter-your-history">Step 6: Filter your history</h3>
         <p>As your history grows, use filters to find messages:</p>
         <ol>
-        <li><p>Press <kbd>Ctrl+D</kbd> or (<kbd>Esc</kbd> from the View mode) to enter Command Mode (top bar)</p>
-        </li>
-        <li><p>In the filter input box you can type various filters and commands controlling your conversation</p>
-        </li>
-        <li><p>Try these filters:</p>
-        <ul>
+        <li>Press <kbd>Ctrl+D</kbd> or (<kbd>Esc</kbd> from the View mode) to enter Command Mode (top bar)</li>
+        <li>In the filter input box you can type various filters and commands controlling your conversation</li>
+        <li>Try these filters:<ul>
         <li><code>r10</code> — show last 10 message pairs (request and response)</li>
         <li><kbd>t</kbd> - show only current topic messages</li>
         <li><code>t'Learning...'</code> — show all messages in &quot;Learning MaiChat&quot; topic and subtopics</li>
@@ -876,10 +902,13 @@ html[data-page="tutorial"] th {
         <li><code>c'happy'</code> - show all messages with word &#39;happy&#39; in them.</li>
         </ul>
         </li>
-        <li><p>Press <kbd>Enter</kbd> to apply the filter. The conversation history will be filtered and display only messages matching the filter.</p>
-        </li>
+        <li>Press <kbd>Enter</kbd> to apply the filter. The conversation history will be filtered and display only messages matching the filter.</li>
         </ol>
         <p>Press <kbd>Esc</kbd> in Command Mode to clear filters and see all history.</p>
+        <h3 id="step-7-get-a-second-opinion">Step 7: Get a Second Opinion</h3>
+        <p>Not satisfied with the first answer? Press <kbd>E</kbd> (on the last message in your current view). MaiChat opens a model picker—choose a different model and confirm (<kbd>Enter</kbd>). The new response replaces the current one in place.</p>
+        <p>To restore the previous answer, press <kbd>Shift+E</kbd>.</p>
+        <p><strong>Why this matters:</strong> Quickly compare models (Claude vs GPT-4) without creating duplicate messages or breaking your flow.</p>
         <h3 id="whats-next">What's next?</h3>
         <p>You now know the basics! Here&#39;s what to explore next:</p>
         <ul>
@@ -1963,7 +1992,7 @@ html[data-page="tutorial"] th {
       <section id="images">
 <h2 id="images">Working with Images</h2>
         <p>MaiChat supports image attachments for all models in the catalogue, making it easy to get help with screenshots, diagrams, code snippets, UI mockups, and other visual content.</p>
-        <h3 id="overview">Overview</h3>
+        <h3 id="images-overview">Overview</h3>
         <p><strong>Vision support:</strong>
         All base models in MaiChat&#39;s catalogue support vision (image understanding). This is a standard capability across OpenAI, Anthropic, Google, and xAI models.</p>
         <p><strong>Common use cases:</strong></p>
@@ -2104,7 +2133,7 @@ html[data-page="tutorial"] th {
       <section id="search">
 <h2 id="search">Web Search & Sources</h2>
         <p>AI models can search the web in real-time and cite their sources. MaiChat makes it easy to enable search and review citations, giving you transparency into where information comes from.</p>
-        <h3 id="overview">Overview</h3>
+        <h3 id="search-overview">Overview</h3>
         <p><strong>Search support:</strong>
         All base models in MaiChat&#39;s catalogue support web search with citations. This is a standard capability provided by the LLM providers (OpenAI, Anthropic, Google, xAI).</p>
         <p><strong>Use cases:</strong></p>
@@ -2205,6 +2234,55 @@ html[data-page="tutorial"] th {
         </ul>
       </section>
 
+      <section id="reading">
+<h2 id="reading">Customizing Your Reading Experience</h2>
+        <p>Most chat interfaces give you a fixed, narrow column and endless scrolling. MaiChat takes a different approach: it lets you tune how you read. There is no single “optimal” layout — the classic ~70 character line length is an average, not a universal truth. People differ in how they scan text: some prefer wider lines (fewer vertical scroll interruptions), others prefer narrow columns (shorter horizontal eye movements), and many change their preference by task or time of day.</p>
+        <h3 id="why-adjust-it">Why Adjust It?</h3>
+        <ul>
+        <li><strong>Reduce friction:</strong> Fewer scroll stops can help when skimming long analytical or technical answers.</li>
+        <li><strong>Improve focus:</strong> Narrowing the field can help when you want to concentrate deeply or avoid peripheral distraction.</li>
+        <li><strong>Match your hardware:</strong> Wide monitors waste space in single-column UIs; two columns reclaim density.</li>
+        <li><strong>Adapt to fatigue:</strong> Dimmer text and lighter background can reduce contrast strain in long sessions.</li>
+        </ul>
+        <h3 id="controls-overview">Controls Overview</h3>
+        <p>Open Settings (<kbd>Ctrl+,</kbd>) and use two tabs:</p>
+        <p><strong>Reading tab</strong></p>
+        <ul>
+        <li><strong>Two Columns (Assistant Text):</strong> Enable a dual-column layout for assistant responses. Great on large screens for high information density. Disable if it feels visually busy.</li>
+        <li><strong>Justify Text (Two Columns):</strong> Optional. Some users like the even edges; others find it introduces uneven spacing “rivers.” Toggle and decide.</li>
+        <li><strong>Text Lightness / Font Weights:</strong> Adjust perceived contrast and emphasis. Very light weights (200) produce minimalist feel; heavier (400+) increase legibility when skimming.</li>
+        <li><strong>Background Lightness:</strong> Subtly reduce contrast for comfort or increase it for clarity under bright ambient light.</li>
+        </ul>
+        <p><strong>Spacing tab</strong></p>
+        <ul>
+        <li><strong>Left / Right Gutters (0–400px):</strong> Narrow the reading field or let it breathe edge-to-edge. Large gutters recreate narrower columns without forcing a global layout.</li>
+        <li><strong>Message / Assistant Gaps:</strong> Vertical rhythm. Tight gaps = density; larger gaps = segmentation and easier scanning.</li>
+        <li><strong>Message Padding / Meta Gap:</strong> Adjust internal padding around text and spacing between metadata badges and body.</li>
+        </ul>
+        <h3 id="experiment-strategy">Experiment Strategy</h3>
+        <ol>
+        <li>Start extreme: set gutters to 280–320px, enable two columns, dim text. See how it feels.</li>
+        <li>Back off one control at a time: disable columns; brighten text; reduce gutters.</li>
+        <li>Identify what actually improves speed vs what just “looks clean.”</li>
+        <li>Revisit settings at different times (morning vs late evening) — preferences often shift.</li>
+        </ol>
+        <h3 id="useful-starting-points">Useful Starting Points</h3>
+        <ul>
+        <li><strong>Dense Research Reading:</strong> Two columns ON, gutters 40–80px, moderate text lightness, compact vertical gaps.</li>
+        <li><strong>Focused Deep Work:</strong> Single column, gutters 200–300px, lighter weight (200–250), slightly dim text.</li>
+        <li><strong>Casual Browsing:</strong> Single column, minimal gutters, standard contrast, medium gaps.</li>
+        <li><strong>Code / Technical Review:</strong> Single column, moderate gutters (80–140px), higher contrast for inline code clarity.</li>
+        </ul>
+        <h3 id="tips">Tips</h3>
+        <ul>
+        <li>If two columns feel “too jumpy,” reduce column count (off) or increase gutters instead of forcing justification.</li>
+        <li>Large gutters + single column can mimic traditional document widths without losing flexibility.</li>
+        <li>Justification is purely aesthetic here; disable it if spacing artifacts distract you.</li>
+        </ul>
+        <h3 id="key-takeaway">Key Takeaway</h3>
+        <p>There is no mandated reading layout in MaiChat. Use the controls to shape a workspace that lets <strong>you</strong> read faster and stay comfortable longer. Revisit the settings as your tasks and environment change.</p>
+      </section>
+
       <section id="models">
 <h2 id="models">API Keys and Model Catalogue</h2>
         <p>MaiChat connects to AI providers through their APIs. To use the app, you need to set up API keys and understand how to manage your model catalog.</p>
@@ -2230,7 +2308,7 @@ html[data-page="tutorial"] th {
         <p>MaiChat supports four major AI providers. You need at least one API key to use the app.</p>
         <p><strong>Opening API Keys settings:</strong></p>
         <ul>
-        <li>Press <kbd>Ctrl+K</kbd> from any mode</li>
+        <li>Press <kbd>Ctrl+;</kbd> from any mode</li>
         <li>Or use the menu: <kbd>Ctrl+.</kbd> → API Keys</li>
         </ul>
         <p><strong>Supported providers:</strong></p>
@@ -2775,7 +2853,7 @@ html[data-page="tutorial"] th {
         </ul>
         </li>
         <li><strong>How to fix:</strong><ol>
-        <li>Press <kbd>Ctrl+K</kbd> to open API Keys</li>
+        <li>Press <kbd>Ctrl+;</kbd> to open API Keys</li>
         <li>Check that the correct API key is entered</li>
         <li>Verify the key is active on the provider&#39;s website</li>
         <li>Generate a new key if needed</li>
