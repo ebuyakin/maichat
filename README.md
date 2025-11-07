@@ -5,7 +5,7 @@
 
 ### Use Online (No Installation)
 
-Visit **[maichat.app](https://maichat.app)** to use MaiChat directly in your browser. No downloads, no setup - just add your API keys and start chatting.
+Visit **[maichat.io](https://maichat.io)** to use MaiChat directly in your browser. No downloads, no setup - just add your API keys and start chatting.
 
 **Hosted on Vercel** with automatic HTTPS, global CDN, and 99.99% uptime.
 
@@ -211,7 +211,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🔗 Links
 
-- **Website:** [maichat.app](https://maichat.app)
+- **Website:** [maichat.io](https://maichat.io)
 - **Repository:** [github.com/ebuyakin/maichat](https://github.com/ebuyakin/maichat)
 - **Issues:** [github.com/ebuyakin/maichat/issues](https://github.com/ebuyakin/maichat/issues)
 - **Changelog:** [CHANGELOG.md](CHANGELOG.md)

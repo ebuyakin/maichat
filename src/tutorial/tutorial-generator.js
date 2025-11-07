@@ -272,7 +272,7 @@ function generateHTML(content, styles, nav) {
   <meta name="description" content="Learn to use MaiChat: a keyboard-first interface for ChatGPT, Claude, and Gemini with topic organization and powerful filtering." />
   <link rel="icon" type="image/x-icon" href="/maichat-logo.ico" />
   <!-- Vercel Web Analytics -->
-  <script defer src="https://vercel.com/analytics/script.js"></script>
+  <script defer src="https://va.vercel-scripts.com/v1/script.js"></script>
   <style>
 ${styles}
   </style>
