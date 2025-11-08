@@ -3,6 +3,7 @@ import { escapeHtml } from '../../shared/util.js'
 import { flattenMessagesToParts } from './messageList.js'
 import { shouldUseMessageView } from './featureFlags.js'
 import { renderMarkdownInline } from '../formatting/markdownRenderer.js'
+import { getModelMeta } from '../../core/models/modelCatalog.js'
 import { getSettings } from '../../core/settings/index.js'
 
 // Regex to match code placeholders: [language-number] (language lowercase alphanum/underscore), e.g. [python-1], [code-2]
@@ -112,6 +113,8 @@ export function createHistoryView({ store, onActivePartRendered }) {
         const ts = pair ? formatTimestamp(pair.createdAt) : ''
         const topicPath = topic ? formatTopicPath(store, topic.id) : '(no topic)'
         const modelName = pair && pair.model ? pair.model : '(model)'
+        const modelMeta = pair && pair.model ? getModelMeta(pair.model) : {}
+        const provider = modelMeta.provider || 'openai'
         let stateBadge = ''
         let errActions = ''
         let normalActions = ''
@@ -138,7 +141,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
         // Feature flag: use inline markdown rendering or legacy placeholder processing
         // NEW: Enhancement happens during HTML building (string-based, synchronous)
         const bodyHtml = settings.useInlineFormatting
-          ? renderMarkdownInline(assistant.text || '', { enhance: true })
+          ? renderMarkdownInline(assistant.text || '', { enhance: true, provider })
           : processCodePlaceholders(assistant.text || '')
 
         // Collecting full assistant HTML string including meta line.

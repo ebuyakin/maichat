@@ -1,5 +1,13 @@
 ## current tasks, notes and comments.
 
+
+0. Alignment on Shift-E - 
+1. context boundary - disappeared?
+
+1. empty topic [x]
+2. delete message on error
+
+
 ### Bugs / enhancements for the next release
 1. right gutter default setting - 7 to 10 [x]
 2. 'Send' label on the button - aligned to the right - shall be to the middle [x]

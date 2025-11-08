@@ -19,12 +19,16 @@ marked.setOptions({
 })
 
 /**
- * Main rendering function: converts markdown to sanitized HTML
+ * Render markdown to HTML with inline formatting
  * 
- * @param {string} markdown - Raw markdown text from LLM
+ * Uses marked.js for markdown parsing, then optionally enhances with
+ * syntax highlighting and math rendering.
+ * 
+ * @param {string} markdown - Raw markdown text
  * @param {Object} options - Rendering options
- * @param {boolean} options.enhance - If true, apply syntax highlighting and math rendering immediately (default: false)
- * @returns {string} - Sanitized HTML ready for innerHTML
+ * @param {boolean} options.enhance - Apply syntax highlighting and math rendering
+ * @param {string} options.provider - Provider name (for provider-specific normalization)
+ * @returns {string} - Rendered and enhanced HTML
  */
 export function renderMarkdownInline(markdown, options = {}) {
   if (!markdown || typeof markdown !== 'string') return ''
@@ -162,7 +166,7 @@ export function renderMarkdownInline(markdown, options = {}) {
 
     // Step 7 (optional): Apply inline enhancements if requested
     if (options.enhance) {
-      result = enhanceHTMLString(result)
+      result = enhanceHTMLString(result, { provider: options.provider })
     }
 
     return result

@@ -158,18 +158,77 @@ export function renderMathToString(html) {
 }
 
 /**
+ * Detect if math content should be rendered in display mode
+ * Internal helper for normalizeGeminiMath
+ * 
+ * @param {string} content - Math expression content (without delimiters)
+ * @returns {boolean} - True if should be display mode
+ */
+function shouldRenderAsDisplay(content) {
+  // Length threshold: equations longer than 60 chars are likely display-worthy
+  if (content.length > 60) return true
+  
+  // LaTeX display environments (matrices, aligned equations, cases, etc.)
+  const displayEnvs = /\\begin\{(pmatrix|bmatrix|vmatrix|Vmatrix|matrix|aligned|alignat|align|cases|split|gather|multline|equation|eqnarray|array)\}/
+  if (displayEnvs.test(content)) return true
+  
+  // Multi-line content (LaTeX line breaks)
+  if (/\\\\/.test(content)) return true
+  
+  // Newlines within content (rare but possible)
+  if (content.includes('\n')) return true
+  
+  return false
+}
+
+/**
+ * Normalize Gemini's math expressions to standard delimiters
+ * Internal helper (not exported)
+ * 
+ * Gemini uses single $ for all equations (inline and display).
+ * This converts single-$ display-worthy equations to $$ for proper rendering.
+ * 
+ * @param {string} text - Text with Gemini-style math
+ * @returns {string} - Text with normalized math delimiters
+ */
+function normalizeGeminiMath(text) {
+  if (!text || typeof text !== 'string') return text
+  
+  // Process single-$ equations and promote display-worthy ones to $$
+  // Guard: closing $ must not be followed by a digit (to avoid false positives like "$5 and $10")
+  return text.replace(/\$([^\n$]+?)\$(?!\d)/g, (match, content) => {
+    const trimmed = content.trim()
+    if (shouldRenderAsDisplay(trimmed)) {
+      // Convert to display mode delimiters
+      return `$$${content}$$`
+    }
+    // Keep as inline
+    return match
+  })
+}
+
+/**
  * Apply all enhancements to HTML string
  * 
- * Combines syntax highlighting and math rendering
+ * Combines syntax highlighting and math rendering.
+ * Applies provider-specific normalization before rendering.
  * 
  * @param {string} html - Raw markdown-rendered HTML
+ * @param {Object} options - Enhancement options
+ * @param {string} options.provider - Provider name (e.g., 'gemini', 'openai', 'anthropic')
  * @returns {string} - Fully enhanced HTML
  */
-export function enhanceHTMLString(html) {
+export function enhanceHTMLString(html, options = {}) {
   if (!html || typeof html !== 'string') return html
 
   // Apply enhancements in order
   let result = html
+  
+  // Provider-specific normalization (internal, not exposed)
+  if (options.provider === 'gemini') {
+    result = normalizeGeminiMath(result)
+  }
+  
   result = applySyntaxHighlightToString(result)
   result = renderMathToString(result)
   
