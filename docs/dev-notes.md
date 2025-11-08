@@ -3,6 +3,7 @@
 
 0. Alignment on Shift-E - 
 1. context boundary - disappeared?
+2. Geminit math enhancement - length limit for block equations?
 
 1. empty topic [x]
 2. delete message on error

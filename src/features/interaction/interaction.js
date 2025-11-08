@@ -1102,33 +1102,36 @@ export function createInteraction({
     })
     historyRuntime.renderCurrentView({ preserveActive: true })
     // After restoring, align the assistant message depending on fit: top if too tall, bottom if it fits
-    try {
-      const pane = document.getElementById('historyPane')
-      if (!pane) return
-      const nodes = Array.from(
-        pane.querySelectorAll(
-          `.message[data-pair-id="${pair.id}"][data-role="assistant"], .part[data-pair-id="${pair.id}"][data-role="assistant"]`
+    // Defer alignment until next frame to allow scrollController.remeasure() to complete
+    requestAnimationFrame(() => {
+      try {
+        const pane = document.getElementById('historyPane')
+        if (!pane) return
+        const nodes = Array.from(
+          pane.querySelectorAll(
+            `.message[data-pair-id="${pair.id}"][data-role="assistant"], .part[data-pair-id="${pair.id}"][data-role="assistant"]`
+          )
         )
-      )
-      if (!nodes || !nodes.length) return
-      const first = nodes[0]
-      const last = nodes[nodes.length - 1]
-      const firstRect = first.getBoundingClientRect()
-      const lastRect = last.getBoundingClientRect()
-      const paneRect = pane.getBoundingClientRect()
-      const replyHeight = lastRect.bottom - firstRect.top
-      const clippedTop = Math.max(0, paneRect.top - firstRect.top)
-      const logicalReplyHeight = replyHeight + clippedTop
-      const fits = logicalReplyHeight <= paneRect.height - 2
-      const assistantId = first.getAttribute('data-part-id')
-      if (assistantId) {
-        activeParts.setActiveById(assistantId)
-        historyRuntime.applyActiveMessage()
-        if (ctx.scrollController && ctx.scrollController.alignTo) {
-          ctx.scrollController.alignTo(assistantId, fits ? 'bottom' : 'top', false)
+        if (!nodes || !nodes.length) return
+        const first = nodes[0]
+        const last = nodes[nodes.length - 1]
+        const firstRect = first.getBoundingClientRect()
+        const lastRect = last.getBoundingClientRect()
+        const paneRect = pane.getBoundingClientRect()
+        const replyHeight = lastRect.bottom - firstRect.top
+        const clippedTop = Math.max(0, paneRect.top - firstRect.top)
+        const logicalReplyHeight = replyHeight + clippedTop
+        const fits = logicalReplyHeight <= paneRect.height - 2
+        const assistantId = first.getAttribute('data-part-id')
+        if (assistantId) {
+          activeParts.setActiveById(assistantId)
+          historyRuntime.applyActiveMessage()
+          if (ctx.scrollController && ctx.scrollController.alignTo) {
+            ctx.scrollController.alignTo(assistantId, fits ? 'bottom' : 'top', false)
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    })
   }
   return {
     keyRouter,
