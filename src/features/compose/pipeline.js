@@ -235,7 +235,8 @@ export async function executeSend({
       overflow = false
     try {
       const meta = { otpm: (getModelMeta(model) || {}).otpm }
-      // Persist a pre-send debug snapshot to localStorage (provider-agnostic)
+
+      // DEBUG. Persist a pre-send debug snapshot to localStorage (provider-agnostic)
       try {
         const dbg = {
           at: Date.now(),
@@ -252,6 +253,8 @@ export async function executeSend({
         }
         localStorage.setItem('maichat_dbg_pipeline_presend', JSON.stringify(dbg))
       } catch {}
+
+      // API call:
       result = await provider.sendChat({
         model,
         messages: msgs,
@@ -287,6 +290,7 @@ export async function executeSend({
             providerCode: ex && ex.providerCode,
             timing: ex && ex.__timing ? ex.__timing : undefined,
           }
+          // DEBUG. API call error:
           localStorage.setItem('maichat_dbg_pipeline_error', JSON.stringify(errDbg))
         } catch {}
         emitDebug({

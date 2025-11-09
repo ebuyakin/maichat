@@ -1,0 +1,40 @@
+Filename                                     , Last Modified       , Type    , Status
+ARCHITECTURE.md                              , Nov 1 17:36:31 2025 , Core    , Effective
+adapters-overview.md                         , Oct 24 14:50:54 2025, Analysis, Effective
+assistant-styling-experiments.md             , Nov 6 20:53:25 2025 , Analysis, Draft
+cli_filtering_language.md                    , Oct 29 16:45:57 2025, Core    , Effective
+colon_commands_spec.md                       , Oct 29 16:47:17 2025, Core    , Effective
+context-boundary-analysis.md                 , Nov 8 17:55:29 2025 , Analysis, Draft
+dev-notes.md                                 , Nov 9 11:07:18 2025 , Analysis, Effective
+focus_management.md                          , Sep 15 16:47:28 2025, Core    , Effective
+font-and-background-styling-investigation.md , Nov 4 14:20:51 2025 , Analysis, Draft
+gemini_integration_spec.md                   , Oct 11 11:09:33 2025, Spec    , Effective
+grok-integration-implementation-plan.md      , Oct 23 16:44:30 2025, Spec    , Effective
+history-background-settings-implementation.md, Nov 4 16:57:32 2025 , Spec    , Effective
+history_export_spec.md                       , Sep 16 13:04:51 2025, Spec    , Effective
+history_navigation_redesign.md               , Oct 24 12:02:39 2025, Spec    , Effective
+image_messages_spec.md                       , Oct 27 13:20:29 2025, Spec    , Effective
+initial_load_flow_diagram.md                 , Oct 17 12:41:05 2025, Analysis, Effective
+inline_content_rendering.md                  , Oct 24 19:36:50 2025, Spec    , Effective
+keyboard_reference.md                        , Nov 5 18:36:35 2025 , Core    , Effective
+m24_multiple_providers.md                    , Sep 22 11:04:24 2025, Spec    , Effective
+markdown-math-code-rendering-investigation.md, Nov 1 21:21:12 2025 , Analysis, Effective
+message_delete_and_images_refactoring.md     , Oct 31 16:34:13 2025, Spec    , Effective
+message_rendering_pipeline.md                , Nov 4 13:13:32 2025 , Analysis, Effective
+messages_with_code_snippets.md               , Oct 24 12:04:55 2025, Spec    , Effective
+model_catalogue.md                           , Oct 14 09:51:28 2025, Spec    , Effective
+new_message_workflow.md                      , Sep 13 18:57:20 2025, Core    , Effective
+overlays.md                                  , Sep 17 18:21:33 2025, Spec    , Effective
+project_vision.md                            , Sep 13 13:56:48 2025, Core    , Effective
+rendering_enhancement_refactoring.md         , Oct 15 13:48:52 2025, Spec    , Effective
+response_variants_spec.md                    , Nov 5 18:42:12 2025 , Spec    , Effective
+scroll_alignment_investigation.md            , Oct 8 12:08:09 2025 , Analysis, Effective
+scroll_alignment_refactoring.md              , Oct 11 13:17:24 2025, Spec    , Effective
+scroll_positioning_spec.md                   , Sep 22 12:18:44 2025, Spec    , Superseded
+scrolling_patterns.md                        , Oct 5 16:48:56 2025 , Analysis, Effective
+settings-render-actions-analysis.md          , Nov 4 17:24:51 2025 , Analysis, Draft
+settings_refactoring.md                      , Oct 10 13:42:26 2025, Spec    , Effective
+timeout_abort_spec.md                        , Oct 17 12:05:36 2025, Spec    , Effective
+topic_system.md                              , Sep 14 17:46:28 2025, Core    , Effective
+ui_layout.md                                 , Sep 14 11:17:30 2025, Spec    , Effective
+ui_view_reading_behaviour.md                 , Sep 14 16:50:26 2025, Spec    , Superseded
