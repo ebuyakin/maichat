@@ -250,7 +250,7 @@ export async function executeSend({
           })),
           attachmentsCount: Array.isArray(attachments) ? attachments.length : 0,
         }
-        localStorage.setItem('maichat_dbg_pre_send', JSON.stringify(dbg))
+        localStorage.setItem('maichat_dbg_pipeline_presend', JSON.stringify(dbg))
       } catch {}
       result = await provider.sendChat({
         model,
@@ -287,7 +287,7 @@ export async function executeSend({
             providerCode: ex && ex.providerCode,
             timing: ex && ex.__timing ? ex.__timing : undefined,
           }
-          localStorage.setItem('maichat_dbg_last_error', JSON.stringify(errDbg))
+          localStorage.setItem('maichat_dbg_pipeline_error', JSON.stringify(errDbg))
         } catch {}
         emitDebug({
           ...baseDebugCore(),

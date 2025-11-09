@@ -90,7 +90,7 @@ export function createGeminiAdapter() {
           }
           // Persist last request payload for easy DevTools inspection
           try {
-            localStorage.setItem('maichat_dbg_last_request', payloadStr)
+            localStorage.setItem('maichat_dbg_gemini_request', payloadStr)
           } catch {}
         }
       } catch {}
@@ -158,7 +158,7 @@ export function createGeminiAdapter() {
           }
           // Persist last raw response for easy DevTools inspection
           try {
-            localStorage.setItem('maichat_dbg_last_response', JSON.stringify(data))
+            localStorage.setItem('maichat_dbg_gemini_response', JSON.stringify(data))
           } catch {}
         }
       } catch {}

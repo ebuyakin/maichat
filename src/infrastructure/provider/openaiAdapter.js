@@ -87,7 +87,7 @@ export function createOpenAIAdapter() {
             json: payloadStr,
           }
           try {
-            localStorage.setItem('maichat_dbg_last_request', payloadStr)
+            localStorage.setItem('maichat_dbg_openai_request', payloadStr)
           } catch {}
         }
       } catch {}
@@ -138,7 +138,7 @@ export function createOpenAIAdapter() {
                 json: JSON.stringify(j),
               }
               try {
-                localStorage.setItem('maichat_dbg_last_response', JSON.stringify(j))
+                localStorage.setItem('maichat_dbg_openai_response', JSON.stringify(j))
               } catch {}
             }
           } catch {}
@@ -171,7 +171,7 @@ export function createOpenAIAdapter() {
             json: JSON.stringify(data),
           }
           try {
-            localStorage.setItem('maichat_dbg_last_response', JSON.stringify(data))
+            localStorage.setItem('maichat_dbg_anthropic_response', JSON.stringify(data))
           } catch {}
         }
       } catch {}

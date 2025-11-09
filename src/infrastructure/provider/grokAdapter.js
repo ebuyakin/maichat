@@ -81,6 +81,9 @@ export function createGrokAdapter() {
       try {
         if (typeof window !== 'undefined') {
           window.__maichatLastRequest = { at: Date.now(), model, json: payloadStr }
+          try {
+            localStorage.setItem('maichat_dbg_grok_request', payloadStr)
+          } catch {}
         }
       } catch {}
       
@@ -134,6 +137,11 @@ export function createGrokAdapter() {
       tParseStart = now()
       const data = await resp.json()
       tParseEnd = now()
+      
+      // Persist response for debugging
+      try {
+        localStorage.setItem('maichat_dbg_grok_response', JSON.stringify(data))
+      } catch {}
       
       const content = data.choices?.[0]?.message?.content || ''
       const usage = data.usage || undefined

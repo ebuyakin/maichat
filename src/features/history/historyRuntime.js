@@ -239,7 +239,7 @@ export function createHistoryRuntime(ctx) {
     lastContextIncludedIds = new Set(boundary.included.map((p) => p.id))
     lastPredictedCount = boundary.included.length
 
-    // section 3
+    // section 3. HTML construction
     const messages = buildMessagesForDisplay(pairs) // construct HTML here
     const parts = flattenMessagesToParts(messages) // ?
     activeParts.setParts(parts) // this is

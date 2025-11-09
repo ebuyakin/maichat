@@ -110,6 +110,9 @@ export function createAnthropicAdapter() {
             json: payloadStr,
             placeholderInsertions: insertedPlaceholders,
           }
+          try {
+            localStorage.setItem('maichat_dbg_anthropic_request', payloadStr)
+          } catch {}
         }
       } catch {}
       let resp
@@ -137,6 +140,10 @@ export function createAnthropicAdapter() {
         throw new ProviderError(msg, kind, resp.status)
       }
       const data = await resp.json()
+      // Persist response for debugging
+      try {
+        localStorage.setItem('maichat_dbg_anthropic_response', JSON.stringify(data))
+      } catch {}
       // Anthropic content is an array of blocks; join text blocks for display
       let text = ''
       try {
