@@ -68,9 +68,11 @@ export function createHistoryView({ store, onActivePartRendered }) {
    * @param {Array<Object>} messages - Array of message objects to render
    * @param {string} messages[].id - Message ID (corresponds to pair ID)
    * @param {Array<id, role, text, pairId>} messages[].parts - Message parts (role: user, meta, assistant)
+   * @param {Object} [options] - Optional rendering options
+   * @param {Set<string>} [options.includedPairIds] - Set of pairIds considered in-context (for boundary styling)
    * @returns {void}
    */
-  function renderMessages(messages) {
+  function renderMessages(messages, options = {}) {
     if (!Array.isArray(messages)) {
       container.innerHTML = ''
       if (onActivePartRendered) onActivePartRendered()
@@ -79,6 +81,8 @@ export function createHistoryView({ store, onActivePartRendered }) {
     const tokens = []
     // Get settings once for entire render
     const settings = getSettings()
+    // S5: Extract includedPairIds for boundary styling (plumbed but unused for now)
+    const includedPairIds = options.includedPairIds || null
 
     let msgIndex = 0
     for (const msg of messages) {
@@ -101,8 +105,14 @@ export function createHistoryView({ store, onActivePartRendered }) {
           attachBadge = ` <span class="attachment-badge" data-action="view-images" data-pair-id="${user.pairId}" role="button" tabindex="0" aria-label="${attachCount} image${attachCount > 1 ? 's' : ''} attached" title="View attached images (i key)">${iconSvg}${countText}</span>`
         }
         
+        // S6: Stamp data-included attribute when boundary info available
+        const isIncluded = includedPairIds ? includedPairIds.has(user.pairId) : null
+        const includedAttr = isIncluded !== null ? ` data-included="${isIncluded ? '1' : '0'}"` : ''
+        // S7: Add ooc class when excluded (data-included="0")
+        const oocClass = isIncluded === false ? ' ooc' : ''
+        
         tokens.push(
-          `<div class="message user" data-message-id="${user.id}" data-part-id="${user.id}" data-pair-id="${user.pairId}" data-role="user">${escapeHtml(user.text || '')}${attachBadge}</div>`
+          `<div class="message user${oocClass}" data-message-id="${user.id}" data-part-id="${user.id}" data-pair-id="${user.pairId}" data-role="user"${includedAttr}>${escapeHtml(user.text || '')}${attachBadge}</div>`
         )
       }
 
@@ -162,8 +172,14 @@ export function createHistoryView({ store, onActivePartRendered }) {
             }
           } catch {}
 
+        // S6: Stamp data-included attribute when boundary info available
+        const isIncluded = includedPairIds ? includedPairIds.has(assistant.pairId) : null
+        const includedAttr = isIncluded !== null ? ` data-included="${isIncluded ? '1' : '0'}"` : ''
+        // S7: Add ooc class when excluded (data-included="0")
+        const oocClass = isIncluded === false ? ' ooc' : ''
+
         tokens.push(
-          `<div class="message assistant" data-message-id="${assistant.id}" data-part-id="${assistant.id}" data-pair-id="${assistant.pairId}" data-role="assistant">
+          `<div class="message assistant${oocClass}" data-message-id="${assistant.id}" data-part-id="${assistant.id}" data-pair-id="${assistant.pairId}" data-role="assistant"${includedAttr}>
             <div class="assistant-meta">
               <div class="meta-left">
                 <span class="badge flag" data-flag="${pair ? pair.colorFlag : 'g'}" title="${pair && pair.colorFlag === 'b' ? 'Flagged (blue)' : 'Unflagged (grey)'}"></span>
@@ -172,7 +188,7 @@ export function createHistoryView({ store, onActivePartRendered }) {
               </div>
               <div class="meta-right">
                 ${stateBadge}
-                <span class="badge offctx" data-offctx="0" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;"></span>
+                <span class="badge offctx" data-offctx="${isIncluded === false ? '1' : '0'}" title="off: excluded automatically by token budget" style="min-width:30px; text-align:center; display:inline-block;">${isIncluded === false ? 'off' : ''}</span>
                 ${sourcesBadge}
                 ${errActions}${normalActions}
                 <span class="badge model">${escapeHtml(modelName)}</span>

@@ -1,5 +1,13 @@
 // default preconfigured model catalog for new users
 const STORAGE_KEY = 'maichat_model_catalog_v2'
+
+/**
+ * Supported AI providers
+ * When adding a new provider: add ID here, create estimator in infrastructure/provider/tokenEstimation/, 
+ * register in tokenEstimator.js, and add base models below
+ */
+export const SUPPORTED_PROVIDERS = ['openai', 'anthropic', 'google', 'xai']
+
 const BASE_MODELS = [
   // OpenAI models (Tier 1 limits)
   { 

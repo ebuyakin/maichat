@@ -21,6 +21,11 @@
  * @property {string|undefined} previousModel - model used to produce the previous answer (optional)
  * @property {number|undefined} replacedAt - timestamp (ms) when in-place replacement occurred (optional)
  * @property {string|undefined} replacedBy - actor/model that initiated replacement (optional)
+ * @property {number|undefined} userChars - length of userText in characters (ground truth; preferred for heuristics)
+ * @property {number|undefined} assistantChars - length of assistantText in characters (ground truth; preferred for heuristics)
+ * @property {{[providerModelKey:string]: number}|undefined} assistantProviderTokens - provider-reported token usage for assistant response (highest priority)
+ * @property {number|undefined} previousAssistantChars - length of previousAssistantText in characters (when second opinion exists)
+ * @property {{[providerModelKey:string]: number}|undefined} previousAssistantProviderTokens - provider-reported token usage for previous assistant response
  * @property {string|undefined} processedContent - content with code block placeholders (optional, only if code detected)
  * @property {Array<CodeBlock>|undefined} codeBlocks - extracted code blocks (optional, only if code detected)
  * @property {Array<EquationBlock>|undefined} equationBlocks - extracted equation blocks (optional, only if equations detected)
@@ -67,5 +72,13 @@ export function createMessagePair({
     lifecycleState: 'idle',
     errorMessage: undefined,
     tokenLength: undefined,
+    // New ground-truth char fields (populated post-construction by callers)
+    userChars: undefined,
+    assistantChars: undefined,
+    // Provider-reported assistant token usage map (highest priority for estimation)
+    assistantProviderTokens: undefined,
+    // Backup response metrics (for second opinion / response variants)
+    previousAssistantChars: undefined,
+    previousAssistantProviderTokens: undefined,
   }
 }

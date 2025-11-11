@@ -248,12 +248,11 @@ export function createHistoryRuntime(ctx) {
       ctx.__messages = messages
     } catch { }
 
-    historyView.renderMessages(messages) // builds HTML/DOM structure
+    // S5: Pass includedPairIds to renderMessages (plumbed but not yet used in HTML)
+    historyView.renderMessages(messages, { includedPairIds: lastContextIncludedIds })
 
     // section 4
-    // Apply initial fade state before first paint to avoid bright-then-dim flicker on re-render
-    // updateFadeVisibility({ initial: true }) // legacy
-    applyOutOfContextStyling()
+    // S9: applyOutOfContextStyling() removed - boundary styling now inline during HTML construction (S6-S8)
     updateMessageCount(boundary.included.length, pairs.length)
 
     // whhat does this do?
@@ -469,6 +468,11 @@ export function createHistoryRuntime(ctx) {
         (newestHidden ? 'Latest message hidden by filter. ' : '') + 'Predicted Included / Visible'
     }
   }
+  
+  /**
+   * @deprecated Legacy function - boundary styling now done inline during HTML construction (S6-S8).
+   * Kept as no-op for backward compatibility; can be removed in future cleanup.
+   */
   function applyOutOfContextStyling() {
     const els = document.querySelectorAll('#history .message')
     els.forEach((el) => {
@@ -493,6 +497,7 @@ export function createHistoryRuntime(ctx) {
       }
     })
   }
+
   function jumpToBoundary() {
     if (!lastContextIncludedIds || lastContextIncludedIds.size === 0) return
     const idx = activeParts.parts.findIndex((pt) => lastContextIncludedIds.has(pt.pairId))

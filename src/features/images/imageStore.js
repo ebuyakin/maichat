@@ -267,6 +267,15 @@ export async function attachFromFiles(fileList, options = {}) {
       // Downscale/convert if needed
       const processed = await downscaleIfNeeded(file)
       const id = crypto.randomUUID()
+      
+      // S17: Compute token costs for ALL providers upfront (eager precomputation)
+      const { estimateImageTokens } = await import('../../core/context/tokenEstimator.js')
+      const { SUPPORTED_PROVIDERS } = await import('../../core/models/modelCatalog.js')
+      const tokenCost = {}
+      for (const provider of SUPPORTED_PROVIDERS) {
+        tokenCost[provider] = estimateImageTokens({ w: processed.w, h: processed.h }, provider)
+      }
+      
       const rec = {
         id,
         blob: processed.blob,
@@ -275,6 +284,10 @@ export async function attachFromFiles(fileList, options = {}) {
         h: processed.h,
         bytes: processed.bytes,
         createdAt: Date.now(),
+        // S14: Add optional base64 field (populated lazily in S15)
+        base64: undefined,
+        // S17: tokenCost precomputed for all providers at attach time
+        tokenCost,
         // refCount removed: one image = one message (direct ownership)
       }
       await putImageRecord(rec)
@@ -382,6 +395,13 @@ export async function purge(id) {
 export async function encodeToBase64(id) {
   const rec = await get(id)
   if (!rec) throw new Error('not_found')
+  
+  // S15: Return cached base64 if already encoded
+  if (rec.base64 && rec.base64.data) {
+    return rec.base64
+  }
+  
+  // Encode blob to base64
   const ab = await readFileAsArrayBuffer(rec.blob)
   // Convert ArrayBuffer to Base64
   const bytes = new Uint8Array(ab)
@@ -391,6 +411,46 @@ export async function encodeToBase64(id) {
     const slice = bytes.subarray(i, i + CHUNK)
     binary += String.fromCharCode.apply(null, slice)
   }
-  const base64 = btoa(binary)
-  return { mime: rec.format || rec.blob.type || 'application/octet-stream', data: base64 }
+  const base64Data = btoa(binary)
+  const base64Obj = { 
+    mime: rec.format || rec.blob.type || 'application/octet-stream', 
+    data: base64Data,
+    chars: base64Data.length  // S15: Cache char count for payload size tracking
+  }
+  
+  // S15: Persist base64 to IndexedDB for future reuse
+  try {
+    const db = await openDB()
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction([STORE_IMAGES], 'readwrite')
+      const store = tx.objectStore(STORE_IMAGES)
+      rec.base64 = base64Obj
+      const putReq = store.put(rec)
+      putReq.onsuccess = () => resolve()
+      putReq.onerror = () => reject(putReq.error)
+    })
+  } catch (err) {
+    // If persistence fails, still return the encoded result (non-blocking)
+    console.warn('[imageStore] Failed to cache base64 for', id, err)
+  }
+  
+  return base64Obj
+}
+
+/**
+ * S17: Get precomputed image token cost for a specific provider
+ * Returns cached value computed at attach time (all providers precomputed)
+ * 
+ * @param {string} id - Image ID
+ * @param {string} providerId - Provider identifier (e.g., 'openai', 'anthropic')
+ * @returns {Promise<number>} Token cost for this provider (0 if image not found or cost missing)
+ */
+export async function getImageTokenCost(id, providerId) {
+  const rec = await get(id)
+  if (!rec) return 0
+  
+  const providerKey = (providerId || 'openai').toLowerCase()
+  
+  // Return precomputed cost (all providers computed at attach time)
+  return rec.tokenCost?.[providerKey] || 0
 }

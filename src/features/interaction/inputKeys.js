@@ -460,9 +460,12 @@ export function createInputKeyHandler({
           id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
         }
 
-        // Persist attachments immediately; tokens will be computed asynchronously in the send task below
+        // Persist attachments and userChars immediately; assistant tokens will be computed after reply
         try {
-          store.updatePair(id, { attachments: attachmentsCopy })
+          store.updatePair(id, { 
+            attachments: attachmentsCopy,
+            userChars: (text || '').length,
+          })
         } catch {}
 
         // new message treatment.
@@ -490,7 +493,8 @@ export function createInputKeyHandler({
             boundaryMgr.applySettings(getSettings())
             const boundarySnapshot = boundaryMgr.getBoundary()
             const tStart = Date.now()
-            // Compute and cache attachmentTokens and user-side textTokens before calling provider
+            // S11: Compute and cache attachmentTokens before calling provider
+            // Stop writing textTokens - rely on userChars (already set in S2) instead
             try {
               let attachmentTokens = 0
               if (attachmentsCopy.length) {
@@ -501,11 +505,7 @@ export function createInputKeyHandler({
                   }
                 }
               }
-              const textTokensUser = estimateTokens(text || '', getSettings().charsPerToken || 4)
-              store.updatePair(id, {
-                attachmentTokens,
-                textTokens: textTokensUser,
-              })
+              store.updatePair(id, { attachmentTokens })
             } catch {}
             const execResult = await executeSend({
               store,
@@ -549,6 +549,8 @@ export function createInputKeyHandler({
               assistantText: rawText,
               lifecycleState: 'complete',
               errorMessage: undefined,
+              // S3: Populate assistantChars (ground truth char count)
+              assistantChars: (rawText || '').length,
             }
             // Persist citations if provided by provider (e.g., Grok/Gemini with search enabled)
             if (Array.isArray(execResult.citations) && execResult.citations.length) {
@@ -569,14 +571,10 @@ export function createInputKeyHandler({
                 ? finalDisplay
                 : sanitizeAssistantText(rawText)
 
-            // Update tokens cache and response timing
+            // S11: Stop writing textTokens for new pairs - rely on userChars/assistantChars instead
+            // Legacy textTokens still read by estimator (S4 precedence order) for backward compat
+            // Update response timing only
             try {
-              const addAssistantTokens = estimateTokens(rawText || '', getSettings().charsPerToken || 4)
-              const existing = store.pairs.get(id)
-              const currentTextTok = (existing && typeof existing.textTokens === 'number')
-                ? existing.textTokens
-                : estimateTokens((existing?.userText) || '', getSettings().charsPerToken || 4)
-              updateData.textTokens = currentTextTok + addAssistantTokens
               updateData.responseMs = responseMs
             } catch {}
 

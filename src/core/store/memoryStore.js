@@ -108,6 +108,9 @@ export class MemoryStore {
 
     // Note: Code processing now happens in interaction.js for new responses
     // Initial creation may not have assistantText yet, so no processing needed here
+    
+    // Populate userChars immediately (S2: ground truth char count)
+    pair.userChars = (userText || '').length
 
     this.pairs.set(id, pair)
     this.emitter.emit('pair:add', pair)

@@ -1,4 +1,25 @@
 // Moved from src/context/tokenEstimator.js (Phase 5 core move)
+
+// S17: Import provider-specific estimators
+import { openaiEstimator } from '../../infrastructure/provider/tokenEstimation/openaiEstimator.js'
+import { anthropicEstimator } from '../../infrastructure/provider/tokenEstimation/anthropicEstimator.js'
+import { geminiEstimator } from '../../infrastructure/provider/tokenEstimation/geminiEstimator.js'
+import { grokEstimator } from '../../infrastructure/provider/tokenEstimation/grokEstimator.js'
+import { fallbackEstimator } from '../../infrastructure/provider/tokenEstimation/fallbackEstimator.js'
+
+// S17: Provider estimator registry
+const PROVIDER_ESTIMATORS = {
+  openai: openaiEstimator,
+  anthropic: anthropicEstimator,
+  google: geminiEstimator,
+  xai: grokEstimator,
+}
+
+function getProviderEstimator(providerId) {
+  const pid = (providerId || 'openai').toLowerCase()
+  return PROVIDER_ESTIMATORS[pid] || fallbackEstimator
+}
+
 export function estimateTokens(text, charsPerToken = 4) {
   if (!text) return 0
   const len = text.length
@@ -6,33 +27,38 @@ export function estimateTokens(text, charsPerToken = 4) {
 }
 
 /**
- * Estimate tokens for an image using tile-based formula.
- * Uses OpenAI detail:high formula as conservative baseline for all providers.
- * Future (Phase 2): will delegate to provider-specific counters via registry.
+ * Estimate tokens for an image using provider-specific formula.
+ * S17: Delegates to provider estimators instead of hardcoded OpenAI formula.
+ * 
  * @param {{ w: number, h: number }} dimensions - image width and height in pixels
- * @param {string} providerId - e.g., 'openai', 'anthropic' (reserved for future use)
- * @param {string} model - e.g., 'gpt-4o' (reserved for future use)
+ * @param {string} providerId - e.g., 'openai', 'anthropic', 'google', 'xai'
+ * @param {string} model - model identifier (reserved for future model-specific costs)
  * @returns {number} estimated tokens
  */
 export function estimateImageTokens({ w, h }, providerId = 'openai', model = '') {
-  // OpenAI detail:high tile formula (85 base + 170 per 512×512 tile)
-  // Most conservative among providers; safe baseline for budget checks
-  const tiles = Math.ceil(w / 512) * Math.ceil(h / 512)
-  return 85 + tiles * 170
-
-  // Phase 2 (future): delegate to provider-specific counter
-  // const counter = getProviderTokenCounter(providerId);
-  // if (counter?.estimateImage) return counter.estimateImage({ w, h }, model);
-  // return fallback above;
+  const estimator = getProviderEstimator(providerId)
+  return estimator.estimateImageTokens({ w, h }, model)
 }
 
 export function estimatePairTokens(pair, charsPerToken = 4) {
-  // Fast path: if cached totals exist on the pair, use them.
+  // S4: Estimation precedence order (most accurate → fallback)
+  // 1. Cached totals (textTokens + attachmentTokens) — legacy or precomputed
+  // 2. Ground-truth char counts (userChars + assistantChars) — preferred when available
+  // 3. Heuristic from raw text lengths — legacy fallback with in-memory cache
+
   const cachedText = typeof pair.textTokens === 'number' ? pair.textTokens : null
   const cachedAttach = typeof pair.attachmentTokens === 'number' ? pair.attachmentTokens : null
   if (cachedText != null || cachedAttach != null) {
     return (cachedText || 0) + (cachedAttach || 0)
   }
+
+  // Prefer ground-truth char counts when available
+  const hasChars = typeof pair.userChars === 'number' && typeof pair.assistantChars === 'number'
+  if (hasChars) {
+    const totalChars = (pair.userChars || 0) + (pair.assistantChars || 0)
+    return Math.max(1, Math.ceil(totalChars / charsPerToken))
+  }
+
   // Fallback: heuristic based on current texts; cache per-charsPerToken in-memory only
   const uLen = (pair.userText || '').length
   const aLen = (pair.assistantText || '').length
