@@ -3,6 +3,7 @@
 import { getSettings } from '../../core/settings/index.js'
 import { getActiveModel } from '../../core/models/modelCatalog.js'
 import { executeSend } from '../compose/pipeline.js'
+import { executeSendWorkflow } from '../compose/sendWorkflow.js'
 import { sanitizeAssistantText } from './sanitizeAssistant.js'
 import { extractCodeBlocks } from '../codeDisplay/codeExtractor.js'
 import { extractEquations } from '../codeDisplay/equationExtractor.js'
@@ -420,8 +421,11 @@ export function createInputKeyHandler({
     }
     if (e.key === 'Enter') {
       const text = inputField.value.trim()
+
+      // phase 1: input validation
       if (text) {
         if (lifecycle.isPending()) return true
+        // phase 2: capture request context
         const editingId = window.__editingPairId
         const topicId = pendingMessageMeta.topicId || getCurrentTopicId()
         const model = pendingMessageMeta.model || getActiveModel()
@@ -432,222 +436,89 @@ export function createInputKeyHandler({
           : []
 
         // Add topic to history on send
-        addToTopicHistory(topicId)
-        topicHistoryIndex = -1 // Reset navigation index
+        // addToTopicHistory(topicId) // depcrecated as redundant
+        // topicHistoryIndex = -1 // Reset navigation index. deprecated as redundant
 
-        boundaryMgr.updateVisiblePairs(
-          store.getAllPairs().sort((a, b) => a.createdAt - b.createdAt)
-        )
-        boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel())
+        //boundaryMgr.updateVisiblePairs(
+        //  store.getAllPairs().sort((a, b) => a.createdAt - b.createdAt)
+        //)
+
+        boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel()) // redundant, but cheap
         boundaryMgr.applySettings(getSettings())
-        const preBoundary = boundaryMgr.getBoundary()
+
+        const preBoundary = boundaryMgr.getBoundary() // used for trim notifications
         const beforeIncludedIds = new Set(preBoundary.included.map((p) => p.id))
+
         lifecycle.beginSend()
-        setReadingMode(false)
-        try {
-          window.__hud && window.__hud.setReadingMode && window.__hud.setReadingMode(false)
-        } catch {}
-  let id
-        if (editingId) {
-          const old = store.pairs.get(editingId)
-          if (old) {
-            // Old pair may still exist if not removed earlier; remove but keep images for transfer
-            store.removePair(editingId, true)
-          }
-          id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
-          window.__editingPairId = null
-        } else {
-          id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
-        }
 
-        // Persist attachments and userChars immediately; assistant tokens will be computed after reply
-        try {
-          store.updatePair(id, { 
-            attachments: attachmentsCopy,
-            userChars: (text || '').length,
-          })
-        } catch {}
+        //setReadingMode(false)
+        //try {
+        //  window.__hud && window.__hud.setReadingMode && window.__hud.setReadingMode(false)
+        //} catch {}
 
-        // new message treatment.
+        // === EXTRACTED: Call sendWorkflow (async IIFE to avoid blocking) ===
         ;(async () => {
-          // Create AbortController with timeout
-          const controller = new AbortController()
-          const settings = getSettings()
-          const timeoutSec = settings.requestTimeoutSec || 120
-          const timeoutMs = timeoutSec * 1000
-          const timeoutId = setTimeout(() => {
-            controller.abort()
-          }, timeoutMs)
+          const id = await executeSendWorkflow({
+            // Input data
+            text,
+            topicId,
+            model,
+            attachments: attachmentsCopy,
+            editingId,
+            webSearchOverride: pendingMessageMeta.webSearchOverride,
+            beforeIncludedIds,
+            
+            // Injected dependencies
+            store,
+            lifecycle,
+            boundaryMgr,
+            historyRuntime,
+            activeParts,
+            scrollController,
+            requestDebug,
+            updateSendDisabled,
+            getSettings,
+            sanitizeDisplayPreservingTokens,
+            escapeHtmlAttr,
+            escapeHtml,
+          })
 
-          // Store controller reference for manual abort (Ctrl+C handler)
-          if (!window.__maichat) window.__maichat = {}
-          window.__maichat.requestController = controller
-
+          // === POST-SEND UI UPDATES (after workflow completes) ===
+          historyRuntime.renderCurrentView({ preserveActive: true })
+          
+          // Focus the new pair's last user part explicitly (meta remains non-focusable)
           try {
-            const currentPairs = activeParts.parts
-              .map((pt) => store.pairs.get(pt.pairId))
-              .filter(Boolean)
-            const chrono = [...new Set(currentPairs)].sort((a, b) => a.createdAt - b.createdAt)
-            boundaryMgr.updateVisiblePairs(chrono)
-            boundaryMgr.setModel(model)
-            boundaryMgr.applySettings(getSettings())
-            const boundarySnapshot = boundaryMgr.getBoundary()
-            const tStart = Date.now()
-            // S11: Compute and cache attachmentTokens before calling provider
-            // Stop writing textTokens - rely on userChars (already set in S2) instead
-            try {
-              let attachmentTokens = 0
-              if (attachmentsCopy.length) {
-                const imgs = await getImagesByIds(attachmentsCopy)
-                for (const img of imgs) {
-                  if (img && typeof img.w === 'number' && typeof img.h === 'number') {
-                    attachmentTokens += estimateImageTokens({ w: img.w, h: img.h })
-                  }
-                }
+            const pane = document.getElementById('historyPane')
+            const userEls = pane
+              ? pane.querySelectorAll(
+                  `.message[data-pair-id="${id}"][data-role="user"], .part[data-pair-id="${id}"][data-role="user"]`
+                )
+              : null
+            const lastUserEl = userEls && userEls.length ? userEls[userEls.length - 1] : null
+            if (lastUserEl) {
+              const lastUserId = lastUserEl.getAttribute('data-part-id')
+              if (lastUserId) {
+                activeParts.setActiveById(lastUserId)
               }
-              store.updatePair(id, { attachmentTokens })
-            } catch {}
-            const execResult = await executeSend({
-              store,
-              model,
-              topicId,
-              userText: text,
-              signal: controller.signal,
-              visiblePairs: chrono,
-              attachments: attachmentsCopy, // Use captured copy (draft may be cleared by now)
-              topicWebSearchOverride: pendingMessageMeta.webSearchOverride, // NEW: pass topic override
-              boundarySnapshot,
-              onDebugPayload: (payload) => {
-                historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount)
-                requestDebug.setPayload(payload)
-                historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length)
-              },
-            })
-            const responseMs = Math.max(0, Date.now() - tStart)
-            const rawText = execResult.content // keep original for assistantText (context fidelity)
-            // 1. Code extraction first
-            const codeExtraction = extractCodeBlocks(rawText)
-            const afterCode = codeExtraction.hasCode ? codeExtraction.displayText : rawText
-            // 2. Equation extraction (markers for simple inline)
-            const eqResult = extractEquations(afterCode, { inlineMode: 'markers' })
-            const afterEq = eqResult.displayText // contains [eq-n] placeholders + __EQINL_X__ markers
-            // 3. Segmented sanitize (skip placeholders & markers)
-            const sanitized = sanitizeDisplayPreservingTokens(afterEq)
-            // 4. Expand inline markers to spans
-            let finalDisplay = sanitized
-            if (eqResult.inlineSimple && eqResult.inlineSimple.length) {
-              for (const item of eqResult.inlineSimple) {
-                const span = `<span class="eq-inline" data-tex="${escapeHtmlAttr(item.raw)}">${escapeHtml(item.unicode)}</span>`
-                finalDisplay = finalDisplay.replaceAll(item.marker, span)
-              }
-            }
-            // Normalize placeholder spacing
-            finalDisplay = finalDisplay.replace(/\s*\[([a-z0-9_]+-\d+|eq-\d+)\]\s*/gi, ' [$1] ')
-            finalDisplay = finalDisplay.replace(/ {2,}/g, ' ')
-
-            const updateData = {
-              assistantText: rawText,
-              lifecycleState: 'complete',
-              errorMessage: undefined,
-              // S3: Populate assistantChars (ground truth char count)
-              assistantChars: (rawText || '').length,
-            }
-            // Persist citations if provided by provider (e.g., Grok/Gemini with search enabled)
-            if (Array.isArray(execResult.citations) && execResult.citations.length) {
-              updateData.citations = execResult.citations
-            }
-            // Persist citation titles map when available (url -> title)
-            if (execResult.citationsMeta && typeof execResult.citationsMeta === 'object') {
-              updateData.citationsMeta = execResult.citationsMeta
-            }
-            if (codeExtraction.hasCode) {
-              updateData.codeBlocks = codeExtraction.codeBlocks
-            }
-            if (eqResult.equationBlocks && eqResult.equationBlocks.length) {
-              updateData.equationBlocks = eqResult.equationBlocks
-            }
-            updateData.processedContent =
-              codeExtraction.hasCode || eqResult.hasEquations
-                ? finalDisplay
-                : sanitizeAssistantText(rawText)
-
-            // S11: Stop writing textTokens for new pairs - rely on userChars/assistantChars instead
-            // Legacy textTokens still read by estimator (S4 precedence order) for backward compat
-            // Update response timing only
-            try {
-              updateData.responseMs = responseMs
-            } catch {}
-
-            store.updatePair(id, updateData)
-            clearTimeout(timeoutId)
-            window.__maichat.requestController = null
-            lifecycle.completeSend()
-            updateSendDisabled()
-            historyRuntime.renderCurrentView({ preserveActive: true })
-            lifecycle.handleNewAssistantReply(id)
-          } catch (ex) {
-            clearTimeout(timeoutId)
-            window.__maichat.requestController = null
-
-            let errMsg
-            if (ex.name === 'AbortError') {
-              errMsg = 'Request aborted'
             } else {
-              errMsg = ex && ex.message ? ex.message : 'error'
-              if (errMsg === 'missing_api_key')
-                errMsg = 'API key missing (Ctrl+. → API Keys or Ctrl+K)'
+              activeParts.last()
             }
-
-            store.updatePair(id, {
-              assistantText: '',
-              lifecycleState: 'error',
-              errorMessage: errMsg,
-            })
-            lifecycle.completeSend()
-            updateSendDisabled()
-            historyRuntime.renderCurrentView({ preserveActive: true })
-            // Activate and anchor the error assistant message
-            try {
-              const pane = document.getElementById('historyPane')
-              const assistantEls = pane
-                ? pane.querySelectorAll(
-                    `.message[data-pair-id="${id}"][data-role="assistant"], .part[data-pair-id="${id}"][data-role="assistant"]`
-                  )
-                : null
-              const assistantEl = assistantEls && assistantEls.length ? assistantEls[0] : null
-              if (assistantEl) {
-                const assistantId = assistantEl.getAttribute('data-part-id')
-                if (assistantId) {
-                  activeParts.setActiveById(assistantId)
-                  historyRuntime.applyActiveMessage()
-                  // Scroll to bottom to show error message
-                  if (scrollController && scrollController.scrollToBottom) {
-                    requestAnimationFrame(() => {
-                      scrollController.scrollToBottom(false)
-                    })
-                  }
-                }
-              }
-            } catch {}
-          } finally {
-            if (getSettings().showTrimNotice) {
-              boundaryMgr.updateVisiblePairs(
-                store.getAllPairs().sort((a, b) => a.createdAt - b.createdAt)
-              )
-              boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel())
-              boundaryMgr.applySettings(getSettings())
-              const postBoundary = boundaryMgr.getBoundary()
-              const afterIncludedIds = new Set(postBoundary.included.map((p) => p.id))
-              let trimmed = 0
-              beforeIncludedIds.forEach((pid) => {
-                if (!afterIncludedIds.has(pid)) trimmed++
-              })
-              if (trimmed > 0) {
-                console.log(`[context] large prompt trimmed ${trimmed} older pair(s)`)
-              }
-            }
+          } catch {
+            activeParts.last()
           }
+
+          historyRuntime.applyActiveMessage()
+          
+          // Scroll to bottom to show the newly sent user message
+          if (scrollController && scrollController.scrollToBottom) {
+            requestAnimationFrame(() => {
+              scrollController.scrollToBottom(false)
+            })
+          }
+          updateSendDisabled()
         })()
+
+        // === IMMEDIATE POST-SEND CLEANUP (before async workflow completes) ===
         inputField.value = ''
         pendingMessageMeta.attachments = []  // Clear draft attachments after send
         try {
@@ -655,35 +526,6 @@ export function createInputKeyHandler({
           localStorage.removeItem('maichat_draft_text')
         } catch {}
         updateAttachIndicator()
-        historyRuntime.renderCurrentView({ preserveActive: true })
-        // Focus the new pair's last user part explicitly (meta remains non-focusable)
-        try {
-          const pane = document.getElementById('historyPane')
-          const userEls = pane
-            ? pane.querySelectorAll(
-                `.message[data-pair-id="${id}"][data-role="user"], .part[data-pair-id="${id}"][data-role="user"]`
-              )
-            : null
-          const lastUserEl = userEls && userEls.length ? userEls[userEls.length - 1] : null
-          if (lastUserEl) {
-            const lastUserId = lastUserEl.getAttribute('data-part-id')
-            if (lastUserId) {
-              activeParts.setActiveById(lastUserId)
-            }
-          } else {
-            activeParts.last()
-          }
-        } catch {
-          activeParts.last()
-        }
-        historyRuntime.applyActiveMessage()
-        // Scroll to bottom to show the newly sent user message
-        if (scrollController && scrollController.scrollToBottom) {
-          requestAnimationFrame(() => {
-            scrollController.scrollToBottom(false)
-          })
-        }
-        updateSendDisabled()
       }
       return true
     }

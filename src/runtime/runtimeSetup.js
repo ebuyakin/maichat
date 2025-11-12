@@ -113,6 +113,7 @@ export function initRuntimeCore() {
       window.__store = store
     }
   } catch {}
+  
   return ctx
 }
 

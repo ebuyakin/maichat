@@ -252,7 +252,7 @@ export function createHistoryRuntime(ctx) {
     historyView.renderMessages(messages, { includedPairIds: lastContextIncludedIds })
 
     // section 4
-    // S9: applyOutOfContextStyling() removed - boundary styling now inline during HTML construction (S6-S8)
+    // applyOutOfContextStyling() removed - boundary styling now inline during HTML construction (S6-S8)
     updateMessageCount(boundary.included.length, pairs.length)
 
     // whhat does this do?
@@ -283,6 +283,7 @@ export function createHistoryRuntime(ctx) {
    * @param {boolean} opts.preserveActive - Whether to keep current active message highlighted
    * @returns {void}
    */
+
   function renderCurrentView(opts = {}) {
     const { preserveActive = false } = opts
     const prevActiveId = preserveActive && activeParts.active() ? activeParts.active().id : null
@@ -362,7 +363,9 @@ export function createHistoryRuntime(ctx) {
       }
     }
 
+    // rendering sequence: rencerCurrentView -> renderHistory -> renderMessages
     renderHistory(all) // NB!
+
     if (prevActiveId) {
       activeParts.setActiveById(prevActiveId)
       if (!activeParts.active()) {

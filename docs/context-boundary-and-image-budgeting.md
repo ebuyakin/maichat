@@ -18,7 +18,6 @@ Status: Agreed principles before implementation. Keep changes minimal, isolate p
 - assistantCharBudget = assistantChars / cpt  (no fallback - fill assistantChars). assistantChars value is calculated once upon receiving response (when the response is processed) and stored in the object store in indexedDB together with assistant text. It's calculated once, not edited, and used when assistantProviderTokens is unavailable (fallback)
 - image bugget. image budget is calculated when the image is attached to the new request. It's calculated based on the image parameters (w, h, resolution, chars etc) according to provider-specific rules (encoded in provider estimators) and stored in the object store (with specified provider). The values are calculated for all four providers (sic!) regardless of the pending model. I.e. we calculated budget for all providers in advance and don't need to recalculate them later if user changes the pending model. Make sure it's clear and there is no misunderstanding? When the payload is assembled or when the boundary is calculated the pre-calculated (and stored) value of the image budget is obtained from the object store (not calculated again).
 
-
 #### Key Architectural Decisions
 1. Separation of concerns maintained: visual boundary and send pipeline remain distinct functions (no forced code reuse); both rely on shared primitive estimators but can evolve independently.
 2. Text measurement persistence: store raw character counts (userChars, assistantChars) per pair. Provider-returned token usage (if present later) is optional advisory; we do not block on it. Existing `textTokens` is legacy and not backfilled.
@@ -41,193 +40,68 @@ ImageRecord:
 Helper: providerModelKey(provider, model) => string; for now provider only, forward-compatible with model suffix if ever needed.
 
 #### Estimation Order
-For assistant part tokens: assistantProviderTokens[providerModelKey] > (assistantChars / cpt).
+For assistant part tokens: assistantProviderTokens > (assistantChars / cpt).
 For user part tokens: userChars / cpt.
 For image tokens: image.tokenCost[providerKey] > compute & cache via provider formula.
 Pair total = sum(user + assistant + images).
 
-<!-- Phase Plan section removed; linear sequence below is authoritative. -->
+### ACTION PLAN
 
-### Linear Implementation Sequence (Authoritative)
+P1. Text token estimation foundation. Establish ground-truth character counts for accurate token estimation without relying on legacy textTokens field. [x]
+P1.1 Add userChars and assistantChars fields to MessagePair schema. Files: core/models/messagePair.js [x]
+P1.2 Populate userChars when user sends message. Files: core/store/memoryStore.js [x]
+P1.3 Populate assistantChars when assistant response arrives. Files: features/compose/sendWorkflow.js [x]
+P1.4 Update estimatePairTokens() to prefer char-based calculation over legacy textTokens. Files: core/context/tokenEstimator.js [x]
+P1.5 Stop writing textTokens for new pairs, keep reading for backward compatibility. Files: features/compose/sendWorkflow.js [x]
+P1.6 Create migration script to hydrate existing pairs with char counts. Files: study/hydrate-chars-migration.js [x]
 
-This sequence supersedes any grouped/parallel views. Each step targets ≤2–3 files and can be reviewed/committed independently.
+P2. Boundary visualization with inline styling. Eliminate post-render DOM mutation pass for off-context styling by applying classes and attributes during HTML construction. [x]
+P2.1 Add includedPairIds parameter to renderMessages(). Files: features/history/historyView.js, features/history/historyRuntime.js [x]
+P2.2 Stamp data-included attribute on message elements during HTML construction. Files: features/history/historyView.js [x]
+P2.3 Apply ooc class inline when data-included is 0. Files: features/history/historyView.js [x]
+P2.4 Set off badge text inline for excluded messages. Files: features/history/historyView.js [x]
+P2.5 Remove applyOutOfContextStyling() post-pass call. Files: features/history/historyRuntime.js [x]
 
-S1. MessagePair schema extension (DM1)
-- Files: core/models/messagePair.js
-- Add optional: userChars, assistantChars, assistantProviderTokens + the same for previous assistant (map). No migrations.
+P3. Image infrastructure preparation. Add fields to image records for efficient token estimation and payload assembly without repeated encoding. [x]
+P3.1 Add optional base64 field to image record schema. Files: features/images/imageStore.js [x]
+P3.2 Modify encodeToBase64() to cache base64 in image record on first encode. Files: features/images/imageStore.js [x]
+P3.3 Add tokenCost map field to image record schema. Files: features/images/imageStore.js [x]
+P3.4 Create provider-specific image token estimators. Files: core/context/imageEstimators.js [x]
+P3.5 Eagerly compute tokenCost for all providers when image attached. Files: features/images/imageStore.js [x]
+P3.6 Create migration script to hydrate existing images with tokenCost. Files: study/hydrate-image-tokencosts-migration.js [x]
 
-S2. Populate userChars on pair create (DM2)
-- Files: features/interaction/inputKeys.js (and/or core/store/memoryStore.js if constructor logic lives there)
-- Set userChars = (userText||'').length when adding a pair.
+P4. Token estimation architecture finalization. Rewrite estimator with correct precedence hierarchy and provider-aware image cost calculation. [x]
+P4.1 Rename assistantTokens to assistantProviderTokens field. Files: core/models/messagePair.js, study/migrate-rename-assistant-tokens.js [x]
+P4.2 Add imageBudgets field to MessagePair for denormalized image metadata. Files: core/models/messagePair.js [x]
+P4.3 Populate imageBudgets when attaching images to new message. Files: features/interaction/inputKeys.js [x]
+P4.4 Rewrite estimatePairTokens() with correct text and image token precedence. Files: core/context/tokenEstimator.js [x]
+P4.5 Make estimator provider-aware for reading image costs. Files: core/context/tokenEstimator.js [x]
+P4.6 Update computeContextBoundary() to pass provider ID to estimator. Files: core/context/tokenEstimator.js [x]
 
-S3. Populate assistantChars on reply (DM3)
-- Files: features/interaction/inputKeys.js
-- After reply arrives, set assistantChars = (assistantText||'').length.
+P5. Code organization improvements. Extract complex send logic from keyboard handler and remove dead code. [x]
+P5.1 Extract send workflow from inputKeys.js to sendWorkflow.js. Files: features/interaction/inputKeys.js, features/compose/sendWorkflow.js [x]
+P5.2 Review and remove dead code including unused boundarySnapshot parameter. Files: features/compose/sendWorkflow.js, features/compose/pipeline.js [ ]
+P5.3 Fix WYSIWYG bug by updating boundary when pending model changes. Files: features/interaction/interaction.js [ ]
 
-S4. Estimator: char fallback (DM4)
-- Files: core/context/tokenEstimator.js
-- In estimatePairTokens, when textTokens missing, prefer (userChars+assistantChars)/cpt with _tokenCache guard.
+P6. Historical images in payload. Enable AI to reference images from conversation history by including them in API requests. [ ]
+P6.1 Collect image IDs from includedPairs in send workflow. Files: features/compose/sendWorkflow.js or features/compose/pipeline.js [ ]
+P6.2 Deduplicate image IDs across history and new message. Files: features/compose/sendWorkflow.js or features/compose/pipeline.js [ ]
+P6.3 Apply quota caps for MAX_IMAGES_PER_REQUEST and MAX_TOTAL_IMAGE_TOKENS. Files: features/compose/sendWorkflow.js or features/compose/pipeline.js [ ]
+P6.4 Use cached base64 from imageStore without re-encoding. Files: features/compose/sendWorkflow.js or features/compose/pipeline.js [ ]
+P6.5 Build payload with both historical and new images. Files: features/compose/pipeline.js [ ]
+P6.6 Add telemetry to log image counts and token usage to localStorage. Files: features/compose/sendWorkflow.js or features/compose/pipeline.js [ ]
 
-S5. Render plumbing for included IDs (A2)
-- Files: features/history/historyView.js, features/history/historyRuntime.js
-- Add optional renderMessages(messages, { includedPairIds }); pipe value without changing HTML yet.
+P7. Provider token assimilation. Use provider-reported token counts when available for improved accuracy. [ ]
+P7.1 Extract usage.completion_tokens from provider responses. Files: infrastructure/provider/openaiAdapter.js, anthropicAdapter.js, geminiAdapter.js, grokAdapter.js [ ]
+P7.2 Store provider tokens in pair.assistantProviderTokens after each reply. Files: features/compose/sendWorkflow.js [ ]
+P7.3 Update all provider adapters to extract and return usage data. Files: infrastructure/provider/*.js [ ]
+P7.4 Verify estimator uses provider tokens as highest precedence. Files: core/context/tokenEstimator.js [ ]
 
-S6. Stamp data-included attribute (A3)
-- Files: features/history/historyView.js
-- For each top-level .message (or part in message view), set data-included="1|0" when includedPairIds present.
+P8. Performance optimization and cleanup. Eliminate redundant operations and finalize implementation. [ ]
+P8.1 Implement sorted pair caching in MemoryStore to eliminate redundant sorts. Files: core/store/memoryStore.js [ ]
+P8.2 Remove duplicate sort in renderHistory(). Files: features/history/historyRuntime.js [ ]
+P8.3 Add optional performance logging for render times. Files: features/history/historyRuntime.js [ ]
+P8.4 Clean up commented-out code and legacy field references. Files: multiple [ ]
+P8.5 Update documentation with final architecture. Files: docs/context-boundary-and-image-budgeting.md [ ]
+P8.6 Verify all migration scripts tested and documented. Files: study/*.js [ ]
 
-S7. Inline ooc class (A4)
-- Files: features/history/historyView.js
-- Add class ooc when data-included="0". Keep legacy post-pass intact for now.
-
-S8. Inline off badge text (A5)
-- Files: features/history/historyView.js
-- When excluded, set assistant meta badge to "off" and data-offctx="1"; else clear.
-
-S9. Remove post-pass styling invocation (A6)
-- Files: features/history/historyRuntime.js
-- Stop calling applyOutOfContextStyling(); leave deprecated no-op for back-compat.
-
-S10. Boundary approximation flag to localStorage (A9)
-- Files: core/context/boundaryManager.js
-- After recompute, write maichat_dbg_boundary_approx = 'heuristic'|'mixed'|'provider'.
-
-S11. Stop writing new textTokens (DM5)
-- Files: features/interaction/inputKeys.js
-- Do not assign textTokens for new pairs; reading legacy values remains allowed.
-
-S12. Optional perf log for render (A11)
-- Files: features/history/historyRuntime.js
-- When ?perf=1, measure single innerHTML write and store ms in localStorage.maichat_dbg_render_ms.
-
-S13. Background hydration for chars (optional) (DM6)
-- Files: runtime/preloadState.js, runtime/runtimeSetup.js
-- After preload, batch-fill missing userChars/assistantChars from stored text; mark boundary dirty once.
-
-S14. Image record base64 field (DM7)
-- Files: features/images/imageStore.js
-- Add optional base64 { mime, data } to record shape; no migration yet.
-
-S15. Lazy base64 persistence (DM8)
-- Files: features/images/imageStore.js
-- encodeToBase64(id): if cached base64 present, return; else compute, store, and return.
-
-S16. Image tokenCost map (DM9)
-- Files: features/images/imageStore.js
-- Add optional tokenCost { [providerKey]: number } to record.
-
-S17. Compute/cache tokenCost on demand (DM10)
-- Files: features/compose/pipeline.js (send-time) and/or core/context/tokenEstimator.js (estimator path)
-- When tokenCost[providerKey] missing, compute via provider formula, persist, and use.
-
-S18. Estimator sums image costs for pairs (Phase B align)
-- Files: core/context/tokenEstimator.js
-- For pair attachments, sum image tokenCost for current pending model’s provider (compute+cache if missing).
-
-S19. Payload: include historical images (Phase C)
-- Files: features/compose/pipeline.js
-- Build attachments = images from included history pairs + new message; de-duplicate and cap per quotas; use cached base64.
-
-S20. Telemetry to localStorage for image send (Phase C)
-- Files: features/compose/pipeline.js
-- Persist compact debug: historyImageCount, historyImageTokenSum to maichat_dbg_pipeline_presend.
-
-S21. Provider usage assimilation (optional) (Phase D)
-- Files: infrastructure/provider/*Adapters.js, features/compose/pipeline.js, core/context/tokenEstimator.js
-- If provider returns usage tokens for assistant, store in assistantProviderTokens[providerModelKey]; estimator prefers it for that part.
-
-S22. Documentation and cleanup
-- Files: this document; remove reliance on textTokens in code paths where char/tokenCost are authoritative; note deprecation.
-
-- swapping messages - swapping budget counts.
-
-### Linear Progress Log (to update incrementally)
-- [ ] S1 schema extension
-- [ ] S2 userChars on create
-- [ ] S3 assistantChars on reply
-- [ ] S4 estimator char fallback
-- [ ] S5 render plumbing
-- [ ] S6 data-included attributes
-- [ ] S7 inline ooc class
-- [ ] S8 inline off badge
-- [ ] S9 remove post-pass
-- [ ] S10 boundary approx localStorage
-- [ ] S11 stop new textTokens writes
-- [ ] S12 perf log localStorage
-- [ ] S13 hydration for chars
-- [ ] S14 image base64 field
-- [ ] S15 lazy base64
-- [ ] S16 image tokenCost map
-- [ ] S17 compute/cache tokenCost
-- [ ] S18 estimator sums image costs
-- [ ] S19 payload historical images
-- [ ] S20 image telemetry localStorage
-- [ ] S21 provider usage assimilation
-- [ ] S22 docs & cleanup
-
-#### Data Model Update & Population (Explicit Steps)
-
-These steps ensure new fields exist and are populated safely, each scoped to ≤2–3 files.
-
-DM1. MessagePair schema extension
-- Files: `src/core/models/messagePair.js`
-- Add optional fields: `userChars`, `assistantChars`, `assistantProviderTokens` (map). Defaults undefined.
-- Note: No breaking reads; store is schemaless but we document defaults.
-
-DM2. Populate `userChars` on pair create
-- Files: `src/features/interaction/inputKeys.js`, `src/core/store/memoryStore.js` (only if constructor lives there)
-- When adding a pair, set `userChars = (userText||'').length`.
-
-DM3. Populate `assistantChars` on reply
-- Files: `src/features/interaction/inputKeys.js`
-- After provider reply, set `assistantChars = (assistantText||'').length`.
-
-DM4. Estimator char fallback
-- Files: `src/core/context/tokenEstimator.js`
-- In `estimatePairTokens`, if `textTokens` missing, prefer `(userChars+assistantChars)/cpt` with `_tokenCache` guard.
-
-DM5. Stop writing `textTokens` for new pairs
-- Files: `src/features/interaction/inputKeys.js`
-- Remove new writes to `textTokens`. Continue reading legacy values if present.
-
-DM6. Background hydration (optional, batch)
-- Files: `src/runtime/preloadState.js`, `src/runtime/runtimeSetup.js`
-- One-shot pass after preload: for pairs missing `userChars/assistantChars`, compute from current texts and `store.updatePair` in small chunks; mark boundaryMgr dirty once after batch.
-
-DM7. Image record base64 field
-- Files: `src/features/images/imageStore.js`
-- Extend stored record with optional `base64: { mime, data }`. Do not migrate existing; fill lazily.
-
-DM8. Persist base64 lazily
-- Files: `src/features/images/imageStore.js`
-- On encode helper `encodeToBase64(id)`: if already present in record, return cached; else compute, store, and return.
-
-DM9. Image tokenCost map
-- Files: `src/features/images/imageStore.js`
-- Add optional `tokenCost: { [providerKey]: number }`. No migration; compute lazily and persist.
-
-DM10. Compute & cache tokenCost
-- Files: `src/features/compose/pipeline.js` (send-time), later `src/core/context/tokenEstimator.js` (estimator path)
-- When image cost needed and missing: compute via provider formula, persist in record, use value.
-
-DM11. Boundary approximation visibility (localStorage)
-- Files: `src/core/context/boundaryManager.js`
-- After recompute, write `localStorage.maichat_dbg_boundary_approx = 'heuristic'|'mixed'|'provider'`.
-
-DM12. Progress logging
-- Files: this document
-- Maintain a checklist reflecting DM1–DM11 landing order.
-
-#### Data Model Progress Log (to update incrementally)
-- [ ] DM1 schema extension
-- [ ] DM2 userChars on create
-- [ ] DM3 assistantChars on reply
-- [ ] DM4 estimator char fallback
-- [ ] DM5 stop new textTokens writes
-- [ ] DM6 background hydration
-- [ ] DM7 image base64 field
-- [ ] DM8 lazy base64 persist
-- [ ] DM9 image tokenCost map
-- [ ] DM10 compute/cache tokenCost
-- [ ] DM11 boundary approx in localStorage
-- [ ] DM12 doc updated

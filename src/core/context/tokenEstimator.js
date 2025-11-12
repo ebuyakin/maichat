@@ -40,37 +40,64 @@ export function estimateImageTokens({ w, h }, providerId = 'openai', model = '')
   return estimator.estimateImageTokens({ w, h }, model)
 }
 
-export function estimatePairTokens(pair, charsPerToken = 4) {
-  // S4: Estimation precedence order (most accurate → fallback)
-  // 1. Cached totals (textTokens + attachmentTokens) — legacy or precomputed
-  // 2. Ground-truth char counts (userChars + assistantChars) — preferred when available
-  // 3. Heuristic from raw text lengths — legacy fallback with in-memory cache
-
-  const cachedText = typeof pair.textTokens === 'number' ? pair.textTokens : null
-  const cachedAttach = typeof pair.attachmentTokens === 'number' ? pair.attachmentTokens : null
-  if (cachedText != null || cachedAttach != null) {
-    return (cachedText || 0) + (cachedAttach || 0)
+/**
+ * Estimate total tokens for a message pair (user + assistant + images)
+ * 
+ * Precedence for text estimation:
+ * 1. assistantProviderTokens (if present) — provider-reported, highest priority
+ * 2. Ground-truth char counts (userChars, assistantChars) — preferred
+ * 3. Legacy textTokens cache — backward compat
+ * 4. Heuristic from current text lengths — last resort
+ * 
+ * Image tokens: uses denormalized imageBudgets for fast, synchronous lookup
+ * 
+ * @param {Object} pair - MessagePair object
+ * @param {number} charsPerToken - characters per token ratio (user setting)
+ * @param {string} providerId - provider ID for image token lookup (e.g., 'openai')
+ * @returns {number} estimated total tokens
+ */
+export function estimatePairTokens(pair, charsPerToken = 4, providerId = 'openai') {
+  let textTokens = 0
+  
+  // === ASSISTANT TOKENS ===
+  // Priority 1: Provider-reported tokens (highest accuracy)
+  if (typeof pair.assistantProviderTokens === 'number') {
+    textTokens += pair.assistantProviderTokens
   }
-
-  // Prefer ground-truth char counts when available
-  const hasChars = typeof pair.userChars === 'number' && typeof pair.assistantChars === 'number'
-  if (hasChars) {
-    const totalChars = (pair.userChars || 0) + (pair.assistantChars || 0)
-    return Math.max(1, Math.ceil(totalChars / charsPerToken))
+  // Priority 2: Ground-truth char count
+  else if (typeof pair.assistantChars === 'number') {
+    textTokens += Math.ceil(pair.assistantChars / charsPerToken)
   }
-
-  // Fallback: heuristic based on current texts; cache per-charsPerToken in-memory only
-  const uLen = (pair.userText || '').length
-  const aLen = (pair.assistantText || '').length
-  const cache = pair._tokenCache
-  if (cache && cache.cpt === charsPerToken && cache.uLen === uLen && cache.aLen === aLen)
-    return cache.tok
-  const total =
-    estimateTokens(pair.userText || '', charsPerToken) +
-    estimateTokens(pair.assistantText || '', charsPerToken)
-  pair._tokenCache = { cpt: charsPerToken, uLen, aLen, tok: total }
-  return total
+  // Priority 3: Legacy cache or heuristic
+  else {
+    textTokens += estimateTokens(pair.assistantText || '', charsPerToken)
+  }
+  
+  // === USER TOKENS ===
+  // Provider doesn't report user tokens, so use char-based estimation
+  if (typeof pair.userChars === 'number') {
+    textTokens += Math.ceil(pair.userChars / charsPerToken)
+  } else {
+    textTokens += estimateTokens(pair.userText || '', charsPerToken)
+  }
+  
+  // === IMAGE TOKENS ===
+  // Use denormalized imageBudgets for fast synchronous lookup
+  let imageTokens = 0
+  if (pair.imageBudgets && Array.isArray(pair.imageBudgets)) {
+    const providerKey = (providerId || 'openai').toLowerCase()
+    for (const imgBudget of pair.imageBudgets) {
+      imageTokens += imgBudget.tokenCost?.[providerKey] || 0
+    }
+  }
+  // Fallback: legacy attachmentTokens (single number, uses default provider formula)
+  else if (typeof pair.attachmentTokens === 'number') {
+    imageTokens = pair.attachmentTokens
+  }
+  
+  return textTokens + imageTokens
 }
+
 import { getContextWindow, getModelMeta } from '../models/modelCatalog.js'
 export function getModelBudget(model) {
   const cw = getContextWindow(model)
@@ -91,11 +118,16 @@ export function computeContextBoundary(
   const { maxContext } = budget
   const maxUsableRaw = maxContext
   const maxUsable = Math.max(0, maxUsableRaw - (assumedUserTokens || 0))
+  
+  // Get provider ID from model for image token estimation
+  const modelMeta = getModelMeta(model)
+  const providerId = modelMeta?.provider || 'openai'
+  
   let total = 0
   const included = []
   for (let i = orderedPairs.length - 1; i >= 0; i--) {
     const p = orderedPairs[i]
-    const pairTokens = estimatePairTokens(p, charsPerToken)
+    const pairTokens = estimatePairTokens(p, charsPerToken, providerId)
     if (total + pairTokens > maxUsable) {
       break
     }

@@ -15,7 +15,6 @@ import 'prismjs/components/prism-json'
 import 'prismjs/components/prism-sql'
 import 'prismjs/components/prism-yaml'
 import 'prismjs/components/prism-markdown'
-// Additional languages for broader coverage
 import 'prismjs/components/prism-clike'
 import 'prismjs/components/prism-java'
 import 'prismjs/components/prism-c'
@@ -42,6 +41,7 @@ import { registerInspector } from './instrumentation/inspector.js'
 import { preloadState } from './runtime/preloadState.js'
 import { buildAppHTML } from './runtime/appTemplate.js'
 
+// phase 01. add event listeners
 window.addEventListener('error', (e) => {
   try {
     console.error('[MaiChat] window error', e.error || e.message || e)
@@ -53,14 +53,14 @@ window.addEventListener('unhandledrejection', (e) => {
   } catch {}
 })
 
-// Initialize storage subsystems that must be ready before interaction wiring
+// phase 02. Initialize storage subsystems that must be ready before interaction wiring
 try {
   await initImageStore()
 } catch (e) {
   console.error('[MaiChat] imageStore init failed', e)
 }
 
-// Mode management
+// phase 03. Mode management
 const modeManager = createModeManager()
 window.__modeManager = modeManager
 window.__MODES = MODES
@@ -71,11 +71,11 @@ window.__MODES = MODES
 // SINGLE-PAINT RENDERING: Load all state, then render once
 // ──────────────────────────────────────────────────────────────────────────
 
-// Initialize runtime core (no DOM access yet)
+// phase 04. Initialize runtime core (no DOM access yet)
 const __core = initRuntimeCore()
 const { store, persistence, activeParts, pendingMessageMeta } = __core
 
-// Ensure persistence is initialized before preloading so store has topics/pairs
+// phase 05. Ensure persistence is initialized before preloading so store has topics/pairs
 try {
   await __core.persistence.init()
 } catch (e) {
@@ -84,7 +84,7 @@ try {
 // Preload all state needed for complete initial render
 const __preloadedState = await preloadState(store, { loadHistoryCount: true })
 
-// Hydrate runtime with preloaded metadata (for later use by interaction layer)
+// phase 06. Hydrate runtime with preloaded metadata (for later use by interaction layer)
 pendingMessageMeta.topicId = __preloadedState.pendingTopicId
 if (Array.isArray(__preloadedState.attachmentIds)) {
   pendingMessageMeta.attachments = __preloadedState.attachmentIds.slice()
@@ -96,14 +96,14 @@ if (__preloadedState.pendingModel) {
   } catch {}
 }
 
-// Build and inject complete HTML with all values populated
+// phase 07. Build and inject complete HTML with all values populated
 const appEl = document.querySelector('#app')
 if (!appEl) {
   console.error('[MaiChat] #app element missing')
 }
 appEl.innerHTML = buildAppHTML(__preloadedState)
 
-// Create loading overlay for bootstrap to remove (keeps bootstrap API unchanged)
+// phase 08. Create loading overlay for bootstrap to remove (keeps bootstrap API unchanged)
 const loadingEl = document.createElement('div')
 loadingEl.id = 'appLoading'
 loadingEl.style.display = 'none' // Hidden since we already painted
@@ -112,6 +112,7 @@ document.body.appendChild(loadingEl)
 // ──────────────────────────────────────────────────────────────────────────
 // Attach DOM-dependent pieces & wire runtime components
 // ──────────────────────────────────────────────────────────────────────────
+// phase 09. Build runtime
 const __runtime = attachDomBindings(__core)
 const historyRuntime = createHistoryRuntime(__runtime)
 try { window.__historyRuntime = historyRuntime } catch {}
@@ -124,7 +125,7 @@ const {
   renderStatus,
 } = historyRuntime
 
-// Do initial history render synchronously to avoid extra paints later
+// phase 10. Do initial history render synchronously to avoid extra paints later
 renderCurrentView({ preserveActive: false })
 requestAnimationFrame(layoutHistoryPane)
 // (currentTopicId handled inside interaction module now)
@@ -137,7 +138,7 @@ const commandErrEl = document.getElementById('commandError')
 const inputField = document.getElementById('inputField')
 const sendBtn = document.getElementById('sendBtn')
 
-// Debug overlays (dev-only, unified activation via ?hud=...)
+// phase 11. Debug overlays (dev-only, unified activation via ?hud=...)
 let requestDebug = {
   enable: () => {},
   toggle: () => {},
@@ -183,7 +184,7 @@ try {
   console.warn('[MaiChat] HUD setup skipped', e)
 }
 
-// Interaction layer (Step 6 extraction)
+// phase 12. Interaction layer (Step 6 extraction)
 const interaction = createInteraction({
   ctx: __runtime,
   dom: { commandInput, commandErrEl, inputField, sendBtn, historyPaneEl },
@@ -192,7 +193,7 @@ const interaction = createInteraction({
   hudRuntime,
 })
 
-// Optional console inspector (non-intrusive utility)
+// phase 13. Optional console inspector (non-intrusive utility)
 try { registerInspector(__runtime) } catch {}
 
 bindHistoryErrorActions(document.getElementById('history'), {
@@ -216,7 +217,8 @@ bindImageBadgeActions(document.getElementById('history'), {
     }
   },
 })
-// Preload settings
+
+// Phase 14. Preload settings
 const __initialSettings = getSettings()
 let __prevSettings = { ...__initialSettings }
 let __lastPF = __prevSettings.partFraction
@@ -276,7 +278,7 @@ function renderTopics() {
   /* hidden for now */
 }
 
-// App starter.
+// phase 15. App starter.
 bootstrap({ ctx: __runtime, historyRuntime, interaction, loadingEl, skipPersistenceInit: true, skipInitialRender: true }).then(() => {
   try {
     // Filter restoration now handled by bootstrap for cleaner initial load
@@ -293,7 +295,7 @@ installPointerModeSwitcher({
   isModalActiveFn: () => window.modalIsActive && window.modalIsActive(),
 })
 
-// Hang detector (5s) – if not complete, show diagnostic overlay
+// phase 16. Hang detector (5s) – if not complete, show diagnostic overlay
 setTimeout(() => {
   if (!window.__modeManager) {
     const el = document.getElementById('app')
@@ -305,4 +307,5 @@ setTimeout(() => {
   }
 }, 5000)
 
-// End slim main.js after Step 7
+//debugger 
+//window.debug = {modeManager, __core, store, activeParts, __runtime, historyRuntime, renderCurrentView,interaction,__initialSettings,}
