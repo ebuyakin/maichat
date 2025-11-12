@@ -14,18 +14,83 @@ import { get as getImage, encodeToBase64 } from '../images/imageStore.js'
 
 // Note: No global system policy. We rely solely on per-topic system messages.
 
-export function buildMessages({ includedPairs, newUserText }) {
+/**
+ * @typedef {import('../../shared/types.js').MessagePair} MessagePair
+ * @typedef {import('../../shared/types.js').Message} Message
+ */
+
+/**
+ * Build message array from pairs, embedding image IDs from pair data.
+ * 
+ * Extracts images from pair.imageBudgets (preferred) or pair.attachments (legacy),
+ * and embeds them in the corresponding user message object for provider adapters
+ * to attach to the correct historical messages.
+ * 
+ * @param {Object} params - Build parameters
+ * @param {Array<MessagePair>} params.includedPairs - Pairs to include in history (chronological)
+ * @param {string} [params.newUserText] - Text for new user message
+ * @param {Array<string>} [params.newUserAttachments] - Image IDs for new user message
+ * @returns {Array<Message>} Message array with embedded image references
+ */
+export function buildMessages({ includedPairs, newUserText, newUserAttachments = [] }) {
   const msgs = []
   for (const p of includedPairs) {
-    if (p.userText) msgs.push({ role: 'user', content: p.userText })
-    if (p.assistantText) msgs.push({ role: 'assistant', content: p.assistantText })
+    if (p.userText) {
+      // Extract image IDs from this pair (prefer imageBudgets, fallback to attachments)
+      const imageIds = []
+      if (Array.isArray(p.imageBudgets)) {
+        for (const imgBudget of p.imageBudgets) {
+          if (imgBudget.id) imageIds.push(imgBudget.id)
+        }
+      } else if (Array.isArray(p.attachments)) {
+        imageIds.push(...p.attachments)
+      }
+      
+      msgs.push({
+        role: 'user',
+        content: p.userText,
+        ...(imageIds.length > 0 && { attachments: imageIds })
+      })
+    }
+    if (p.assistantText) {
+      msgs.push({ role: 'assistant', content: p.assistantText })
+    }
   }
   if (newUserText) {
-    msgs.push({ role: 'user', content: newUserText })
+    msgs.push({
+      role: 'user',
+      content: newUserText,
+      ...(newUserAttachments.length > 0 && { attachments: newUserAttachments })
+    })
   }
   return msgs
 }
 
+/**
+ * Execute send request to provider with token estimation and overflow handling.
+ * 
+ * Orchestrates the complete send pipeline:
+ * - Builds message array from visible pairs
+ * - Estimates token usage (text + images)
+ * - Checks context window limits
+ * - Trims oldest pairs iteratively if overflow
+ * - Calls provider adapter with final payload
+ * - Returns assistant response
+ * 
+ * @param {Object} params - Send parameters
+ * @param {Object} params.store - Message pair store
+ * @param {string} params.model - Model identifier (e.g., 'gpt-4', 'gemini-2.0-flash-exp')
+ * @param {string} params.topicId - Topic ID for retrieving system message
+ * @param {string} params.userText - New user message text
+ * @param {AbortSignal} params.signal - Abort signal for cancellation (Ctrl+C)
+ * @param {Array<MessagePair>} params.visiblePairs - All pairs in current filtered view (chronological)
+ * @param {Array<string>} [params.attachments] - Image IDs for new user message only
+ * @param {boolean} [params.topicWebSearchOverride] - Override topic web search setting
+ * @param {Object} [params.boundarySnapshot] - Unused legacy parameter (to be removed)
+ * @param {Function} [params.onDebugPayload] - Debug callback(payload) for telemetry
+ * @returns {Promise<{content: string}>} Assistant response object
+ * @throws {Error} Throws if user prompt too large or context overflow after trimming
+ */
 export async function executeSend({
   store,
   model,
