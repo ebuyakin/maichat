@@ -9,7 +9,7 @@ export function createGrokAdapter() {
   return {
     /** @param {import('./adapter.js').ChatRequest} req */
     async sendChat(req) {
-      const { model, messages, system, apiKey, signal, options, attachments = [], helpers } = req
+      const { model, messages, system, apiKey, signal, options, helpers } = req
       const now =
         (typeof performance !== 'undefined' && performance.now.bind(performance)) || Date.now
       const t0 = now()
@@ -22,25 +22,16 @@ export function createGrokAdapter() {
       // Build message array
       const msgArr = system ? [{ role: 'system', content: system }, ...messages] : messages
 
-      // Build request body (Chat Completions-compatible). If attachments present,
-      // transform the last user message content into an array of parts: text + image_url parts.
+      // Build request body with images embedded in correct user messages
       const body = {
         model,
         messages: await (async () => {
-          // Clone with potential transformation of the last user message only
-          let lastUserIdx = -1
-          for (let i = msgArr.length - 1; i >= 0; i--) {
-            if (msgArr[i] && msgArr[i].role === 'user') {
-              lastUserIdx = i
-              break
-            }
-          }
           const out = []
-          for (let i = 0; i < msgArr.length; i++) {
-            const m = msgArr[i]
-            if (i === lastUserIdx && attachments && attachments.length > 0 && helpers?.encodeImage) {
+          for (const m of msgArr) {
+            // If this user message has attachments, transform content to array of parts
+            if (m.role === 'user' && m.attachments && m.attachments.length > 0 && helpers?.encodeImage) {
               const parts = [{ type: 'text', text: m.content || '' }]
-              for (const id of attachments) {
+              for (const id of m.attachments) {
                 try {
                   const { mime, data } = await helpers.encodeImage(id)
                   const url = `data:${mime};base64,${data}`

@@ -190,7 +190,11 @@ export async function executeSend({
     inputTokens: finalResult.inputTokens,
     remainingContext: finalResult.remainingContext,
   }
-  const baseMessages = buildMessages({ includedPairs, newUserText: userText })
+  const baseMessages = buildMessages({ 
+    includedPairs, 
+    newUserText: userText,
+    newUserAttachments: attachments 
+  })
   const provider = getProvider(providerId)
   const apiKey = getApiKey(providerId)
 
@@ -280,7 +284,11 @@ export async function executeSend({
   const maxAttempts = settings.maxTrimAttempts || 10
   const t0 = Date.now()
   while (true) {
-    const msgs = buildMessages({ includedPairs: workingProviderPairs, newUserText: userText })
+    const msgs = buildMessages({ 
+      includedPairs: workingProviderPairs, 
+      newUserText: userText,
+      newUserAttachments: attachments 
+    })
     attemptsUsed++
     emitDebug({
       ...baseDebugCore(),
@@ -303,6 +311,23 @@ export async function executeSend({
 
       // DEBUG. Persist a pre-send debug snapshot to localStorage (provider-agnostic)
       try {
+        // Count images per message for telemetry
+        let totalImages = 0
+        const messagesWithImages = []
+        for (let i = 0; i < msgs.length; i++) {
+          const m = msgs[i]
+          const imageCount = Array.isArray(m.attachments) ? m.attachments.length : 0
+          if (imageCount > 0) {
+            totalImages += imageCount
+            messagesWithImages.push({
+              index: i,
+              role: m.role,
+              imageCount,
+              imageIds: m.attachments
+            })
+          }
+        }
+        
         const dbg = {
           at: Date.now(),
           provider: providerId,
@@ -310,11 +335,12 @@ export async function executeSend({
           systemLen: (topicSystem || '').length,
           messages: (msgs || []).map((m) => ({
             role: m.role,
-            // store previews only to limit size
             contentPreview: typeof m.content === 'string' ? m.content.slice(0, 400) : String(m.content).slice(0, 200),
             contentLength: typeof m.content === 'string' ? m.content.length : undefined,
+            imageCount: Array.isArray(m.attachments) ? m.attachments.length : 0,
           })),
-          attachmentsCount: Array.isArray(attachments) ? attachments.length : 0,
+          totalImages,
+          messagesWithImages,
         }
         localStorage.setItem('maichat_dbg_pipeline_presend', JSON.stringify(dbg))
       } catch {}
@@ -322,14 +348,13 @@ export async function executeSend({
       // API call:
       result = await provider.sendChat({
         model,
-        messages: msgs,
+        messages: msgs,  // Now contains attachments per message
         system: topicSystem || undefined,
         apiKey,
         signal,
         options,
         budget,
         meta,
-        attachments,
         helpers: {
           encodeImage: encodeToBase64,
         },

@@ -18,7 +18,6 @@ export function createAnthropicAdapter() {
         options,
         budget,
         userOverrides,
-        attachments = [],
         helpers,
       } = req
       if (!apiKey) throw new ProviderError('missing api key', 'auth', 401)
@@ -40,23 +39,16 @@ export function createAnthropicAdapter() {
         }
         normalized.push(m)
       }
-      // Build Messages API payload and append image blocks to the last user turn (if any)
-      let lastUserIdx = -1
-      for (let i = normalized.length - 1; i >= 0; i--) {
-        if (normalized[i] && normalized[i].role === 'user') {
-          lastUserIdx = i
-          break
-        }
-      }
+      // Build Messages API payload with images embedded in correct user messages
       const msgPayload = []
-      for (let i = 0; i < normalized.length; i++) {
-        const m = normalized[i]
+      for (const m of normalized) {
         const entry = {
           role: m.role,
           content: [{ type: 'text', text: m.content }],
         }
-        if (i === lastUserIdx && attachments && attachments.length > 0 && helpers?.encodeImage) {
-          for (const id of attachments) {
+        // If this user message has attachments, add them as image blocks
+        if (m.role === 'user' && m.attachments && m.attachments.length > 0 && helpers?.encodeImage) {
+          for (const id of m.attachments) {
             try {
               const { mime, data } = await helpers.encodeImage(id)
               entry.content.push({ type: 'image', source: { type: 'base64', media_type: mime, data } })

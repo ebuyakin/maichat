@@ -13,7 +13,7 @@ export function createOpenAIAdapter() {
   return {
     /** @param {import('./adapter.js').ChatRequest} req */
     async sendChat(req) {
-      const { model, messages, system, apiKey, signal, options, attachments = [], helpers } = req
+      const { model, messages, system, apiKey, signal, options, helpers } = req
       const now =
         (typeof performance !== 'undefined' && performance.now.bind(performance)) || Date.now
       const t0 = now()
@@ -23,19 +23,10 @@ export function createOpenAIAdapter() {
       // Responses API: keep system separately in `instructions`; do not inject a system turn
       const msgArr = messages
 
-      // Build Responses API payload with optional image parts on the last user message
+      // Build Responses API payload with image parts embedded in correct user messages
       const mkContentBlocks = async (arr) => {
-        // Find last user index
-        let lastUserIdx = -1
-        for (let i = arr.length - 1; i >= 0; i--) {
-          if (arr[i] && arr[i].role === 'user') {
-            lastUserIdx = i
-            break
-          }
-        }
         const out = []
-        for (let i = 0; i < arr.length; i++) {
-          const m = arr[i]
+        for (const m of arr) {
           const base = {
             role: m.role,
             content: [
@@ -45,21 +36,19 @@ export function createOpenAIAdapter() {
               },
             ],
           }
-          // If this is the last user turn and we have attachments, append image parts
-          if (i === lastUserIdx && attachments && attachments.length > 0 && helpers?.encodeImage) {
-            try {
-              for (const id of attachments) {
-                try {
-                  const { mime, data } = await helpers.encodeImage(id)
-                  const url = `data:${mime};base64,${data}`
-                  // OpenAI Responses API expects image_url to be a string (data URL), not an object
-                  base.content.push({ type: 'input_image', image_url: url })
-                } catch (e) {
-                  // Skip failed encodes; continue with remaining images
-                  if (typeof console !== 'undefined') console.warn('[openai] skip image', id, e)
-                }
+          // If this user message has attachments, add them as image parts
+          if (m.role === 'user' && m.attachments && m.attachments.length > 0 && helpers?.encodeImage) {
+            for (const id of m.attachments) {
+              try {
+                const { mime, data } = await helpers.encodeImage(id)
+                const url = `data:${mime};base64,${data}`
+                // OpenAI Responses API expects image_url to be a string (data URL), not an object
+                base.content.push({ type: 'input_image', image_url: url })
+              } catch (e) {
+                // Skip failed encodes; continue with remaining images
+                if (typeof console !== 'undefined') console.warn('[openai] skip image', id, e)
               }
-            } catch {}
+            }
           }
           out.push(base)
         }
