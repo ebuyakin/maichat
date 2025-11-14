@@ -71,9 +71,21 @@ export function createGrokAdapter() {
       // Debug payload capture
       try {
         if (typeof window !== 'undefined') {
-          window.__maichatLastRequest = { at: Date.now(), model, json: payloadStr }
+          const now = Date.now()
+          window.__maichatLastRequest = {
+            timestamp: now,
+            timestampISO: new Date(now).toISOString(),
+            model,
+            json: payloadStr
+          }
           try {
-            localStorage.setItem('maichat_dbg_grok_request', payloadStr)
+            localStorage.setItem('maichat_dbg_grok_request', JSON.stringify({
+              timestamp: now,
+              timestampISO: new Date(now).toISOString(),
+              model,
+              provider: 'grok',
+              payload: JSON.parse(payloadStr)
+            }))
           } catch {}
         }
       } catch {}
@@ -131,7 +143,14 @@ export function createGrokAdapter() {
       
       // Persist response for debugging
       try {
-        localStorage.setItem('maichat_dbg_grok_response', JSON.stringify(data))
+        const now = Date.now()
+        localStorage.setItem('maichat_dbg_grok_response', JSON.stringify({
+          timestamp: now,
+          timestampISO: new Date(now).toISOString(),
+          model,
+          provider: 'grok',
+          response: data
+        }))
       } catch {}
       
       const content = data.choices?.[0]?.message?.content || ''

@@ -1,3 +1,5 @@
+//@ts-check
+//@ts-nocheck
 /**
  * Send Workflow - High-level orchestration for sending a new message
  * 
@@ -23,6 +25,18 @@ import { getMany as getImagesByIds } from '../images/imageStore.js'
 import { estimateImageTokens } from '../../core/context/tokenEstimator.js'
 
 /**
+ * @typedef {import('../../shared/types.js').MemoryStore} MemoryStore
+ * @typedef {import('../../shared/types.js').AppSettings} AppSettings
+ * @typedef {import('../../shared/types.js').MessagePair} MessagePair
+ * @typedef {import('../../shared/types.js').Lifecycle} Lifecycle
+ * @typedef {import('../../shared/types.js').BoundaryManager} BoundaryManager
+ * @typedef {import('../../shared/types.js').HistoryRuntime} HistoryRuntime
+ * @typedef {import('../../shared/types.js').ActiveParts} ActiveParts
+ * @typedef {import('../../shared/types.js').ScrollController} ScrollController
+ * @typedef {import('../../shared/types.js').RequestDebug} RequestDebug
+ */
+
+/**
  * Execute the complete send workflow
  * 
  * @param {Object} params - Workflow parameters
@@ -31,22 +45,21 @@ import { estimateImageTokens } from '../../core/context/tokenEstimator.js'
  * @param {string} params.model - Model ID to use
  * @param {string[]} params.attachments - Array of image IDs
  * @param {string|null} params.editingId - Pair ID if editing/re-asking
- * @param {string|undefined} params.webSearchOverride - Topic-level web search override
+ * @param {boolean|undefined} params.webSearchOverride - Topic-level web search override
  * @param {Set<string>} params.beforeIncludedIds - Pre-send boundary included pair IDs
  * 
- * @param {Object} deps - Injected dependencies
- * @param {Object} deps.store - Message store
- * @param {Object} deps.lifecycle - Lifecycle manager
- * @param {Object} deps.boundaryMgr - Boundary manager
- * @param {Object} deps.historyRuntime - History runtime
- * @param {Object} deps.activeParts - Active parts manager
- * @param {Object} deps.scrollController - Scroll controller
- * @param {Object} deps.requestDebug - Request debug manager
- * @param {Function} deps.updateSendDisabled - Update send button state
- * @param {Function} deps.getSettings - Get current settings
- * @param {Function} deps.sanitizeDisplayPreservingTokens - Sanitize with token preservation
- * @param {Function} deps.escapeHtmlAttr - Escape HTML attributes
- * @param {Function} deps.escapeHtml - Escape HTML
+ * @param {MemoryStore} params.store - Message store
+ * @param {Lifecycle} params.lifecycle - Lifecycle manager
+ * @param {BoundaryManager} params.boundaryMgr - Boundary manager
+ * @param {HistoryRuntime} params.historyRuntime - History runtime
+ * @param {ActiveParts} params.activeParts - Active parts manager
+ * @param {ScrollController} params.scrollController - Scroll controller
+ * @param {RequestDebug} params.requestDebug - Request debug manager
+ * @param {Function} params.updateSendDisabled - Update send button state
+ * @param {() => AppSettings} params.getSettings - Get current settings
+ * @param {Function} params.sanitizeDisplayPreservingTokens - Sanitize with token preservation
+ * @param {Function} params.escapeHtmlAttr - Escape HTML attributes
+ * @param {Function} params.escapeHtml - Escape HTML
  * 
  * @returns {Promise<string>} Created pair ID
  */
@@ -113,13 +126,12 @@ export async function executeSendWorkflow({
 
     try {
       const currentPairs = activeParts.parts
-        .map((pt) => store.pairs.get(pt.pairId))
+        .map((/** @type {any} */ pt) => store.pairs.get(pt.pairId))
         .filter(Boolean)
-      const chrono = [...new Set(currentPairs)].sort((a, b) => a.createdAt - b.createdAt)
+      const chrono = [...new Set(currentPairs)].sort((/** @type {MessagePair} */ a, /** @type {MessagePair} */ b) => a.createdAt - b.createdAt)
       boundaryMgr.updateVisiblePairs(chrono)
       boundaryMgr.setModel(model)
       boundaryMgr.applySettings(getSettings())
-      const boundarySnapshot = boundaryMgr.getBoundary()
       const tStart = Date.now()
       
       // Compute image budgets and attachmentTokens before calling provider
@@ -158,8 +170,7 @@ export async function executeSendWorkflow({
         visiblePairs: chrono,
         attachments: attachments,
         topicWebSearchOverride: webSearchOverride,
-        boundarySnapshot,
-        onDebugPayload: (payload) => {
+        onDebugPayload: (/** @type {any} */ payload) => {
           historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount)
           requestDebug.setPayload(payload)
           historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length)
@@ -171,11 +182,11 @@ export async function executeSendWorkflow({
       
       // === RESPONSE PROCESSING ===
       // 1. Code extraction first
-      const codeExtraction = extractCodeBlocks(rawText)
+      const codeExtraction = /** @type {any} */ (extractCodeBlocks(rawText))
       const afterCode = codeExtraction.hasCode ? codeExtraction.displayText : rawText
       
       // 2. Equation extraction (markers for simple inline)
-      const eqResult = extractEquations(afterCode, { inlineMode: 'markers' })
+      const eqResult = /** @type {any} */ (extractEquations(afterCode, { inlineMode: 'markers' }))
       const afterEq = eqResult.displayText // contains [eq-n] placeholders + __EQINL_X__ markers
       
       // 3. Segmented sanitize (skip placeholders & markers)
@@ -194,22 +205,23 @@ export async function executeSendWorkflow({
       finalDisplay = finalDisplay.replace(/\s*\[([a-z0-9_]+-\d+|eq-\d+)\]\s*/gi, ' [$1] ')
       finalDisplay = finalDisplay.replace(/ {2,}/g, ' ')
 
-      const updateData = {
+      const updateData = /** @type {any} */ ({
         assistantText: rawText,
         lifecycleState: 'complete',
         errorMessage: undefined,
         // S3: Populate assistantChars (ground truth char count)
         assistantChars: (rawText || '').length,
-      }
+      })
       
       // Persist citations if provided by provider (e.g., Grok/Gemini with search enabled)
-      if (Array.isArray(execResult.citations) && execResult.citations.length) {
-        updateData.citations = execResult.citations
+      const execResultAny = /** @type {any} */ (execResult)
+      if (Array.isArray(execResultAny.citations) && execResultAny.citations.length) {
+        updateData.citations = execResultAny.citations
       }
       
       // Persist citation titles map when available (url -> title)
-      if (execResult.citationsMeta && typeof execResult.citationsMeta === 'object') {
-        updateData.citationsMeta = execResult.citationsMeta
+      if (execResultAny.citationsMeta && typeof execResultAny.citationsMeta === 'object') {
+        updateData.citationsMeta = execResultAny.citationsMeta
       }
       
       if (codeExtraction.hasCode) {
@@ -288,12 +300,12 @@ export async function executeSendWorkflow({
       // Boundary trim notification
       if (getSettings().showTrimNotice) {
         boundaryMgr.updateVisiblePairs(
-          store.getAllPairs().sort((a, b) => a.createdAt - b.createdAt)
+          store.getAllPairs().sort((/** @type {MessagePair} */ a, /** @type {MessagePair} */ b) => a.createdAt - b.createdAt)
         )
         boundaryMgr.setModel(model)
         boundaryMgr.applySettings(getSettings())
         const postBoundary = boundaryMgr.getBoundary()
-        const afterIncludedIds = new Set(postBoundary.included.map((p) => p.id))
+        const afterIncludedIds = new Set(postBoundary.included.map((/** @type {MessagePair} */ p) => p.id))
         let trimmed = 0
         beforeIncludedIds.forEach((pid) => {
           if (!afterIncludedIds.has(pid)) trimmed++

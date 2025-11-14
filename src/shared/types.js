@@ -107,5 +107,92 @@
  * @property {number} stats.availableTokens - Remaining tokens for user request
  */
 
+/**
+ * Application settings object.
+ * User-configurable parameters for token estimation and context management.
+ * 
+ * @typedef {Object} AppSettings
+ * @property {number} [charsPerToken] - Characters per token ratio (default 4)
+ * @property {number} [userRequestAllowance] - Reserved tokens for user request
+ * @property {number} [assistantResponseAllowance] - Reserved tokens for assistant response
+ * @property {number} [maxTrimAttempts] - Max retry attempts for context overflow (default 10)
+ * @property {number} [requestTimeoutSec] - Request timeout in seconds (default 120)
+ * @property {boolean} [showTrimNotice] - Show notification when history is trimmed
+ * @property {string} [topicOrderMode] - Topic tree sort mode ('manual' | 'recent')
+ */
+
+/**
+ * Memory store interface for message pairs and topics.
+ * Central data store for all conversation history and topic hierarchy.
+ * 
+ * @typedef {Object} MemoryStore
+ * @property {Map} pairs - Pair map with get/set methods
+ * @property {Map} topics - Topic map with get/set/has methods
+ * @property {string} rootTopicId - ID of the root topic
+ * @property {Function} getAllPairs - Get all message pairs sorted by creation time
+ * @property {Function} addMessagePair - Add new message pair, returns pair ID
+ * @property {Function} updatePair - Update a message pair by ID
+ * @property {Function} removePair - Remove a message pair by ID
+ * @property {Function} [getAllTopics] - Optional: get all topics as array
+ */
+
+/**
+ * Lifecycle manager for send/receive workflow state.
+ * Controls UI state during message exchange and coordinates updates.
+ * 
+ * @typedef {Object} Lifecycle
+ * @property {Function} beginSend - Mark send operation as started
+ * @property {Function} completeSend - Mark send operation as complete
+ * @property {Function} handleNewAssistantReply - Handle successful reply with pair ID
+ */
+
+/**
+ * Context boundary manager.
+ * Calculates which message pairs fit in model's context window.
+ * 
+ * @typedef {Object} BoundaryManager
+ * @property {Function} updateVisiblePairs - Update with current visible pairs
+ * @property {Function} setModel - Set current model for context calculation
+ * @property {Function} applySettings - Apply settings for boundary calculation
+ * @property {Function} getBoundary - Get current boundary (included/excluded pairs)
+ */
+
+/**
+ * History runtime manager.
+ * Manages history view rendering, active message state, and debug info.
+ * 
+ * @typedef {Object} HistoryRuntime
+ * @property {Function} renderCurrentView - Render history view with options
+ * @property {Function} setSendDebug - Set debug info for current send
+ * @property {Function} updateMessageCount - Update message count display
+ * @property {Function} getPredictedCount - Get predicted message count
+ * @property {Function} applyActiveMessage - Apply active message highlighting
+ */
+
+/**
+ * Active parts manager.
+ * Tracks which message part is currently active/selected.
+ * 
+ * @typedef {Object} ActiveParts
+ * @property {Array} parts - Array of active part objects with pairId
+ * @property {Function} setActiveById - Set active part by ID
+ */
+
+/**
+ * Scroll controller.
+ * Manages scrolling behavior for history view.
+ * 
+ * @typedef {Object} ScrollController
+ * @property {Function} scrollToBottom - Scroll to bottom of history
+ */
+
+/**
+ * Request debug overlay manager.
+ * Manages debug information display for requests.
+ * 
+ * @typedef {Object} RequestDebug
+ * @property {Function} setPayload - Set current request payload for debug display
+ */
+
 // Export empty object to make this a proper ES module
 export {}

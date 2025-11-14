@@ -81,22 +81,30 @@ export function createGeminiAdapter() {
       try {
         // 3) Generation config (temperature, max tokens)
         if (typeof window !== 'undefined') {
+          const now = Date.now()
           window.__maichatLastRequest = {
-            at: Date.now(),
+            timestamp: now,
+            timestampISO: new Date(now).toISOString(),
             model,
             json: payloadStr,
             provider: 'gemini'
           }
           // Persist last request payload for easy DevTools inspection
           try {
-            localStorage.setItem('maichat_dbg_gemini_request', payloadStr)
+            localStorage.setItem('maichat_dbg_gemini_request', JSON.stringify({
+              timestamp: now,
+              timestampISO: new Date(now).toISOString(),
+              model,
+              provider: 'gemini',
+              payload: JSON.parse(payloadStr)
+            }))
           } catch {}
         }
       } catch {}
           // 4) Enable Google Search grounding when requested
           // Matches working Python payload shape: a single tool object with only googleSearch
 
-
+      // FETCH
       let resp
       try {
         tFetchStart = now()
@@ -110,24 +118,71 @@ export function createGeminiAdapter() {
           signal,
         })
         tFetchEnd = now()
+        
+        // Debug: capture raw response immediately
+        try {
+          const debugNow = Date.now()
+          localStorage.setItem('maichat_dbg_gemini_fetch', JSON.stringify({
+            timestamp: debugNow,
+            timestampISO: new Date(debugNow).toISOString(),
+            status: resp.status,
+            statusText: resp.statusText,
+            ok: resp.ok,
+            headers: Object.fromEntries(resp.headers.entries()),
+          }))
+        } catch {}
+        
       } catch (ex) {
         tFetchEnd = now()
-        throw new ProviderError('network error', 'network')
+        
+        // Debug: capture fetch exception
+        try {
+          const debugNow = Date.now()
+          localStorage.setItem('maichat_dbg_gemini_fetch_error', JSON.stringify({
+            timestamp: debugNow,
+            timestampISO: new Date(debugNow).toISOString(),
+            name: ex?.name,
+            message: ex?.message,
+            stack: ex?.stack,
+          }))
+        } catch {}
+        
+        // Preserve actual error details instead of generic "network error"
+        const errorMsg = ex?.message || 'Network error'
+        const err = new ProviderError(errorMsg, 'network')
+        err.originalError = ex
+        throw err
       }
 
       if (!resp.ok) {
         const kind = classifyError(resp.status)
         let msg = `${resp.status}`
         let code = undefined
+        let errorBody
         try {
           tParseStart = now()
           const j = await resp.json()
           tParseEnd = now()
+          errorBody = j
           if (j.error) {
             if (j.error.message) msg = j.error.message
             if (j.error.code) code = j.error.code
           }
         } catch {}
+        
+        // Debug: capture error response body
+        try {
+          const debugNow = Date.now()
+          localStorage.setItem('maichat_dbg_gemini_error_response', JSON.stringify({
+            timestamp: debugNow,
+            timestampISO: new Date(debugNow).toISOString(),
+            status: resp.status,
+            errorBody,
+            extractedMessage: msg,
+            extractedCode: code,
+          }))
+        } catch {}
+        
         const err = new ProviderError(msg, kind, resp.status)
         if (code) err.providerCode = code
         err.__timing = {
@@ -149,15 +204,23 @@ export function createGeminiAdapter() {
       // Dev aid: expose last raw provider response for console inspection
       try {
         if (typeof window !== 'undefined') {
+          const now = Date.now()
           window.__maichatLastResponse = {
-            at: Date.now(),
+            timestamp: now,
+            timestampISO: new Date(now).toISOString(),
             model,
             provider: 'gemini',
             json: JSON.stringify(data),
           }
           // Persist last raw response for easy DevTools inspection
           try {
-            localStorage.setItem('maichat_dbg_gemini_response', JSON.stringify(data))
+            localStorage.setItem('maichat_dbg_gemini_response', JSON.stringify({
+              timestamp: now,
+              timestampISO: new Date(now).toISOString(),
+              model,
+              provider: 'gemini',
+              response: data
+            }))
           } catch {}
         }
       } catch {}

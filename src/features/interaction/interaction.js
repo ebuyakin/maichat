@@ -1,5 +1,5 @@
-// interaction.js moved from ui/interaction/interaction.js (Phase 6.2 Interaction)
-// NOTE: Imports updated to new feature/ and core paths.
+// file purpose?
+
 import { parse } from '../command/parser.js'
 import { hasUnargumentedTopicFilter, hasUnargumentedModelFilter } from '../command/parser.js'
 import { evaluate } from '../command/evaluator.js'
@@ -973,7 +973,6 @@ export function createInteraction({
       boundaryMgr.updateVisiblePairs(chrono)
       boundaryMgr.setModel(model || getActiveModel())
       boundaryMgr.applySettings(getSettings())
-      const boundarySnapshot = boundaryMgr.getBoundary()
       const tStart = Date.now()
       const execResult = await executeSend({
         store,
@@ -984,7 +983,6 @@ export function createInteraction({
         visiblePairs: chrono,
         attachments: Array.isArray(pair.attachments) ? pair.attachments.slice() : [],
         topicWebSearchOverride: undefined,
-        boundarySnapshot,
         onDebugPayload: (payload) => {
           historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount)
           requestDebug.setPayload(payload)

@@ -96,14 +96,23 @@ export function createAnthropicAdapter() {
       // Parity debug hook (similar to OpenAI adapter) – capture last outbound request (sans auth headers)
       try {
         if (typeof window !== 'undefined') {
+          const now = Date.now()
           window.__maichatLastRequest = {
-            at: Date.now(),
+            timestamp: now,
+            timestampISO: new Date(now).toISOString(),
             model,
             json: payloadStr,
             placeholderInsertions: insertedPlaceholders,
           }
           try {
-            localStorage.setItem('maichat_dbg_anthropic_request', payloadStr)
+            localStorage.setItem('maichat_dbg_anthropic_request', JSON.stringify({
+              timestamp: now,
+              timestampISO: new Date(now).toISOString(),
+              model,
+              provider: 'anthropic',
+              placeholderInsertions: insertedPlaceholders,
+              payload: JSON.parse(payloadStr)
+            }))
           } catch {}
         }
       } catch {}
@@ -134,7 +143,14 @@ export function createAnthropicAdapter() {
       const data = await resp.json()
       // Persist response for debugging
       try {
-        localStorage.setItem('maichat_dbg_anthropic_response', JSON.stringify(data))
+        const now = Date.now()
+        localStorage.setItem('maichat_dbg_anthropic_response', JSON.stringify({
+          timestamp: now,
+          timestampISO: new Date(now).toISOString(),
+          model,
+          provider: 'anthropic',
+          response: data
+        }))
       } catch {}
       // Anthropic content is an array of blocks; join text blocks for display
       let text = ''

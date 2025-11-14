@@ -69,14 +69,22 @@ export function createOpenAIAdapter() {
       // Debug hook: capture last outbound request (sans auth headers)
       try {
         if (typeof window !== 'undefined') {
+          const now = Date.now()
           window.__maichatLastRequest = {
-            at: Date.now(),
+            timestamp: now,
+            timestampISO: new Date(now).toISOString(),
             provider: 'openai',
             model,
             json: payloadStr,
           }
           try {
-            localStorage.setItem('maichat_dbg_openai_request', payloadStr)
+            localStorage.setItem('maichat_dbg_openai_request', JSON.stringify({
+              timestamp: now,
+              timestampISO: new Date(now).toISOString(),
+              model,
+              provider: 'openai',
+              payload: JSON.parse(payloadStr)
+            }))
           } catch {}
         }
       } catch {}
@@ -119,15 +127,24 @@ export function createOpenAIAdapter() {
           // Debug: capture last error response
           try {
             if (typeof window !== 'undefined') {
+              const now = Date.now()
               window.__maichatLastResponse = {
-                at: Date.now(),
+                timestamp: now,
+                timestampISO: new Date(now).toISOString(),
                 provider: 'openai',
                 model,
                 status: resp.status,
                 json: JSON.stringify(j),
               }
               try {
-                localStorage.setItem('maichat_dbg_openai_response', JSON.stringify(j))
+                localStorage.setItem('maichat_dbg_openai_response', JSON.stringify({
+                  timestamp: now,
+                  timestampISO: new Date(now).toISOString(),
+                  model,
+                  provider: 'openai',
+                  status: resp.status,
+                  response: j
+                }))
               } catch {}
             }
           } catch {}
@@ -152,15 +169,24 @@ export function createOpenAIAdapter() {
       // Debug: capture last successful response
       try {
         if (typeof window !== 'undefined') {
+          const now = Date.now()
           window.__maichatLastResponse = {
-            at: Date.now(),
+            timestamp: now,
+            timestampISO: new Date(now).toISOString(),
             provider: 'openai',
             model,
             status: resp.status,
             json: JSON.stringify(data),
           }
           try {
-            localStorage.setItem('maichat_dbg_anthropic_response', JSON.stringify(data))
+            localStorage.setItem('maichat_dbg_openai_response', JSON.stringify({
+              timestamp: now,
+              timestampISO: new Date(now).toISOString(),
+              model,
+              provider: 'openai',
+              status: resp.status,
+              response: data
+            }))
           } catch {}
         }
       } catch {}

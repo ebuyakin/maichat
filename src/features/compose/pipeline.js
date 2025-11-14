@@ -1,5 +1,6 @@
-// pipeline.js moved from send/pipeline.js (Phase 6.5 Compose)
-// Adjusted import paths to new relative locations.
+//@ts-check
+//@ts-nocheck
+
 import { getProvider, ProviderError } from '../../infrastructure/provider/adapter.js'
 import {
   estimateTokens,
@@ -17,6 +18,8 @@ import { get as getImage, encodeToBase64 } from '../images/imageStore.js'
 /**
  * @typedef {import('../../shared/types.js').MessagePair} MessagePair
  * @typedef {import('../../shared/types.js').Message} Message
+ * @typedef {import('../../shared/types.js').AppSettings} AppSettings
+ * @typedef {import('../../shared/types.js').MemoryStore} MemoryStore
  */
 
 /**
@@ -63,7 +66,7 @@ export function buildMessages({ includedPairs, newUserText, newUserAttachments =
       ...(newUserAttachments.length > 0 && { attachments: newUserAttachments })
     })
   }
-  return msgs
+  return /** @type {Message[]} */ (msgs)
 }
 
 /**
@@ -78,7 +81,7 @@ export function buildMessages({ includedPairs, newUserText, newUserAttachments =
  * - Returns assistant response
  * 
  * @param {Object} params - Send parameters
- * @param {Object} params.store - Message pair store
+ * @param {MemoryStore} params.store - Message pair store
  * @param {string} params.model - Model identifier (e.g., 'gpt-4', 'gemini-2.0-flash-exp')
  * @param {string} params.topicId - Topic ID for retrieving system message
  * @param {string} params.userText - New user message text
@@ -86,7 +89,6 @@ export function buildMessages({ includedPairs, newUserText, newUserAttachments =
  * @param {Array<MessagePair>} params.visiblePairs - All pairs in current filtered view (chronological)
  * @param {Array<string>} [params.attachments] - Image IDs for new user message only
  * @param {boolean} [params.topicWebSearchOverride] - Override topic web search setting
- * @param {Object} [params.boundarySnapshot] - Unused legacy parameter (to be removed)
  * @param {Function} [params.onDebugPayload] - Debug callback(payload) for telemetry
  * @returns {Promise<{content: string}>} Assistant response object
  * @throws {Error} Throws if user prompt too large or context overflow after trimming
@@ -102,11 +104,11 @@ export async function executeSend({
   topicWebSearchOverride, // NEW: optional boolean to override model's webSearch setting
   onDebugPayload,
 }) {
-  const settings = getSettings()
+  const settings = /** @type {AppSettings} */ (getSettings())
   const { charsPerToken = 4 } = settings
   const baseline = visiblePairs
     ? visiblePairs.slice()
-    : store.getAllPairs().sort((a, b) => a.createdAt - b.createdAt)
+    : store.getAllPairs().sort((/** @type {MessagePair} */ a, /** @type {MessagePair} */ b) => a.createdAt - b.createdAt)
   const topic = topicId ? store.topics.get(topicId) : null
   const topicSystem =
     topic && typeof topic.systemMessage === 'string' ? topic.systemMessage.trim() : ''
@@ -154,7 +156,7 @@ export async function executeSend({
   const HLA = Math.max(0, pred.C - userTokens - systemTokens - pred.PARA)
   let T_internal = 0
   // Compute H0 token sum via heuristic
-  const tokenOf = (p) => estimatePairTokens(p, charsPerToken)
+  const tokenOf = (/** @type {MessagePair} */ p) => estimatePairTokens(p, charsPerToken)
   let currentTokens = working.reduce((a, p) => a + tokenOf(p), 0)
   if (currentTokens > HLA) {
     while (working.length && currentTokens > HLA) {
@@ -198,7 +200,7 @@ export async function executeSend({
   const provider = getProvider(providerId)
   const apiKey = getApiKey(providerId)
 
-  const emitDebug = (payload) => {
+  const emitDebug = (/** @type {any} */ payload) => {
     if (typeof onDebugPayload === 'function') onDebugPayload(payload)
   }
   const baseDebugCore = () => ({
@@ -222,7 +224,7 @@ export async function executeSend({
     attemptsUsed: 0,
     T_provider: 0,
     trimmedCount: T_internal,
-    selection: includedPairs.map((p) => ({
+    selection: includedPairs.map((/** @type {MessagePair} */ p) => ({
       id: p.id,
       model: p.model,
       tokens: estimatePairTokens(p, charsPerToken),
@@ -297,7 +299,7 @@ export async function executeSend({
       attemptsUsed,
       T_provider,
       trimmedCount: T_internal + T_provider,
-      selection: workingProviderPairs.map((p) => ({
+      selection: workingProviderPairs.map((/** @type {MessagePair} */ p) => ({
         id: p.id,
         model: p.model,
         tokens: estimatePairTokens(p, charsPerToken),
@@ -328,8 +330,10 @@ export async function executeSend({
           }
         }
         
+        const now = Date.now()
         const dbg = {
-          at: Date.now(),
+          timestamp: now,
+          timestampISO: new Date(now).toISOString(),
           provider: providerId,
           model,
           systemLen: (topicSystem || '').length,
@@ -390,7 +394,7 @@ export async function executeSend({
           attemptsUsed,
           T_provider,
           trimmedCount: T_internal + T_provider,
-          selection: workingProviderPairs.map((p) => ({ id: p.id })),
+          selection: workingProviderPairs.map((/** @type {MessagePair} */ p) => ({ id: p.id })),
           messages: [],
         })
         throw ex
@@ -400,7 +404,7 @@ export async function executeSend({
       attempt: attemptsUsed,
       trimmedInternal: T_internal,
       trimmedProvider: T_provider,
-      sentPairs: workingProviderPairs.map((p) => p.id),
+      sentPairs: workingProviderPairs.map((/** @type {MessagePair} */ p) => p.id),
     })
     if (!overflow) {
       emitDebug({
@@ -409,7 +413,7 @@ export async function executeSend({
         attemptsUsed,
         T_provider,
         trimmedCount: T_internal + T_provider,
-        selection: workingProviderPairs.map((p) => ({
+        selection: workingProviderPairs.map((/** @type {MessagePair} */ p) => ({
           id: p.id,
           model: p.model,
           tokens: estimatePairTokens(p, charsPerToken),
