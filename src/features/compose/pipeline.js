@@ -1,6 +1,5 @@
 //@ts-check
 //@ts-nocheck
-
 import { getProvider, ProviderError } from '../../infrastructure/provider/adapter.js'
 import {
   estimateTokens,
@@ -104,6 +103,7 @@ export async function executeSend({
   topicWebSearchOverride, // NEW: optional boolean to override model's webSearch setting
   onDebugPayload,
 }) {
+  // step e1.
   const settings = /** @type {AppSettings} */ (getSettings())
   const { charsPerToken = 4 } = settings
   const baseline = visiblePairs
@@ -115,6 +115,7 @@ export async function executeSend({
   const providerMeta = getModelMeta(model) || { provider: 'openai' }
   const providerId = providerMeta.provider || 'openai'
   
+  // step e2.
   // NEW: Estimate image tokens for the new user message
   let imageTokens = 0
   if (attachments.length > 0) {
@@ -330,10 +331,8 @@ export async function executeSend({
           }
         }
         
-        const now = Date.now()
         const dbg = {
-          timestamp: now,
-          timestampISO: new Date(now).toISOString(),
+          at: Date.now(),
           provider: providerId,
           model,
           systemLen: (topicSystem || '').length,
