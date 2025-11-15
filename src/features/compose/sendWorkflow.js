@@ -72,7 +72,6 @@ export async function executeSendWorkflow({
   editingId,
   webSearchOverride,
   beforeIncludedIds,
-  
   // Injected dependencies
   store,
   lifecycle,
@@ -87,7 +86,8 @@ export async function executeSendWorkflow({
   escapeHtmlAttr,
   escapeHtml,
 }) {
-  // === PAIR CREATION ===
+
+  // step 1. === PAIR CREATION ===
   let id
   if (editingId) {
     const old = store.pairs.get(editingId)
@@ -101,7 +101,7 @@ export async function executeSendWorkflow({
     id = store.addMessagePair({ topicId, model, userText: text, assistantText: '' })
   }
 
-  // Persist attachments and userChars immediately; assistant tokens will be computed after reply
+  // step 2. Persist attachments and userChars immediately; assistant tokens will be computed after reply
   try {
     store.updatePair(id, { 
       attachments: attachments,
@@ -109,7 +109,7 @@ export async function executeSendWorkflow({
     })
   } catch {}
 
-  // === ASYNC SEND ROUTINE ===
+  // step 3. === ASYNC SEND ROUTINE ===
   ;(async () => {
     // Create AbortController with timeout
     const controller = new AbortController()
@@ -124,16 +124,18 @@ export async function executeSendWorkflow({
     if (!window.__maichat) window.__maichat = {}
     window.__maichat.requestController = controller
 
+    // step 4.
     try {
       const currentPairs = activeParts.parts
         .map((/** @type {any} */ pt) => store.pairs.get(pt.pairId))
         .filter(Boolean)
       const chrono = [...new Set(currentPairs)].sort((/** @type {MessagePair} */ a, /** @type {MessagePair} */ b) => a.createdAt - b.createdAt)
+
       boundaryMgr.updateVisiblePairs(chrono)
       boundaryMgr.setModel(model)
       boundaryMgr.applySettings(getSettings())
       const tStart = Date.now()
-      
+
       // Compute image budgets and attachmentTokens before calling provider
       // Store both legacy attachmentTokens AND new imageBudgets for fast estimation
       try {
@@ -161,6 +163,7 @@ export async function executeSendWorkflow({
         store.updatePair(id, { attachmentTokens, imageBudgets })
       } catch {}
       
+      // step 5.
       const execResult = await executeSend({
         store,
         model,

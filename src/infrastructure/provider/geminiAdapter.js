@@ -147,11 +147,7 @@ export function createGeminiAdapter() {
           }))
         } catch {}
         
-        // Preserve actual error details instead of generic "network error"
-        const errorMsg = ex?.message || 'Network error'
-        const err = new ProviderError(errorMsg, 'network')
-        err.originalError = ex
-        throw err
+        throw new ProviderError('network error', 'network')
       }
 
       if (!resp.ok) {

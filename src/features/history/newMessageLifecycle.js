@@ -79,6 +79,7 @@ export function createNewMessageLifecycle({
         const currentMode = modeMgr ? modeMgr.mode || modeMgr.current : null
         // Spec: only switch to VIEW when reply does NOT fit the viewport (not merely when partitioned)
         const shouldSwitch = currentMode === 'input' && inputEmpty && !fits
+        
         if (shouldSwitch && modeMgr && MODES) {
           if (typeof modeMgr.set === 'function') modeMgr.set(MODES.VIEW)
           // Focus first assistant part and align it to top via policy (no animation)
@@ -108,6 +109,33 @@ export function createNewMessageLifecycle({
           if (scrollController && scrollController.scrollToBottom) {
             scrollController.scrollToBottom(false)
           }
+          if (firstId) {
+            _applyActivePart()
+            const raf3 =
+              typeof requestAnimationFrame === 'function'
+                ? requestAnimationFrame
+                : (fn) => setTimeout(fn, 0)
+            raf3(() => _applyActivePart())
+          }
+        } else if (currentMode === 'input' && !inputEmpty) {
+          // Branch 3: User is typing → Stay INPUT, align based on fit
+          const firstId = first.getAttribute('data-part-id')
+          if (firstId) {
+            activeParts.setActiveById(firstId)
+          }
+          
+          if (fits) {
+            // Message fits → align to bottom
+            if (scrollController && scrollController.scrollToBottom) {
+              scrollController.scrollToBottom(false)
+            }
+          } else {
+            // Message doesn't fit → align to top
+            if (firstId && alignTo) {
+              alignTo(firstId, 'top', false)
+            }
+          }
+          
           if (firstId) {
             _applyActivePart()
             const raf3 =
