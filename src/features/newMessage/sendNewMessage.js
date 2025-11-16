@@ -8,12 +8,16 @@ import { estimateTokens, estimatePairTokens, estimateImageTokens } from '../../c
 import { getModelBudget } from '../../core/context/tokenEstimator.js'
 
 import { getManyMetadata as getImageMetadata } from '../images/imageStore.js'
-import { encodeToBase64 as encodeImageToBase64 } from '../images/imageStore.js'
+import { getBase64Many } from '../images/imageStore.js'
+
+import { PROVIDERS } from '../../infrastructure/provider/adapterV2.js'
+import { getApiKey } from '../../infrastructure/api/keys.js'
 
 // sub routines (internal to newMessageRoutine):
 import { prepareInputData } from './prepareInputData.js'
 import { calculateBudget } from './calculateBudget.js'
 import { buildRequest } from './buildRequest.js'
+import { sendWithRetry } from './sendWithRetry.js'
 
 /**
  * Send a new message to LLM provider
@@ -74,23 +78,46 @@ export async function sendNewMessage({
     getImageMetadata,  // Only loads metadata, not blobs
   })
   console.log('[sendNewMessage] Budget:', budget)
+  console.log('[sendNewMessage] Phase 3: Build API request (with batch image encoding)')
   
-  console.log('[sendNewMessage] Phase 3: Build API request (with image encoding)')
-  
-  // Phase 3: Build API request (encodes images inline)
+  // Phase 3: Build API request (batch encodes all images in one transaction)
   const request = await buildRequest({
     selectedPairs: budget.selectedPairs,
     systemMessage: prepared.systemMessage,
     userText,
     imageIds,
     model,
-    encodeImageToBase64,  // Inject encoding function
+    getBase64Many,  // Batch encoding function
   })
   console.log('[sendNewMessage] Request:', request)
   
+  console.log('[sendNewMessage] Phase 4: Send to provider with retry')
+  
+  // Get API key for provider
+  const apiKey = getApiKey(prepared.provider)
+  
+  // Build options
+  const options = {
+    // TODO: Get from settings/topic
+    temperature: undefined,
+    maxOutputTokens: undefined,
+    webSearch: false,
+  }
+  
   // Phase 4: Send to provider with retry
+  const response = await sendWithRetry({
+    request,
+    provider: prepared.provider,
+    model,
+    apiKey,
+    options,
+    maxRetries: 3,
+    providers: PROVIDERS,  // Direct provider map
+    signal: null,  // TODO: Add abort controller
+  })
+  console.log('[sendNewMessage] Response:', response)
   
   // Phase 5: Store result
   
-  // TODO: Implement remaining phases
+  // TODO: Implement phase 5
 }

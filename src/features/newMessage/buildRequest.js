@@ -9,7 +9,7 @@
  * @param {string} params.userText - New user text
  * @param {string[]} params.imageIds - New user images
  * @param {string} params.model - Model ID
- * @param {Function} params.encodeImageToBase64 - Function to encode image to base64
+ * @param {Function} params.getBase64Many - Batch function to get base64 encodings
  * @returns {Promise<Object>} Universal request object with encoded images
  */
 export async function buildRequest({
@@ -18,8 +18,36 @@ export async function buildRequest({
   userText,
   imageIds,
   model,
-  encodeImageToBase64,
+  getBase64Many,
 }) {
+  // Step 1: Collect all image IDs from history + new message
+  const allImageIds = []
+  const imageIdIndexMap = new Map()  // Maps imageId -> index in allImageIds
+  
+  for (const pair of selectedPairs) {
+    if (pair.attachments && pair.attachments.length > 0) {
+      for (const id of pair.attachments) {
+        if (!imageIdIndexMap.has(id)) {
+          imageIdIndexMap.set(id, allImageIds.length)
+          allImageIds.push(id)
+        }
+      }
+    }
+  }
+  
+  if (imageIds && imageIds.length > 0) {
+    for (const id of imageIds) {
+      if (!imageIdIndexMap.has(id)) {
+        imageIdIndexMap.set(id, allImageIds.length)
+        allImageIds.push(id)
+      }
+    }
+  }
+  
+  // Step 2: Batch encode all images in one transaction
+  const allEncodedImages = await getBase64Many(allImageIds)
+  
+  // Step 3: Build messages array
   const messages = []
   
   // Add history pairs (chronological)
@@ -30,11 +58,11 @@ export async function buildRequest({
       content: pair.userText,
     }
     
-    // Encode history images if present
+    // Attach encoded images if present
     if (pair.attachments && pair.attachments.length > 0) {
-      userMsg.images = await Promise.all(
-        pair.attachments.map(id => encodeImageToBase64(id))
-      )
+      userMsg.images = pair.attachments
+        .map(id => allEncodedImages[imageIdIndexMap.get(id)])
+        .filter(Boolean)
     }
     
     messages.push(userMsg)
@@ -52,11 +80,11 @@ export async function buildRequest({
     content: userText,
   }
   
-  // Encode new images if present
+  // Attach new encoded images if present
   if (imageIds && imageIds.length > 0) {
-    newUserMsg.images = await Promise.all(
-      imageIds.map(id => encodeImageToBase64(id))
-    )
+    newUserMsg.images = imageIds
+      .map(id => allEncodedImages[imageIdIndexMap.get(id)])
+      .filter(Boolean)
   }
   
   messages.push(newUserMsg)

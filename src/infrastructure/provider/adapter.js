@@ -1,6 +1,11 @@
 // Moved from src/provider/adapter.js (Phase 3 infrastructure move)
 // Generic ProviderAdapter interface and registry
 
+import { createOpenAIAdapter } from './openaiAdapter.js'
+import { createAnthropicAdapter } from './anthropicAdapter.js'
+import { createGeminiAdapter } from './geminiAdapter.js'
+import { createGrokAdapter } from './grokAdapter.js'
+
 /** @typedef {{ sendChat: (req: ChatRequest) => Promise<ChatResponse> }} ProviderAdapter */
 
 /**

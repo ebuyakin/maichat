@@ -470,6 +470,100 @@ export async function encodeToBase64(id) {
 }
 
 /**
+ * Get base64 encodings for multiple images in one transaction
+ * Returns cached encodings if available, encodes on-demand if not
+ * 
+ * @param {string[]} ids - Array of image IDs
+ * @returns {Promise<Array>} Array of base64 objects {mime, data, chars}
+ */
+export async function getBase64Many(ids) {
+  if (!ids || ids.length === 0) return []
+  
+  const db = await openDB()
+  
+  // Step 1: Read all records in one transaction
+  const records = await new Promise((resolve, reject) => {
+    const tx = db.transaction([STORE_IMAGES], 'readonly')
+    const store = tx.objectStore(STORE_IMAGES)
+    const out = new Array(ids.length)
+    let remaining = ids.length
+    
+    ids.forEach((id, i) => {
+      const req = store.get(id)
+      req.onsuccess = () => {
+        out[i] = req.result || null
+        if (--remaining === 0) resolve(out)
+      }
+      req.onerror = () => reject(req.error)
+    })
+  })
+  
+  // Step 2: Encode blobs that don't have cached base64
+  const results = []
+  const toCache = []  // Records that need base64 cached back to DB
+  
+  for (let i = 0; i < records.length; i++) {
+    const rec = records[i]
+    if (!rec) {
+      results.push(null)
+      continue
+    }
+    
+    // Use cached base64 if available
+    if (rec.base64 && rec.base64.data) {
+      results.push(rec.base64)
+      continue
+    }
+    
+    // Encode blob to base64
+    const ab = await readFileAsArrayBuffer(rec.blob)
+    const bytes = new Uint8Array(ab)
+    let binary = ''
+    const CHUNK = 0x8000
+    for (let j = 0; j < bytes.length; j += CHUNK) {
+      const slice = bytes.subarray(j, j + CHUNK)
+      binary += String.fromCharCode.apply(null, slice)
+    }
+    const base64Data = btoa(binary)
+    const base64Obj = {
+      mime: rec.format || rec.blob.type || 'application/octet-stream',
+      data: base64Data,
+      chars: base64Data.length,
+    }
+    
+    results.push(base64Obj)
+    
+    // Mark for caching
+    rec.base64 = base64Obj
+    toCache.push(rec)
+  }
+  
+  // Step 3: Cache newly encoded base64 back to DB (batch write)
+  if (toCache.length > 0) {
+    try {
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction([STORE_IMAGES], 'readwrite')
+        const store = tx.objectStore(STORE_IMAGES)
+        let remaining = toCache.length
+        
+        toCache.forEach(rec => {
+          const putReq = store.put(rec)
+          putReq.onsuccess = () => {
+            if (--remaining === 0) resolve()
+          }
+          putReq.onerror = () => reject(putReq.error)
+        })
+      })
+    } catch (err) {
+      // Non-blocking: still return encoded results even if caching fails
+      console.warn('[imageStore] Failed to cache base64 for batch', err)
+    }
+  }
+  
+  return results
+}
+
+/**
  * S17: Get precomputed image token cost for a specific provider
  * Returns cached value computed at attach time (all providers precomputed)
  * 
