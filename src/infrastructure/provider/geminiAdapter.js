@@ -2,6 +2,7 @@
 // Direct browser-compatible API calls (no proxy needed)
 
 import { ProviderError, classifyError } from './adapter.js'
+import { storeFetchResponse, storeFetchError, storeRequestPayload } from '../../instrumentation/fetchDebug.js'
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 
@@ -75,34 +76,10 @@ export function createGeminiAdapter() {
         }
       }
 
-  const payloadStr = JSON.stringify(body)
+      const payloadStr = JSON.stringify(body)
 
-      // Debug hook (parity with OpenAI adapter)
-      try {
-        // 3) Generation config (temperature, max tokens)
-        if (typeof window !== 'undefined') {
-          const now = Date.now()
-          window.__maichatLastRequest = {
-            timestamp: now,
-            timestampISO: new Date(now).toISOString(),
-            model,
-            json: payloadStr,
-            provider: 'gemini'
-          }
-          // Persist last request payload for easy DevTools inspection
-          try {
-            localStorage.setItem('maichat_dbg_gemini_request', JSON.stringify({
-              timestamp: now,
-              timestampISO: new Date(now).toISOString(),
-              model,
-              provider: 'gemini',
-              payload: JSON.parse(payloadStr)
-            }))
-          } catch {}
-        }
-      } catch {}
-          // 4) Enable Google Search grounding when requested
-          // Matches working Python payload shape: a single tool object with only googleSearch
+      // Debug: store request payload
+      storeRequestPayload('gemini', model, body)
 
       // FETCH
       let resp
@@ -119,65 +96,35 @@ export function createGeminiAdapter() {
         })
         tFetchEnd = now()
         
-        // Debug: capture raw response immediately
-        try {
-          const debugNow = Date.now()
-          localStorage.setItem('maichat_dbg_gemini_fetch', JSON.stringify({
-            timestamp: debugNow,
-            timestampISO: new Date(debugNow).toISOString(),
-            status: resp.status,
-            statusText: resp.statusText,
-            ok: resp.ok,
-            headers: Object.fromEntries(resp.headers.entries()),
-          }))
-        } catch {}
-        
       } catch (ex) {
         tFetchEnd = now()
         
-        // Debug: capture fetch exception
-        try {
-          const debugNow = Date.now()
-          localStorage.setItem('maichat_dbg_gemini_fetch_error', JSON.stringify({
-            timestamp: debugNow,
-            timestampISO: new Date(debugNow).toISOString(),
-            name: ex?.name,
-            message: ex?.message,
-            stack: ex?.stack,
-          }))
-        } catch {}
+        // Debug: store network error
+        storeFetchError(ex, 'gemini')
         
         throw new ProviderError('network error', 'network')
       }
+
+      // Parse response body
+      let parsedBody = null
+      try {
+        tParseStart = now()
+        parsedBody = await resp.json()
+        tParseEnd = now()
+      } catch {}
+
+      // Debug: store response (works for both success and HTTP errors)
+      storeFetchResponse(resp, 'gemini', parsedBody)
 
       if (!resp.ok) {
         const kind = classifyError(resp.status)
         let msg = `${resp.status}`
         let code = undefined
-        let errorBody
-        try {
-          tParseStart = now()
-          const j = await resp.json()
-          tParseEnd = now()
-          errorBody = j
-          if (j.error) {
-            if (j.error.message) msg = j.error.message
-            if (j.error.code) code = j.error.code
-          }
-        } catch {}
         
-        // Debug: capture error response body
-        try {
-          const debugNow = Date.now()
-          localStorage.setItem('maichat_dbg_gemini_error_response', JSON.stringify({
-            timestamp: debugNow,
-            timestampISO: new Date(debugNow).toISOString(),
-            status: resp.status,
-            errorBody,
-            extractedMessage: msg,
-            extractedCode: code,
-          }))
-        } catch {}
+        if (parsedBody && parsedBody.error) {
+          if (parsedBody.error.message) msg = parsedBody.error.message
+          if (parsedBody.error.code) code = parsedBody.error.code
+        }
         
         const err = new ProviderError(msg, kind, resp.status)
         if (code) err.providerCode = code
@@ -193,33 +140,7 @@ export function createGeminiAdapter() {
         throw err
       }
 
-      tParseStart = now()
-      const data = await resp.json()
-      tParseEnd = now()
-
-      // Dev aid: expose last raw provider response for console inspection
-      try {
-        if (typeof window !== 'undefined') {
-          const now = Date.now()
-          window.__maichatLastResponse = {
-            timestamp: now,
-            timestampISO: new Date(now).toISOString(),
-            model,
-            provider: 'gemini',
-            json: JSON.stringify(data),
-          }
-          // Persist last raw response for easy DevTools inspection
-          try {
-            localStorage.setItem('maichat_dbg_gemini_response', JSON.stringify({
-              timestamp: now,
-              timestampISO: new Date(now).toISOString(),
-              model,
-              provider: 'gemini',
-              response: data
-            }))
-          } catch {}
-        }
-      } catch {}
+      const data = parsedBody
 
       // Extract content from Gemini response
       let content = ''

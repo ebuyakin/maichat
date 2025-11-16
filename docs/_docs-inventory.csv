@@ -1,11 +1,14 @@
 Filename                                     , Last Modified       , Type    , Status
 ARCHITECTURE.md                              , 2025-11-01 17:36    , Core    , Effective
+_action-plan-template.md                     , 2025-11-15 19:00    , Template, Effective
+_style-guide.md                              , 2025-11-15 19:00    , Core    , Effective
 adapters-overview.md                         , 2025-10-24 14:50    , Analysis, Effective
 assistant-styling-experiments.md             , 2025-11-06 20:53    , Analysis, Draft
 bug-response-not-rendered-while-typing.md    , 2025-11-15 18:30    , Analysis, Effective
 cli_filtering_language.md                    , 2025-10-29 16:45    , Core    , Effective
 colon_commands_spec.md                       , 2025-10-29 16:47    , Core    , Effective
 context-boundary-analysis.md                 , 2025-11-08 17:55    , Analysis, Draft
+context-boundary-and-image-budgeting.md      , 2025-11-15 19:00    , Analysis, Active
 dev-notes.md                                 , 2025-11-15 17:00    , Analysis, Effective
 focus_management.md                          , 2025-09-15 16:47    , Core    , Effective
 font-and-background-styling-investigation.md , 2025-11-04 14:20    , Analysis, Draft
