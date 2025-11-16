@@ -4,6 +4,7 @@ import { getSettings } from '../../core/settings/index.js'
 import { getActiveModel } from '../../core/models/modelCatalog.js'
 import { executeSend } from '../compose/pipeline.js'
 import { executeSendWorkflow } from '../compose/sendWorkflow.js'
+import { sendNewMessage } from '../newMessage/sendNewMessage.js' // new architecture
 import { sanitizeAssistantText } from './sanitizeAssistant.js'
 import { extractCodeBlocks } from '../codeDisplay/codeExtractor.js'
 import { extractEquations } from '../codeDisplay/equationExtractor.js'
@@ -404,6 +405,33 @@ export function createInputKeyHandler({
       }
       return true
     }
+    
+    // DEV: Ctrl+G to test new sendNewMessage
+    if (e.key === 'g' && e.ctrlKey && !e.shiftKey && !e.metaKey) {
+      e.preventDefault()
+      
+      const params = {
+        userText: inputField.value.trim()|| 'What is my next question?',
+        imageIds: pendingMessageMeta.attachments || [],
+        topicId: pendingMessageMeta.topicId || getCurrentTopicId(),
+        model: pendingMessageMeta.model || getActiveModel(),
+        visiblePairIds: [...new Set(activeParts.parts.map(pt => pt.pairId))],
+        activePartId: activeParts.parts[activeParts.activeIndex]?.id || null,
+        store: store,
+        editingPairId: window.__editingPairId || null,
+      }
+      
+      sendNewMessage(params)
+        .then(pairId => {
+          console.log('[DEV] Success! Created pair:', pairId)
+        })
+        .catch(err => {
+          console.error('[DEV] Error:', err)
+        })
+      
+      return true
+    }
+    
     // Ctrl+C to abort pending request
     if (e.key === 'c' && e.ctrlKey && !e.shiftKey && !e.metaKey) {
       const controller = window.__maichat && window.__maichat.requestController

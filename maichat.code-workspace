@@ -9,11 +9,12 @@
         "vim.startInInsertMode": false,
         "editor.cursorSurroundingLines": 999,
         "editor.scrollBeyondLastLine": true,
+        "editor.tabSize":2,
         "workbench.editor.restoreViewState": false,
         "breadcrumbs.enabled": true,
         "breadcrumbs.symbolPath": "last", 
         "breadcrumbs.showProperties": false,
         "breadcrumbs.showConstants": false,
-        "breadcrumbs.showVariables": false
+        "breadcrumbs.showVariables": false,
     }
 }

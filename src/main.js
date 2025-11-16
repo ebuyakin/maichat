@@ -308,4 +308,4 @@ setTimeout(() => {
 }, 5000)
 
 //debugger 
-//window.debug = {modeManager, __core, store, activeParts, __runtime, historyRuntime, renderCurrentView,interaction,__initialSettings,}
+window.debug = {modeManager, __core, store, activeParts, __runtime, historyRuntime, renderCurrentView,interaction,__initialSettings,}

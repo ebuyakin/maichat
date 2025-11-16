@@ -135,6 +135,7 @@ export async function get(id) {
   })
 }
 
+// renamed getImagesByIds everywhere
 export async function getMany(ids) {
   const db = await openDB()
   return new Promise((resolve, reject) => {
@@ -146,6 +147,37 @@ export async function getMany(ids) {
       const r = store.get(id)
       r.onsuccess = () => {
         out[i] = r.result || null
+        if (--remaining === 0) resolve(out)
+      }
+      r.onerror = () => reject(r.error)
+    })
+  })
+}
+
+/**
+ * Get metadata only (w, h, tokenCost) without loading blobs
+ * Optimized for token estimation during budget calculation
+ */
+export async function getManyMetadata(ids) {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([STORE_IMAGES], 'readonly')
+    const store = tx.objectStore(STORE_IMAGES)
+    const out = new Array(ids.length)
+    let remaining = ids.length
+    ids.forEach((id, i) => {
+      const r = store.get(id)
+      r.onsuccess = () => {
+        const rec = r.result
+        // Return only metadata, exclude blob and base64
+        out[i] = rec ? {
+          id: rec.id,
+          w: rec.w,
+          h: rec.h,
+          tokenCost: rec.tokenCost,
+          format: rec.format,
+          bytes: rec.bytes,
+        } : null
         if (--remaining === 0) resolve(out)
       }
       r.onerror = () => reject(r.error)

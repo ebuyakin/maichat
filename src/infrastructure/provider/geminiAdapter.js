@@ -2,7 +2,7 @@
 // Direct browser-compatible API calls (no proxy needed)
 
 import { ProviderError, classifyError } from './adapter.js'
-import { storeFetchResponse, storeFetchError, storeRequestPayload } from '../../instrumentation/fetchDebug.js'
+import { storeFetchResponse, storeFetchError, storeRequestPayload } from '../../instrumentation/apiDebug.js'
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 

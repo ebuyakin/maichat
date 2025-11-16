@@ -1,5 +1,10 @@
 //@ts-check
 //@ts-nocheck
+
+/* in refactoring, modification and other changes pursue simplification, readability and transparency
+avoid code duplication, multi-level nesting, do not introduce new complexity
+*/
+
 import { getProvider, ProviderError } from '../../infrastructure/provider/adapter.js'
 import {
   estimateTokens,
@@ -9,6 +14,7 @@ import {
 import { getSettings } from '../../core/settings/index.js'
 import { predictHistory, finalizeHistory } from '../../core/context/budgetMath.js'
 import { getApiKey } from '../../infrastructure/api/keys.js'
+import { storePipelinePresend, storePipelineError } from '../../instrumentation/apiDebug.js'
 import { getModelMeta } from '../../core/models/modelCatalog.js'
 import { get as getImage, encodeToBase64 } from '../images/imageStore.js'
 
@@ -65,6 +71,7 @@ export function buildMessages({ includedPairs, newUserText, newUserAttachments =
       ...(newUserAttachments.length > 0 && { attachments: newUserAttachments })
     })
   }
+  console.log(msgs)
   return /** @type {Message[]} */ (msgs)
 }
 
@@ -312,41 +319,16 @@ export async function executeSend({
     try {
       const meta = { otpm: (getModelMeta(model) || {}).otpm }
 
-      // DEBUG. Persist a pre-send debug snapshot to localStorage (provider-agnostic)
-      try {
-        // Count images per message for telemetry
-        let totalImages = 0
-        const messagesWithImages = []
-        for (let i = 0; i < msgs.length; i++) {
-          const m = msgs[i]
-          const imageCount = Array.isArray(m.attachments) ? m.attachments.length : 0
-          if (imageCount > 0) {
-            totalImages += imageCount
-            messagesWithImages.push({
-              index: i,
-              role: m.role,
-              imageCount,
-              imageIds: m.attachments
-            })
-          }
-        }
-        
-        const dbg = {
-          at: Date.now(),
-          provider: providerId,
-          model,
-          systemLen: (topicSystem || '').length,
-          messages: (msgs || []).map((m) => ({
-            role: m.role,
-            contentPreview: typeof m.content === 'string' ? m.content.slice(0, 400) : String(m.content).slice(0, 200),
-            contentLength: typeof m.content === 'string' ? m.content.length : undefined,
-            imageCount: Array.isArray(m.attachments) ? m.attachments.length : 0,
-          })),
-          totalImages,
-          messagesWithImages,
-        }
-        localStorage.setItem('maichat_dbg_pipeline_presend', JSON.stringify(dbg))
-      } catch {}
+      // Debug: store pipeline pre-send data
+      storePipelinePresend(
+        providerId, 
+        model, 
+        topicSystem, 
+        msgs, 
+        systemTokens,
+        userTokens,
+        imageTokens
+      )
 
       // API call:
       result = await provider.sendChat({
@@ -371,21 +353,9 @@ export async function executeSend({
       ) {
         overflow = true
       } else {
-        // Persist last error details for inspection
-        try {
-          const errDbg = {
-            at: Date.now(),
-            provider: providerId,
-            model,
-            message: ex && ex.message,
-            kind: ex && ex.kind,
-            status: ex && ex.status,
-            providerCode: ex && ex.providerCode,
-            timing: ex && ex.__timing ? ex.__timing : undefined,
-          }
-          // DEBUG. API call error:
-          localStorage.setItem('maichat_dbg_pipeline_error', JSON.stringify(errDbg))
-        } catch {}
+        // Debug: store pipeline error
+        storePipelineError(providerId, model, ex)
+        
         emitDebug({
           ...baseDebugCore(),
           status: 'error',

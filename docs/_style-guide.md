@@ -1,5 +1,6 @@
 # JavaScript Style Guide  
 
+
 ## 1. General Principles
 - Favor readability over cleverness
 - Be consistent above all else
@@ -71,6 +72,12 @@
 - Complex algorithms or business logic
 - Non-obvious decisions or workarounds
 - TODOs and FIXMEs with context
+
+6.3. Function Arguments
+- Pass simple values or variables, not expressions
+- ❌ Avoid: `func(arr.map(x => x * 2), obj.prop.length)`
+- ✅ Prefer: `const doubled = arr.map(x => x * 2); func(doubled, obj.prop.length)`
+- Exception: Simple property access is OK: `func(obj.id, user.name)`
 
 ## 7. Debugging Strategy
 
