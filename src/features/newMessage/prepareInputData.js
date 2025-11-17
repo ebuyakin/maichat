@@ -8,11 +8,24 @@
  * @param {string[]} params.visiblePairIds - Visible pair IDs
  * @param {string} params.model - Model ID
  * @param {Object} params.store - Message store
- * @param {Object} params.settings - App settings
- * @param {Object} params.modelMeta - Model metadata
+ * @param {Function} params.getSettings - Get app settings function
+ * @param {Function} params.getModelMeta - Get model metadata function
+ * @param {Function} params.getApiKey - Get API key function
  * @returns {Object} Prepared data
  */
-export function prepareInputData({ topicId, visiblePairIds, model, store, settings, modelMeta }) {
+export function prepareInputData({ 
+  topicId, 
+  visiblePairIds, 
+  model, 
+  store,
+  getSettings,
+  getModelMeta,
+  getApiKey,
+}) {
+  // Get dependencies
+  const settings = getSettings()
+  const modelMeta = getModelMeta(model)
+  
   // Get topic and system message
   const topic = store.topics.get(topicId)
   const systemMessage = topic?.systemMessage?.trim() || ''
@@ -27,10 +40,38 @@ export function prepareInputData({ topicId, visiblePairIds, model, store, settin
   // Get provider from model metadata
   const provider = modelMeta?.provider || 'openai'
   
+  // Get API key for provider
+  const apiKey = getApiKey(provider)
+  
+  // Build request options with proper precedence
+  const options = {}
+  
+  // Temperature: from topic requestParams if set
+  const requestParams = topic?.requestParams || {}
+  if (typeof requestParams.temperature === 'number') {
+    options.temperature = requestParams.temperature
+  }
+  
+  // Max output tokens: from topic requestParams if set
+  if (typeof requestParams.maxOutputTokens === 'number') {
+    options.maxOutputTokens = requestParams.maxOutputTokens
+  }
+  
+  // Web search: topic override takes precedence over model default
+  let webSearch = modelMeta?.webSearch  // Model default
+  if (typeof topic?.webSearchOverride === 'boolean') {
+    webSearch = topic.webSearchOverride  // Topic override wins
+  }
+  if (typeof webSearch === 'boolean') {
+    options.webSearch = webSearch
+  }
+  
   return {
     systemMessage,
     visiblePairs,
     settings,
     provider,
+    apiKey,
+    options,
   }
 }

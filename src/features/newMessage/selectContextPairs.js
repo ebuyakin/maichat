@@ -1,7 +1,7 @@
-// Phase 2: Calculate context budget
+// Phase 2: Select context pairs that fit in budget
 
 /**
- * Calculate which history pairs fit in context window
+ * Select which history pairs fit in context window
  * 
  * @param {Object} params
  * @param {MessagePair[]} params.visiblePairs - Visible history pairs
@@ -16,9 +16,9 @@
  * @param {Function} params.estimateImageTokens - Image token estimation function
  * @param {Function} params.getModelBudget - Get model budget function
  * @param {Function} params.getImageMetadata - Get image metadata (w, h, tokenCost) without blobs
- * @returns {Promise<Object>} Budget result with selected pairs and token breakdown
+ * @returns {Promise<Object>} Selection result with selectedHistoryPairs and token breakdown
  */
-export async function calculateBudget({
+export async function selectContextPairs({
   visiblePairs,
   systemMessage,
   userText,
@@ -75,7 +75,7 @@ export async function calculateBudget({
   // 8. Select history pairs (newest first) and cache tokens
   const pairTokens = new Map()
   let historyTokens = 0
-  const selectedPairs = []
+  const selectedHistoryPairs = []
   
   // Work backwards (newest to oldest)
   for (let i = visiblePairs.length - 1; i >= 0; i--) {
@@ -87,7 +87,7 @@ export async function calculateBudget({
     
     // Check if it fits
     if (historyTokens + tokens <= historyLimit) {
-      selectedPairs.unshift(pair)  // Add to front (maintain chronological order)
+      selectedHistoryPairs.unshift(pair)  // Add to front (maintain chronological order)
       historyTokens += tokens
     } else {
       // Stop when we overflow
@@ -99,21 +99,17 @@ export async function calculateBudget({
   const totalInputTokens = systemTokens + newUserTokens + historyTokens
   const remainingForResponse = maxContext - totalInputTokens
   
-  // 10. Return budget object
+  // 10. Return selection result
   return {
+    selectedHistoryPairs,
+    systemTokens,
+    newUserTokens,
+    userTextTokens,
+    userImageTokens,
+    historyTokens,
+    totalInputTokens,
+    remainingForResponse,
     maxContext,
-    selectedPairs,
-    pairTokens,  // Map<pairId, tokenCount> for later use
-    breakdown: {
-      systemTokens,
-      userTextTokens,
-      userImageTokens,
-      newUserTokens,
-      historyTokens,
-      totalInputTokens,
-      remainingForResponse,
-      PARA,
-      historyLimit,
-    }
+    pairTokens,
   }
 }

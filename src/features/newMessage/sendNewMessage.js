@@ -15,7 +15,7 @@ import { getApiKey } from '../../infrastructure/api/keys.js'
 
 // sub routines (internal to newMessageRoutine):
 import { prepareInputData } from './prepareInputData.js'
-import { calculateBudget } from './calculateBudget.js'
+import { selectContextPairs } from './selectContextPairs.js'
 import { buildRequest } from './buildRequest.js'
 import { sendWithRetry } from './sendWithRetry.js'
 
@@ -45,24 +45,21 @@ export async function sendNewMessage({
 }) {
   console.log('[sendNewMessage] Phase 1: Prepare input data')
   
-  // Get dependencies
-  const settings = getSettings()
-  const modelMeta = getModelMeta(model)
-  
-  // Phase 1: Prepare input data
+  // Phase 1: Prepare input data (gets all dependencies internally)
   const prepared = prepareInputData({
     topicId,
     visiblePairIds,
     model,
     store,
-    settings,
-    modelMeta,
+    getSettings,
+    getModelMeta,
+    getApiKey,
   })
   console.log('[sendNewMessage] Prepared:', prepared)
-  console.log('[sendNewMessage] Phase 2: Calculate budget')
+  console.log('[sendNewMessage] Phase 2: Select context pairs')
   
-  // Phase 2: Calculate context budget
-  const budget = await calculateBudget({
+  // Phase 2: Select which history pairs fit in context
+  const context = await selectContextPairs({
     visiblePairs: prepared.visiblePairs,
     systemMessage: prepared.systemMessage,
     userText,
@@ -77,12 +74,12 @@ export async function sendNewMessage({
     getModelBudget,
     getImageMetadata,  // Only loads metadata, not blobs
   })
-  console.log('[sendNewMessage] Budget:', budget)
+  console.log('[sendNewMessage] Context:', context)
   console.log('[sendNewMessage] Phase 3: Build API request (with batch image encoding)')
   
   // Phase 3: Build API request (batch encodes all images in one transaction)
   const request = await buildRequest({
-    selectedPairs: budget.selectedPairs,
+    selectedPairs: context.selectedHistoryPairs,
     systemMessage: prepared.systemMessage,
     userText,
     imageIds,
@@ -90,29 +87,17 @@ export async function sendNewMessage({
     getBase64Many,  // Batch encoding function
   })
   console.log('[sendNewMessage] Request:', request)
-  
   console.log('[sendNewMessage] Phase 4: Send to provider with retry')
-  
-  // Get API key for provider
-  const apiKey = getApiKey(prepared.provider)
-  
-  // Build options
-  const options = {
-    // TODO: Get from settings/topic
-    temperature: undefined,
-    maxOutputTokens: undefined,
-    webSearch: false,
-  }
   
   // Phase 4: Send to provider with retry
   const response = await sendWithRetry({
     request,
     provider: prepared.provider,
     model,
-    apiKey,
-    options,
+    apiKey: prepared.apiKey,
+    options: prepared.options,
     maxRetries: 3,
-    providers: PROVIDERS,  // Direct provider map
+    providers: PROVIDERS,
     signal: null,  // TODO: Add abort controller
   })
   console.log('[sendNewMessage] Response:', response)
