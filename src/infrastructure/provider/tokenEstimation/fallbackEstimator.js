@@ -1,4 +1,5 @@
 /**
+ * DEPRECATED. NOT USER IN NEW MESSAGE ROUTINE
  * Fallback token estimator for unknown/unsupported providers
  * 
  * Uses conservative OpenAI formula as baseline

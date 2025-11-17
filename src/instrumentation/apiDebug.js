@@ -7,10 +7,23 @@
  * Store fetch response debug data (success or HTTP error)
  * @param {Response} resp - Fetch Response object
  * @param {string} provider - Provider name ('gemini', 'openai', 'anthropic', etc.)
- * @param {Object} parsedBody - Already parsed response body
+ * @param {Object} parsedBody - Parsed response body (required for new adapters, optional for legacy)
  */
-export function storeFetchResponse(resp, provider, parsedBody) {
+export async function storeFetchResponse(resp, provider, parsedBody) {
   try {
+    // Parse body if not provided (backward compatibility)
+    let body = parsedBody
+    if (!body) {
+      try {
+        // Clone response to avoid consuming the body
+        const cloned = resp.clone()
+        body = await cloned.json()
+      } catch (err) {
+        // If parsing fails, store error info
+        body = { __parseError: err.message }
+      }
+    }
+    
     const debugData = {
       timestamp: Date.now(),
       timestampISO: new Date().toISOString(),
@@ -24,7 +37,7 @@ export function storeFetchResponse(resp, provider, parsedBody) {
       redirected: resp.redirected,
       headers: Object.fromEntries(resp.headers.entries()),
       // Parsed body
-      body: parsedBody,
+      body,
       // Error classification
       isError: !resp.ok,
       errorKind: !resp.ok ? 'http_error' : null,

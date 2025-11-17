@@ -1,11 +1,16 @@
 // Main orchestrator for sending new messages
 
 // dependendices (external to newMessageRoutine):
+// user and model settings
 import { getSettings } from '../../core/settings/index.js'
 import { getModelMeta } from '../../core/models/modelCatalog.js'
+
+// image utilities
 import { getModelBudget } from '../../core/context/tokenEstimator.js'
 import { getManyMetadata as getImageMetadata } from '../images/imageStore.js'
 import { getBase64Many } from '../images/imageStore.js'
+
+// api adapters and keys
 import { PROVIDERS } from '../../infrastructure/provider/adapterV2.js'
 import { getApiKey } from '../../infrastructure/api/keys.js'
 
@@ -17,6 +22,8 @@ import { prepareInputData } from './prepareInputData.js'
 import { selectContextPairs } from './selectContextPairs.js'
 import { buildRequest } from './buildRequest.js'
 import { sendWithRetry } from './sendWithRetry.js'
+import { parseResponse } from './parseResponse.js'
+
 
 /**
  * Send a new message to LLM provider
@@ -96,11 +103,20 @@ export async function sendNewMessage({
     options: prepared.options,
     maxRetries: 3,
     providers: PROVIDERS,
-    signal: null,  // TODO: Add abort controller
+    signal: null,  // Add abort controller
   })
   console.log('[sendNewMessage] Response:', response)
+  console.log('[sendNewMessage] Phase 5: Parse response')
   
-  // Phase 5: Store result
+  // Phase 5: Parse provider response (extract code, equations, metadata)
+  const parsed = parseResponse({ response })
+  console.log('[sendNewMessage] Parsed:', parsed)
   
-  // TODO: Implement phase 5
+  // Phase 6: Store pair
+  
+  // Implement phase 6
+  
+  // Phase 7: Update UI
+  
+  // Implement phase 7
 }

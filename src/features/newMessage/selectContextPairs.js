@@ -38,10 +38,7 @@ async function calculateHistoryAllowance({
     }
   }
   
-  const newUserTokens = userTextTokens + userImageTokens
-  const reserved = systemTokens + newUserTokens + ARA
-  
-  return maxContext - reserved
+  return maxContext - userTextTokens - userImageTokens - systemTokens - ARA
 }
 
 /**
