@@ -1,10 +1,10 @@
 // Budget Estimator V2 - Clean, provider-focused token estimation
 // No store access, pure functions only
 
-import { estimateImageTokens as estimateOpenAIImageTokens } from './openaiImageEstimator.js'
-import { estimateImageTokens as estimateAnthropicImageTokens } from './anthropicImageEstimator.js'
-import { estimateImageTokens as estimateGeminiImageTokens } from './geminiImageEstimator.js'
-import { estimateImageTokens as estimateGrokImageTokens } from './grokImageEstimator.js'
+import { estimateImageTokens as estimateOpenAIImageTokens } from './openaiEstimator.js'
+import { estimateImageTokens as estimateAnthropicImageTokens } from './anthropicEstimator.js'
+import { estimateImageTokens as estimateGeminiImageTokens } from './geminiEstimator.js'
+import { estimateImageTokens as estimateGrokImageTokens } from './grokEstimator.js'
 
 /**
  * Estimate text tokens using chars/CPT formula

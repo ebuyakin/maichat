@@ -7,9 +7,13 @@
  * Text tokenization: future - integrate Gemini tokenizer if available
  */
 
+// New function export (for new code)
+export function estimateImageTokens({ w, h }) {
+  // Gemini uses fixed token cost per image
+  return 258
+}
+
+// Legacy object export (for old code)
 export const geminiEstimator = {
-  estimateImageTokens({ w, h }, model = '') {
-    // Gemini uses fixed token cost per image
-    return 258
-  },
+  estimateImageTokens
 }

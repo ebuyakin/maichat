@@ -3,15 +3,14 @@
 // dependendices (external to newMessageRoutine):
 import { getSettings } from '../../core/settings/index.js'
 import { getModelMeta } from '../../core/models/modelCatalog.js'
-
-import { estimateTokens, estimatePairTokens, estimateImageTokens } from '../../core/context/tokenEstimator.js'
 import { getModelBudget } from '../../core/context/tokenEstimator.js'
-
 import { getManyMetadata as getImageMetadata } from '../images/imageStore.js'
 import { getBase64Many } from '../images/imageStore.js'
-
 import { PROVIDERS } from '../../infrastructure/provider/adapterV2.js'
 import { getApiKey } from '../../infrastructure/api/keys.js'
+
+// Token estimation (new)
+import { estimateTextTokens, estimateImageTokens } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
 
 // sub routines (internal to newMessageRoutine):
 import { prepareInputData } from './prepareInputData.js'
@@ -68,8 +67,7 @@ export async function sendNewMessage({
     provider: prepared.provider,
     settings: prepared.settings,
     // Inject functions
-    estimateTokens,
-    estimatePairTokens,
+    estimateTextTokens,
     estimateImageTokens,
     getModelBudget,
     getImageMetadata,  // Only loads metadata, not blobs
