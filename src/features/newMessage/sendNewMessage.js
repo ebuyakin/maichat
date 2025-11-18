@@ -1,26 +1,9 @@
 // Main orchestrator for sending new messages
 
-// dependendices (external to newMessageRoutine):
-// user and model settings
-import { getSettings } from '../../core/settings/index.js'
-import { getModelMeta } from '../../core/models/modelCatalog.js'
-
-// image utilities
-import { getModelBudget } from '../../core/context/tokenEstimator.js'
-import { getManyMetadata as getImageMetadata } from '../images/imageStore.js'
-import { getBase64Many } from '../images/imageStore.js'
-
-// api adapters and keys
-import { PROVIDERS } from '../../infrastructure/provider/adapterV2.js'
-import { getApiKey } from '../../infrastructure/api/keys.js'
-
-// Token estimation (new)
-import { estimateTextTokens, estimateImageTokens } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
-
 // sub routines (internal to newMessageRoutine):
-import { prepareInputData } from './prepareInputData.js'
+import { loadPairsAndConfig } from './loadPairsAndConfig.js'
 import { selectContextPairs } from './selectContextPairs.js'
-import { buildRequest } from './buildRequest.js'
+import { buildRequestParts } from './buildRequestParts.js'
 import { sendWithRetry } from './sendWithRetry.js'
 import { parseResponse } from './parseResponse.js'
 
@@ -30,9 +13,9 @@ import { parseResponse } from './parseResponse.js'
  * 
  * @param {Object} params
  * @param {string} params.userText - New user message text
- * @param {string[]} params.imageIds - Attached image IDs
+ * @param {string[]} params.pendingImageIds - Attached image IDs for the new message
  * @param {string} params.topicId - Topic ID
- * @param {string} params.model - Model ID
+ * @param {string} params.modelId - Model ID
  * @param {string[]} params.visiblePairIds - WYSIWYG history pair IDs
  * @param {string|null} params.activePartId - Currently focused part ID
  * @param {Object} params.store - Message store
@@ -41,76 +24,70 @@ import { parseResponse } from './parseResponse.js'
  */
 export async function sendNewMessage({
   userText,
-  imageIds,
+  pendingImageIds,
   topicId,
-  model,
+  modelId,
   visiblePairIds,
   activePartId,
   store,
   editingPairId,
 }) {
-  console.log('[sendNewMessage] Phase 1: Prepare input data')
   
-  // Phase 1: Prepare input data (gets all dependencies internally)
-  const prepared = prepareInputData({
+  // Phase 1: Load visible pairs and send configuration (gets all dependencies internally)
+  const {
+    systemMessage,
+    visiblePairs,
+    settings,
+    providerId,
+    options,
+  } = loadPairsAndConfig({
     topicId,
     visiblePairIds,
-    model,
+    modelId,
     store,
-    getSettings,
-    getModelMeta,
-    getApiKey,
   })
-  console.log('[sendNewMessage] Prepared:', prepared)
-  console.log('[sendNewMessage] Phase 2: Select context pairs')
+  console.log('[sendNewMessage] Phase 1 completed.', {
+    systemMessage,
+    visiblePairsCount: visiblePairs.length,
+    providerId,
+    options,
+  })
   
   // Phase 2: Select which history pairs fit in context
-  const context = await selectContextPairs({
-    visiblePairs: prepared.visiblePairs,
-    systemMessage: prepared.systemMessage,
+  const selectedHistoryPairs = await selectContextPairs({
+    visiblePairs,
+    systemMessage,
     userText,
-    imageIds,
-    model,
-    provider: prepared.provider,
-    settings: prepared.settings,
-    // Inject functions
-    estimateTextTokens,
-    estimateImageTokens,
-    getModelBudget,
-    getImageMetadata,  // Only loads metadata, not blobs
+    pendingImageIds,
+    modelId,
+    providerId,
+    settings,
   })
-  console.log('[sendNewMessage] Context:', context)
-  console.log('[sendNewMessage] Phase 3: Build API request (with batch image encoding)')
+  console.log('[sendNewMessage] Phase 2 completed. Selected pairs:', context)
   
-  // Phase 3: Build API request (batch encodes all images in one transaction)
-  const request = await buildRequest({
-    selectedPairs: context.selectedHistoryPairs,
-    systemMessage: prepared.systemMessage,
+  // Phase 3: Build provider-agnostic request parts (batch encodes all images)
+  const requestParts = await buildRequestParts({
+    selectedPairs: selectedHistoryPairs,
     userText,
-    imageIds,
-    model,
-    getBase64Many,  // Batch encoding function
+    pendingImageIds,
   })
-  console.log('[sendNewMessage] Request:', request)
-  console.log('[sendNewMessage] Phase 4: Send to provider with retry')
+  console.log('[sendNewMessage] Phase 3 completed. Request parts:', requestParts)
   
   // Phase 4: Send to provider with retry
-  const response = await sendWithRetry({
-    request,
-    provider: prepared.provider,
-    model,
-    apiKey: prepared.apiKey,
-    options: prepared.options,
-    maxRetries: 3,
-    providers: PROVIDERS,
+  const rawResponse = await sendWithRetry({
+    requestParts,
+    providerId,
+    modelId,
+    systemMessage,
+    options,
+    maxRetries: 5,
     signal: null,  // Add abort controller
   })
-  console.log('[sendNewMessage] Response:', response)
-  console.log('[sendNewMessage] Phase 5: Parse response')
+  console.log('[sendNewMessage] Phase 4 completed. RawResponse:', rawResponse)
   
   // Phase 5: Parse provider response (extract code, equations, metadata)
-  const parsed = parseResponse({ response })
-  console.log('[sendNewMessage] Parsed:', parsed)
+  const parsedResponse = parseResponse(rawResponse)
+  console.log('[sendNewMessage] Phase 5 completed. ParsedResponse:', parsedResponse)
   
   // Phase 6: Store pair
   

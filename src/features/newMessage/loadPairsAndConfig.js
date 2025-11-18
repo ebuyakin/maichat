@@ -1,30 +1,28 @@
-// Phase 1: Prepare input data for sending
+// Phase 1: Load visible pairs and send configuration
+
+// user and model settings
+import { getSettings } from '../../core/settings/index.js'
+import { getModelMeta } from '../../core/models/modelCatalog.js'
 
 /**
- * Prepare and validate input data
+ * Load visible pairs from store and resolve model/topic configuration
  * 
  * @param {Object} params
  * @param {string} params.topicId - Topic ID
  * @param {string[]} params.visiblePairIds - Visible pair IDs
- * @param {string} params.model - Model ID
+ * @param {string} params.modelId - Model ID
  * @param {Object} params.store - Message store
- * @param {Function} params.getSettings - Get app settings function
- * @param {Function} params.getModelMeta - Get model metadata function
- * @param {Function} params.getApiKey - Get API key function
  * @returns {Object} Prepared data
  */
-export function prepareInputData({ 
+export function loadPairsAndConfig({ 
   topicId, 
   visiblePairIds, 
-  model, 
+  modelId, 
   store,
-  getSettings,
-  getModelMeta,
-  getApiKey,
 }) {
   // Get dependencies
   const settings = getSettings()
-  const modelMeta = getModelMeta(model)
+  const modelMeta = getModelMeta(modelId)
   
   // Get topic and system message
   const topic = store.topics.get(topicId)
@@ -38,10 +36,7 @@ export function prepareInputData({
     .sort((a, b) => a.createdAt - b.createdAt)
   
   // Get provider from model metadata
-  const provider = modelMeta?.provider || 'openai'
-  
-  // Get API key for provider
-  const apiKey = getApiKey(provider)
+  const providerId = modelMeta?.provider || 'openai'
   
   // Build request options with proper precedence
   const options = {}
@@ -70,8 +65,7 @@ export function prepareInputData({
     systemMessage,
     visiblePairs,
     settings,
-    provider,
-    apiKey,
+    providerId,
     options,
   }
 }

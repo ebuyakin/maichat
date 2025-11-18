@@ -411,7 +411,7 @@ export function createInputKeyHandler({
       e.preventDefault()
       
       const params = {
-        userText: inputField.value.trim()|| 'What is my next question?',
+        userText: inputField.value.trim()|| 'How many images do you see in this messge? Can you describe them? and what should be my next question?',
         imageIds: pendingMessageMeta.attachments || [],
         topicId: pendingMessageMeta.topicId || getCurrentTopicId(),
         model: pendingMessageMeta.model || getActiveModel(),

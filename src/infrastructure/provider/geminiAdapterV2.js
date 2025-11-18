@@ -125,17 +125,16 @@ async function parseGeminiResponse({ response, responseBody }) {
     // 500 with "context too long" = context overflow
     if (response.status === 429 || errorStatus === 'RESOURCE_EXHAUSTED' ||
         (response.status === 500 && /context|too long|too large/i.test(errorMsg))) {
-      throw new AdapterError('EXCEEDED_USAGE_LIMIT', `${response.status}: ${errorMsg}`)
+      throw new AdapterError('exceededUsageLimit', `${response.status}: ${errorMsg}`)
     }
-    
-    throw new AdapterError('HTTP_ERROR', `${response.status}: ${errorMsg}`)
+    throw new AdapterError('httpError', `${response.status}: ${errorMsg}`)
   }
   
   // Extract candidate
   const candidate = responseBody.candidates?.[0]
   if (!candidate) {
     const reason = responseBody.promptFeedback?.blockReason || 'No candidates'
-    throw new AdapterError('MODEL_NO_CONTENT', `No candidates: ${reason}`)
+    throw new AdapterError('responseNoCandidateError', `No candidates: ${reason}`)
   }
   
   // Extract content
@@ -145,7 +144,7 @@ async function parseGeminiResponse({ response, responseBody }) {
     ?.join('') || ''
   
   if (!content) {
-    throw new AdapterError('MODEL_EMPTY_CONTENT', 'Empty response content')
+    throw new AdapterError('emptyResponse', 'Empty response content')
   }
   
   // Extract usage
@@ -183,7 +182,7 @@ export function createGeminiAdapterV2() {
     async sendChat({ model, messages, system, apiKey, signal, options = {} }) {
       // Validate API key
       if (!apiKey) {
-        throw new AdapterError('MISSING_KEY', 'API key not provided')
+        throw new AdapterError('missingApiKey', 'API key not provided')
       }
       
       // 1. Build request

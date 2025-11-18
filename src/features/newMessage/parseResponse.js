@@ -43,7 +43,7 @@ function sanitizeDisplayPreservingTokens(text) {
  * @param {Object} params.response - Normalized provider response
  * @returns {Object} Parsed response data
  */
-export function parseResponse({ response }) {
+export function parseResponse(response) {
   const rawText = response.content || ''
   
   // 1. Extract code blocks first (must happen before sanitization)
@@ -70,30 +70,48 @@ export function parseResponse({ response }) {
   finalDisplay = finalDisplay.replace(/\s*\[([a-z0-9_]+-\d+|eq-\d+)\]\s*/gi, ' [$1] ')
   finalDisplay = finalDisplay.replace(/ {2,}/g, ' ')
   
+  // 6. Derive final fields for return object
+  const hasCodeOrEquations = codeExtraction.hasCode || eqResult.hasEquations
+
+  const processedContent = hasCodeOrEquations
+    ? finalDisplay
+    : sanitizeAssistantText(rawText)
+
+  const codeBlocks = codeExtraction.hasCode
+    ? codeExtraction.codeBlocks
+    : undefined
+
+  const equationBlocks =
+    eqResult.equationBlocks?.length > 0 ? eqResult.equationBlocks : undefined
+
+  const citations =
+    response.citations?.length > 0 ? response.citations : undefined
+
+  const citationsMeta =
+    response.citationsMeta && Object.keys(response.citationsMeta).length > 0
+      ? response.citationsMeta
+      : undefined
+
   return {
     // Original content (never modified - for context)
     content: rawText,
-    
+
     // Processed content (for display)
-    processedContent: codeExtraction.hasCode || eqResult.hasEquations 
-      ? finalDisplay 
-      : sanitizeAssistantText(rawText),
-    
+    processedContent,
+
     // Code blocks
-    codeBlocks: codeExtraction.hasCode ? codeExtraction.codeBlocks : undefined,
-    
+    codeBlocks,
+
     // Equation blocks
-    equationBlocks: eqResult.equationBlocks?.length > 0 ? eqResult.equationBlocks : undefined,
-    
+    equationBlocks,
+
     // Token metrics from provider
     reportedTokens: response.tokenUsage?.completionTokens,
-    
+
     // Citations/sources
-    citations: response.citations?.length > 0 ? response.citations : undefined,
-    citationsMeta: response.citationsMeta && Object.keys(response.citationsMeta).length > 0 
-      ? response.citationsMeta 
-      : undefined,
-    
+    citations,
+    citationsMeta,
+
     // Provider metadata
     providerMeta: response.providerMeta,
   }
