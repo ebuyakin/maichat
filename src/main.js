@@ -26,6 +26,7 @@ window.katex = katex
 window.Prism = Prism
 
 import { initRuntimeCore, attachDomBindings } from './runtime/runtimeSetup.js'
+import { initServices } from './runtime/runtimeServices.js'
 import { createModeManager, MODES } from './features/interaction/modes.js'
 import { bindHistoryErrorActions, bindSourcesActions, bindImageBadgeActions } from './features/history/historyView.js'
 import { openSourcesOverlay } from './features/history/sourcesOverlay.js'
@@ -116,6 +117,15 @@ document.body.appendChild(loadingEl)
 const __runtime = attachDomBindings(__core)
 const historyRuntime = createHistoryRuntime(__runtime)
 try { window.__historyRuntime = historyRuntime } catch {}
+
+// Initialize services registry for clean module access
+initServices({
+  store: __runtime.store,
+  lifecycle: __runtime.lifecycle,
+  historyRuntime,
+  activeParts: __runtime.activeParts,
+  scrollController: __runtime.scrollController,
+})
 
 const {
   layoutHistoryPane,

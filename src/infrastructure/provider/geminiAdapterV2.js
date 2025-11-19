@@ -25,8 +25,8 @@ function buildGeminiRequestBody({ messages, system, options }) {
     if (msg.images && msg.images.length > 0) {
       for (const img of msg.images) {
         parts.push({
-          inlineData: {
-            mimeType: img.mime,
+          inline_data: {
+            mime_type: img.mime,
             data: img.data,
           }
         })
@@ -154,9 +154,67 @@ async function parseGeminiResponse({ response, responseBody }) {
     totalTokens: responseBody.usageMetadata.totalTokenCount || 0,
   } : undefined
   
+  // Extract citations from grounding/citation metadata
+  let citations
+  let citationsMeta
+  try {
+    const urls = []
+    const titleMap = {}
+    
+    const pushUri = (u, title) => {
+      if (typeof u === 'string' && /^https?:\/\//i.test(u)) {
+        urls.push(u)
+        if (typeof title === 'string' && title) {
+          titleMap[u] = title
+        }
+      }
+    }
+    
+    // Grounding metadata (support both camelCase and snake_case)
+    const gm = candidate.groundingMetadata || candidate.grounding_metadata
+    const chunks = gm && (gm.groundingChunks || gm.grounding_chunks)
+    if (Array.isArray(chunks)) {
+      for (const ch of chunks) {
+        if (ch && ch.web && ch.web.uri) {
+          pushUri(ch.web.uri, ch.web.title)
+        } else if (ch && ch.webChunk && ch.webChunk.uri) {
+          pushUri(ch.webChunk.uri, ch.webChunk.title)
+        } else if (ch && ch.web_chunk && ch.web_chunk.uri) {
+          pushUri(ch.web_chunk.uri, ch.web_chunk.title)
+        }
+      }
+    }
+    
+    // Fallback: citation metadata
+    const cm = candidate.citationMetadata || candidate.citation_metadata
+    const csrc = cm && (cm.citationSources || cm.citation_sources)
+    if (Array.isArray(csrc)) {
+      for (const src of csrc) {
+        pushUri(src && (src.uri || src.url))
+      }
+    }
+    
+    // Fallback: content-level citations
+    const candidateContent = candidate.content
+    if (candidateContent && Array.isArray(candidateContent.citations)) {
+      for (const cite of candidateContent.citations) {
+        pushUri(cite && (cite.uri || cite.url))
+      }
+    }
+    
+    if (urls.length) {
+      citations = urls
+      if (Object.keys(titleMap).length) {
+        citationsMeta = titleMap
+      }
+    }
+  } catch {}
+  
   return {
     content,
     tokenUsage,
+    citations,
+    citationsMeta,
   }
 }
 

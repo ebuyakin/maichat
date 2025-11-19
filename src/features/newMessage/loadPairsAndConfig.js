@@ -1,6 +1,6 @@
 // Phase 1: Load visible pairs and send configuration
 
-// user and model settings
+import { getStore } from '../../runtime/runtimeServices.js'
 import { getSettings } from '../../core/settings/index.js'
 import { getModelMeta } from '../../core/models/modelCatalog.js'
 
@@ -11,16 +11,15 @@ import { getModelMeta } from '../../core/models/modelCatalog.js'
  * @param {string} params.topicId - Topic ID
  * @param {string[]} params.visiblePairIds - Visible pair IDs
  * @param {string} params.modelId - Model ID
- * @param {Object} params.store - Message store
  * @returns {Object} Prepared data
  */
 export function loadPairsAndConfig({ 
   topicId, 
   visiblePairIds, 
   modelId, 
-  store,
 }) {
   // Get dependencies
+  const store = getStore()
   const settings = getSettings()
   const modelMeta = getModelMeta(modelId)
   

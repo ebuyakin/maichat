@@ -79,6 +79,31 @@
 - ✅ Prefer: `const doubled = arr.map(x => x * 2); func(doubled, obj.prop.length)`
 - Exception: Simple property access is OK: `func(obj.id, user.name)`
 
+6.4. Naming
+- Use suffixes for identifiers; bare nouns for objects:
+    - IDs: `userId`, `topicId`, `modelId`, `providerId`, `pendingImageIds`
+    - Objects: `user`, `topic`, `modelMeta`, `adapter`
+- Prefer full, descriptive names over cryptic ones:
+    - ✅ `parsedResponse`, `selectedHistoryPairs`
+    - ❌ `parsed`, `sel`
+- Be consistent within a module: the same concept should have the same name everywhere.
+
+6.5. Function Signatures and Returns
+- Prefer named parameters via object destructuring for multi-arg functions:
+    - `function doThing({ topicId, modelId, options }) { ... }`
+- Keep call sites simple:
+    - Pass variables, not complex expressions (see 6.3).
+    - If computing something non-trivial, assign it to a local first.
+- When returning objects, avoid complex expressions inline:
+    - ❌ `return { processed: hasCode ? finalDisplay : sanitize(raw) }`
+    - ✅ `const processed = hasCode ? finalDisplay : sanitize(raw); return { processed }`
+- It is OK to keep trivial property access or simple literals in the return:
+    - `return { id: userId, name: user.name }`
+
+6.6. Imports
+- Do not import modules that are not used in the file.
+- Do not pass whole modules or registries around “just in case”. Each module should import what it needs directly.
+
 ## 7. Debugging Strategy
 
 In order of preference:

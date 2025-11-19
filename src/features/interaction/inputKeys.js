@@ -4,7 +4,7 @@ import { getSettings } from '../../core/settings/index.js'
 import { getActiveModel } from '../../core/models/modelCatalog.js'
 import { executeSend } from '../compose/pipeline.js'
 import { executeSendWorkflow } from '../compose/sendWorkflow.js'
-import { sendNewMessage } from '../newMessage/sendNewMessage.js' // new architecture
+import { sendNewMessage } from '../newMessage/sendNewMessageOrchestrator.js' // new architecture
 import { sanitizeAssistantText } from './sanitizeAssistant.js'
 import { extractCodeBlocks } from '../codeDisplay/codeExtractor.js'
 import { extractEquations } from '../codeDisplay/equationExtractor.js'
@@ -411,23 +411,16 @@ export function createInputKeyHandler({
       e.preventDefault()
       
       const params = {
-        userText: inputField.value.trim()|| 'How many images do you see in this messge? Can you describe them? and what should be my next question?',
-        imageIds: pendingMessageMeta.attachments || [],
+        userText: inputField.value.trim() || 'How many images do you see in this message? Can you describe them? and what should be my next question?',
+        pendingImageIds: pendingMessageMeta.attachments || [],
         topicId: pendingMessageMeta.topicId || getCurrentTopicId(),
-        model: pendingMessageMeta.model || getActiveModel(),
+        modelId: pendingMessageMeta.model || getActiveModel(),
         visiblePairIds: [...new Set(activeParts.parts.map(pt => pt.pairId))],
         activePartId: activeParts.parts[activeParts.activeIndex]?.id || null,
-        store: store,
         editingPairId: window.__editingPairId || null,
       }
       
       sendNewMessage(params)
-        .then(pairId => {
-          console.log('[DEV] Success! Created pair:', pairId)
-        })
-        .catch(err => {
-          console.error('[DEV] Error:', err)
-        })
       
       return true
     }

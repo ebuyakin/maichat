@@ -164,9 +164,80 @@ async function parseOpenAIResponse({ response, responseBody }) {
     totalTokens: responseBody.usage.total_tokens || 0,
   } : undefined
   
+  // Extract citations (URLs) and optional titles from Responses API
+  let citations
+  let citationsMeta
+  try {
+    const urls = []
+    const titleMap = {}
+    
+    const push = (u, t) => {
+      if (typeof u === 'string' && /^https?:\/\//i.test(u)) {
+        urls.push(u)
+        if (typeof t === 'string' && t) {
+          titleMap[u] = t
+        }
+      }
+    }
+    
+    // Walk output blocks for citations/annotations
+    if (Array.isArray(responseBody.output)) {
+      for (const item of responseBody.output) {
+        const blocks = Array.isArray(item?.content) ? item.content : []
+        for (const b of blocks) {
+          // b.citations (array of { url, title, ... })
+          if (Array.isArray(b?.citations)) {
+            for (const c of b.citations) {
+              push(c?.url, c?.title)
+            }
+          }
+          // b.annotations with web refs
+          if (Array.isArray(b?.annotations)) {
+            for (const a of b.annotations) {
+              push(a?.url || a?.href, a?.title || a?.source)
+            }
+          }
+          // Nested content (web_result, search_result)
+          if (Array.isArray(b?.content)) {
+            for (const it of b.content) {
+              if (it && (it.type === 'web_result' || it.type === 'search_result')) {
+                push(it.url, it.title)
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Top-level references
+    if (Array.isArray(responseBody.references)) {
+      for (const r of responseBody.references) {
+        push(r?.url, r?.title)
+      }
+    }
+    
+    // Deduplicate URLs
+    if (urls.length) {
+      const seen = new Set()
+      const dedup = []
+      for (const u of urls) {
+        if (!seen.has(u)) {
+          seen.add(u)
+          dedup.push(u)
+        }
+      }
+      citations = dedup
+      if (Object.keys(titleMap).length) {
+        citationsMeta = titleMap
+      }
+    }
+  } catch {}
+  
   return {
     content,
     tokenUsage,
+    citations,
+    citationsMeta,
   }
 }
 

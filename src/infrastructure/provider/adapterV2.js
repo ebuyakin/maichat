@@ -27,7 +27,7 @@ export const PROVIDERS = ADAPTERS
  */
 export class AdapterError extends Error {
   constructor(code, message, options) {
-    // Default to cause.message if no custom message provided
+    // Do NOT use custom message when cause.messge is available
     const msg = message || options?.cause?.message || code
     super(msg, options)
     this.name = 'AdapterError'
