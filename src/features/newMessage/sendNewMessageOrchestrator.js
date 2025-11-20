@@ -33,6 +33,8 @@ export async function sendNewMessage({
   editingPairId,
 }) {
   
+  // Phase 0: Initialize new message.
+
   
   try {
     // Phase 1: Load visible pairs and send configuration
@@ -49,7 +51,6 @@ export async function sendNewMessage({
     })
     console.log('[sendNewMessage] Phase 1 completed.', {
       systemMessage,
-      visiblePairsCount: visiblePairs.length,
       providerId,
       modelId,
       options,
@@ -65,7 +66,7 @@ export async function sendNewMessage({
       providerId,
       settings,
     })
-    console.log('[sendNewMessage] Phase 2 completed. Selected pairs:', selectedHistoryPairs.length)
+    console.log('[sendNewMessage] Phase 2 completed. Selected pairs:', selectedHistoryPairs)
     
     // Phase 3: Build provider-agnostic request parts (batch encodes all images)
     const requestParts = await buildRequestParts({
@@ -73,7 +74,7 @@ export async function sendNewMessage({
       userText,
       pendingImageIds,
     })
-    console.log('[sendNewMessage] Phase 3 completed. Request parts:', requestParts.messages.length)
+    console.log('[sendNewMessage] Phase 3 completed. Request parts:', requestParts)
     
     // Phase 4: Send to provider with retry
     const rawResponse = await sendWithRetry({
@@ -85,13 +86,14 @@ export async function sendNewMessage({
       maxRetries: 3,
       signal: null,  // Add abort controller from lifecycle
     })
-    console.log('[sendNewMessage] Phase 4 completed.')
+    console.log('[sendNewMessage] Phase 4 completed.', rawResponse)
     
     // Parse response (extract content, citations, etc.)
     const parsedResponse = parseResponse(rawResponse)
-    console.log('[sendNewMessage] Parsed response.')
+    console.log('[sendNewMessage] Parsed response.', parsedResponse)
     
     // Phase 5a: Update success
+    /*
     updatePairSuccess({
       pairId,
       response: parsedResponse,
@@ -99,8 +101,11 @@ export async function sendNewMessage({
       store,
     })
     console.log('[sendNewMessage] Phase 5a completed: success')
+    */
     
   } catch (error) {
+    console.log(error)
+    /*
     // Phase 5b: Update error
     updatePairError({
       pairId,
@@ -108,9 +113,11 @@ export async function sendNewMessage({
       store,
     })
     console.log('[sendNewMessage] Phase 5b completed: error', error)
+  */
   }
   
   // Phase 6: Update UI (same for success/error)
+  /*
   updateUI({
     pairId,
     isReask,
@@ -122,4 +129,5 @@ export async function sendNewMessage({
   console.log('[sendNewMessage] Phase 6 completed: UI updated')
   
   return pairId
+  */
 }

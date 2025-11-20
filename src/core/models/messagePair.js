@@ -3,35 +3,61 @@
 /**
  * @typedef {Object} MessagePair
  * @property {string} id
- * @property {number} createdAt - ms epoch
- * @property {string} topicId
- * @property {string} model
+ * 
+ * 1. Core parameters. Meta line.
+ * @property {number} createdAt - ms epoch. timestamp. messages ordered in history by createdAt
+ * @property {string} topicId - from topic tree
+ * @property {string} model - model Id. from model catalog
  * @property {number} star - 0..3 integer
  * @property {'b'|'g'} colorFlag - simple user flag (b=blue flagged, g=grey unflagged)
+ * 
+ * 2. User text (user request) data.
  * @property {string} userText
- * @property {string} assistantText - original content (always preserved for context)
  * @property {string[]|undefined} attachments - image ids attached to the user message (attach order)
- * @property {('idle'|'sending'|'error'|'complete')} lifecycleState
- * @property {string|undefined} errorMessage
- * @property {number|undefined} tokenLength
- * @property {number|undefined} textTokens - precomputed total text tokens (userText + assistantText)
- * @property {number|undefined} attachmentTokens - precomputed total image tokens for all attachments
+ * 
+ * 3. Assistant response (current) data. NB: current and previous can be swapped by user
+ * @property {string} assistantText - original (raw) content (always preserved for context)
+ * @property {string[]|undefined} citations - list of source URLs from the assistant response (optional)
+ * @property {{[url:string]: string}|undefined} citationsMeta - map of URL -> display title
  * @property {number|undefined} responseMs - provider-reported request processing time in milliseconds
- * @property {string|undefined} previousAssistantText - previous assistant answer preserved after in-place re-ask (optional)
+ * 
+ * 3.1. Assistant response extractions (stored, but can be calculated on-the-fly)
+ * @property {string|undefined} processedContent - content with code block placeholders (optional)
+ * @property {Array<CodeBlock>|undefined} codeBlocks - extracted code blocks (optional)
+ * @property {Array<EquationBlock>|undefined} equationBlocks - extracted equation blocks (optional)
+ * 
+ * 3.2. Assistant response (previous) data. Second opinion. Optional
+ * @property {string|undefined} previousAssistantText -  assistant answer after in-place re-ask (opt)
+ * 
+ * 3.3. Replacement (re-Ask, second opintion) data paremeters
  * @property {string|undefined} previousModel - model used to produce the previous answer (optional)
  * @property {number|undefined} replacedAt - timestamp (ms) when in-place replacement occurred (optional)
  * @property {string|undefined} replacedBy - actor/model that initiated replacement (optional)
- * @property {number|undefined} userChars - length of userText in characters (ground truth; preferred for heuristics)
- * @property {number|undefined} assistantChars - length of assistantText in characters (ground truth; preferred for heuristics)
- * @property {number|undefined} assistantProviderTokens - provider-reported token count for assistant response (highest priority; single number, not a map)
- * @property {number|undefined} previousAssistantChars - length of previousAssistantText in characters (when second opinion exists)
- * @property {number|undefined} previousAssistantProviderTokens - provider-reported token count for previous assistant response
- * @property {Array<{id:string, w:number, h:number, tokenCost:Object}>|undefined} imageBudgets - denormalized image budgeting metadata for fast estimation
- * @property {string|undefined} processedContent - content with code block placeholders (optional, only if code detected)
- * @property {Array<CodeBlock>|undefined} codeBlocks - extracted code blocks (optional, only if code detected)
- * @property {Array<EquationBlock>|undefined} equationBlocks - extracted equation blocks (optional, only if equations detected)
- * @property {string[]|undefined} citations - list of source URLs used to generate the assistant response (optional)
- * @property {{[url:string]: string}|undefined} citationsMeta - optional map of URL -> display title/label (e.g., domain) provided by the model
+ * 
+ * 4. Status/state data
+ * @property {('idle'|'sending'|'error'|'complete')} lifecycleState
+ * @property {string|undefined} errorMessage
+ * 
+ * 5. Budget (token counts, - tc)
+ * @property {number|undefined} userTextTokens - calculated tokens in user text (NEW)
+ * @property {number|undefined} assistantTextTokens - calculated tokens in assistant response (NEW)
+ * @property {number|undefined} assistantProviderTokens - provider-reported tc for assistant resp.
+ * @property {number|undefined} previousAssistantProviderTokens - provider-reported tc for previous resp 
+ * 
+ * 5.1. token counts for images attached to pair calculated for each provider (tokenCost).
+ * @property {Array<{id:string, w:number, h:number, tokenCost:Object}>|undefined} imageBudgets 
+ * 
+ * 5.2. legacy, but still in use in older versions:
+ * @property {number|undefined} tokenLength - legacy (seems unused)
+ * @property {number|undefined} textTokens - precomputed total text tokens (userText + assistantText)
+ * @property {number|undefined} attachmentTokens - precomputed total image tokens for all attachments
+ * 
+ * 5.3 chacarters count (legacy, still in use)
+ * @property {number|undefined} userChars - length of userText in characters 
+ * @property {number|undefined} assistantChars - length of assistantText in characters 
+ * @property {number|undefined} previousAssistantChars - length of previousAssistantText in characters 
+ * 
+ * 6. Future (not currently used)
  * @property {Object|undefined} providerMeta - provider-specific metadata (optional; reserved for future use)
  */
 
