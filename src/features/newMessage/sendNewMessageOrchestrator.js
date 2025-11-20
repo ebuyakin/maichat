@@ -1,3 +1,10 @@
+/*
+* This is new experimental architecture. It's design to work independently and can be used
+* in parallel with the current (production) architecture. It is intended to replace the current
+* architecture after thorough in-practice testing. The purpose of this refactoring is to improve
+* modularity of the new message routine, transparency and code quality to facilitate maintainability,
+* debugging, and future development.
+*/
 // Main orchestrator for sending new messages
 
 import { initializePair } from './initializePair.js'
@@ -5,9 +12,7 @@ import { selectContextPairs } from './selectContextPairs.js'
 import { buildRequestParts } from './buildRequestParts.js'
 import { sendWithRetry } from './sendWithRetry.js'
 import { parseResponse } from './parseResponse.js'
-import { updatePairSuccess } from './updatePairSuccess.js'
-import { updatePairError } from './updatePairError.js'
-import { updateUI } from './updateUI.js'
+import { updatePairAndUI } from './updatePairAndUI.js'
 
 
 /**
@@ -32,6 +37,7 @@ export async function sendNewMessage({
   editingPairId,
 }) {
   
+  userText = 'What is the weather forecast today in Lisbon?'
   // Phase 0: Initialize pair and show user message
   const { pair, previousResponse } = await initializePair({
     userText,
@@ -41,6 +47,9 @@ export async function sendNewMessage({
     editingPairId,
   })
   console.log('[sendNewMessage] Phase 0 completed.', { pairId: pair.id, isReask: Boolean(editingPairId) })
+  
+  let responseData = null
+  let errorToReport = null
   
   try {
     // Phase 1: Select context pairs and load configuration
@@ -77,50 +86,29 @@ export async function sendNewMessage({
       systemMessage,
       options,
       maxRetries: 5,
-      signal: null,  // Add abort controller from lifecycle
+      signal: null,  // : Add abort controller from lifecycle
     })
     console.log('[sendNewMessage] Phase 3 completed.', rawResponse)
     
-    // Parse response (extract content, citations, etc.)
-    const parsedResponse = parseResponse(rawResponse)
-    console.log('[sendNewMessage] Parsed response.', parsedResponse)
-    
-    // Phase 5a: Update success
-    /*
-    updatePairSuccess({
-      pairId: pair.id,
-      response: parsedResponse,
-      previousResponse,
-      store,
-    })
-    console.log('[sendNewMessage] Phase 5a completed: success')
-    */
+    // Phase 4: Parse response (extract content, citations, etc.)
+    responseData = parseResponse(rawResponse)
+    console.log('[sendNewMessage] Phase 4 completed.', responseData)
     
   } catch (error) {
-    console.log(error)
-    /*
-    // Phase 5b: Update error
-    updatePairError({
-      pairId: pair.id,
-      error,
-      store,
-    })
-    console.log('[sendNewMessage] Phase 5b completed: error', error)
-  */
+    errorToReport = error
+    console.log('[sendNewMessage] Error caught:', error)
   }
   
-  // Phase 6: Update UI (same for success/error)
-  /*
-  updateUI({
-    pairId: pair.id,
+  // Phase 5: Update pair and UI (unified for success/error)
+  updatePairAndUI({
+    pair,
+    modelId,
+    response: responseData,
+    error: errorToReport,
+    previousResponse,
     isReask: Boolean(editingPairId),
-    historyRuntime,
-    activeParts,
-    scrollController,
-    lifecycle,
   })
-  console.log('[sendNewMessage] Phase 6 completed: UI updated')
+  console.log('[sendNewMessage] Phase 5 completed: pair and UI updated')
   
   return pair.id
-  */
 }

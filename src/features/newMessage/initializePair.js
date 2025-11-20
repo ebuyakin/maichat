@@ -30,7 +30,9 @@ async function handleNewMessage({ userText, pendingImageIds, topicId, modelId })
     topicId,
     model: modelId,
     userText,
-    assistantText: '',  // Empty until response arrives
+    // NOTE: Do NOT set assistantText here!
+    // Setting it (even to '') will cause UI to render empty assistant part immediately.
+    // assistantText should only be set in Phase 5 when response arrives.
   })
   
   // Get provider and settings for token estimation

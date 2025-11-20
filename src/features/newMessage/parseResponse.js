@@ -93,26 +93,13 @@ export function parseResponse(response) {
       : undefined
 
   return {
-    // Original content (never modified - for context)
-    content: rawText,
-
-    // Processed content (for display)
-    processedContent,
-
-    // Code blocks
-    codeBlocks,
-
-    // Equation blocks
-    equationBlocks,
-
-    // Token metrics from provider
-    reportedTokens: response.tokenUsage?.completionTokens,
-
-    // Citations/sources
-    citations,
-    citationsMeta,
-
-    // Provider metadata
-    providerMeta: response.providerMeta,
+    content: rawText, // Original content (never modified - for context)
+    processedContent, // Processed content (for display)
+    codeBlocks, 
+    equationBlocks, 
+    reportedTokens: response.tokenUsage?.completionTokens, // Token metrics from provider
+    responseMs: response.responseMs, // Response time from adapter
+    citations, // sources used by the model (URLS)
+    citationsMeta, // titles of the soureces
   }
 }

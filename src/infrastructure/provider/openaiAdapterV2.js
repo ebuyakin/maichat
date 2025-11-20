@@ -245,6 +245,7 @@ async function parseOpenAIResponse({ response, responseBody }) {
  * Create OpenAI adapter for new architecture
  * 
  * @returns {Object} Adapter with sendChat method
+ * @returns {Function} adapter.sendChat - Send chat request
  */
 export function createOpenAIAdapterV2() {
   return {
@@ -258,7 +259,12 @@ export function createOpenAIAdapterV2() {
      * @param {string} params.apiKey - API key
      * @param {AbortSignal} params.signal - Abort signal
      * @param {Object} params.options - Options (temperature, maxOutputTokens)
-     * @returns {Promise<Object>} Response { content, tokenUsage, responseMs }
+     * @returns {Promise<Object>} Response object
+     * @returns {string} response.content - Assistant response text
+     * @returns {Object} response.tokenUsage - Token usage {promptTokens, completionTokens, totalTokens}
+     * @returns {number} response.responseMs - Response time in milliseconds
+     * @returns {string[]|undefined} response.citations - Citation URLs (if any)
+     * @returns {Object|undefined} response.citationsMeta - Citation metadata {url: title}
      */
     async sendChat({ model, messages, system, apiKey, signal, options = {} }) {
       // Validate API key
