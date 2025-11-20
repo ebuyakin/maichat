@@ -26,10 +26,22 @@ export const PROVIDERS = ADAPTERS
  * Wraps underlying errors (network, parse, HTTP) with error code for routing
  */
 export class AdapterError extends Error {
-  constructor(code, message, options) {
-    // Do NOT use custom message when cause.messge is available
-    const msg = message || options?.cause?.message || code
-    super(msg, options)
+  constructor(code, messageOrOptions) {
+    // Detect if second param is options object or string message
+    let msg
+    let opts
+    
+    if (messageOrOptions && typeof messageOrOptions === 'object') {
+      // Called as: new AdapterError('code', { cause: err })
+      msg = messageOrOptions.cause?.message || code
+      opts = messageOrOptions
+    } else {
+      // Called as: new AdapterError('code', 'message') or new AdapterError('code')
+      msg = messageOrOptions || code
+      opts = undefined
+    }
+    
+    super(msg, opts)
     this.name = 'AdapterError'
     this.code = code
   }

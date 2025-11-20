@@ -5,11 +5,13 @@ import {
   getHistoryRuntime, 
   getLifecycle, 
   getActiveParts, 
-  getScrollController 
+  getScrollController,
+  getInteraction
 } from '../../runtime/runtimeServices.js'
 import { getSettings } from '../../core/settings/index.js'
 import { getModelMeta } from '../../core/models/modelCatalog.js'
 import { estimateTextTokens } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
+import { showToast } from '../../shared/toast.js'
 
 /**
  * Handle successful response
@@ -81,27 +83,48 @@ function handleSuccess({ pair, response, previousResponse, newModelId }) {
 /**
  * Handle error
  * Updates pair with error state
+ * For re-ask: reverts to previous good state (no error shown)
  */
-function handleError({ pair, error }) {
+function handleError({ pair, error, previousResponse }) {
   const store = getStore()
   
-  // Extract error message
+  // Extract error message (handle various error formats)
   let errorMessage = 'Unknown error'
-  if (error && error.message) {
-    errorMessage = error.message
+  
+  if (error instanceof Error) {
+    // Standard Error object
+    errorMessage = error.message || error.toString()
+    
+    // If message is still "[object Object]", try to extract from cause
+    if (errorMessage === '[object Object]' && error.cause) {
+      errorMessage = error.cause.message || error.cause.toString()
+    }
   } else if (typeof error === 'string') {
     errorMessage = error
   }
   
-  // Update pair with error state
-  store.updatePair(pair.id, {
-    assistantText: '', // Explicitly empty (no response received)
-    lifecycleState: 'error',
-    errorMessage,
-  })
+  // Fallback: use error code if available (AdapterError)
+  if (errorMessage === '[object Object]' && error.code) {
+    errorMessage = error.code
+  }
   
-  // Note: Don't clear previousResponse data on error
-  // User can still re-ask to try again
+  if (previousResponse) {
+    // Re-ask error: revert to 'complete' state (keep existing response intact)
+    store.updatePair(pair.id, {
+      lifecycleState: 'complete',
+    })
+    
+    // Show transient notification to user
+    showToast('Re-ask failed: ' + errorMessage, true)
+    
+  } else {
+    // New message error: set error state
+    store.updatePair(pair.id, {
+      assistantText: '',
+      lifecycleState: 'error',
+      errorMessage,
+    })
+  }
 }
 
 /**
@@ -113,12 +136,14 @@ function updateUI({ pair, isReask }) {
   const lifecycle = getLifecycle()
   const activeParts = getActiveParts()
   const scrollController = getScrollController()
+  const interaction = getInteraction()
   
   // Render updated history
   historyRuntime.renderCurrentView({ preserveActive: isReask })
   
   // End send state (removes "AI thinking" badge)
   lifecycle.completeSend()
+  interaction.updateSendDisabled()  // Trigger send button UI update
   
   // Activate appropriate message
   if (!isReask) {
@@ -161,7 +186,7 @@ export function updatePairAndUI({
 }) {
   // Update store
   if (error) {
-    handleError({ pair, error })
+    handleError({ pair, error, previousResponse })
   } else {
     handleSuccess({ pair, response, previousResponse, newModelId: modelId })
   }

@@ -118,15 +118,6 @@ const __runtime = attachDomBindings(__core)
 const historyRuntime = createHistoryRuntime(__runtime)
 try { window.__historyRuntime = historyRuntime } catch {}
 
-// Initialize services registry for clean module access
-initServices({
-  store: __runtime.store,
-  lifecycle: __runtime.lifecycle,
-  historyRuntime,
-  activeParts: __runtime.activeParts,
-  scrollController: __runtime.scrollController,
-})
-
 const {
   layoutHistoryPane,
   applySpacingStyles,
@@ -201,6 +192,16 @@ const interaction = createInteraction({
   historyRuntime,
   requestDebug,
   hudRuntime,
+})
+
+// Initialize services registry for clean module access (after all services created)
+initServices({
+  store: __runtime.store,
+  lifecycle: __runtime.lifecycle,
+  historyRuntime,
+  activeParts: __runtime.activeParts,
+  scrollController: __runtime.scrollController,
+  interaction,
 })
 
 // phase 13. Optional console inspector (non-intrusive utility)

@@ -7,6 +7,7 @@ let _lifecycle = null
 let _historyRuntime = null
 let _activeParts = null
 let _scrollController = null
+let _interaction = null
 
 /**
  * Initialize runtime services registry
@@ -18,13 +19,15 @@ let _scrollController = null
  * @param {Object} services.historyRuntime - History runtime
  * @param {Object} services.activeParts - Active parts manager
  * @param {Object} services.scrollController - Scroll controller
+ * @param {Object} services.interaction - Interaction controller
  */
-export function initServices({ store, lifecycle, historyRuntime, activeParts, scrollController }) {
+export function initServices({ store, lifecycle, historyRuntime, activeParts, scrollController, interaction }) {
   _store = store
   _lifecycle = lifecycle
   _historyRuntime = historyRuntime
   _activeParts = activeParts
   _scrollController = scrollController
+  _interaction = interaction
 }
 
 /**
@@ -70,4 +73,13 @@ export function getActiveParts() {
 export function getScrollController() {
   if (!_scrollController) throw new Error('Services not initialized. Call initServices() first.')
   return _scrollController
+}
+
+/**
+ * Get interaction controller
+ * @returns {Object} Interaction controller (with updateSendDisabled, etc.)
+ */
+export function getInteraction() {
+  if (!_interaction) throw new Error('Services not initialized. Call initServices() first.')
+  return _interaction
 }

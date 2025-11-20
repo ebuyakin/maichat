@@ -412,7 +412,7 @@ export function createInputKeyHandler({
       
       const params = {
         userText: inputField.value.trim() || 'How many images do you see in this message? Can you describe them? and what should be my next question?',
-        pendingImageIds: pendingMessageMeta.attachments || [],
+        pendingImageIds: (pendingMessageMeta.attachments || []).slice(),  // Copy array to prevent race condition
         topicId: pendingMessageMeta.topicId || getCurrentTopicId(),
         modelId: pendingMessageMeta.model || getActiveModel(),
         visiblePairIds: [...new Set(activeParts.parts.map(pt => pt.pairId))],
@@ -421,6 +421,15 @@ export function createInputKeyHandler({
       }
       
       sendNewMessage(params)
+      
+      // Clear input state immediately (before async workflow completes)
+      inputField.value = ''
+      pendingMessageMeta.attachments = []
+      try {
+        localStorage.removeItem('maichat_draft_attachments')
+        localStorage.removeItem('maichat_draft_text')
+      } catch {}
+      updateAttachIndicator()
       
       return true
     }

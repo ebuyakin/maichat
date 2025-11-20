@@ -5,7 +5,8 @@ import {
   getHistoryRuntime, 
   getLifecycle, 
   getActiveParts, 
-  getScrollController 
+  getScrollController,
+  getInteraction
 } from '../../runtime/runtimeServices.js'
 import { estimateTextTokens } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
 import { getSettings } from '../../core/settings/index.js'
@@ -164,12 +165,14 @@ export async function initializePair({
   const lifecycle = getLifecycle()
   const activeParts = getActiveParts()
   const scrollController = getScrollController()
+  const interaction = getInteraction()
   
   // Render with appropriate preserve mode
   historyRuntime.renderCurrentView({ preserveActive: isReask })
   
   // Begin send (shows "AI thinking" badge)
   lifecycle.beginSend()
+  interaction.updateSendDisabled()  // Trigger send button UI update
   
   // Activate message
   if (!isReask) {

@@ -1,10 +1,3 @@
-/*
-* This is new experimental architecture. It's design to work independently and can be used
-* in parallel with the current (production) architecture. It is intended to replace the current
-* architecture after thorough in-practice testing. The purpose of this refactoring is to improve
-* modularity of the new message routine, transparency and code quality to facilitate maintainability,
-* debugging, and future development.
-*/
 // Main orchestrator for sending new messages
 
 import { initializePair } from './initializePair.js'
@@ -37,7 +30,8 @@ export async function sendNewMessage({
   editingPairId,
 }) {
   
-  userText = 'What is the weather forecast today in Lisbon?'
+  userText = 'can you describe the image? How many images do you see?'
+  editingPairId = 'dd0abd57-c91b-4232-bb0c-d0498793bb24'
   // Phase 0: Initialize pair and show user message
   const { pair, previousResponse } = await initializePair({
     userText,
