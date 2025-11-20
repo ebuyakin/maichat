@@ -1,7 +1,6 @@
 // Main orchestrator for sending new messages
 
-//import { initialzeNewRequest } from './initialzeNewRequest.js'
-import { loadPairsAndConfig } from './loadPairsAndConfig.js'
+import { initializePair } from './initializePair.js'
 import { selectContextPairs } from './selectContextPairs.js'
 import { buildRequestParts } from './buildRequestParts.js'
 import { sendWithRetry } from './sendWithRetry.js'
@@ -33,60 +32,54 @@ export async function sendNewMessage({
   editingPairId,
 }) {
   
-  // Phase 0: Initialize new message.
-
+  // Phase 0: Initialize pair and show user message
+  const { pair, previousResponse } = await initializePair({
+    userText,
+    pendingImageIds,
+    topicId,
+    modelId,
+    editingPairId,
+  })
+  console.log('[sendNewMessage] Phase 0 completed.', { pairId: pair.id, isReask: Boolean(editingPairId) })
   
   try {
-    // Phase 1: Load visible pairs and send configuration
+    // Phase 1: Select context pairs and load configuration
     const {
+      selectedPairs,
       systemMessage,
-      visiblePairs,
-      settings,
       providerId,
       options,
-    } = loadPairsAndConfig({
+    } = await selectContextPairs({
       topicId,
       visiblePairIds,
+      newMessagePair: pair,
       modelId,
     })
     console.log('[sendNewMessage] Phase 1 completed.', {
+      selectedPairsCount: selectedPairs.length,
       systemMessage,
       providerId,
-      modelId,
       options,
     })
     
-    // Phase 2: Select which history pairs fit in context
-    const selectedHistoryPairs = await selectContextPairs({
-      visiblePairs,
-      systemMessage,
-      userText,
-      pendingImageIds,
-      modelId,
-      providerId,
-      settings,
-    })
-    console.log('[sendNewMessage] Phase 2 completed. Selected pairs:', selectedHistoryPairs)
-    
-    // Phase 3: Build provider-agnostic request parts (batch encodes all images)
+    // Phase 2: Build provider-agnostic request parts (batch encodes all images)
     const requestParts = await buildRequestParts({
-      selectedPairs: selectedHistoryPairs,
-      userText,
-      pendingImageIds,
+      selectedPairs,
+      newMessagePair: pair,
     })
-    console.log('[sendNewMessage] Phase 3 completed. Request parts:', requestParts)
+    console.log('[sendNewMessage] Phase 2 completed. Request parts:', requestParts)
     
-    // Phase 4: Send to provider with retry
+    // Phase 3: Send to provider with retry
     const rawResponse = await sendWithRetry({
       requestParts,
       providerId,
       modelId,
       systemMessage,
       options,
-      maxRetries: 3,
+      maxRetries: 5,
       signal: null,  // Add abort controller from lifecycle
     })
-    console.log('[sendNewMessage] Phase 4 completed.', rawResponse)
+    console.log('[sendNewMessage] Phase 3 completed.', rawResponse)
     
     // Parse response (extract content, citations, etc.)
     const parsedResponse = parseResponse(rawResponse)
@@ -95,7 +88,7 @@ export async function sendNewMessage({
     // Phase 5a: Update success
     /*
     updatePairSuccess({
-      pairId,
+      pairId: pair.id,
       response: parsedResponse,
       previousResponse,
       store,
@@ -108,7 +101,7 @@ export async function sendNewMessage({
     /*
     // Phase 5b: Update error
     updatePairError({
-      pairId,
+      pairId: pair.id,
       error,
       store,
     })
@@ -119,8 +112,8 @@ export async function sendNewMessage({
   // Phase 6: Update UI (same for success/error)
   /*
   updateUI({
-    pairId,
-    isReask,
+    pairId: pair.id,
+    isReask: Boolean(editingPairId),
     historyRuntime,
     activeParts,
     scrollController,
@@ -128,6 +121,6 @@ export async function sendNewMessage({
   })
   console.log('[sendNewMessage] Phase 6 completed: UI updated')
   
-  return pairId
+  return pair.id
   */
 }

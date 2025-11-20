@@ -7,6 +7,10 @@ import {
   getActiveParts, 
   getScrollController 
 } from '../../runtime/runtimeServices.js'
+import { estimateTextTokens } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
+import { getSettings } from '../../core/settings/index.js'
+import { getModelMeta } from '../../core/models/modelCatalog.js'
+import { getManyMetadata as getImageMetadata } from '../images/imageStore.js'
 
 /**
  * Create new pair for true new message
@@ -16,9 +20,9 @@ import {
  * @param {string[]} params.pendingImageIds - Attached image IDs
  * @param {string} params.topicId - Topic ID
  * @param {string} params.modelId - Model ID
- * @returns {Object} Initialization result
+ * @returns {Promise<Object>} Initialization result
  */
-function handleNewMessage({ userText, pendingImageIds, topicId, modelId }) {
+async function handleNewMessage({ userText, pendingImageIds, topicId, modelId }) {
   const store = getStore()
   
   // Create pair in store
@@ -29,17 +33,56 @@ function handleNewMessage({ userText, pendingImageIds, topicId, modelId }) {
     assistantText: '',  // Empty until response arrives
   })
   
+  // Get provider and settings for token estimation
+  const modelMeta = getModelMeta(modelId)
+  const providerId = modelMeta?.provider || 'openai'
+  const settings = getSettings()
+  
+  // Calculate user text metrics
+  const userChars = userText.length
+  const userTextTokens = estimateTextTokens(userText, providerId, settings)
+  
+  // Calculate image budgets and tokens
+  let attachmentTokens = 0
+  const imageBudgets = []
+  
+  if (pendingImageIds && pendingImageIds.length > 0) {
+    const images = await getImageMetadata(pendingImageIds)
+    for (const img of images) {
+      if (img && typeof img.w === 'number' && typeof img.h === 'number') {
+        // Legacy: use precomputed tokenCost for current provider
+        attachmentTokens += (img.tokenCost && img.tokenCost[providerId]) || 0
+        
+        // New: store denormalized budget metadata (already precomputed)
+        imageBudgets.push({
+          id: img.id,
+          w: img.w,
+          h: img.h,
+          tokenCost: img.tokenCost || {}, // Object: { openai: 765, anthropic: 800, ... }
+        })
+      }
+    }
+  }
+  
+  // Legacy textTokens (for old pipeline compatibility). only user text counted.
+  const textTokens = userTextTokens
+  
   // Add metadata
   store.updatePair(pairId, {
     attachments: pendingImageIds,
     lifecycleState: 'sending',
+    userChars,
+    userTextTokens,
+    textTokens,  // Legacy (for old pipeline)
+    attachmentTokens,  // Legacy (for old pipeline)
+    imageBudgets,  // New (for fast estimation)
   })
   
+  // Get updated pair from store
+  const pair = store.pairs.get(pairId)
+  
   return {
-    pairId,
-    userText,
-    pendingImageIds,
-    isReask: false,
+    pair,
     previousResponse: null,
   }
 }
@@ -49,10 +92,9 @@ function handleNewMessage({ userText, pendingImageIds, topicId, modelId }) {
  * 
  * @param {Object} params
  * @param {string} params.editingPairId - Pair ID to re-ask
- * @param {string} params.modelId - New model ID
  * @returns {Object} Initialization result
  */
-function handleReask({ editingPairId, modelId }) {
+function handleReask({ editingPairId }) {
   const store = getStore()
   const pair = store.pairs.get(editingPairId)
   
@@ -60,26 +102,31 @@ function handleReask({ editingPairId, modelId }) {
     throw new Error(`Pair not found: ${editingPairId}`)
   }
   
-  // Save previous response for later storage
+  // Save previous response data (will be stored in Phase 6 after new response)
   const previousResponse = {
+    // 3. Current assistant data (essential - can't be recalculated)
     assistantText: pair.assistantText,
-    model: pair.model,
-    assistantProviderTokens: pair.assistantProviderTokens,
+    citations: pair.citations,
+    citationsMeta: pair.citationsMeta,
     responseMs: pair.responseMs,
+    
+    // 5. Budget (assistant and user - provider-specific estimates)
+    userTextTokens: pair.userTextTokens,
+    assistantTextTokens: pair.assistantTextTokens,
+    assistantProviderTokens: pair.assistantProviderTokens,
+    assistantChars: pair.assistantChars || pair.assistantText.length,
+    
+    // Model info
+    model: pair.model,
   }
   
-  // Update pair state for re-ask
+  // Update pair state for re-ask (minimal update)
   store.updatePair(editingPairId, {
-    model: modelId,  // New model
     lifecycleState: 'sending',
-    errorMessage: undefined,  // Clear previous errors
   })
   
   return {
-    pairId: editingPairId,
-    userText: pair.userText,
-    pendingImageIds: pair.attachments || [],
-    isReask: true,
+    pair,
     previousResponse,
   }
 }
@@ -94,9 +141,9 @@ function handleReask({ editingPairId, modelId }) {
  * @param {string} params.topicId - Topic ID (for new message)
  * @param {string} params.modelId - Model ID
  * @param {string|null} params.editingPairId - Pair ID if re-asking
- * @returns {Object} { pairId, userText, pendingImageIds, isReask, previousResponse }
+ * @returns {Promise<Object>} { pair, previousResponse }
  */
-export function initializePair({
+export async function initializePair({
   userText,
   pendingImageIds,
   topicId,
@@ -105,8 +152,10 @@ export function initializePair({
 }) {
   // Determine path and create/update pair
   const result = editingPairId
-    ? handleReask({ editingPairId, modelId })
-    : handleNewMessage({ userText, pendingImageIds, topicId, modelId })
+    ? handleReask({ editingPairId })
+    : await handleNewMessage({ userText, pendingImageIds, topicId, modelId })
+  
+  const isReask = Boolean(editingPairId)
   
   // Update UI (same for both paths)
   const historyRuntime = getHistoryRuntime()
@@ -115,13 +164,13 @@ export function initializePair({
   const scrollController = getScrollController()
   
   // Render with appropriate preserve mode
-  historyRuntime.renderCurrentView({ preserveActive: result.isReask })
+  historyRuntime.renderCurrentView({ preserveActive: isReask })
   
   // Begin send (shows "AI thinking" badge)
   lifecycle.beginSend()
   
   // Activate message
-  if (!result.isReask) {
+  if (!isReask) {
     // New message: activate last (newly created user message)
     activeParts.last()
   }

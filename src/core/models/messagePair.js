@@ -26,8 +26,11 @@
  * @property {Array<CodeBlock>|undefined} codeBlocks - extracted code blocks (optional)
  * @property {Array<EquationBlock>|undefined} equationBlocks - extracted equation blocks (optional)
  * 
- * 3.2. Assistant response (previous) data. Second opinion. Optional
- * @property {string|undefined} previousAssistantText -  assistant answer after in-place re-ask (opt)
+ * 3.2. Assistant response (previous) data. Second opinion. Optional (appears in case of re-ask)
+ * @property {string|undefined} previousAssistantText - assistant answer after in-place re-ask (opt)
+ * @property {string[]|undefined} previousCitations - citations from previous response (optional)
+ * @property {{[url:string]: string}|undefined} previousCitationsMeta - prev. citations met (opt)
+ * @property {number|undefined} previousResponseMs - response time for previous answer (optional)
  * 
  * 3.3. Replacement (re-Ask, second opintion) data paremeters
  * @property {string|undefined} previousModel - model used to produce the previous answer (optional)
@@ -42,7 +45,9 @@
  * @property {number|undefined} userTextTokens - calculated tokens in user text (NEW)
  * @property {number|undefined} assistantTextTokens - calculated tokens in assistant response (NEW)
  * @property {number|undefined} assistantProviderTokens - provider-reported tc for assistant resp.
- * @property {number|undefined} previousAssistantProviderTokens - provider-reported tc for previous resp 
+ * @property {number|undefined} previousUserTextTokens - calculated user tokens (for previous model)
+ * @property {number|undefined} previousAssistantTextTokens - calculated assistant tokens (prev.model)
+ * @property {number|undefined} previousAssistantProviderTokens - provider-reported tc for previous resp
  * 
  * 5.1. token counts for images attached to pair calculated for each provider (tokenCost).
  * @property {Array<{id:string, w:number, h:number, tokenCost:Object}>|undefined} imageBudgets 

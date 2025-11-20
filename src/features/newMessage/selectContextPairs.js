@@ -1,11 +1,10 @@
-// Phase 2: Select context pairs that fit in budget
+// Phase 1: Select context pairs that fit in budget
 
+import { getStore } from '../../runtime/runtimeServices.js'
+import { getSettings } from '../../core/settings/index.js'
+import { getModelMeta } from '../../core/models/modelCatalog.js'
 import { getModelBudget } from '../../core/context/tokenEstimator.js'
-import {
-  estimateTextTokens,
-  estimateImageTokens,
-} from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
-import { getManyMetadata as getImageMetadata } from '../images/imageStore.js'
+import { estimateTextTokens } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
 
 /**
  * Calculate how much budget is available for history
@@ -14,95 +13,122 @@ import { getManyMetadata as getImageMetadata } from '../images/imageStore.js'
 async function calculateHistoryAllowance({
   modelId,
   systemMessage,
-  userText,
-  pendingImageIds,
+  newMessagePair,
   providerId,
   settings,
 }) {
   const budget = getModelBudget(modelId)
   const maxContext = budget.maxContext
+
   const ARA = settings.assistantResponseAllowance || 0
-  
-  // System tokens
   const systemTokens = estimateTextTokens(systemMessage || '', providerId, settings)
+  const userTextTokens = newMessagePair.userTextTokens || 0
+  const userImageTokens = newMessagePair.attachmentTokens || 0
   
-  // User text tokens
-  const userTextTokens = estimateTextTokens(userText || '', providerId, settings)
-  
-  // User image tokens (new message only)
-  let userImageTokens = 0
-  if (pendingImageIds?.length > 0) {
-    const images = await getImageMetadata(pendingImageIds)
-    for (const img of images) {
-      userImageTokens += estimateImageTokens({
-        width: img.w,
-        height: img.h,
-        provider: providerId,
-      })
-    }
-  }
   return maxContext - userTextTokens - userImageTokens - systemTokens - ARA
 }
 
 /**
  * Estimate tokens for a single pair
- * Priority: stored > estimated > calculate
+ * Priority: stored > calculated
  * 
- * For user: stored estimated > calculate
- * For assistant: stored reported > stored estimated > calculate
+ * For user: stored userTextTokens > calculate
+ * For assistant: provider-reported > stored estimated > calculate
+ * For images: use imageBudgets for provider-specific cost
  */
 function estimatePairTokens(pair, providerId, settings, estimateTextTokens) {
-  // User tokens (stored estimated > calculate)
+  // User tokens (stored > calculate)
   const userTokens =
-    pair.tokenMetrics?.userEstimatedTokens ||
+    pair.userTextTokens ||
     estimateTextTokens(pair.userText || '', providerId, settings)
   
-  // Assistant tokens (stored reported > stored estimated > calculate)
+  // Assistant tokens (provider-reported > stored estimated > calculate)
   const assistantTokens =
-    pair.tokenMetrics?.assistantReportedTokens ||
-    pair.tokenMetrics?.assistantEstimatedTokens ||
+    pair.assistantProviderTokens ||
+    pair.assistantTextTokens ||
     estimateTextTokens(pair.assistantText || '', providerId, settings)
   
-  // Image tokens (from tokenMetrics)
-  const imageTokens = pair.tokenMetrics?.imageTokensByProvider?.[providerId] || 0
+  // Image tokens (from imageBudgets with provider-specific costs)
+  let imageTokens = 0
+  if (pair.imageBudgets && pair.imageBudgets.length > 0) {
+    for (const imgBudget of pair.imageBudgets) {
+      imageTokens += (imgBudget.tokenCost && imgBudget.tokenCost[providerId]) || 0
+    }
+  }
   
   return userTokens + assistantTokens + imageTokens
 }
 
 /**
- * Select which history pairs fit in context window
+ * Select context pairs that fit in model's context window
+ * Loads config data from store and selects pairs that fit in budget
  * 
  * @param {Object} params
- * @param {MessagePair[]} params.visiblePairs - Visible history pairs
- * @param {string} params.systemMessage - Topic system message
- * @param {string} params.userText - New user text
- * @param {string[]} params.pendingImageIds - New user images (pending for this send)
+ * @param {string} params.topicId - Topic ID
+ * @param {string[]} params.visiblePairIds - Visible pair IDs from UI
+ * @param {MessagePair} params.newMessagePair - The new message pair (from Phase 0)
  * @param {string} params.modelId - Model ID
- * @param {string} params.providerId - Provider ID
- * @param {Object} params.settings - App settings (URA, ARA, charsPerToken)
- * @returns {Promise<Object>} Selection result with selectedHistoryPairs
+ * @returns {Promise<Object>} { selectedPairs, systemMessage, providerId, options }
  */
 export async function selectContextPairs({
-  visiblePairs,
-  systemMessage,
-  userText,
-  pendingImageIds,
+  topicId,
+  visiblePairIds,
+  newMessagePair,
   modelId,
-  providerId,
-  settings,
 }) {
-  // 1. Calculate available budget for history
+  // Load data from store
+  const store = getStore()
+  const settings = getSettings()
+  const modelMeta = getModelMeta(modelId)
+  
+  // Get topic and system message
+  const topic = store.topics.get(topicId)
+  const systemMessage = topic?.systemMessage?.trim() || ''
+  
+  // Convert pair IDs to MessagePair objects
+  const uniquePairIds = [...new Set(visiblePairIds)]
+  const visiblePairs = uniquePairIds
+    .map(id => store.pairs.get(id))
+    .filter(Boolean)
+    .sort((a, b) => a.createdAt - b.createdAt)
+  
+  // Get provider from model metadata
+  const providerId = modelMeta?.provider || 'openai'
+  
+  // Build request options with proper precedence
+  const options = {}
+  
+  // Temperature: from topic requestParams if set
+  const requestParams = topic?.requestParams || {}
+  if (typeof requestParams.temperature === 'number') {
+    options.temperature = requestParams.temperature
+  }
+  
+  // Max output tokens: from topic requestParams if set
+  if (typeof requestParams.maxOutputTokens === 'number') {
+    options.maxOutputTokens = requestParams.maxOutputTokens
+  }
+  
+  // Web search: topic override takes precedence over model default
+  let webSearch = modelMeta?.webSearch  // Model default
+  if (typeof topic?.webSearchOverride === 'boolean') {
+    webSearch = topic.webSearchOverride  // Topic override wins
+  }
+  if (typeof webSearch === 'boolean') {
+    options.webSearch = webSearch
+  }
+  
+  // Calculate available budget for history
   const historyAllowance = await calculateHistoryAllowance({
     modelId,
     systemMessage,
-    userText,
-    pendingImageIds,
+    newMessagePair,
     providerId,
     settings,
   })
   
-  // 2. Select pairs that fit (newest first, stop on overflow)
-  const selectedHistoryPairs = []
+  // Select pairs that fit (newest first, stop on overflow)
+  const selectedPairs = []
   let historyTokens = 0
   
   for (let i = visiblePairs.length - 1; i >= 0; i--) {
@@ -115,12 +141,17 @@ export async function selectContextPairs({
     )
     
     if (historyTokens + pairTokens <= historyAllowance) {
-      selectedHistoryPairs.unshift(pair)  // Maintain chronological order
+      selectedPairs.unshift(pair)  // Maintain chronological order
       historyTokens += pairTokens
     } else {
       break  // Stop on first overflow
     }
   }
   
-  return selectedHistoryPairs
+  return {
+    selectedPairs,
+    systemMessage,
+    providerId,
+    options,
+  }
 }

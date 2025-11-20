@@ -11,14 +11,12 @@ import { getBase64Many } from '../images/imageStore.js'
  *
  * @param {Object} params
  * @param {MessagePair[]} params.selectedPairs - History pairs that fit
- * @param {string} params.userText - New user text
- * @param {string[]} params.pendingImageIds - New user images (pending for this send)
+ * @param {MessagePair} params.newMessagePair - New message pair (from Phase 0)
  * @returns {Promise<Array<{ role: 'user' | 'assistant', content: string, images?: string[] }>>}
  */
 export async function buildRequestParts({
   selectedPairs,
-  userText,
-  pendingImageIds,
+  newMessagePair,
 }) {
   // Step 1: Collect all image IDs from history + new message
   const allImageIds = []
@@ -35,8 +33,8 @@ export async function buildRequestParts({
     }
   }
   
-  if (pendingImageIds && pendingImageIds.length > 0) {
-    for (const id of pendingImageIds) {
+  if (newMessagePair.attachments && newMessagePair.attachments.length > 0) {
+    for (const id of newMessagePair.attachments) {
       if (!imageIdIndexMap.has(id)) {
         imageIdIndexMap.set(id, allImageIds.length)
         allImageIds.push(id)
@@ -77,12 +75,12 @@ export async function buildRequestParts({
   // Add new user message at end
   const newUserPart = {
     role: 'user',
-    content: userText,
+    content: newMessagePair.userText,
   }
   
   // Attach new encoded images if present
-  if (pendingImageIds && pendingImageIds.length > 0) {
-    newUserPart.images = pendingImageIds
+  if (newMessagePair.attachments && newMessagePair.attachments.length > 0) {
+    newUserPart.images = newMessagePair.attachments
       .map(id => allEncodedImages[imageIdIndexMap.get(id)])
       .filter(Boolean)
   }

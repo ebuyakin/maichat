@@ -57,6 +57,28 @@ export function registerInspector(ctx) {
     return inspectByPairId(pid, opts)
   }
 
+  async function inspectPendingImages(opts = {}) {
+    const { includeBlobs = false } = opts
+    const pendingMeta = ctx.pendingMessageMeta
+    if (!pendingMeta || !pendingMeta.attachments || pendingMeta.attachments.length === 0) {
+      return { pendingImageIds: [], message: 'no_pending_images' }
+    }
+    
+    let images = null
+    try {
+      const recs = await getImagesByIds(pendingMeta.attachments)
+      images = includeBlobs ? recs : recs.map(safeImageMeta)
+    } catch (e) {
+      images = { error: String(e && e.message || e) }
+    }
+    
+    return {
+      pendingImageIds: pendingMeta.attachments,
+      count: pendingMeta.attachments.length,
+      images,
+    }
+  }
+
   // Expose small, documented surface on window (non-enumerable to stay out of the way)
   try {
     Object.defineProperty(window, 'inspectActiveMessage', {
@@ -71,7 +93,17 @@ export function registerInspector(ctx) {
       writable: false,
       enumerable: false,
     })
+    Object.defineProperty(window, 'inspectPendingImages', {
+      value: inspectPendingImages,
+      configurable: true,
+      writable: false,
+      enumerable: false,
+    })
   } catch {}
 
-  return { inspectActiveMessage: inspectActive, inspectPair: inspectByPairId }
+  return { 
+    inspectActiveMessage: inspectActive, 
+    inspectPair: inspectByPairId,
+    inspectPendingImages,
+  }
 }
