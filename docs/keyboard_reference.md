@@ -76,9 +76,9 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | o / Shift+O | Jump to first in‑context pair (boundary) and center it | One-shot center (does not enable the Typewriter Regime) |
 | r | Toggle Typewriter Regime | Centers on each j/k; exits on g/G, send/reply, filter change |
 | n | Jump to FIRST part of last message | Focuses first part; bottom-anchors end (last assistant or meta); clears badge |
-| e | Re-ask | Error message: copies text + attachments to input; on Send, old error pair is deleted and a new message is created at the end. Normal message: if it’s the last in the filtered set (LFS), opens Re-ask overlay and replaces the assistant answer in-place; otherwise no-op. |
-| d | Delete focused error message | Removes the error pair; focus moves to previous part |
-| Shift+E | Restore previous answer (normal-only) | Toggles current assistant with previously saved answer when available; aligns to bottom if it fits or top if it doesn’t |
+| e | Re-ask | Error message: copies text + attachments to input; on Send, old error pair is deleted and a new message is created at the end. Normal message: if it's the last in the filtered set (LFS), opens Re-ask overlay and replaces the assistant answer in-place; otherwise no-op. |
+| w | Delete focused error message | Removes the error pair; focus moves to previous part |
+| Shift+E | Restore previous answer | Swaps current assistant response with previously saved answer (from re-ask); re-extracts code/equations; aligns to bottom if it fits or top if it doesn't |
 | c | Copy code block | Single block: copies immediately. Multiple blocks: wait for digit (c1, c2, c3...) |
 | y | Copy equation (yank) | Single equation: copies LaTeX immediately. Multiple equations: wait for digit (y1, y2, y3...) |
 | Y | Copy entire message (Shift+y) | Copies raw message text (user input or assistant response) from data model |

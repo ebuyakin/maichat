@@ -44,6 +44,8 @@ function sanitizeDisplayPreservingTokens(text) {
  * @returns {Object} Parsed response data
  */
 export function parseResponse(response) {
+  response.content += ' NP!' // DEBUGGING NEW PIPELINE
+
   const rawText = response.content || ''
   
   // 1. Extract code blocks first (must happen before sanitization)

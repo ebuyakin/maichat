@@ -449,115 +449,155 @@ export function createInputKeyHandler({
     if (e.key === 'Enter' && e.shiftKey) {
       return false
     }
-    if (e.key === 'Enter') {
-      const text = inputField.value.trim()
-
-      // phase 1: input validation
-      if (text) {
-        if (lifecycle.isPending()) return true
-        // phase 2: capture request context
-        const editingId = window.__editingPairId
-        const topicId = pendingMessageMeta.topicId || getCurrentTopicId()
-        const model = pendingMessageMeta.model || getActiveModel()
+    
+    // NEW MESSAGE PIPELINE ================================================================
+    if (e.key === 'Enter') { // SEND MESSAGE LAUNCH
+      const USE_NEW_PIPELINE = localStorage.getItem('maichat_use_new_pipeline') === 'true'
+      
+      if (USE_NEW_PIPELINE) {
+        // === NEW PIPELINE ===
+        const text = inputField.value.trim()
         
-        // Capture attachments before clearing draft (used throughout async send)
-        const attachmentsCopy = Array.isArray(pendingMessageMeta.attachments)
-          ? pendingMessageMeta.attachments.slice()
-          : []
-
-        // Add topic to history on send
-        // addToTopicHistory(topicId) // depcrecated as redundant
-        // topicHistoryIndex = -1 // Reset navigation index. deprecated as redundant
-
-        //boundaryMgr.updateVisiblePairs(
-        //  store.getAllPairs().sort((a, b) => a.createdAt - b.createdAt)
-        //)
-
-        boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel()) // redundant, but cheap
-        boundaryMgr.applySettings(getSettings())
-
-        const preBoundary = boundaryMgr.getBoundary() // used for trim notifications
-        const beforeIncludedIds = new Set(preBoundary.included.map((p) => p.id))
-
-        lifecycle.beginSend()
-
-        //setReadingMode(false)
-        //try {
-        //  window.__hud && window.__hud.setReadingMode && window.__hud.setReadingMode(false)
-        //} catch {}
-
-        // === EXTRACTED: Call sendWorkflow (async IIFE to avoid blocking) ===
-        ;(async () => {
-          const id = await executeSendWorkflow({
-            // Input data
-            text,
-            topicId,
-            model,
-            attachments: attachmentsCopy,
-            editingId,
-            webSearchOverride: pendingMessageMeta.webSearchOverride,
-            beforeIncludedIds,
-            
-            // Injected dependencies
-            store,
-            lifecycle,
-            boundaryMgr,
-            historyRuntime,
-            activeParts,
-            scrollController,
-            requestDebug,
-            updateSendDisabled,
-            getSettings,
-            sanitizeDisplayPreservingTokens,
-            escapeHtmlAttr,
-            escapeHtml,
-          })
-
-          // === POST-SEND UI UPDATES (after workflow completes) ===
-          historyRuntime.renderCurrentView({ preserveActive: true })
-          
-          // Focus the new pair's last user part explicitly (meta remains non-focusable)
-          try {
-            const pane = document.getElementById('historyPane')
-            const userEls = pane
-              ? pane.querySelectorAll(
-                  `.message[data-pair-id="${id}"][data-role="user"], .part[data-pair-id="${id}"][data-role="user"]`
-                )
-              : null
-            const lastUserEl = userEls && userEls.length ? userEls[userEls.length - 1] : null
-            if (lastUserEl) {
-              const lastUserId = lastUserEl.getAttribute('data-part-id')
-              if (lastUserId) {
-                activeParts.setActiveById(lastUserId)
-              }
-            } else {
-              activeParts.last()
-            }
-          } catch {
-            activeParts.last()
-          }
-
-          historyRuntime.applyActiveMessage()
-          
-          // Scroll to bottom to show the newly sent user message
-          if (scrollController && scrollController.scrollToBottom) {
-            requestAnimationFrame(() => {
-              scrollController.scrollToBottom(false)
-            })
-          }
-          updateSendDisabled()
-        })()
-
-        // === IMMEDIATE POST-SEND CLEANUP (before async workflow completes) ===
+        // Validation
+        if (!text) return false
+        if (lifecycle.isPending()) return true
+        
+        // Build params
+        const params = {
+          userText: text,
+          pendingImageIds: (pendingMessageMeta.attachments || []).slice(),
+          topicId: pendingMessageMeta.topicId || getCurrentTopicId(),
+          modelId: pendingMessageMeta.model || getActiveModel(),
+          visiblePairIds: [...new Set(activeParts.parts.map(pt => pt.pairId))],
+          activePartId: activeParts.parts[activeParts.activeIndex]?.id || null,
+          editingPairId: null, // Always null for Enter key (new message only)
+        }
+        
+        // Send
+        sendNewMessage(params)
+        
+        // Cleanup
         inputField.value = ''
-        pendingMessageMeta.attachments = []  // Clear draft attachments after send
+        pendingMessageMeta.attachments = []
         try {
           localStorage.removeItem('maichat_draft_attachments')
           localStorage.removeItem('maichat_draft_text')
         } catch {}
         updateAttachIndicator()
+        
+        return true
+        
+      } else {
+        // === OLD PIPELINE ===
+        const text = inputField.value.trim()
+
+        // phase 1: input validation
+        if (text) {
+          if (lifecycle.isPending()) return true
+          // phase 2: capture request context
+          const editingId = window.__editingPairId
+          const topicId = pendingMessageMeta.topicId || getCurrentTopicId()
+          const model = pendingMessageMeta.model || getActiveModel()
+          
+          // Capture attachments before clearing draft (used throughout async send)
+          const attachmentsCopy = Array.isArray(pendingMessageMeta.attachments)
+            ? pendingMessageMeta.attachments.slice()
+            : []
+
+          // Add topic to history on send
+          // addToTopicHistory(topicId) // depcrecated as redundant
+          // topicHistoryIndex = -1 // Reset navigation index. deprecated as redundant
+
+          //boundaryMgr.updateVisiblePairs(
+          //  store.getAllPairs().sort((a, b) => a.createdAt - b.createdAt)
+          //)
+
+          boundaryMgr.setModel(pendingMessageMeta.model || getActiveModel()) // redundant, but cheap
+          boundaryMgr.applySettings(getSettings())
+
+          const preBoundary = boundaryMgr.getBoundary() // used for trim notifications
+          const beforeIncludedIds = new Set(preBoundary.included.map((p) => p.id))
+
+          lifecycle.beginSend()
+
+          //setReadingMode(false)
+          //try {
+          //  window.__hud && window.__hud.setReadingMode && window.__hud.setReadingMode(false)
+          //} catch {}
+
+          // === EXTRACTED: Call sendWorkflow (async IIFE to avoid blocking) ===
+          ;(async () => {
+            const id = await executeSendWorkflow({
+              // Input data
+              text,
+              topicId,
+              model,
+              attachments: attachmentsCopy,
+              editingId,
+              webSearchOverride: pendingMessageMeta.webSearchOverride,
+              beforeIncludedIds,
+              
+              // Injected dependencies
+              store,
+              lifecycle,
+              boundaryMgr,
+              historyRuntime,
+              activeParts,
+              scrollController,
+              requestDebug,
+              updateSendDisabled,
+              getSettings,
+              sanitizeDisplayPreservingTokens,
+              escapeHtmlAttr,
+              escapeHtml,
+            })
+
+            // === POST-SEND UI UPDATES (after workflow completes) ===
+            historyRuntime.renderCurrentView({ preserveActive: true })
+            
+            // Focus the new pair's last user part explicitly (meta remains non-focusable)
+            try {
+              const pane = document.getElementById('historyPane')
+              const userEls = pane
+                ? pane.querySelectorAll(
+                    `.message[data-pair-id="${id}"][data-role="user"], .part[data-pair-id="${id}"][data-role="user"]`
+                  )
+                : null
+              const lastUserEl = userEls && userEls.length ? userEls[userEls.length - 1] : null
+              if (lastUserEl) {
+                const lastUserId = lastUserEl.getAttribute('data-part-id')
+                if (lastUserId) {
+                  activeParts.setActiveById(lastUserId)
+                }
+              } else {
+                activeParts.last()
+              }
+            } catch {
+              activeParts.last()
+            }
+
+            historyRuntime.applyActiveMessage()
+            
+            // Scroll to bottom to show the newly sent user message
+            if (scrollController && scrollController.scrollToBottom) {
+              requestAnimationFrame(() => {
+                scrollController.scrollToBottom(false)
+              })
+            }
+            updateSendDisabled()
+          })()
+
+          // === IMMEDIATE POST-SEND CLEANUP (before async workflow completes) ===
+          inputField.value = ''
+          pendingMessageMeta.attachments = []  // Clear draft attachments after send
+          try {
+            localStorage.removeItem('maichat_draft_attachments')
+            localStorage.removeItem('maichat_draft_text')
+          } catch {}
+          updateAttachIndicator()
+        }
+        return true
       }
-      return true
     }
     if (e.key === 'Escape') {
       modeManager.set('view')

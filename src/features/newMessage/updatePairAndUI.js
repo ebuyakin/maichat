@@ -88,24 +88,12 @@ function handleSuccess({ pair, response, previousResponse, newModelId }) {
 function handleError({ pair, error, previousResponse }) {
   const store = getStore()
   
-  // Extract error message (handle various error formats)
+  // Extract error message
   let errorMessage = 'Unknown error'
-  
-  if (error instanceof Error) {
-    // Standard Error object
-    errorMessage = error.message || error.toString()
-    
-    // If message is still "[object Object]", try to extract from cause
-    if (errorMessage === '[object Object]' && error.cause) {
-      errorMessage = error.cause.message || error.cause.toString()
-    }
+  if (error && error.message) {
+    errorMessage = error.message
   } else if (typeof error === 'string') {
     errorMessage = error
-  }
-  
-  // Fallback: use error code if available (AdapterError)
-  if (errorMessage === '[object Object]' && error.code) {
-    errorMessage = error.code
   }
   
   if (previousResponse) {

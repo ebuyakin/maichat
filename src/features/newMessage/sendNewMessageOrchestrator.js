@@ -30,8 +30,9 @@ export async function sendNewMessage({
   editingPairId,
 }) {
   
-  userText = 'can you describe the image? How many images do you see?'
-  editingPairId = 'dd0abd57-c91b-4232-bb0c-d0498793bb24'
+  //userText = 'can you describe the image? How many images do you see?' // debugging only
+  //editingPairId = 'dd0abd57-c91b-4232-bb0c-d0498793bb24' // debugging only
+  userText = userText + ' (00)' // for debugging. to distinguish new/old pipelines.
   // Phase 0: Initialize pair and show user message
   const { pair, previousResponse } = await initializePair({
     userText,

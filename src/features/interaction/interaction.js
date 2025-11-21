@@ -38,6 +38,7 @@ import { openSourcesOverlay } from '../history/sourcesOverlay.js'
 import { openReaskOverlay } from '../history/reaskOverlay.js'
 import { bindNormalReaskActions } from '../history/historyView.js'
 import { openImageOverlay } from '../images/imageOverlay.js'
+import { sendNewMessage } from '../newMessage/sendNewMessageOrchestrator.js'
 import { createCommandKeyHandler } from './commandKeys.js'
 import { createInputKeyHandler } from './inputKeys.js'
 import { createAppMenuController } from './appMenu.js'
@@ -935,127 +936,157 @@ export function createInteraction({
     }
   }
   async function reAskInPlace(pairId, model) {
-    const pair = store.pairs.get(pairId)
-    if (!pair) return
-    // Mark pending re-ask to disable the button (no spinner badge in history)
-    try { window.__pendingReaskPairId = pair.id } catch {}
-    // Show input pending UI for consistency with normal send
-    lifecycle.beginSend()
-    updateSendDisabled()
-    // Switch to input mode and align to bottom (consistency: like new send)
-    try { modeManager.set('input') } catch {}
-    try {
-      // Focus user's part of this pair if available and bottom-align it (parity with new send UX)
-      const pane = document.getElementById('historyPane')
-      const userEl = pane && pane.querySelector(`.message[data-pair-id="${pair.id}"][data-role="user"], .part[data-pair-id="${pair.id}"][data-role="user"]`)
-      const uid = userEl && userEl.getAttribute('data-part-id')
-      if (uid) {
-        activeParts.setActiveById(uid)
-        historyRuntime.applyActiveMessage()
-        if (ctx.scrollController && ctx.scrollController.alignTo) {
-          ctx.scrollController.alignTo(uid, 'bottom', false)
-        }
-      }
-    } catch {}
-    const controller = new AbortController()
-    const settings = getSettings()
-    const timeoutSec = settings.requestTimeoutSec || 120
-    const timeoutMs = timeoutSec * 1000
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-    if (!window.__maichat) window.__maichat = {}
-    window.__maichat.requestController = controller
-    try {
-      // Build WYSIWYG visible pairs chrono
-      const currentPairs = activeParts.parts
-        .map((pt) => store.pairs.get(pt.pairId))
-        .filter(Boolean)
-      const chrono = [...new Set(currentPairs)].sort((a, b) => a.createdAt - b.createdAt)
-      boundaryMgr.updateVisiblePairs(chrono)
-      boundaryMgr.setModel(model || getActiveModel())
-      boundaryMgr.applySettings(getSettings())
-      const tStart = Date.now()
-      const execResult = await executeSend({
-        store,
-        model: model || getActiveModel(),
-        topicId: pair.topicId,
+    const USE_NEW_PIPELINE = localStorage.getItem('maichat_use_new_pipeline') === 'true'
+    
+    if (USE_NEW_PIPELINE) {
+      // === NEW PIPELINE ===
+      const pair = store.pairs.get(pairId)
+      if (!pair) return
+      
+      // Mark pending re-ask to disable the button
+      try { window.__pendingReaskPairId = pair.id } catch {}
+      
+      // Build params for new pipeline
+      const params = {
         userText: pair.userText || '',
-        signal: controller.signal,
-        visiblePairs: chrono,
-        attachments: Array.isArray(pair.attachments) ? pair.attachments.slice() : [],
-        topicWebSearchOverride: undefined,
-        onDebugPayload: (payload) => {
-          historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount)
-          requestDebug.setPayload(payload)
-          historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length)
-        },
+        pendingImageIds: (pair.attachments || []).slice(),
+        topicId: pair.topicId,
+        modelId: model || getActiveModel(),
+        visiblePairIds: [...new Set(activeParts.parts.map(pt => pt.pairId))],
+        activePartId: activeParts.parts[activeParts.activeIndex]?.id || null,
+        editingPairId: pairId,  // This makes it re-ask
+      }
+      
+      // Send (async, fire-and-forget)
+      sendNewMessage(params).finally(() => {
+        // Clear pending flag after completion
+        try { window.__pendingReaskPairId = null } catch {}
       })
-  const responseMs = Math.max(0, Date.now() - tStart)
-      const rawText = execResult.content
-      // Extract code and equations, then sanitize display
-      const codeExtraction = extractCodeBlocks(rawText)
-      const afterCode = codeExtraction.hasCode ? codeExtraction.displayText : rawText
-      const eqResult = extractEquations(afterCode, { inlineMode: 'markers' })
-      const afterEq = eqResult.displayText
-      const sanitized = sanitizeDisplayPreservingTokens(afterEq)
-      let finalDisplay = sanitized
-      if (eqResult.inlineSimple && eqResult.inlineSimple.length) {
-        for (const item of eqResult.inlineSimple) {
-          const span = `<span class="eq-inline" data-tex="${escapeHtmlAttr(item.raw)}">${escapeHtml(item.unicode)}</span>`
-          finalDisplay = finalDisplay.replaceAll(item.marker, span)
-        }
-      }
-      finalDisplay = finalDisplay.replace(/\s*\[([a-z0-9_]+-\d+|eq-\d+)\]\s*/gi, ' [$1] ')
-      finalDisplay = finalDisplay.replace(/ {2,}/g, ' ')
-      // Compute new token counts (user + assistant only)
-      let textTokens = 0
+      
+    } else {
+      // === OLD PIPELINE ===
+      const pair = store.pairs.get(pairId)
+      if (!pair) return
+      // Mark pending re-ask to disable the button (no spinner badge in history)
+      try { window.__pendingReaskPairId = pair.id } catch {}
+      // Show input pending UI for consistency with normal send
+      lifecycle.beginSend()
+      updateSendDisabled()
+      // Switch to input mode and align to bottom (consistency: like new send)
+      try { modeManager.set('input') } catch {}
       try {
-        const userTok = estimateTokens((pair.userText || ''), getSettings().charsPerToken || 4)
-        const asstTok = estimateTokens((rawText || ''), getSettings().charsPerToken || 4)
-        textTokens = userTok + asstTok
+        // Focus user's part of this pair if available and bottom-align it (parity with new send UX)
+        const pane = document.getElementById('historyPane')
+        const userEl = pane && pane.querySelector(`.message[data-pair-id="${pair.id}"][data-role="user"], .part[data-pair-id="${pair.id}"][data-role="user"]`)
+        const uid = userEl && userEl.getAttribute('data-part-id')
+        if (uid) {
+          activeParts.setActiveById(uid)
+          historyRuntime.applyActiveMessage()
+          if (ctx.scrollController && ctx.scrollController.alignTo) {
+            ctx.scrollController.alignTo(uid, 'bottom', false)
+          }
+        }
       } catch {}
-      const updateData = {
-        previousAssistantText: pair.assistantText || '',
-        previousModel: pair.model || undefined,
-        replacedAt: Date.now(),
-        replacedBy: model || getActiveModel(),
-        assistantText: rawText,
-        model: model || getActiveModel(),
-        lifecycleState: 'complete',
-        errorMessage: undefined,
-        textTokens,
-        responseMs,
+      const controller = new AbortController()
+      const settings = getSettings()
+      const timeoutSec = settings.requestTimeoutSec || 120
+      const timeoutMs = timeoutSec * 1000
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+      if (!window.__maichat) window.__maichat = {}
+      window.__maichat.requestController = controller
+      try {
+        // Build WYSIWYG visible pairs chrono
+        const currentPairs = activeParts.parts
+          .map((pt) => store.pairs.get(pt.pairId))
+          .filter(Boolean)
+        const chrono = [...new Set(currentPairs)].sort((a, b) => a.createdAt - b.createdAt)
+        boundaryMgr.updateVisiblePairs(chrono)
+        boundaryMgr.setModel(model || getActiveModel())
+        boundaryMgr.applySettings(getSettings())
+        const tStart = Date.now()
+        const execResult = await executeSend({
+          store,
+          model: model || getActiveModel(),
+          topicId: pair.topicId,
+          userText: pair.userText || '',
+          signal: controller.signal,
+          visiblePairs: chrono,
+          attachments: Array.isArray(pair.attachments) ? pair.attachments.slice() : [],
+          topicWebSearchOverride: undefined,
+          onDebugPayload: (payload) => {
+            historyRuntime.setSendDebug(payload.predictedMessageCount, payload.trimmedCount)
+            requestDebug.setPayload(payload)
+            historyRuntime.updateMessageCount(historyRuntime.getPredictedCount(), chrono.length)
+          },
+        })
+    const responseMs = Math.max(0, Date.now() - tStart)
+        const rawText = execResult.content
+        // Extract code and equations, then sanitize display
+        const codeExtraction = extractCodeBlocks(rawText)
+        const afterCode = codeExtraction.hasCode ? codeExtraction.displayText : rawText
+        const eqResult = extractEquations(afterCode, { inlineMode: 'markers' })
+        const afterEq = eqResult.displayText
+        const sanitized = sanitizeDisplayPreservingTokens(afterEq)
+        let finalDisplay = sanitized
+        if (eqResult.inlineSimple && eqResult.inlineSimple.length) {
+          for (const item of eqResult.inlineSimple) {
+            const span = `<span class="eq-inline" data-tex="${escapeHtmlAttr(item.raw)}">${escapeHtml(item.unicode)}</span>`
+            finalDisplay = finalDisplay.replaceAll(item.marker, span)
+          }
+        }
+        finalDisplay = finalDisplay.replace(/\s*\[([a-z0-9_]+-\d+|eq-\d+)\]\s*/gi, ' [$1] ')
+        finalDisplay = finalDisplay.replace(/ {2,}/g, ' ')
+        // Compute new token counts (user + assistant only)
+        let textTokens = 0
+        try {
+          const userTok = estimateTokens((pair.userText || ''), getSettings().charsPerToken || 4)
+          const asstTok = estimateTokens((rawText || ''), getSettings().charsPerToken || 4)
+          textTokens = userTok + asstTok
+        } catch {}
+        const updateData = {
+          previousAssistantText: pair.assistantText || '',
+          previousModel: pair.model || undefined,
+          replacedAt: Date.now(),
+          replacedBy: model || getActiveModel(),
+          assistantText: rawText,
+          model: model || getActiveModel(),
+          lifecycleState: 'complete',
+          errorMessage: undefined,
+          textTokens,
+          responseMs,
+        }
+        if (Array.isArray(execResult.citations) && execResult.citations.length) {
+          updateData.citations = execResult.citations
+        }
+        if (execResult.citationsMeta && typeof execResult.citationsMeta === 'object') {
+          updateData.citationsMeta = execResult.citationsMeta
+        }
+        if (codeExtraction.hasCode) updateData.codeBlocks = codeExtraction.codeBlocks
+        if (eqResult.equationBlocks && eqResult.equationBlocks.length)
+          updateData.equationBlocks = eqResult.equationBlocks
+        updateData.processedContent =
+          codeExtraction.hasCode || eqResult.hasEquations ? finalDisplay : sanitizeAssistantText(rawText)
+        store.updatePair(pair.id, updateData)
+        clearTimeout(timeoutId)
+        window.__maichat.requestController = null
+        // Clear pending and pending UI
+        try { window.__pendingReaskPairId = null } catch {}
+        lifecycle.completeSend()
+        updateSendDisabled()
+        historyRuntime.renderCurrentView({ preserveActive: true })
+        lifecycle.handleNewAssistantReply(pair.id)
+      } catch (ex) {
+        clearTimeout(timeoutId)
+        window.__maichat.requestController = null
+        let errMsg
+        if (ex.name === 'AbortError') errMsg = 'Request aborted'
+        else errMsg = ex && ex.message ? ex.message : 'error'
+        store.updatePair(pair.id, { lifecycleState: 'error', errorMessage: errMsg, assistantText: '' })
+        try { window.__pendingReaskPairId = null } catch {}
+        lifecycle.completeSend()
+        updateSendDisabled()
+        historyRuntime.renderCurrentView({ preserveActive: true })
       }
-      if (Array.isArray(execResult.citations) && execResult.citations.length) {
-        updateData.citations = execResult.citations
-      }
-      if (execResult.citationsMeta && typeof execResult.citationsMeta === 'object') {
-        updateData.citationsMeta = execResult.citationsMeta
-      }
-      if (codeExtraction.hasCode) updateData.codeBlocks = codeExtraction.codeBlocks
-      if (eqResult.equationBlocks && eqResult.equationBlocks.length)
-        updateData.equationBlocks = eqResult.equationBlocks
-      updateData.processedContent =
-        codeExtraction.hasCode || eqResult.hasEquations ? finalDisplay : sanitizeAssistantText(rawText)
-      store.updatePair(pair.id, updateData)
-      clearTimeout(timeoutId)
-      window.__maichat.requestController = null
-      // Clear pending and pending UI
-      try { window.__pendingReaskPairId = null } catch {}
-      lifecycle.completeSend()
-      updateSendDisabled()
-      historyRuntime.renderCurrentView({ preserveActive: true })
-      lifecycle.handleNewAssistantReply(pair.id)
-    } catch (ex) {
-      clearTimeout(timeoutId)
-      window.__maichat.requestController = null
-      let errMsg
-      if (ex.name === 'AbortError') errMsg = 'Request aborted'
-      else errMsg = ex && ex.message ? ex.message : 'error'
-      store.updatePair(pair.id, { lifecycleState: 'error', errorMessage: errMsg, assistantText: '' })
-      try { window.__pendingReaskPairId = null } catch {}
-      lifecycle.completeSend()
-      updateSendDisabled()
-      historyRuntime.renderCurrentView({ preserveActive: true })
     }
   }
   function restorePrevious(pairId) {
