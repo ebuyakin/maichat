@@ -4,7 +4,10 @@ import { getStore } from '../../runtime/runtimeServices.js'
 import { getSettings } from '../../core/settings/index.js'
 import { getModelMeta } from '../../core/models/modelCatalog.js'
 import { getModelBudget } from '../../core/context/tokenEstimator.js'
-import { estimateTextTokens } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
+import { 
+  estimateTextTokens,
+  calculateEstimatedTokenUsageBatch 
+} from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
 
 /**
  * Calculate how much budget is available for history
@@ -22,53 +25,47 @@ async function calculateHistoryAllowance({
 
   const ARA = settings.assistantResponseAllowance || 0
   const systemTokens = estimateTextTokens(systemMessage || '', providerId, settings)
-  const userTextTokens = newMessagePair.userTextTokens || 0
-  const userImageTokens = newMessagePair.attachmentTokens || 0
   
-  return maxContext - userTextTokens - userImageTokens - systemTokens - ARA
+  // Get user tokens from new pair's estimatedTokenUsage (user + images, no assistant yet)
+  const userTokens = newMessagePair.estimatedTokenUsage?.[providerId] || 0
+  
+  return maxContext - userTokens - systemTokens - ARA
 }
 
 /**
- * Estimate tokens for a single pair
- * Priority: stored > calculated
- * 
- * For user: stored userTextTokens > calculate
- * For assistant: provider-reported > stored estimated > calculate
- * For images: use imageBudgets for provider-specific cost
+ * Recalculate and update token estimates for pairs with stale cache
+ * @param {MessagePair[]} pairs - All visible pairs
+ * @param {string} currentVersion - Current token estimation version
  */
-function estimatePairTokens(pair, providerId, settings, estimateTextTokens) {
-  // User tokens (stored > calculate)
-  const userTokens =
-    pair.userTextTokens ||
-    estimateTextTokens(pair.userText || '', providerId, settings)
+async function refreshStaleTokenEstimates(pairs, currentVersion) {
+  const store = getStore()
   
-  // Assistant tokens (provider-reported > stored estimated > calculate)
-  const assistantTokens =
-    pair.assistantProviderTokens ||
-    pair.assistantTextTokens ||
-    estimateTextTokens(pair.assistantText || '', providerId, settings)
+  const stalePairs = pairs.filter(
+    p => p.estimatedTokenUsage?._version !== currentVersion
+  )
   
-  // Image tokens (from imageBudgets with provider-specific costs)
-  let imageTokens = 0
-  if (pair.imageBudgets && pair.imageBudgets.length > 0) {
-    for (const imgBudget of pair.imageBudgets) {
-      imageTokens += (imgBudget.tokenCost && imgBudget.tokenCost[providerId]) || 0
-    }
+  if (stalePairs.length === 0) return
+  
+  const batchResults = await calculateEstimatedTokenUsageBatch(stalePairs)
+  
+  for (const pair of stalePairs) {
+    const estimatedTokenUsage = batchResults[pair.id]
+    store.updatePair(pair.id, { estimatedTokenUsage })
+    // Update in-memory object
+    pair.estimatedTokenUsage = estimatedTokenUsage
   }
-  
-  return userTokens + assistantTokens + imageTokens
 }
 
 /**
  * Select context pairs that fit in model's context window
- * Loads config data from store and selects pairs that fit in budget
+ * Pure selection based on token budget - returns only pairs and their token costs
  * 
  * @param {Object} params
  * @param {string} params.topicId - Topic ID
  * @param {string[]} params.visiblePairIds - Visible pair IDs from UI
  * @param {MessagePair} params.newMessagePair - The new message pair (from Phase 0)
  * @param {string} params.modelId - Model ID
- * @returns {Promise<Object>} { selectedPairs, systemMessage, providerId, options }
+ * @returns {Promise<Object>} { selectedPairs, selectedPairsTokens }
  */
 export async function selectContextPairs({
   topicId,
@@ -80,6 +77,7 @@ export async function selectContextPairs({
   const store = getStore()
   const settings = getSettings()
   const modelMeta = getModelMeta(modelId)
+  const currentVersion = settings.tokenEstimationVersion || 'v1'
   
   // Get topic and system message
   const topic = store.topics.get(topicId)
@@ -95,28 +93,8 @@ export async function selectContextPairs({
   // Get provider from model metadata
   const providerId = modelMeta?.provider || 'openai'
   
-  // Build request options with proper precedence
-  const options = {}
-  
-  // Temperature: from topic requestParams if set
-  const requestParams = topic?.requestParams || {}
-  if (typeof requestParams.temperature === 'number') {
-    options.temperature = requestParams.temperature
-  }
-  
-  // Max output tokens: from topic requestParams if set
-  if (typeof requestParams.maxOutputTokens === 'number') {
-    options.maxOutputTokens = requestParams.maxOutputTokens
-  }
-  
-  // Web search: topic override takes precedence over model default
-  let webSearch = modelMeta?.webSearch  // Model default
-  if (typeof topic?.webSearchOverride === 'boolean') {
-    webSearch = topic.webSearchOverride  // Topic override wins
-  }
-  if (typeof webSearch === 'boolean') {
-    options.webSearch = webSearch
-  }
+  // Refresh stale token estimates (batch recalculation)
+  await refreshStaleTokenEstimates(visiblePairs, currentVersion)
   
   // Calculate available budget for history
   const historyAllowance = await calculateHistoryAllowance({
@@ -134,12 +112,7 @@ export async function selectContextPairs({
   
   for (let i = visiblePairs.length - 1; i >= 0; i--) {
     const pair = visiblePairs[i]
-    const pairTokens = estimatePairTokens(
-      pair,
-      providerId,
-      settings,
-      estimateTextTokens,
-    )
+    const pairTokens = pair.estimatedTokenUsage?.[providerId] || 0
     
     if (historyTokens + pairTokens <= historyAllowance) {
       selectedPairs.unshift(pair)  // Maintain chronological order
@@ -150,18 +123,8 @@ export async function selectContextPairs({
     }
   }
   
-  // Calculate full prompt estimated tokens (system + user + history)
-  const systemTokens = estimateTextTokens(systemMessage || '', providerId, settings)
-  const userTextTokens = newMessagePair.userTextTokens || 0
-  const userImageTokens = newMessagePair.attachmentTokens || 0
-  const fullPromptEstimatedTokens = systemTokens + userTextTokens + userImageTokens + historyTokens
-  
   return {
     selectedPairs,
     selectedPairsTokens,
-    fullPromptEstimatedTokens,
-    systemMessage,
-    providerId,
-    options,
   }
 }

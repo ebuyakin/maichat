@@ -1,34 +1,72 @@
-// Phase 4: Send with retry logic
+// Phase 3: Send with retry logic
 
 import { AdapterError, ADAPTERS } from '../../infrastructure/provider/adapterV2.js'
 import { getApiKey } from '../../infrastructure/api/keys.js'
+import { getStore } from '../../runtime/runtimeServices.js'
+import { getModelMeta } from '../../core/models/modelCatalog.js'
+
+/**
+ * Load request configuration from topic and model
+ * @param {string} topicId - Topic ID
+ * @param {string} modelId - Model ID
+ * @returns {Object} { providerId, systemMessage, options }
+ */
+function loadRequestConfig(topicId, modelId) {
+  const store = getStore()
+  const modelMeta = getModelMeta(modelId)
+  const topic = store.topics.get(topicId)
+  
+  const providerId = modelMeta?.provider || 'openai'
+  const systemMessage = topic?.systemMessage?.trim() || ''
+  
+  // Build request options
+  const options = {}
+  const requestParams = topic?.requestParams || {}
+  
+  if (typeof requestParams.temperature === 'number') {
+    options.temperature = requestParams.temperature
+  }
+  
+  if (typeof requestParams.maxOutputTokens === 'number') {
+    options.maxOutputTokens = requestParams.maxOutputTokens
+  }
+  
+  // Web search: topic override takes precedence over model default
+  let webSearch = modelMeta?.webSearch
+  if (typeof topic?.webSearchOverride === 'boolean') {
+    webSearch = topic.webSearchOverride
+  }
+  if (typeof webSearch === 'boolean') {
+    options.webSearch = webSearch
+  }
+  
+  return { providerId, systemMessage, options }
+}
 
 /**
  * Send request to provider with retry on overflow
+ * Loads configuration internally (systemMessage, options, providerId)
  * 
  * @param {Object} params
  * @param {Object} params.requestParts - Provider-agnostic request parts (text + images)
- * @param {string} params.providerId - Provider ID
+ * @param {number[]} params.selectedPairsTokens - Token costs for each history pair
+ * @param {string} params.topicId - Topic ID (for loading systemMessage and options)
  * @param {string} params.modelId - Model ID
- * @param {string} params.systemMessage - Topic system message
- * @param {Object} params.options - Request options (temperature, webSearch, etc.)
  * @param {number} params.maxRetries - Max retry attempts
  * @param {AbortSignal} params.signal - Abort signal for cancellation
- * @param {number[]} params.selectedPairsTokens - Token costs for each history pair (parallel to parts)
- * @param {number} params.fullPromptEstimatedTokens - Initial estimated prompt tokens
- * @returns {Promise<Object>} { response, fullPromptEstimatedTokens }
+ * @returns {Promise<Object>} Response from provider
  */
 export async function sendWithRetry({
   requestParts,
   selectedPairsTokens,
-  fullPromptEstimatedTokens,
-  providerId,
+  topicId,
   modelId,
-  systemMessage,
-  options,
   maxRetries,
   signal,
 }) {
+  // Load configuration
+  const { providerId, systemMessage, options } = loadRequestConfig(topicId, modelId)
+  
   // Get provider adapter
   const adapter = ADAPTERS[providerId]
   if (!adapter) {
@@ -41,7 +79,6 @@ export async function sendWithRetry({
   // Clone request parts for mutation during retries
   let currentRequest = { parts: [...requestParts] }
   let currentPairTokens = [...selectedPairsTokens]  // Clone for mutation
-  let currentPromptTokens = fullPromptEstimatedTokens
   let attempt = 0
   
   while (attempt <= maxRetries) {
@@ -57,10 +94,7 @@ export async function sendWithRetry({
       })
       
       // Success!
-      return {
-        rawResponse: response,
-        finalPromptEstimatedTokens: currentPromptTokens,
-      }
+      return response
       
     } catch (err) {
       // Check if error is usage limit exceeded (rate limit or context overflow)
@@ -80,11 +114,8 @@ export async function sendWithRetry({
       // Remove oldest pair (first user + first assistant)
       currentRequest.parts.splice(0, 2)
       
-      // Also remove corresponding token cost from estimate
-      const trimmedPairTokens = currentPairTokens.shift()
-      if (trimmedPairTokens) {
-        currentPromptTokens -= trimmedPairTokens
-      }
+      // Also remove corresponding token cost
+      currentPairTokens.shift()
       
       attempt++
 

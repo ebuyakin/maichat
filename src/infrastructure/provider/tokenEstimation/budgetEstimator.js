@@ -6,6 +6,10 @@ import { estimateImageTokens as estimateAnthropicImageTokens } from './anthropic
 import { estimateImageTokens as estimateGeminiImageTokens } from './geminiEstimator.js'
 import { estimateImageTokens as estimateGrokImageTokens } from './grokEstimator.js'
 
+import { getSettings } from '../../../core/settings/index.js'
+import { getManyMetadata } from '../../../features/images/imageStore.js'
+import { SUPPORTED_PROVIDERS } from '../../../core/models/modelCatalog.js'
+
 /**
  * Estimate text tokens using chars/CPT formula
  * Generic estimation - works for all providers until we have provider-specific tokenizers
@@ -65,4 +69,75 @@ export function estimateImageTokens({ width, height, provider }) {
       // Fallback: use OpenAI formula as default
       return estimateOpenAIImageTokens({ w: width, h: height })
   }
+}
+
+/**
+ * Calculate estimated token usage for multiple message pairs (batch operation)
+ * Optimized: loads all images in one transaction, calculates for all providers
+ * 
+ * @param {MessagePair[]} pairs - Array of message pairs to calculate tokens for
+ * @returns {Promise<Object>} Map of pairId -> { openai: X, anthropic: Y, _version: 'v1' }
+ */
+export async function calculateEstimatedTokenUsageBatch(pairs) {
+  const settings = getSettings()
+  const currentVersion = settings.tokenEstimationVersion || 'v1'
+  
+  // Step 1: Collect ALL unique image IDs from ALL pairs
+  const allImageIds = new Set()
+  for (const pair of pairs) {
+    if (pair.attachments?.length) {
+      pair.attachments.forEach(id => allImageIds.add(id))
+    }
+  }
+  
+  // Step 2: Load ALL images in ONE transaction
+  const imageMap = new Map()
+  if (allImageIds.size > 0) {
+    const images = await getManyMetadata([...allImageIds])
+    images.forEach(img => {
+      if (img) imageMap.set(img.id, img)
+    })
+  }
+  
+  // Step 3: Calculate token usage for each pair across all providers
+  const results = {}
+  
+  for (const pair of pairs) {
+    const pairResult = { _version: currentVersion }
+    
+    for (const provider of SUPPORTED_PROVIDERS) {
+      // Text tokens (user + assistant)
+      const userTokens = estimateTextTokens(pair.userText || '', provider, settings)
+      const assistantTokens = estimateTextTokens(pair.assistantText || '', provider, settings)
+      
+      // Image tokens (from pre-loaded map)
+      let imageTokens = 0
+      if (pair.attachments?.length) {
+        for (const imgId of pair.attachments) {
+          const img = imageMap.get(imgId)
+          if (img?.tokenCost?.[provider]) {
+            imageTokens += img.tokenCost[provider]
+          }
+        }
+      }
+      
+      pairResult[provider] = userTokens + assistantTokens + imageTokens
+    }
+    
+    results[pair.id] = pairResult
+  }
+  
+  return results
+}
+
+/**
+ * Calculate estimated token usage for a single message pair
+ * Convenience wrapper around batch function
+ * 
+ * @param {MessagePair} pair - Message pair to calculate tokens for
+ * @returns {Promise<Object>} { openai: X, anthropic: Y, _version: 'v1' }
+ */
+export async function calculateEstimatedTokenUsage(pair) {
+  const batch = await calculateEstimatedTokenUsageBatch([pair])
+  return batch[pair.id]
 }

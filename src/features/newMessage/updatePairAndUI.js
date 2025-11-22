@@ -8,130 +8,142 @@ import {
   getScrollController,
   getInteraction
 } from '../../runtime/runtimeServices.js'
-import { getSettings } from '../../core/settings/index.js'
-import { getModelMeta } from '../../core/models/modelCatalog.js'
-import { estimateTextTokens } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
+import { calculateEstimatedTokenUsage } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
 import { showToast } from '../../shared/toast.js'
 
 /**
- * Handle successful response
- * Updates pair with response data and previous response (if re-ask)
+ * Handle new message response (success or error)
  */
-function handleSuccess({ pair, response, previousResponse, newModelId, finalPromptEstimatedTokens }) {
+async function handleNewMessageResponse({ pair, responseData, errorToReport }) {
   const store = getStore()
   
-  // Get provider and settings for token estimation (use new model for re-ask)
-  const modelMeta = getModelMeta(newModelId)
-  const providerId = modelMeta?.provider || 'openai'
-  const settings = getSettings()
-  
-  // Calculate assistant text tokens (estimated for current provider)
-  const assistantTextTokens = estimateTextTokens(response.content, providerId, settings)
-  
-  // Legacy textTokens: sum of user + assistant
-  const userTextTokens = pair.userTextTokens || 0
-  const textTokens = userTextTokens + assistantTextTokens
-  
-  // Preserve attachmentTokens (already calculated in initializePair)
-  const attachmentTokens = pair.attachmentTokens
-  
-  // Build update object
-  const updates = {
-    // 3. Assistant response (current)
-    assistantText: response.content,
-    assistantChars: response.content.length,
-    assistantTextTokens,
-    assistantProviderTokens: response.reportedTokens,
-    responseMs: response.responseMs,
+  if (errorToReport) {
+    // Extract error message
+    let errorMessage = 'Unknown error'
+    if (errorToReport.message) {
+      errorMessage = errorToReport.message
+    } else if (typeof errorToReport === 'string') {
+      errorMessage = errorToReport
+    }
     
-    // Processed content and extractions
-    processedContent: response.processedContent,
-    codeBlocks: response.codeBlocks,
-    equationBlocks: response.equationBlocks,
-    
-    // Citations (if present)
-    citations: response.citations,
-    citationsMeta: response.citationsMeta,
-    
-    // Full prompt token counts (estimated and reported)
-    fullPromptEstimatedTokens: finalPromptEstimatedTokens,
-    fullPromptReportedTokens: response.fullPromptReportedTokens,
-    rawProviderTokenUsage: response.rawTokenUsage,
-    
-    // 4. Status
-    lifecycleState: 'complete',
-    errorMessage: undefined,
-    
-    // Legacy
-    textTokens,
-    attachmentTokens,  // Preserve from initializePair
-  }
-  
-  // If re-ask: store previous response data and update model
-  if (previousResponse) {
-    // Update model to new model (was old model before re-ask)
-    updates.model = newModelId
-    
-    // Store previous response data
-    updates.previousAssistantText = previousResponse.assistantText
-    updates.previousAssistantChars = previousResponse.assistantChars
-    updates.previousModel = previousResponse.model
-    updates.previousAssistantProviderTokens = previousResponse.assistantProviderTokens
-    updates.previousUserTextTokens = previousResponse.userTextTokens
-    updates.previousAssistantTextTokens = previousResponse.assistantTextTokens
-    updates.previousCitations = previousResponse.citations
-    updates.previousCitationsMeta = previousResponse.citationsMeta
-    updates.previousResponseMs = previousResponse.responseMs
-    updates.previousFullPromptEstimatedTokens = previousResponse.fullPromptEstimatedTokens
-    updates.previousFullPromptReportedTokens = previousResponse.fullPromptReportedTokens
-    updates.previousRawProviderTokenUsage = previousResponse.rawProviderTokenUsage
-    updates.replacedAt = Date.now()
-    updates.replacedBy = newModelId  // New model that replaced it
-  }
-  
-  store.updatePair(pair.id, updates)
-}
-
-/**
- * Handle error
- * Updates pair with error state
- * For re-ask: reverts to previous good state (no error shown)
- */
-function handleError({ pair, error, previousResponse }) {
-  const store = getStore()
-  
-  // Extract error message
-  let errorMessage = 'Unknown error'
-  if (error && error.message) {
-    errorMessage = error.message
-  } else if (typeof error === 'string') {
-    errorMessage = error
-  }
-  
-  if (previousResponse) {
-    // Re-ask error: revert to 'complete' state (keep existing response intact)
-    store.updatePair(pair.id, {
-      lifecycleState: 'complete',
-    })
-    
-    // Show transient notification to user
-    showToast('Re-ask failed: ' + errorMessage, true)
-    
-  } else {
-    // New message error: set error state
+    // Set error state
     store.updatePair(pair.id, {
       assistantText: '',
       lifecycleState: 'error',
       errorMessage,
     })
+    return
   }
+  
+  // Success: update with response
+  const updates = {
+    // Assistant response
+    assistantText: responseData.content,
+    
+    // Processed content and extractions
+    processedContent: responseData.processedContent,
+    codeBlocks: responseData.codeBlocks,
+    equationBlocks: responseData.equationBlocks,
+    
+    // Citations
+    citations: responseData.citations,
+    citationsMeta: responseData.citationsMeta,
+    
+    // Raw provider data
+    rawProviderTokenUsage: responseData.rawTokenUsage,
+    responseMs: responseData.responseMs,
+    
+    // Status
+    lifecycleState: 'complete',
+    errorMessage: undefined,
+  }
+  
+  store.updatePair(pair.id, updates)
+  
+  // Recalculate token usage (now includes assistant text)
+  const updatedPair = store.pairs.get(pair.id)
+  const estimatedTokenUsage = await calculateEstimatedTokenUsage(updatedPair)
+  store.updatePair(pair.id, { estimatedTokenUsage })
+}
+
+/**
+ * Handle re-ask response (success or error)
+ */
+async function handleReaskResponse({ pair, responseData, errorToReport, newModelId }) {
+  const store = getStore()
+  
+  if (errorToReport) {
+    // Extract error message
+    let errorMessage = 'Unknown error'
+    if (errorToReport.message) {
+      errorMessage = errorToReport.message
+    } else if (typeof errorToReport === 'string') {
+      errorMessage = errorToReport
+    }
+    
+    // Revert to complete state (keep existing response)
+    store.updatePair(pair.id, {
+      lifecycleState: 'complete',
+    })
+    
+    // Show notification
+    showToast('Re-ask failed: ' + errorMessage, true)
+    return
+  }
+  
+  // Success: capture previous response and update
+  const previousResponse = {
+    assistantText: pair.assistantText,
+    citations: pair.citations,
+    citationsMeta: pair.citationsMeta,
+    responseMs: pair.responseMs,
+    model: pair.model,
+    replacedAt: Date.now(),
+    estimatedTokenUsage: pair.estimatedTokenUsage,
+    rawProviderTokenUsage: pair.rawProviderTokenUsage,
+  }
+  
+  const updates = {
+    // Update model
+    model: newModelId,
+    
+    // Assistant response
+    assistantText: responseData.content,
+    
+    // Processed content and extractions
+    processedContent: responseData.processedContent,
+    codeBlocks: responseData.codeBlocks,
+    equationBlocks: responseData.equationBlocks,
+    
+    // Citations
+    citations: responseData.citations,
+    citationsMeta: responseData.citationsMeta,
+    
+    // Raw provider data
+    rawProviderTokenUsage: responseData.rawTokenUsage,
+    responseMs: responseData.responseMs,
+    
+    // Previous response
+    previousResponse,
+    
+    // Status
+    lifecycleState: 'complete',
+    errorMessage: undefined,
+  }
+  
+  store.updatePair(pair.id, updates)
+  
+  // Recalculate token usage (now includes new assistant text)
+  const updatedPair = store.pairs.get(pair.id)
+  const estimatedTokenUsage = await calculateEstimatedTokenUsage(updatedPair)
+  store.updatePair(pair.id, { estimatedTokenUsage })
 }
 
 /**
  * Update UI after pair is updated
  * Renders history, ends send state, activates message, scrolls
  */
-function updateUI({ pair, isReask }) {
+function updateUI(isReask) {
   const historyRuntime = getHistoryRuntime()
   const lifecycle = getLifecycle()
   const activeParts = getActiveParts()
@@ -170,29 +182,24 @@ function updateUI({ pair, isReask }) {
  * @param {Object} params
  * @param {MessagePair} params.pair - The message pair to update
  * @param {string} params.modelId - Model ID used for this request
- * @param {Object|null} params.response - Parsed response (if success)
- * @param {Error|null} params.error - Error object (if error)
- * @param {Object|null} params.previousResponse - Previous response data (for re-ask)
- * @param {number|undefined} params.finalPromptEstimatedTokens - Estimated prompt tokens (from Phase 1/3)
+ * @param {Object|null} params.responseData - Parsed response (if success)
+ * @param {Error|null} params.errorToReport - Error object (if error)
  * @param {boolean} params.isReask - Whether this was a re-ask
- * @returns {void}
+ * @returns {Promise<void>}
  */
-export function updatePairAndUI({
+export async function updatePairAndUI({
   pair,
   modelId,
-  response,
-  error,
-  previousResponse,
-  finalPromptEstimatedTokens,
+  responseData,
+  errorToReport,
   isReask,
 }) {
-  // Update store
-  if (error) {
-    handleError({ pair, error, previousResponse })
-  } else {
-    handleSuccess({ pair, response, previousResponse, newModelId: modelId, finalPromptEstimatedTokens })
+  // Update store based on workflow type
+  if (isReask) {
+    await handleReaskResponse({ pair, responseData, errorToReport, newModelId: modelId })
+  } else { await handleNewMessageResponse({ pair, responseData, errorToReport })
   }
   
-  // Update UI (same for both success/error)
-  updateUI({ pair, isReask })
+  // Update UI (same for both workflows)
+  updateUI(isReask)
 }

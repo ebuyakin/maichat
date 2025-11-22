@@ -212,6 +212,13 @@ export const SETTINGS_SCHEMA = {
     ui: { label: 'Chars Per Token (CPT)', tab: 'context' },
   },
   
+  tokenEstimationVersion: {
+    defaultValue: 'v1',
+    renderAction: 'none',
+    control: { type: 'hidden' },
+    ui: { label: 'Token Estimation Version', tab: 'context' },
+  },
+  
   assumedUserTokens: {
     defaultValue: 256,
     renderAction: 'none',

@@ -99,11 +99,9 @@ export function parseResponse(response) {
     processedContent, // Processed content (for display)
     codeBlocks, 
     equationBlocks, 
-    reportedTokens: response.tokenUsage?.completionTokens, // Assistant token metrics from provider
-    fullPromptReportedTokens: response.tokenUsage?.promptTokens, // Full prompt token from provider
-    rawTokenUsage: response.rawTokenUsage, // Raw provider token usage (all provider-specific fields)
+    rawTokenUsage: response.rawTokenUsage, // Raw provider token usage (for analytics)
     responseMs: response.responseMs, // Response time from adapter
     citations, // sources used by the model (URLS)
-    citationsMeta, // titles of the soureces
+    citationsMeta, // titles of the sources
   }
 }

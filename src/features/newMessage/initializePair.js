@@ -8,10 +8,7 @@ import {
   getScrollController,
   getInteraction
 } from '../../runtime/runtimeServices.js'
-import { estimateTextTokens } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
-import { getSettings } from '../../core/settings/index.js'
-import { getModelMeta } from '../../core/models/modelCatalog.js'
-import { getManyMetadata as getImageMetadata } from '../images/imageStore.js'
+import { calculateEstimatedTokenUsage } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
 
 /**
  * Create new pair for true new message
@@ -36,58 +33,27 @@ async function handleNewMessage({ userText, pendingImageIds, topicId, modelId })
     // assistantText should only be set in Phase 5 when response arrives.
   })
   
-  // Get provider and settings for token estimation
-  const modelMeta = getModelMeta(modelId)
-  const providerId = modelMeta?.provider || 'openai'
-  const settings = getSettings()
-  
-  // Calculate user text metrics
-  const userChars = userText.length
-  const userTextTokens = estimateTextTokens(userText, providerId, settings)
-  
-  // Calculate image budgets and tokens
-  let attachmentTokens = 0
-  const imageBudgets = []
-  
+  // Add attachments if present
   if (pendingImageIds && pendingImageIds.length > 0) {
-    const images = await getImageMetadata(pendingImageIds)
-    for (const img of images) {
-      if (img && typeof img.w === 'number' && typeof img.h === 'number') {
-        // Legacy: use precomputed tokenCost for current provider
-        attachmentTokens += (img.tokenCost && img.tokenCost[providerId]) || 0
-        
-        // New: store denormalized budget metadata (already precomputed)
-        imageBudgets.push({
-          id: img.id,
-          w: img.w,
-          h: img.h,
-          tokenCost: img.tokenCost || {}, // Object: { openai: 765, anthropic: 800, ... }
-        })
-      }
-    }
+    store.updatePair(pairId, {
+      attachments: pendingImageIds,
+    })
   }
   
-  // Legacy textTokens (for old pipeline compatibility). only user text counted.
-  const textTokens = userTextTokens
+  // Get pair and calculate estimated token usage for all providers
+  const pair = store.pairs.get(pairId)
+  const estimatedTokenUsage = await calculateEstimatedTokenUsage(pair)
   
-  // Add metadata
+  // Update pair with token usage and lifecycle state
   store.updatePair(pairId, {
-    attachments: pendingImageIds,
+    estimatedTokenUsage,
     lifecycleState: 'sending',
-    userChars,
-    userTextTokens,
-    textTokens,  // Legacy (for old pipeline)
-    attachmentTokens,  // Legacy (for old pipeline)
-    imageBudgets,  // New (for fast estimation)
   })
   
   // Get updated pair from store
-  const pair = store.pairs.get(pairId)
+  const updatedPair = store.pairs.get(pairId)
   
-  return {
-    pair,
-    previousResponse: null,
-  }
+  return { pair: updatedPair }
 }
 
 /**
@@ -105,38 +71,15 @@ function handleReask({ editingPairId }) {
     throw new Error(`Pair not found: ${editingPairId}`)
   }
   
-  // Save previous response data (will be stored in Phase 6 after new response)
-  const previousResponse = {
-    // 3. Current assistant data (essential - can't be recalculated)
-    assistantText: pair.assistantText,
-    citations: pair.citations,
-    citationsMeta: pair.citationsMeta,
-    responseMs: pair.responseMs,
-    
-    // 5. Budget (assistant and user - provider-specific estimates)
-    userTextTokens: pair.userTextTokens,
-    assistantTextTokens: pair.assistantTextTokens,
-    assistantProviderTokens: pair.assistantProviderTokens,
-    assistantChars: pair.assistantChars || pair.assistantText.length,
-    
-    // Full prompt token counts
-    fullPromptEstimatedTokens: pair.fullPromptEstimatedTokens,
-    fullPromptReportedTokens: pair.fullPromptReportedTokens,
-    rawProviderTokenUsage: pair.rawProviderTokenUsage,
-    
-    // Model info
-    model: pair.model,
-  }
-  
   // Update pair state for re-ask (minimal update)
   store.updatePair(editingPairId, {
     lifecycleState: 'sending',
   })
   
-  return {
-    pair,
-    previousResponse,
-  }
+  // Get updated pair from store
+  const updatedPair = store.pairs.get(editingPairId)
+
+  return { pair: updatedPair }
 }
 
 /**

@@ -188,7 +188,7 @@ export function createInteraction({
       if (!act) return false
       const pair = store.pairs.get(act.pairId)
       if (!pair || pair.lifecycleState === 'error') return false
-      if (!pair.previousAssistantText) return false
+      if (!pair.previousResponse) return false
       restorePrevious(pair.id)
       return true
     },
@@ -1091,12 +1091,24 @@ export function createInteraction({
   }
   function restorePrevious(pairId) {
     const pair = store.pairs.get(pairId)
-    if (!pair || !pair.previousAssistantText) return
-    const curAsst = pair.assistantText || ''
-    const curModel = pair.model || undefined
-    const prevAsst = pair.previousAssistantText
-    const prevModel = pair.previousModel || curModel
-    // Re-extract for display
+    if (!pair || !pair.previousResponse) return
+    
+    // Save current response state
+    const currentResponse = {
+      assistantText: pair.assistantText,
+      citations: pair.citations,
+      citationsMeta: pair.citationsMeta,
+      responseMs: pair.responseMs,
+      model: pair.model,
+      replacedAt: Date.now(),
+      estimatedTokenUsage: pair.estimatedTokenUsage,
+      rawProviderTokenUsage: pair.rawProviderTokenUsage,
+    }
+    
+    const previousResponse = pair.previousResponse
+    const prevAsst = previousResponse.assistantText
+    
+    // Re-extract for display (same logic as parseResponse)
     const codeExtraction = extractCodeBlocks(prevAsst)
     const afterCode = codeExtraction.hasCode ? codeExtraction.displayText : prevAsst
     const eqResult = extractEquations(afterCode, { inlineMode: 'markers' })
@@ -1111,21 +1123,24 @@ export function createInteraction({
     }
     finalDisplay = finalDisplay.replace(/\s*\[([a-z0-9_]+-\d+|eq-\d+)\]\s*/gi, ' [$1] ')
     finalDisplay = finalDisplay.replace(/ {2,}/g, ' ')
-    let textTokens = 0
-    try {
-      const userTok = estimateTokens((pair.userText || ''), getSettings().charsPerToken || 4)
-      const asstTok = estimateTokens((prevAsst || ''), getSettings().charsPerToken || 4)
-      textTokens = userTok + asstTok
-    } catch {}
+    
+    const processedContent = codeExtraction.hasCode || eqResult.hasEquations 
+      ? finalDisplay 
+      : sanitizeAssistantText(prevAsst)
+    
+    // Swap: restore previous, save current as new previous
     store.updatePair(pair.id, {
       assistantText: prevAsst,
-      model: prevModel,
-      previousAssistantText: curAsst,
-      previousModel: curModel,
-      processedContent: codeExtraction.hasCode || eqResult.hasEquations ? finalDisplay : sanitizeAssistantText(prevAsst),
+      model: previousResponse.model,
+      citations: previousResponse.citations,
+      citationsMeta: previousResponse.citationsMeta,
+      responseMs: previousResponse.responseMs,
+      processedContent,
       codeBlocks: codeExtraction.hasCode ? codeExtraction.codeBlocks : undefined,
       equationBlocks: (eqResult.equationBlocks && eqResult.equationBlocks.length) ? eqResult.equationBlocks : undefined,
-      textTokens,
+      estimatedTokenUsage: previousResponse.estimatedTokenUsage,
+      rawProviderTokenUsage: previousResponse.rawProviderTokenUsage,
+      previousResponse: currentResponse,  // Current becomes new previous
       lifecycleState: 'complete',
       errorMessage: undefined,
     })
