@@ -129,6 +129,7 @@ export async function selectContextPairs({
   
   // Select pairs that fit (newest first, stop on overflow)
   const selectedPairs = []
+  const selectedPairsTokens = []  // Parallel array of token costs
   let historyTokens = 0
   
   for (let i = visiblePairs.length - 1; i >= 0; i--) {
@@ -142,14 +143,23 @@ export async function selectContextPairs({
     
     if (historyTokens + pairTokens <= historyAllowance) {
       selectedPairs.unshift(pair)  // Maintain chronological order
+      selectedPairsTokens.unshift(pairTokens)  // Parallel array
       historyTokens += pairTokens
     } else {
       break  // Stop on first overflow
     }
   }
   
+  // Calculate full prompt estimated tokens (system + user + history)
+  const systemTokens = estimateTextTokens(systemMessage || '', providerId, settings)
+  const userTextTokens = newMessagePair.userTextTokens || 0
+  const userImageTokens = newMessagePair.attachmentTokens || 0
+  const fullPromptEstimatedTokens = systemTokens + userTextTokens + userImageTokens + historyTokens
+  
   return {
     selectedPairs,
+    selectedPairsTokens,
+    fullPromptEstimatedTokens,
     systemMessage,
     providerId,
     options,

@@ -164,6 +164,9 @@ async function parseOpenAIResponse({ response, responseBody }) {
     totalTokens: responseBody.usage.total_tokens || 0,
   } : undefined
   
+  // Store raw provider token usage
+  const rawTokenUsage = responseBody.usage
+  
   // Extract citations (URLs) and optional titles from Responses API
   let citations
   let citationsMeta
@@ -236,6 +239,7 @@ async function parseOpenAIResponse({ response, responseBody }) {
   return {
     content,
     tokenUsage,
+    rawTokenUsage,
     citations,
     citationsMeta,
   }

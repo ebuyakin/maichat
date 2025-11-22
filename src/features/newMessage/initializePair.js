@@ -119,6 +119,11 @@ function handleReask({ editingPairId }) {
     assistantProviderTokens: pair.assistantProviderTokens,
     assistantChars: pair.assistantChars || pair.assistantText.length,
     
+    // Full prompt token counts
+    fullPromptEstimatedTokens: pair.fullPromptEstimatedTokens,
+    fullPromptReportedTokens: pair.fullPromptReportedTokens,
+    rawProviderTokenUsage: pair.rawProviderTokenUsage,
+    
     // Model info
     model: pair.model,
   }

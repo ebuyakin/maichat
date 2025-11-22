@@ -14,10 +14,14 @@ import { getApiKey } from '../../infrastructure/api/keys.js'
  * @param {Object} params.options - Request options (temperature, webSearch, etc.)
  * @param {number} params.maxRetries - Max retry attempts
  * @param {AbortSignal} params.signal - Abort signal for cancellation
- * @returns {Promise<Object>} Provider response
+ * @param {number[]} params.selectedPairsTokens - Token costs for each history pair (parallel to parts)
+ * @param {number} params.fullPromptEstimatedTokens - Initial estimated prompt tokens
+ * @returns {Promise<Object>} { response, fullPromptEstimatedTokens }
  */
 export async function sendWithRetry({
   requestParts,
+  selectedPairsTokens,
+  fullPromptEstimatedTokens,
   providerId,
   modelId,
   systemMessage,
@@ -36,6 +40,8 @@ export async function sendWithRetry({
 
   // Clone request parts for mutation during retries
   let currentRequest = { parts: [...requestParts] }
+  let currentPairTokens = [...selectedPairsTokens]  // Clone for mutation
+  let currentPromptTokens = fullPromptEstimatedTokens
   let attempt = 0
   
   while (attempt <= maxRetries) {
@@ -51,7 +57,10 @@ export async function sendWithRetry({
       })
       
       // Success!
-      return response
+      return {
+        rawResponse: response,
+        finalPromptEstimatedTokens: currentPromptTokens,
+      }
       
     } catch (err) {
       // Check if error is usage limit exceeded (rate limit or context overflow)
@@ -70,6 +79,13 @@ export async function sendWithRetry({
 
       // Remove oldest pair (first user + first assistant)
       currentRequest.parts.splice(0, 2)
+      
+      // Also remove corresponding token cost from estimate
+      const trimmedPairTokens = currentPairTokens.shift()
+      if (trimmedPairTokens) {
+        currentPromptTokens -= trimmedPairTokens
+      }
+      
       attempt++
 
       console.log(

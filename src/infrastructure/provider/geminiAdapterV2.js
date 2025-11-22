@@ -154,6 +154,9 @@ async function parseGeminiResponse({ response, responseBody }) {
     totalTokens: responseBody.usageMetadata.totalTokenCount || 0,
   } : undefined
   
+  // Store raw provider token usage (includes thoughts, tools, etc.)
+  const rawTokenUsage = responseBody.usageMetadata
+  
   // Extract citations from grounding/citation metadata
   let citations
   let citationsMeta
@@ -213,6 +216,7 @@ async function parseGeminiResponse({ response, responseBody }) {
   return {
     content,
     tokenUsage,
+    rawTokenUsage,
     citations,
     citationsMeta,
   }

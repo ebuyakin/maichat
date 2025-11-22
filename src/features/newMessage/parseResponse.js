@@ -44,7 +44,7 @@ function sanitizeDisplayPreservingTokens(text) {
  * @returns {Object} Parsed response data
  */
 export function parseResponse(response) {
-  response.content += ' NP!' // DEBUGGING NEW PIPELINE
+  // response.content += ' NP!' // DEBUGGING NEW PIPELINE
 
   const rawText = response.content || ''
   
@@ -99,7 +99,9 @@ export function parseResponse(response) {
     processedContent, // Processed content (for display)
     codeBlocks, 
     equationBlocks, 
-    reportedTokens: response.tokenUsage?.completionTokens, // Token metrics from provider
+    reportedTokens: response.tokenUsage?.completionTokens, // Assistant token metrics from provider
+    fullPromptReportedTokens: response.tokenUsage?.promptTokens, // Full prompt token from provider
+    rawTokenUsage: response.rawTokenUsage, // Raw provider token usage (all provider-specific fields)
     responseMs: response.responseMs, // Response time from adapter
     citations, // sources used by the model (URLS)
     citationsMeta, // titles of the soureces

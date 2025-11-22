@@ -17,7 +17,7 @@ import { showToast } from '../../shared/toast.js'
  * Handle successful response
  * Updates pair with response data and previous response (if re-ask)
  */
-function handleSuccess({ pair, response, previousResponse, newModelId }) {
+function handleSuccess({ pair, response, previousResponse, newModelId, finalPromptEstimatedTokens }) {
   const store = getStore()
   
   // Get provider and settings for token estimation (use new model for re-ask)
@@ -31,6 +31,9 @@ function handleSuccess({ pair, response, previousResponse, newModelId }) {
   // Legacy textTokens: sum of user + assistant
   const userTextTokens = pair.userTextTokens || 0
   const textTokens = userTextTokens + assistantTextTokens
+  
+  // Preserve attachmentTokens (already calculated in initializePair)
+  const attachmentTokens = pair.attachmentTokens
   
   // Build update object
   const updates = {
@@ -50,12 +53,18 @@ function handleSuccess({ pair, response, previousResponse, newModelId }) {
     citations: response.citations,
     citationsMeta: response.citationsMeta,
     
+    // Full prompt token counts (estimated and reported)
+    fullPromptEstimatedTokens: finalPromptEstimatedTokens,
+    fullPromptReportedTokens: response.fullPromptReportedTokens,
+    rawProviderTokenUsage: response.rawTokenUsage,
+    
     // 4. Status
     lifecycleState: 'complete',
     errorMessage: undefined,
     
     // Legacy
     textTokens,
+    attachmentTokens,  // Preserve from initializePair
   }
   
   // If re-ask: store previous response data and update model
@@ -73,6 +82,9 @@ function handleSuccess({ pair, response, previousResponse, newModelId }) {
     updates.previousCitations = previousResponse.citations
     updates.previousCitationsMeta = previousResponse.citationsMeta
     updates.previousResponseMs = previousResponse.responseMs
+    updates.previousFullPromptEstimatedTokens = previousResponse.fullPromptEstimatedTokens
+    updates.previousFullPromptReportedTokens = previousResponse.fullPromptReportedTokens
+    updates.previousRawProviderTokenUsage = previousResponse.rawProviderTokenUsage
     updates.replacedAt = Date.now()
     updates.replacedBy = newModelId  // New model that replaced it
   }
@@ -161,6 +173,7 @@ function updateUI({ pair, isReask }) {
  * @param {Object|null} params.response - Parsed response (if success)
  * @param {Error|null} params.error - Error object (if error)
  * @param {Object|null} params.previousResponse - Previous response data (for re-ask)
+ * @param {number|undefined} params.finalPromptEstimatedTokens - Estimated prompt tokens (from Phase 1/3)
  * @param {boolean} params.isReask - Whether this was a re-ask
  * @returns {void}
  */
@@ -170,13 +183,14 @@ export function updatePairAndUI({
   response,
   error,
   previousResponse,
+  finalPromptEstimatedTokens,
   isReask,
 }) {
   // Update store
   if (error) {
     handleError({ pair, error, previousResponse })
   } else {
-    handleSuccess({ pair, response, previousResponse, newModelId: modelId })
+    handleSuccess({ pair, response, previousResponse, newModelId: modelId, finalPromptEstimatedTokens })
   }
   
   // Update UI (same for both success/error)

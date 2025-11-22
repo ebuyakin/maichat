@@ -52,12 +52,22 @@
  * 5.1. token counts for images attached to pair calculated for each provider (tokenCost).
  * @property {Array<{id:string, w:number, h:number, tokenCost:Object}>|undefined} imageBudgets 
  * 
- * 5.2. legacy, but still in use in older versions:
+ * 5.2. total prompt (user+system+context) token count
+ * @property {number|undefined} fullPromptEstimatedTokens - estimated prompt token count
+ * @property {number|undefined} fullPromptReportedTokens - reported prompt token count
+ * @property {number|undefined} previousFullPromptEstimatedTokens - estimated prompt token count
+ * @property {number|undefined} previousFullPromptReportedTokens - reported prompt token count
+ * 
+ * 5.3. total interaction token count (prompt+response+tools+thoughts) as reported by provider
+ * @property {number|undefined} rawProviderTokenUsage - reported total token count
+ * @property {number|undefined} previousRawProviderTokenUsage - prev. reported total token count
+ * 
+ * 5.4. legacy, but still in use in older versions:
  * @property {number|undefined} tokenLength - legacy (seems unused)
  * @property {number|undefined} textTokens - precomputed total text tokens (userText + assistantText)
  * @property {number|undefined} attachmentTokens - precomputed total image tokens for all attachments
  * 
- * 5.3 chacarters count (legacy, still in use)
+ * 5.5 chacarters count (legacy, still in use)
  * @property {number|undefined} userChars - length of userText in characters 
  * @property {number|undefined} assistantChars - length of assistantText in characters 
  * @property {number|undefined} previousAssistantChars - length of previousAssistantText in characters 

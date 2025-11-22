@@ -112,10 +112,12 @@ historyRuntime = createHistoryRuntime(__runtime)
 Bugs:
 AI is thinking to show [x]
 update in case of reAsk error - preserve existing answer [x]
-totalTokens reported - store it to compare vs estimated. store both estimaterd total
-clean pendingImages after send. [x]
-image icon - open overlay on click.
+feature flag - instead of ctrl-G [x]
 sendNewMessage() - returns the value, none taken in inputKeys.js [x]
+clean pendingImages after send. [x]
+context budget. MessagePair structure supplementation. totalTokens reported - store it to compare vs estimated. store both estimaterd total
+
+context budget summary in activity stat
+image icon - open overlay on click.
 f1 view mode - Ctrl_Shift_O - view draft images - view attached images
-feature flag - instead of ctrl-G
 gemini - citations in the assistant body

@@ -32,7 +32,8 @@ export async function sendNewMessage({
   
   //userText = 'can you describe the image? How many images do you see?' // debugging only
   //editingPairId = 'dd0abd57-c91b-4232-bb0c-d0498793bb24' // debugging only
-  userText = userText + ' (00)' // for debugging. to distinguish new/old pipelines.
+  //userText = userText + ' (00)' // for debugging. to distinguish new/old pipelines.
+
   // Phase 0: Initialize pair and show user message
   const { pair, previousResponse } = await initializePair({
     userText,
@@ -45,11 +46,14 @@ export async function sendNewMessage({
   
   let responseData = null
   let errorToReport = null
+  let finalPromptEstimatedTokens = null
   
   try {
     // Phase 1: Select context pairs and load configuration
     const {
       selectedPairs,
+      selectedPairsTokens,
+      fullPromptEstimatedTokens,
       systemMessage,
       providerId,
       options,
@@ -64,6 +68,7 @@ export async function sendNewMessage({
       systemMessage,
       providerId,
       options,
+      fullPromptEstimatedTokens,
     })
     
     // Phase 2: Build provider-agnostic request parts (batch encodes all images)
@@ -74,8 +79,10 @@ export async function sendNewMessage({
     console.log('[sendNewMessage] Phase 2 completed. Request parts:', requestParts)
     
     // Phase 3: Send to provider with retry
-    const rawResponse = await sendWithRetry({
+    const result = await sendWithRetry({
       requestParts,
+      selectedPairsTokens,
+      fullPromptEstimatedTokens,
       providerId,
       modelId,
       systemMessage,
@@ -83,6 +90,8 @@ export async function sendNewMessage({
       maxRetries: 5,
       signal: null,  // : Add abort controller from lifecycle
     })
+    const rawResponse = result.rawResponse
+    finalPromptEstimatedTokens = result.finalPromptEstimatedTokens  // Assign to outer variable
     console.log('[sendNewMessage] Phase 3 completed.', rawResponse)
     
     // Phase 4: Parse response (extract content, citations, etc.)
@@ -101,6 +110,7 @@ export async function sendNewMessage({
     response: responseData,
     error: errorToReport,
     previousResponse,
+    finalPromptEstimatedTokens,
     isReask: Boolean(editingPairId),
   })
   console.log('[sendNewMessage] Phase 5 completed: pair and UI updated')
