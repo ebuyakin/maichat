@@ -416,7 +416,6 @@ export function createInputKeyHandler({
         topicId: pendingMessageMeta.topicId || getCurrentTopicId(),
         modelId: pendingMessageMeta.model || getActiveModel(),
         visiblePairIds: [...new Set(activeParts.parts.map(pt => pt.pairId))],
-        activePartId: activeParts.parts[activeParts.activeIndex]?.id || null,
         editingPairId: window.__editingPairId || null,
       }
       
@@ -469,7 +468,6 @@ export function createInputKeyHandler({
           topicId: pendingMessageMeta.topicId || getCurrentTopicId(),
           modelId: pendingMessageMeta.model || getActiveModel(),
           visiblePairIds: [...new Set(activeParts.parts.map(pt => pt.pairId))],
-          activePartId: activeParts.parts[activeParts.activeIndex]?.id || null,
           editingPairId: null, // Always null for Enter key (new message only)
         }
         

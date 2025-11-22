@@ -16,7 +16,6 @@ import { updatePairAndUI } from './updatePairAndUI.js'
  * @param {string} topicId - Topic ID
  * @param {string} modelId - Model ID
  * @param {string[]} visiblePairIds - WYSIWYG history pair IDs
- * @param {string|null} activePartId - Currently focused part ID
  * @param {string|null} editingPairId - Pair ID if re-asking
  * @returns {Promise<string>} Created/updated pair ID
  */
@@ -26,14 +25,8 @@ export async function sendNewMessage({
   topicId,
   modelId,
   visiblePairIds,
-  activePartId,
   editingPairId,
 }) {
-  
-  //userText = 'can you describe the image? How many images do you see?' // debugging only
-  //editingPairId = 'dd0abd57-c91b-4232-bb0c-d0498793bb24' // debugging only
-  //userText = userText + ' (00)' // for debugging. to distinguish new/old pipelines.
-
   // Phase 0: Initialize pair and show user message
   const { pair } = await initializePair({
     userText,
@@ -42,7 +35,6 @@ export async function sendNewMessage({
     modelId,
     editingPairId,
   })
-  console.log('[sendNewMessage] Phase 0 completed.', { pairId: pair.id, isReask: Boolean(editingPairId) })
   
   let responseData = null
   let errorToReport = null
@@ -58,14 +50,12 @@ export async function sendNewMessage({
       newMessagePair: pair,
       modelId,
     })
-    console.log('[sendNewMessage] Phase 1 completed.', { selectedPairsCount: selectedPairs.length})
     
     // Phase 2: Build provider-agnostic request parts (batch encodes all images)
     const requestParts = await buildRequestParts({
       selectedPairs,
       newMessagePair: pair,
     })
-    console.log('[sendNewMessage] Phase 2 completed. Request parts:', requestParts)
     
     // Phase 3: Send to provider with retry
     const rawResponse = await sendWithRetry({
@@ -76,15 +66,12 @@ export async function sendNewMessage({
       maxRetries: 5,
       signal: null,  // TODO: Add abort controller from lifecycle
     })
-    console.log('[sendNewMessage] Phase 3 completed.', rawResponse)
     
     // Phase 4: Parse response (extract content, citations, etc.)
     responseData = parseResponse(rawResponse)
-    console.log('[sendNewMessage] Phase 4 completed.', responseData)
     
   } catch (error) {
     errorToReport = error
-    console.log('[sendNewMessage] Error caught:', error)
   }
   
   // Phase 5: Update pair and UI (unified for success/error)
@@ -95,7 +82,6 @@ export async function sendNewMessage({
     errorToReport,
     isReask: Boolean(editingPairId),
   })
-  console.log('[sendNewMessage] Phase 5 completed: pair and UI updated')
   
   return pair.id
 }

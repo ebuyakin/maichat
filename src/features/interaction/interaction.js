@@ -953,7 +953,6 @@ export function createInteraction({
         topicId: pair.topicId,
         modelId: model || getActiveModel(),
         visiblePairIds: [...new Set(activeParts.parts.map(pt => pt.pairId))],
-        activePartId: activeParts.parts[activeParts.activeIndex]?.id || null,
         editingPairId: pairId,  // This makes it re-ask
       }
       

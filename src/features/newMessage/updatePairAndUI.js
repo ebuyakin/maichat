@@ -143,7 +143,7 @@ async function handleReaskResponse({ pair, responseData, errorToReport, newModel
  * Update UI after pair is updated
  * Renders history, ends send state, activates message, scrolls
  */
-function updateUI(isReask) {
+function updateUI({ isReask }) {
   const historyRuntime = getHistoryRuntime()
   const lifecycle = getLifecycle()
   const activeParts = getActiveParts()
@@ -197,9 +197,10 @@ export async function updatePairAndUI({
   // Update store based on workflow type
   if (isReask) {
     await handleReaskResponse({ pair, responseData, errorToReport, newModelId: modelId })
-  } else { await handleNewMessageResponse({ pair, responseData, errorToReport })
+  } else {
+    await handleNewMessageResponse({ pair, responseData, errorToReport })
   }
   
   // Update UI (same for both workflows)
-  updateUI(isReask)
+  updateUI({ isReask })
 }
