@@ -10,6 +10,7 @@ import {
 } from '../../runtime/runtimeServices.js'
 import { calculateEstimatedTokenUsage } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
 import { showToast } from '../../shared/toast.js'
+import { smartAlignActiveMessage } from '../history/smartAlignMessage.js'
 
 /**
  * Handle new message response (success or error)
@@ -141,38 +142,32 @@ async function handleReaskResponse({ pair, responseData, errorToReport, newModel
 
 /**
  * Update UI after pair is updated
- * Renders history, ends send state, activates message, scrolls
+ * Renders history, ends send state, scrolls to new message
  */
-function updateUI({ isReask }) {
+function updateUI() {
   const historyRuntime = getHistoryRuntime()
   const lifecycle = getLifecycle()
-  const activeParts = getActiveParts()
-  const scrollController = getScrollController()
   const interaction = getInteraction()
+  const activeParts = getActiveParts()
+  
+  // End send state first
+  lifecycle.completeSend()
+  interaction.updateSendDisabled()
   
   // Render updated history
-  historyRuntime.renderCurrentView({ preserveActive: isReask })
+  historyRuntime.renderCurrentView({ preserveActive: false })
   
-  // End send state (removes "AI thinking" badge)
-  lifecycle.completeSend()
-  interaction.updateSendDisabled()  // Trigger send button UI update
-  
-  // Activate appropriate message
-  if (!isReask) {
-    // New message: activate last (assistant response)
-    activeParts.last()
-  }
-  // Re-ask: keep current active
-  
+  // Explicitly set active to last message (new assistant response)
+  // This is needed because setParts() preserves old active by ID
+  activeParts.last()
   historyRuntime.applyActiveMessage()
   
-  // Scroll to show response
-  const act = activeParts.active()
-  if (act && act.id && scrollController.alignTo) {
-    requestAnimationFrame(() => {
-      scrollController.alignTo(act.id, 'bottom', false)
-    })
-  }
+  // Smart align the last message
+  smartAlignActiveMessage({
+    position: 'onfit',  // Bottom if fits, top if doesn't
+    mode: 'onfit',      // Switch to VIEW if doesn't fit
+    animate: false,
+  })
 }
 
 /**
@@ -202,5 +197,5 @@ export async function updatePairAndUI({
   }
   
   // Update UI (same for both workflows)
-  updateUI({ isReask })
+  updateUI()
 }
