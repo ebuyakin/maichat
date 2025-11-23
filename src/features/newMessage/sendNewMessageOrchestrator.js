@@ -40,13 +40,18 @@ export async function sendNewMessage({
   let errorToReport = null
   
   try {
+    // Filter context: exclude the pair being re-asked
+    const contextPairIds = editingPairId
+      ? visiblePairIds.filter(id => id !== editingPairId)
+      : visiblePairIds
+    
     // Phase 1: Select context pairs that fit in budget
     const {
       selectedPairs,
       selectedPairsTokens,
     } = await selectContextPairs({
       topicId,
-      visiblePairIds,
+      visiblePairIds: contextPairIds,
       newMessagePair: pair,
       modelId,
     })

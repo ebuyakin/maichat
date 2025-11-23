@@ -131,13 +131,16 @@ export async function initializePair({
   
   historyRuntime.applyActiveMessage()
   
-  // Scroll to show active message
-  const act = activeParts.active()
-  if (act && act.id && scrollController.alignTo) {
-    requestAnimationFrame(() => {
-      scrollController.alignTo(act.id, 'bottom', false)
-    })
+  // Scroll to show active message (only for new messages, not re-ask)
+  if (!isReask) {
+    const act = activeParts.active()
+    if (act && act.id && scrollController.alignTo) {
+      requestAnimationFrame(() => {
+        scrollController.alignTo(act.id, 'bottom', false)
+      })
+    }
   }
+  // Re-ask: keep current scroll position (will be aligned when response arrives)
   
   return result
 }
