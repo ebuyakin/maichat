@@ -10,12 +10,18 @@ import { createGrokAdapterV2 } from './grokAdapterV2.js'
 /**
  * Direct provider mapping for new architecture
  * Each adapter has simple interface: { sendChat(params) => Promise<response> }
+ * 
+ * NOTE: Keys must match SUPPORTED_PROVIDERS in core/models/modelCatalog.js
+ * Current mismatch (historical naming):
+ * - 'google' provider ID → uses createGeminiAdapterV2() factory
+ * - 'xai' provider ID → uses createGrokAdapterV2() factory
+ * TODO: Rename adapter files/functions to match provider IDs for consistency
  */
 export const ADAPTERS = {
-  gemini: createGeminiAdapterV2(),
+  google: createGeminiAdapterV2(),
   openai: createOpenAIAdapterV2(),
   anthropic: createAnthropicAdapterV2(),
-  grok: createGrokAdapterV2(),
+  xai: createGrokAdapterV2(),
 }
 
 // Temporary backwards-compatible export; TODO: remove once all call sites use ADAPTERS

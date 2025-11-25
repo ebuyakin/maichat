@@ -34,8 +34,37 @@ function migrateLegacy() {
   } catch {}
 }
 
+function migrateProviderKeys() {
+  try {
+    const keys = loadApiKeys()
+    let changed = false
+    
+    // Migrate gemini → google
+    if (keys.gemini && !keys.google) {
+      keys.google = keys.gemini
+      delete keys.gemini
+      changed = true
+    }
+    
+    // Migrate grok → xai
+    if (keys.grok && !keys.xai) {
+      keys.xai = keys.grok
+      delete keys.grok
+      changed = true
+    }
+    
+    if (changed) {
+      saveApiKeys(keys)
+      console.log('[API Keys] Migrated provider keys: gemini→google, grok→xai')
+    }
+  } catch (err) {
+    console.error('[API Keys] Migration failed:', err)
+  }
+}
+
 export function getApiKey(provider) {
   migrateLegacy()
+  migrateProviderKeys()
   const keys = loadApiKeys()
   return keys[provider] || ''
 }

@@ -35,11 +35,11 @@ export function openApiKeysOverlay({ onClose, modeManager }) {
       </label>
       <label class="key-field">
         <span>Gemini Key</span>
-        <input class="std-input" type="password" data-key="gemini" placeholder="AIza..." value="${existing.gemini ? escapeHtml(existing.gemini) : ''}" />
+        <input class="std-input" type="password" data-key="google" placeholder="AIza..." value="${existing.google ? escapeHtml(existing.google) : ''}" />
       </label>
       <label class="key-field">
         <span>xAI Key</span>
-        <input class="std-input" type="password" data-key="grok" placeholder="xai-..." value="${existing.grok ? escapeHtml(existing.grok) : ''}" />
+        <input class="std-input" type="password" data-key="xai" placeholder="xai-..." value="${existing.xai ? escapeHtml(existing.xai) : ''}" />
       </label>
     <div class="keys-buttons">
         <button data-action="cancel" class="btn">Close</button>

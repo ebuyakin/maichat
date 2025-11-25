@@ -38,6 +38,8 @@ export async function sendNewMessage({
   
   let responseData = null
   let errorToReport = null
+  let systemTokens = undefined
+  let historyTokens = undefined
   
   try {
     // Filter context: exclude the pair being re-asked
@@ -49,13 +51,14 @@ export async function sendNewMessage({
     const {
       selectedPairs,
       selectedPairsTokens,
-      systemTokens,
+      systemTokens: sysTokens,
     } = await selectContextPairs({
       topicId,
       visiblePairIds: contextPairIds,
       newMessagePair: pair,
       modelId,
     })
+    systemTokens = sysTokens
     
     // Phase 2: Build provider-agnostic request parts (batch encodes all images)
     const requestParts = await buildRequestParts({
@@ -64,7 +67,7 @@ export async function sendNewMessage({
     })
     
     // Phase 3: Send to provider with retry
-    const { response: rawResponse, historyTokens } = await sendWithRetry({
+    const { response: rawResponse, historyTokens: histTokens } = await sendWithRetry({
       requestParts,
       selectedPairsTokens,
       topicId,
@@ -72,6 +75,7 @@ export async function sendNewMessage({
       maxRetries: 5,
       signal: null,  // TODO: Add abort controller from lifecycle
     })
+    historyTokens = histTokens
     
     // Phase 4: Parse response (extract content, citations, etc.)
     responseData = parseResponse(rawResponse)

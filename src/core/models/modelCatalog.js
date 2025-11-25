@@ -5,6 +5,9 @@ const STORAGE_KEY = 'maichat_model_catalog_v2'
  * Supported AI providers
  * When adding a new provider: add ID here, create estimator in infrastructure/provider/tokenEstimation/, 
  * register in tokenEstimator.js, and add base models below
+ * 
+ * NOTE: This list must stay in sync with ADAPTERS in infrastructure/provider/adapterV2.js
+ * (Different naming: 'google' here vs 'gemini' adapter name, 'xai' here vs 'grok' adapter name)
  */
 export const SUPPORTED_PROVIDERS = ['openai', 'anthropic', 'google', 'xai']
 
