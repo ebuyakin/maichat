@@ -76,8 +76,17 @@ const BASE_MODELS = [
   },
   // Gemini models (Free tier limits)
   {
+    id: 'gemini-3-pro-preview', // new, added 25.11.2025
+    provider: 'google',
+    contextWindow: 1000000,
+    tpm: 15000,
+    rpm: 30,
+    rpd: 14400,
+    webSearch: true,
+  },
+  {
     id: 'gemini-2.5-pro',
-    provider: 'gemini',
+    provider: 'google',
     contextWindow: 1000000,
     tpm: 125000,
     rpm: 2,
@@ -86,7 +95,7 @@ const BASE_MODELS = [
   },
   {
     id: 'gemini-2.5-flash',
-    provider: 'gemini',
+    provider: 'google',
     contextWindow: 1000000,
     tpm: 250000,
     rpm: 10,
@@ -95,7 +104,7 @@ const BASE_MODELS = [
   },
   {
     id: 'gemini-2.0-flash',
-    provider: 'gemini',
+    provider: 'google',
     contextWindow: 1000000,
     tpm: 1000000,
     rpm: 15,

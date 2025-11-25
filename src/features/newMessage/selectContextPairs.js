@@ -58,14 +58,14 @@ async function refreshStaleTokenEstimates(pairs, currentVersion) {
 
 /**
  * Select context pairs that fit in model's context window
- * Pure selection based on token budget - returns only pairs and their token costs
+ * Pure selection based on token budget - returns pairs, costs, and system tokens
  * 
  * @param {Object} params
  * @param {string} params.topicId - Topic ID
  * @param {string[]} params.visiblePairIds - Visible pair IDs from UI
  * @param {MessagePair} params.newMessagePair - The new message pair (from Phase 0)
  * @param {string} params.modelId - Model ID
- * @returns {Promise<Object>} { selectedPairs, selectedPairsTokens }
+ * @returns {Promise<Object>} { selectedPairs, selectedPairsTokens, systemTokens }
  */
 export async function selectContextPairs({
   topicId,
@@ -95,6 +95,9 @@ export async function selectContextPairs({
   
   // Refresh stale token estimates (batch recalculation)
   await refreshStaleTokenEstimates(visiblePairs, currentVersion)
+  
+  // Calculate system message tokens (for telemetry)
+  const systemTokens = estimateTextTokens(systemMessage, providerId, settings)
   
   // Calculate available budget for history
   const historyAllowance = await calculateHistoryAllowance({
@@ -126,5 +129,6 @@ export async function selectContextPairs({
   return {
     selectedPairs,
     selectedPairsTokens,
+    systemTokens,
   }
 }

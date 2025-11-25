@@ -1091,6 +1091,8 @@ export function createInteraction({
       }
     }
   }
+
+  // Swap current and previous responses
   function restorePrevious(pairId) {
     const pair = store.pairs.get(pairId)
     if (!pair || !pair.previousResponse) return
@@ -1105,6 +1107,7 @@ export function createInteraction({
       replacedAt: Date.now(),
       estimatedTokenUsage: pair.estimatedTokenUsage,
       rawProviderTokenUsage: pair.rawProviderTokenUsage,
+      fullPromptEstimatedTokens: pair.fullPromptEstimatedTokens,
     }
     
     const previousResponse = pair.previousResponse
@@ -1142,6 +1145,7 @@ export function createInteraction({
       equationBlocks: (eqResult.equationBlocks && eqResult.equationBlocks.length) ? eqResult.equationBlocks : undefined,
       estimatedTokenUsage: previousResponse.estimatedTokenUsage,
       rawProviderTokenUsage: previousResponse.rawProviderTokenUsage,
+      fullPromptEstimatedTokens: previousResponse.fullPromptEstimatedTokens,
       previousResponse: currentResponse,  // Current becomes new previous
       lifecycleState: 'complete',
       errorMessage: undefined,

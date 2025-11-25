@@ -54,7 +54,7 @@ function loadRequestConfig(topicId, modelId) {
  * @param {string} params.modelId - Model ID
  * @param {number} params.maxRetries - Max retry attempts
  * @param {AbortSignal} params.signal - Abort signal for cancellation
- * @returns {Promise<Object>} Response from provider
+ * @returns {Promise<Object>} { response, historyTokens }
  */
 export async function sendWithRetry({
   requestParts,
@@ -94,7 +94,8 @@ export async function sendWithRetry({
       })
       
       // Success!
-      return response
+      const historyTokens = currentPairTokens.reduce((sum, tokens) => sum + tokens, 0)
+      return { response, historyTokens }
       
     } catch (err) {
       // Check if error is usage limit exceeded (rate limit or context overflow)

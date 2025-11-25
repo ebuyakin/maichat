@@ -117,7 +117,7 @@ sendNewMessage() - returns the value, none taken in inputKeys.js [x]
 clean pendingImages after send. [x]
 context budget. MessagePair structure supplementation. [x]
 duplication of provider list - single source of truth [~] deferred
-boundary update on pending model change
+boundary update on pending model change [x]
 TotalTokens reported - store it to compare vs estimated. store both estimaterd total.
 recalculation of the estimated budgets  
 topic summary in activity stat.
@@ -126,6 +126,7 @@ context budget summary in activity stat
 image icon - open overlay on click.
 f1 view mode - Ctrl_Shift_O - view draft images - view attached images
 gemini - citations in the assistant body
+new model addition - doesn't work.
 
 
 # budgeting system.

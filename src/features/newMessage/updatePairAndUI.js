@@ -9,13 +9,14 @@ import {
   getInteraction
 } from '../../runtime/runtimeServices.js'
 import { calculateEstimatedTokenUsage } from '../../infrastructure/provider/tokenEstimation/budgetEstimator.js'
+import { getModelMeta } from '../../core/models/modelCatalog.js'
 import { showToast } from '../../shared/toast.js'
 import { smartAlignActiveMessage } from '../history/smartAlignMessage.js'
 
 /**
  * Handle new message response (success or error)
  */
-async function handleNewMessageResponse({ pair, responseData, errorToReport }) {
+async function handleNewMessageResponse({ pair, responseData, errorToReport, fullPromptEstimatedTokens }) {
   const store = getStore()
   
   if (errorToReport) {
@@ -54,6 +55,9 @@ async function handleNewMessageResponse({ pair, responseData, errorToReport }) {
     rawProviderTokenUsage: responseData.rawTokenUsage,
     responseMs: responseData.responseMs,
     
+    // Telemetry
+    fullPromptEstimatedTokens,
+    
     // Status
     lifecycleState: 'complete',
     errorMessage: undefined,
@@ -70,7 +74,7 @@ async function handleNewMessageResponse({ pair, responseData, errorToReport }) {
 /**
  * Handle re-ask response (success or error)
  */
-async function handleReaskResponse({ pair, responseData, errorToReport, newModelId }) {
+async function handleReaskResponse({ pair, responseData, errorToReport, newModelId, fullPromptEstimatedTokens }) {
   const store = getStore()
   
   if (errorToReport) {
@@ -102,6 +106,7 @@ async function handleReaskResponse({ pair, responseData, errorToReport, newModel
     replacedAt: Date.now(),
     estimatedTokenUsage: pair.estimatedTokenUsage,
     rawProviderTokenUsage: pair.rawProviderTokenUsage,
+    fullPromptEstimatedTokens: pair.fullPromptEstimatedTokens,
   }
   
   const updates = {
@@ -126,6 +131,9 @@ async function handleReaskResponse({ pair, responseData, errorToReport, newModel
     
     // Previous response
     previousResponse,
+    
+    // Telemetry
+    fullPromptEstimatedTokens,
     
     // Status
     lifecycleState: 'complete',
@@ -180,6 +188,8 @@ function updateUI() {
  * @param {Object|null} params.responseData - Parsed response (if success)
  * @param {Error|null} params.errorToReport - Error object (if error)
  * @param {boolean} params.isReask - Whether this was a re-ask
+ * @param {number} [params.systemTokens] - System message tokens (for telemetry)
+ * @param {number} [params.historyTokens] - History tokens sent (for telemetry)
  * @returns {Promise<void>}
  */
 export async function updatePairAndUI({
@@ -188,12 +198,23 @@ export async function updatePairAndUI({
   responseData,
   errorToReport,
   isReask,
+  systemTokens,
+  historyTokens,
 }) {
+  // Calculate fullPromptEstimatedTokens once (our estimate of total prompt sent)
+  let fullPromptEstimatedTokens = undefined
+  if (systemTokens !== undefined && historyTokens !== undefined) {
+    const modelMeta = getModelMeta(modelId)
+    const providerId = modelMeta?.provider || 'openai'
+    const userTokens = pair.estimatedTokenUsage?.[providerId] || 0
+    fullPromptEstimatedTokens = historyTokens + systemTokens + userTokens
+  }
+  
   // Update store based on workflow type
   if (isReask) {
-    await handleReaskResponse({ pair, responseData, errorToReport, newModelId: modelId })
+    await handleReaskResponse({ pair, responseData, errorToReport, newModelId: modelId, fullPromptEstimatedTokens })
   } else {
-    await handleNewMessageResponse({ pair, responseData, errorToReport })
+    await handleNewMessageResponse({ pair, responseData, errorToReport, fullPromptEstimatedTokens })
   }
   
   // Update UI (same for both workflows)

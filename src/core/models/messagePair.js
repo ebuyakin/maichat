@@ -32,6 +32,7 @@
  * @property {string} estimatedTokenCount.relevanceFlag - to control the version of the token count
  * @property {Object} providerTokenUsage - collected from provider response
  * @property {number} providerTokenUsage.[provider] - actual token count for a given provider
+ * @property {number|undefined} fullPromptEstimatedTokens - estimated total tokens in full prompt (history+system+user)
  * 
  * 5. Assistant response (previous) data. Second opinion. Optional (appears in case of re-ask)
  * @property {Object} previousResponse - one object to store all fields with previous response
@@ -47,6 +48,7 @@
  * @property {string} previousResponse.estimatedTokenCount.relevanceFlag - the version of the token count
  * @property {Object} previousResponse.providerTokenUsage - collected from provider response
  * @property {number} previousResponse.providerTokenUsage.[provider] - token count for a given provider
+ * @property {number|undefined} previousResponse.fullPromptEstimatedTokens - estimated total tokens from previous attempt
  * 
  * 6. Status/state data
  * @property {('idle'|'sending'|'error'|'complete')} lifecycleState
@@ -60,10 +62,6 @@
  * @property {number|undefined} previousAssistantTextTokens - calculated assistant tokens (prev.model)
  * @property {number|undefined} previousAssistantProviderTokens - provider-reported tc for previous resp
  * @property {Array<{id:string, w:number, h:number, tokenCost:Object}>|undefined} imageBudgets 
- * @property {number|undefined} fullPromptEstimatedTokens - estimated prompt token count
- * @property {number|undefined} fullPromptReportedTokens - reported prompt token count
- * @property {number|undefined} previousFullPromptEstimatedTokens - estimated prompt token count
- * @property {number|undefined} previousFullPromptReportedTokens - reported prompt token count
  * @property {number|undefined} rawProviderTokenUsage - reported total token count
  * @property {number|undefined} previousRawProviderTokenUsage - prev. reported total token count
  * @property {number|undefined} tokenLength - legacy (seems unused)

@@ -49,6 +49,7 @@ export async function sendNewMessage({
     const {
       selectedPairs,
       selectedPairsTokens,
+      systemTokens,
     } = await selectContextPairs({
       topicId,
       visiblePairIds: contextPairIds,
@@ -63,7 +64,7 @@ export async function sendNewMessage({
     })
     
     // Phase 3: Send to provider with retry
-    const rawResponse = await sendWithRetry({
+    const { response: rawResponse, historyTokens } = await sendWithRetry({
       requestParts,
       selectedPairsTokens,
       topicId,
@@ -86,6 +87,8 @@ export async function sendNewMessage({
     responseData,
     errorToReport,
     isReask: Boolean(editingPairId),
+    systemTokens,
+    historyTokens,
   })
   
   return pair.id
