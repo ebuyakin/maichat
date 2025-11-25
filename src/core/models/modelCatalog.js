@@ -105,7 +105,7 @@ const BASE_MODELS = [
   // xAI models (Tier 1 limits)
   {
     id: 'grok-4-fast-non-reasoning',
-    provider: 'grok',
+    provider: 'xai',
     contextWindow: 2000000,
     tpm: 4000000,
     rpm: 480,
@@ -113,7 +113,7 @@ const BASE_MODELS = [
   },
   {
     id: 'grok-4-fast-reasoning',
-    provider: 'grok',
+    provider: 'xai',
     contextWindow: 2000000,
     tpm: 4000000,
     rpm: 480,
@@ -121,7 +121,7 @@ const BASE_MODELS = [
   },
   {
     id: 'grok-code-fast-1',
-    provider: 'grok',
+    provider: 'xai',
     contextWindow: 256000,
     tpm: 2000000,
     rpm: 480,

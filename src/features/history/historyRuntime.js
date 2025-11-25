@@ -55,6 +55,9 @@ export function createHistoryRuntime(ctx) {
   let lastViewportH = window.innerHeight
   // Track the last (most recent) pair id in the current filtered set (LFS)
   let lastFilteredPairId = null
+  // Cache newest pair ID and hidden state for efficient updates
+  let cachedNewestPairId = null
+  let cachedNewestHidden = false
 
   function setSendDebug(predictedMessageCount, trimmedCount) {
     if (typeof predictedMessageCount === 'number') lastPredictedCount = predictedMessageCount
@@ -214,10 +217,11 @@ export function createHistoryRuntime(ctx) {
    * 6. Updates active message highlighting and scroll measurements
    * 
    * @param {Array<id, userText, assistantText, createdAt, topicId, model, lifcycleState>} pairs - Message pairs to render (user + assistant exchanges)
+   * @param {string|null} newestPairId - ID of the chronologically newest pair in entire store (for filter indicator)
    * @returns {void}
    */
 
-  function renderHistory(pairs) {
+  function renderHistory(pairs, newestPairId = null) {
     try { linkHints.exit && linkHints.exit() } catch {}
     // section 1
     pairs = [...pairs].sort((a, b) => a.createdAt - b.createdAt) // pairs - coming from storage, indexDb
@@ -253,7 +257,11 @@ export function createHistoryRuntime(ctx) {
 
     // section 4
     // applyOutOfContextStyling() removed - boundary styling now inline during HTML construction (S6-S8)
-    updateMessageCount(boundary.included.length, pairs.length)
+    
+    // Calculate if newest pair is hidden by filter
+    const newestHidden = newestPairId && !pairs.some(p => p.id === newestPairId)
+    cachedNewestHidden = newestHidden  // Cache for updateBoundary()
+    updateMessageCount(boundary.included.length, pairs.length, newestHidden)
 
     // whhat does this do?
     requestAnimationFrame(() => {
@@ -292,6 +300,10 @@ export function createHistoryRuntime(ctx) {
       .getAllPairs()
       .slice()
       .sort((a, b) => a.createdAt - b.createdAt)
+    
+    // Capture newest pair ID before filtering (for message count indicator)
+    const newestPairId = all.length > 0 ? all[all.length - 1].id : null
+    cachedNewestPairId = newestPairId  // Cache for updateBoundary()
 
     const fq = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : ''
     if (fq) {
@@ -364,7 +376,7 @@ export function createHistoryRuntime(ctx) {
     }
 
     // rendering sequence: rencerCurrentView -> renderHistory -> renderMessages
-    renderHistory(all) // NB!
+    renderHistory(all, newestPairId) // Pass newestPairId
 
     if (prevActiveId) {
       activeParts.setActiveById(prevActiveId)
@@ -441,18 +453,9 @@ export function createHistoryRuntime(ctx) {
     else if (m === 'input') modeEl.classList.add('mode-input')
     else modeEl.classList.add('mode-view')
   }
-  function updateMessageCount(included, visible) {
+  function updateMessageCount(included, visible, newestHidden = false) {
     const el = document.getElementById('messageCount')
     if (!el) return
-    let newestHidden = false
-    try {
-      const allPairs = [...ctx.store.getAllPairs()].sort((a, b) => a.createdAt - b.createdAt)
-      const newest = allPairs[allPairs.length - 1]
-      if (newest) {
-        const visiblePairIds = new Set(activeParts.parts.map((p) => p.pairId))
-        if (!visiblePairIds.has(newest.id)) newestHidden = true
-      }
-    } catch { }
     const prefix = newestHidden ? '(-) ' : ''
     let body
     if (lastTrimmedCount > 0 && lastPredictedCount === included) {
@@ -473,8 +476,14 @@ export function createHistoryRuntime(ctx) {
   }
   
   /**
-   * @deprecated Legacy function - boundary styling now done inline during HTML construction (S6-S8).
-   * Kept as no-op for backward compatibility; can be removed in future cleanup.
+   * Updates off-context styling for existing DOM elements.
+   * 
+   * Boundary styling is applied in two ways:
+   * 1. Inline during HTML construction (renderMessages) - initial render
+   * 2. Post-render updates (this function) - when boundary changes without full re-render
+   * 
+   * Toggles 'ooc' class on messages and updates 'offctx' badge text based on
+   * whether each pair is included in the current context boundary.
    */
   function applyOutOfContextStyling() {
     const els = document.querySelectorAll('#history .message')
@@ -510,6 +519,28 @@ export function createHistoryRuntime(ctx) {
     }
   }
 
+  /**
+   * Lightweight boundary update when model changes (no HTML rebuild)
+   * Recalculates context boundary with new model and updates UI elements
+   */
+  function updateBoundary() {
+    // Recalculate boundary with new model (visible pairs unchanged in boundaryMgr)
+    const activeModel = pendingMessageMeta.model || getActiveModel() || 'gpt'
+    boundaryMgr.setModel(activeModel)
+    
+    const boundary = boundaryMgr.getBoundary()
+    lastContextStats = boundary.stats
+    lastContextIncludedIds = new Set(boundary.included.map(p => p.id))
+    lastPredictedCount = boundary.included.length
+    
+    // Re-apply OOC styling to existing DOM
+    applyOutOfContextStyling()
+    
+    // Update count display using cached values
+    const visibleCount = Math.floor(activeParts.parts.length / 2)
+    updateMessageCount(boundary.included.length, visibleCount, cachedNewestHidden)
+  }
+
   try {
     lifecycle.bindApplyActivePart && lifecycle.bindApplyActivePart(applyActiveMessage)
   } catch { }
@@ -524,6 +555,7 @@ export function createHistoryRuntime(ctx) {
     // updateFadeVisibility, // LEGACY: Removed from exports, replaced by CSS gradients
     updateMessageCount,
     applyOutOfContextStyling,
+    updateBoundary,
     jumpToBoundary,
     renderStatus,
     setSendDebug,

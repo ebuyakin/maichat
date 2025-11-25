@@ -115,8 +115,12 @@ update in case of reAsk error - preserve existing answer [x]
 feature flag - instead of ctrl-G [x]
 sendNewMessage() - returns the value, none taken in inputKeys.js [x]
 clean pendingImages after send. [x]
-context budget. MessagePair structure supplementation. totalTokens reported - store it to compare vs estimated. store both estimaterd total
-duplication of provider list - single source of truth
+context budget. MessagePair structure supplementation. [x]
+duplication of provider list - single source of truth [~] deferred
+boundary update on pending model change
+TotalTokens reported - store it to compare vs estimated. store both estimaterd total.
+recalculation of the estimated budgets  
+topic summary in activity stat.
 
 context budget summary in activity stat
 image icon - open overlay on click.
@@ -128,80 +132,3 @@ gemini - citations in the assistant body
 - don't mix estimates and reports
 - total token cost per provider
 
-
-
-
- * @typedef {Object} MessagePair
- * @property {string} id
- * 
- * 1. Core parameters. Meta line.
- * @property {number} createdAt - ms epoch. timestamp. messages ordered in history by createdAt
- * @property {string} topicId - from topic tree
- * @property {string} model - model Id. from model catalog
- * @property {number} star - 0..3 integer
- * @property {'b'|'g'} colorFlag - simple user flag (b=blue flagged, g=grey unflagged)
- * 
- * 2. User text (user request) data.
- * @property {string} userText
- * @property {string[]|undefined} attachments - image ids attached to the user message (attach order)
- * 
- * 3. Assistant response (current) data. NB: current and previous can be swapped by user
- * @property {string} assistantText - original (raw) content (always preserved for context)
- * @property {string[]|undefined} citations - list of source URLs from the assistant response (optional)
- * @property {{[url:string]: string}|undefined} citationsMeta - map of URL -> display title
- * @property {number|undefined} responseMs - provider-reported request processing time in milliseconds
- * 
- * 3.1. Assistant response extractions (stored, but can be calculated on-the-fly)
- * @property {string|undefined} processedContent - content with code block placeholders (optional)
- * @property {Array<CodeBlock>|undefined} codeBlocks - extracted code blocks (optional)
- * @property {Array<EquationBlock>|undefined} equationBlocks - extracted equation blocks (optional)
- * 
- * 3.2. Assistant response (previous) data. Second opinion. Optional (appears in case of re-ask)
- * @property {string|undefined} previousAssistantText - assistant answer after in-place re-ask (opt)
- * @property {string[]|undefined} previousCitations - citations from previous response (optional)
- * @property {{[url:string]: string}|undefined} previousCitationsMeta - prev. citations met (opt)
- * @property {number|undefined} previousResponseMs - response time for previous answer (optional)
- * 
- * 3.3. Replacement (re-Ask, second opintion) data paremeters
- * @property {string|undefined} previousModel - model used to produce the previous answer (optional)
- * @property {number|undefined} replacedAt - timestamp (ms) when in-place replacement occurred (optional)
- * @property {string|undefined} replacedBy - actor/model that initiated replacement (optional)
- * 
- * 4. Status/state data
- * @property {('idle'|'sending'|'error'|'complete')} lifecycleState
- * @property {string|undefined} errorMessage
- * 
- * 5. Budget (token counts, - tc)
- * @property {number|undefined} userTextTokens - calculated tokens in user text (NEW)
- * @property {number|undefined} assistantTextTokens - calculated tokens in assistant response (NEW)
- * @property {number|undefined} assistantProviderTokens - provider-reported tc for assistant resp.
- * @property {number|undefined} previousUserTextTokens - calculated user tokens (for previous model)
- * @property {number|undefined} previousAssistantTextTokens - calculated assistant tokens (prev.model)
- * @property {number|undefined} previousAssistantProviderTokens - provider-reported tc for previous resp
- * 
- * 5.1. token counts for images attached to pair calculated for each provider (tokenCost).
- * @property {Array<{id:string, w:number, h:number, tokenCost:Object}>|undefined} imageBudgets 
- * 
- * 5.2. total prompt (user+system+context) token count
- * @property {number|undefined} fullPromptEstimatedTokens - estimated prompt token count
- * @property {number|undefined} fullPromptReportedTokens - reported prompt token count
- * @property {number|undefined} previousFullPromptEstimatedTokens - estimated prompt token count
- * @property {number|undefined} previousFullPromptReportedTokens - reported prompt token count
- * 
- * 5.3. total interaction token count (prompt+response+tools+thoughts) as reported by provider
- * @property {number|undefined} rawProviderTokenUsage - reported total token count
- * @property {number|undefined} previousRawProviderTokenUsage - prev. reported total token count
- * 
- * 5.4. legacy, but still in use in older versions:
- * @property {number|undefined} tokenLength - legacy (seems unused)
- * @property {number|undefined} textTokens - precomputed total text tokens (userText + assistantText)
- * @property {number|undefined} attachmentTokens - precomputed total image tokens for all attachments
- * 
- * 5.5 chacarters count (legacy, still in use)
- * @property {number|undefined} userChars - length of userText in characters 
- * @property {number|undefined} assistantChars - length of assistantText in characters 
- * @property {number|undefined} previousAssistantChars - length of previousAssistantText in characters 
- * 
- * 6. Future (not currently used)
- * @property {Object|undefined} providerMeta - provider-specific metadata (optional; reserved for future use)
- */

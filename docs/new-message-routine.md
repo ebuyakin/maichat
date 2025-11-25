@@ -16,7 +16,7 @@ requestParts = buildRequestParts(selectedHistoryPairs, userRequest)
 rawResponse = sendWithRetry(requestParts)
 parsedResponse = parseResponse(rawResponse)
 
-storeResponse(parserResponse)
+storeResponse(parsedResponse)
 updateInterface()
 
 

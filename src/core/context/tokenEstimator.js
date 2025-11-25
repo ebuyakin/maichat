@@ -106,6 +106,98 @@ export function getModelBudget(model) {
   const effective = Math.min(cw, tpm)
   return { maxContext: effective, rawContextWindow: cw, tpm }
 }
+
+/**
+ * Compute context boundary using new estimatedTokenUsage field
+ * Optimized for performance with pre-computed token estimates
+ * 
+ * @param {MessagePair[]} orderedPairs - Pairs sorted chronologically (oldest to newest)
+ * @param {Object} options
+ * @param {number} [options.reservedTokens=0] - Reserved tokens (URA + ARA + system message)
+ * @param {string} options.model - Model ID for budget calculation
+ * @param {string} [options.providerId] - Provider ID (auto-detected from model if not provided)
+ * @returns {Object} { included, excluded, stats }
+ */
+export function computeContextBoundaryNew(
+  orderedPairs,
+  { reservedTokens = 0, model, providerId } = {}
+) {
+  // Fast path: empty input
+  if (!Array.isArray(orderedPairs) || orderedPairs.length === 0) {
+    const budget = getModelBudget(model || 'gpt')
+    return {
+      included: [],
+      excluded: [],
+      stats: {
+        totalIncludedTokens: 0,
+        includedCount: 0,
+        excludedCount: 0,
+        model: model || 'gpt',
+        maxContext: budget.maxContext,
+        maxUsable: Math.max(0, budget.maxContext - reservedTokens),
+        reservedTokens,
+      },
+    }
+  }
+  
+  // Auto-detect providerId from model if not provided
+  if (!providerId) {
+    const modelMeta = getModelMeta(model)
+    providerId = modelMeta?.provider || 'openai'
+  }
+  
+  // Get budget and calculate available space
+  const budget = getModelBudget(model)
+  const maxContext = budget.maxContext
+  const maxUsable = Math.max(0, maxContext - reservedTokens)
+  
+  // Fast backwards selection (newest first, stop on overflow)
+  let totalTokens = 0
+  const included = []
+  
+  for (let i = orderedPairs.length - 1; i >= 0; i--) {
+    const pair = orderedPairs[i]
+    
+    // Read from new estimatedTokenUsage field
+    // Fallback to 0 if missing (pair will be excluded)
+    const pairTokens = pair.estimatedTokenUsage?.[providerId] || 0
+
+    // Stop if adding this pair would overflow
+    if (totalTokens + pairTokens > maxUsable) {
+      break
+    }
+    
+    // Include this pair
+    included.push(pair)
+    totalTokens += pairTokens
+  }
+  
+  // Reverse to restore chronological order
+  included.reverse()
+  
+  // Build excluded list (everything not included)
+  // Use Set for O(1) lookup instead of includes()
+  const includedSet = new Set(included)
+  const excluded = orderedPairs.filter(p => !includedSet.has(p))
+  
+  console.log('tokenEstimator: total tokens in context: ',totalTokens) // debug
+  
+  return {
+    included,
+    excluded,
+    stats: {
+      totalIncludedTokens: totalTokens,
+      includedCount: included.length,
+      excludedCount: excluded.length,
+      model,
+      maxContext,
+      maxUsable,
+      reservedTokens,
+      providerId,
+    },
+  }
+}
+
 export function computeContextBoundary(
   orderedPairs,
   { charsPerToken = 4, assumedUserTokens = 0, model } = {}

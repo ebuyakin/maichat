@@ -754,6 +754,9 @@ export function createInteraction({
             renderPendingMeta()
               try { localStorage.setItem('maichat_pending_model', pendingMessageMeta.model) } catch {}
             if (dirty) {
+              // Update boundary with new model (lightweight, no HTML rebuild)
+              historyRuntime.updateBoundary()
+              
               // Check if there's an unargumented 'm' filter active
               const currentFilter = lifecycle.getFilterQuery ? lifecycle.getFilterQuery() : ''
               if (currentFilter) {

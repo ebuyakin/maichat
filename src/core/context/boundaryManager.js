@@ -1,6 +1,7 @@
 // Moved from src/context/boundaryManager.js (Phase 5 core move)
 // Adjusted after removal of legacy src/context folder: local tokenEstimator lives alongside this file.
-import { computeContextBoundary, estimatePairTokens } from './tokenEstimator.js'
+import { computeContextBoundary, computeContextBoundaryNew, estimatePairTokens } from './tokenEstimator.js'
+import { getSettings } from '../settings/index.js'
 export function createBoundaryManager() {
   let visiblePairs = []
   let model = null
@@ -42,15 +43,17 @@ export function createBoundaryManager() {
   function recomputeIfNeeded() {
     if (!dirty && cached) return cached
     const { userRequestAllowance: URA, charsPerToken } = settings
-    const res = computeContextBoundary(visiblePairs, {
-      charsPerToken,
-      assumedUserTokens: URA,
+    
+    // Get ARA from global settings for new boundary calculation
+    const globalSettings = getSettings()
+    const ARA = globalSettings.assistantResponseAllowance || 0
+    
+    const res = computeContextBoundaryNew(visiblePairs, {
+      reservedTokens: URA + ARA,
       model,
     })
-    const predictedHistoryTokens = res.included.reduce(
-      (acc, p) => acc + estimatePairTokens(p, charsPerToken),
-      0
-    )
+    
+    const predictedHistoryTokens = res.stats.totalIncludedTokens
     const predictedTotalTokens = predictedHistoryTokens + URA
     const dirtyReasons = [...pendingDirtyReasons]
     pendingDirtyReasons.clear()
@@ -59,7 +62,7 @@ export function createBoundaryManager() {
       excluded: res.excluded,
       stats: {
         model: res.stats.model,
-        predictedMessageCount: res.included.length,
+        predictedMessageCount: res.stats.includedCount,
         predictedHistoryTokens,
         predictedTotalTokens,
         URA,
