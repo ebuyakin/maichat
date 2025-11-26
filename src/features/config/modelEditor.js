@@ -9,6 +9,7 @@ import {
   addModel,
   deleteModel,
   renameModel,
+  SUPPORTED_PROVIDERS,
 } from '../../core/models/modelCatalog.js'
 import { openModal } from '../../shared/openModal.js'
 
@@ -25,7 +26,7 @@ export function openModelEditor({ onClose, store }) {
   panel.style.minWidth = '1000px'
   panel.innerHTML = `
     <header>Models</header>
-  <div class="me-hintbar"><span class="me-hint">j/k rows · h/l cols · Space Enable/Disable · s toggle Search · Ctrl+N new model</span></div>
+  <div class="me-hintbar"><span class="me-hint">j/k rows · h/l cols · Space Enable/Disable · Enter edit mode · Esc nav mode · Ctrl+N new model</span></div>
     <div class="me-table">
       <div class="me-row me-head" aria-hidden="true">
   <span class="me-col me-col-toggle">Enabled</span>
@@ -44,6 +45,9 @@ export function openModelEditor({ onClose, store }) {
     </div>
     <footer class="me-footer">
       <div class="me-controls">
+        <div class="me-controls-left">
+          <span class="me-mode-badge" aria-label="Editor mode">[nav]</span>
+        </div>
         <div class="me-controls-right">
           <button class="btn btn-sm" id="me-save-btn">Apply (Ctrl+S)</button>
           <button class="btn btn-sm" id="me-cancel-btn">Cancel+Close (Esc)</button>
@@ -56,6 +60,11 @@ export function openModelEditor({ onClose, store }) {
   const listContainer = panel.querySelector('.list')
   const saveBtn = panel.querySelector('#me-save-btn')
   const cancelBtn = panel.querySelector('#me-cancel-btn')
+  const modeBadge = panel.querySelector('.me-mode-badge')
+    function updateModeBadge() {
+      if (!modeBadge) return
+      modeBadge.textContent = mode === 'edit' ? '[edit]' : '[nav]'
+    }
   // Helper: keep focus within overlay so key handling stays active
   function ensureListFocus() {
     try {
@@ -85,8 +94,8 @@ export function openModelEditor({ onClose, store }) {
   // Navigation state: null = row only (no column focus); otherwise 0..7 => column index
   // 0: toggle, 1: name (read-only except for new row), 2: provider (ONLY focusable/editable for pending new row), 3..7: numeric fields cw, tpm, rpm, tpd, otpm.
   // For existing rows, navigation should jump from name (1) directly to CW (3) when user presses 'l'.
-  let selectedCol = null
-  let editing = false
+  let selectedCol = 0  // Start at Enabled/Disabled column (most common use case)
+  let mode = 'navigation'  // 'navigation' | 'edit'
   let pendingNewRow = null // { enabled, id:'', contextWindow,tpm,rpm,tpd,otpm }
   let __dirty = false
   let __applied = false // becomes true when changes are saved
@@ -137,10 +146,13 @@ export function openModelEditor({ onClose, store }) {
       if (i === activeIndex) li.classList.add('active')
       const activeBadge = m.id === activeModel ? '<span class="me-active">(active)</span>' : ''
       const inUse = usedCounts.get(String(m.id).toLowerCase()) > 0
+      const providerOptions = SUPPORTED_PROVIDERS.map(p => 
+        `<option value="${p}" ${(m.provider || 'openai') === p ? 'selected' : ''}>${p}</option>`
+      ).join('')
       li.innerHTML = `
         <span class="me-col me-col-toggle ${m.enabled ? 'on' : 'off'}" data-role="toggle" aria-label="${m.enabled ? 'enabled' : 'disabled'}">${m.enabled ? '●' : '○'}</span>
         <span class="me-col me-col-name"><input aria-label="Model ID" data-field="id" type="text" value="${m.id}" class="me-name-input"/>${activeBadge}</span>
-        <span class="me-col me-col-provider"><input aria-label="Provider" data-field="provider" type="text" value="${m.provider || 'openai'}" class="me-provider-input"/></span>
+        <span class="me-col me-col-provider"><select aria-label="Provider" data-field="provider" class="me-provider-select">${providerOptions}</select></span>
         <span class="me-col me-col-search"><input aria-label="Web Search" data-field="webSearch" type="checkbox" ${m.webSearch ? 'checked' : ''} class="me-checkbox"/></span>
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.contextWindow || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((m.tpm || 0) / 1000)}" class="me-num"/></span>
@@ -158,10 +170,13 @@ export function openModelEditor({ onClose, store }) {
       li.tabIndex = -1
       li.classList.add('me-row')
       if (i === activeIndex) li.classList.add('active')
+      const pendingProviderOptions = SUPPORTED_PROVIDERS.map(p => 
+        `<option value="${p}" ${(pendingNewRow.provider || 'openai') === p ? 'selected' : ''}>${p}</option>`
+      ).join('')
       li.innerHTML = `
         <span class="me-col me-col-toggle on" data-role="toggle" aria-label="enabled">●</span>
-        <span class="me-col me-col-name"><input class="me-name-input" type="text" placeholder="New model id" value="${pendingNewRow.id || ''}"/></span>
-        <span class="me-col me-col-provider"><input class="me-provider-input" data-pending="1" data-field="provider" type="text" placeholder="Provider" value="${pendingNewRow.provider || 'openai'}"/></span>
+        <span class="me-col me-col-name"><input class="me-name-input" data-pending="1" data-field="id" type="text" placeholder="New model id" value="${pendingNewRow.id || ''}"/></span>
+        <span class="me-col me-col-provider"><select aria-label="Provider" data-pending="1" data-field="provider" class="me-provider-select">${pendingProviderOptions}</select></span>
         <span class="me-col me-col-search"><input aria-label="Web Search" data-pending="1" data-field="webSearch" type="checkbox" ${pendingNewRow.webSearch ? 'checked' : ''} class="me-checkbox"/></span>
         <span class="me-col me-col-cw"><input aria-label="Context window (K tokens)" data-pending="1" data-field="contextWindow" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.contextWindow || 0) / 1000)}" class="me-num"/></span>
         <span class="me-col me-col-tpm"><input aria-label="Tokens per minute (K tokens)" data-pending="1" data-field="tpm" data-scale="1000" type="number" min="0" step="1" value="${Math.round((pendingNewRow.tpm || 0) / 1000)}" class="me-num"/></span>
@@ -201,6 +216,9 @@ export function openModelEditor({ onClose, store }) {
     // Show hint
     hintEl.style.display = 'block'
     hintEl.style.opacity = '1'
+    
+    // Ensure focus stays on the list so keyboard navigation continues working
+    ensureListFocus()
     
     // Hide after 2 seconds
     hintTimeout = setTimeout(() => {
@@ -272,16 +290,78 @@ export function openModelEditor({ onClose, store }) {
     const li = e.target.closest('li.me-row')
     if (!li || li.classList.contains('me-add')) return
     activeIndex = Array.from(ul.querySelectorAll('li.me-row')).indexOf(li)
+    
     const tgt = e.target
-    if (
-      tgt &&
-      ((tgt.getAttribute('data-field') || '').length ||
-        tgt.classList.contains('me-name-input') ||
-        tgt.classList.contains('me-provider-input'))
-    ) {
+    
+    // Determine which column was clicked
+    const clickedCell = tgt.closest('.me-col-toggle, .me-col-name, .me-col-provider, .me-col-search, .me-col-cw, .me-col-tpm, .me-col-otpm, .me-col-tpd, .me-col-rpm, .me-col-rpd')
+    if (clickedCell) {
+      // Map cell class to column index
+      const colMap = {
+        'me-col-toggle': 0,
+        'me-col-name': 1,
+        'me-col-provider': 2,
+        'me-col-search': 3,
+        'me-col-cw': 4,
+        'me-col-tpm': 5,
+        'me-col-otpm': 6,
+        'me-col-tpd': 7,
+        'me-col-rpm': 8,
+        'me-col-rpd': 9,
+      }
+      
+      for (const [cls, col] of Object.entries(colMap)) {
+        if (clickedCell.classList.contains(cls)) {
+          selectedCol = col
+          break
+        }
+      }
+      
+      // Update visual selection
+      applyCellSelection()
+      
+      // If clicked on an input/select/checkbox, enter edit mode
+      if (tgt.tagName === 'INPUT' || tgt.tagName === 'SELECT') {
+        mode = 'edit'
+        // Input/select is already focused by browser, just update mode
+      } else if (selectedCol === 0 || selectedCol === WEBSEARCH_COL_INDEX) {
+        // Clicked on checkbox column but not on the checkbox itself - toggle it
+        if (selectedCol === 0) {
+          const m = models[activeIndex]
+          if (m) {
+            toggle(m.id)
+            render(m.id)
+            applyCellSelection()
+          }
+        } else if (selectedCol === WEBSEARCH_COL_INDEX) {
+          const rowIdx = activeIndex
+          const isPending = !!pendingNewRow && rowIdx === models.length
+          
+          if (isPending) {
+            pendingNewRow.webSearch = !pendingNewRow.webSearch
+            __dirty = true
+            render()
+            applyCellSelection()
+          } else {
+            const m = models[rowIdx]
+            if (m) {
+              const id = m.id
+              const draft = draftById.get(id) || origById.get(id)
+              if (draft) {
+                draftById.set(id, { ...draft, webSearch: !draft.webSearch })
+                __dirty = true
+                render(id)
+                applyCellSelection()
+              }
+            }
+          }
+        }
+      }
+      
       return
     }
-    // Toggle enabled in draft
+    
+    // Fallback: clicked on row but not a specific cell - treat as toggle enabled
     const id = li.dataset.id
     const cur = draftById.get(id) || origById.get(id)
     if (cur) {
@@ -301,7 +381,7 @@ export function openModelEditor({ onClose, store }) {
     }
   })
   ul.addEventListener('change', (e) => {
-    const input = e.target.closest('input.me-num, input.me-name-input, input.me-provider-input, input.me-checkbox')
+    const input = e.target.closest('input.me-num, input.me-name-input, select.me-provider-select, input.me-checkbox')
     if (!input) return
     const li = e.target.closest('li')
     if (!li) return
@@ -319,7 +399,12 @@ export function openModelEditor({ onClose, store }) {
       } else {
         const cur = draftById.get(id) || origById.get(id)
         if (cur) {
-          draftById.set(id, { ...cur, [field]: val })
+          const updated = { ...cur, [field]: val }
+          draftById.set(id, updated)
+          // If this is a staged add, update stagedAdds too
+          if (stagedAdds.has(id)) {
+            stagedAdds.set(id, { ...updated })
+          }
           __dirty = true
         }
       }
@@ -329,12 +414,16 @@ export function openModelEditor({ onClose, store }) {
     // Handle numeric fields
     else if (input.classList.contains('me-num')) {
       let val = Number(input.value)
-      if (!Number.isFinite(val) || val < 0) {
+      // Empty input should be treated as undefined/null (no limit)
+      if (input.value === '' || input.value === null || input.value === undefined) {
+        val = undefined
+      } else if (!Number.isFinite(val) || val < 0) {
         val = 0
         input.value = '0'
       }
+      
       const scale = Number(input.getAttribute('data-scale') || '1')
-      const absVal = val * scale
+      const absVal = val !== undefined ? val * scale : undefined
 
       if (input.getAttribute('data-pending') === '1') {
         if (!pendingNewRow) return
@@ -342,15 +431,20 @@ export function openModelEditor({ onClose, store }) {
       } else {
         const cur = draftById.get(id) || origById.get(id)
         if (cur) {
-          draftById.set(id, { ...cur, [field]: absVal })
+          const updated = { ...cur, [field]: absVal }
+          draftById.set(id, updated)
+          // If this is a staged add, update stagedAdds too
+          if (stagedAdds.has(id)) {
+            stagedAdds.set(id, { ...updated })
+          }
         }
       }
     }
 
-    // Handle text fields (Model ID and Provider)
+    // Handle text fields (Model ID) and select fields (Provider)
     else if (
       input.classList.contains('me-name-input') ||
-      input.classList.contains('me-provider-input')
+      input.classList.contains('me-provider-select')
     ) {
       const val = (input.value || '').trim()
 
@@ -360,7 +454,12 @@ export function openModelEditor({ onClose, store }) {
       } else {
         const cur = draftById.get(id) || origById.get(id)
         if (cur) {
-          draftById.set(id, { ...cur, [field]: val })
+          const updated = { ...cur, [field]: val }
+          draftById.set(id, updated)
+          // If this is a staged add, update stagedAdds too
+          if (stagedAdds.has(id)) {
+            stagedAdds.set(id, { ...updated })
+          }
         }
       }
     }
@@ -369,15 +468,27 @@ export function openModelEditor({ onClose, store }) {
     // re-render but keep focus on edited input
     const preserveId = id || ''
     const caretPos = input.selectionStart
+    const wasSelect = input.classList.contains('me-provider-select')
+    const wasCheckbox = input.classList.contains('me-checkbox')
     render(preserveId)
     const li2 = ul.querySelector(`li[data-id="${preserveId}"]`)
     if (li2) {
-      const same = li2.querySelector(`input.me-num[data-field="${field}"]`)
-      if (same) {
-        same.focus()
-        try {
-          same.setSelectionRange(caretPos, caretPos)
-        } catch {}
+      // Refocus number inputs
+      if (!wasSelect && !wasCheckbox) {
+        const same = li2.querySelector(`input.me-num[data-field="${field}"]`)
+        if (same) {
+          same.focus()
+          try {
+            same.setSelectionRange(caretPos, caretPos)
+          } catch {}
+        }
+      }
+      // Refocus select (provider dropdown)
+      if (wasSelect) {
+        const sameSelect = li2.querySelector(`select.me-provider-select[data-field="${field}"]`)
+        if (sameSelect) {
+          sameSelect.focus()
+        }
       }
     }
   })
@@ -413,10 +524,9 @@ export function openModelEditor({ onClose, store }) {
         activeIndex = idx
         ensureVisible()
       }
-      // focus first numeric input of the row in edit mode
+      // Focus first numeric input of the row in navigation mode (don't enter edit yet)
       selectedCol = FIRST_NUMERIC_COL
       applyCellSelection()
-      enterEditMode()
     }
   })
   // Sync is intentionally passive (non-focusable, no click handler) until implemented
@@ -455,41 +565,240 @@ export function openModelEditor({ onClose, store }) {
     if (ACTIVE_EDITOR_TOKEN !== TOKEN) return
     if (!panel.isConnected) return
     const lowerKey = typeof e.key === 'string' ? e.key.toLowerCase() : ''
-    // Global shortcuts first
+    
+    // Global shortcuts (work in both modes)
     if (e.ctrlKey && lowerKey === 's') {
       e.preventDefault()
       doSave()
       return
     }
-    // Escape is handled by openModal closeKeys; do not handle locally to avoid leaks
-    // Do not intercept when editing inside an input except Esc and special stepping
-    const inputFocused =
-      document.activeElement &&
-      document.activeElement.tagName === 'INPUT' &&
-      document.activeElement.classList.contains('me-num')
-    const nameEditing =
-      document.activeElement &&
-      document.activeElement.classList &&
-      document.activeElement.classList.contains('me-name-input')
-    const providerEditing =
-      document.activeElement &&
-      document.activeElement.classList &&
-      document.activeElement.classList.contains('me-provider-input')
-    const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space'
-    const handledKeys = ['Escape', 'Enter', 'PageDown', 'PageUp', 'ArrowDown', 'ArrowUp']
-    // When editing an input, intercept vim-like nav keys and treat them as navigation
-    if (inputFocused || nameEditing || providerEditing) {
+
+    // ========== NAVIGATION MODE ==========
+    if (mode === 'navigation') {
+      // Arrow keys and vim-style navigation: move between cells
+      if (e.key === 'ArrowDown' || lowerKey === 'j') {
+        e.preventDefault()
+        move(1)
+        return
+      }
+      if (e.key === 'ArrowUp' || lowerKey === 'k') {
+        e.preventDefault()
+        move(-1)
+        return
+      }
+      if (e.key === 'ArrowRight' || lowerKey === 'l') {
+        e.preventDefault()
+        moveCol(1)
+        return
+      }
+      if (e.key === 'ArrowLeft' || lowerKey === 'h') {
+        e.preventDefault()
+        moveCol(-1)
+        return
+      }
+      
+      // Page navigation
+      if (e.key === 'PageDown') {
+        e.preventDefault()
+        movePage(1)
+        return
+      }
+      if (e.key === 'PageUp') {
+        e.preventDefault()
+        movePage(-1)
+        return
+      }
+      
+      // Ctrl+N: Add new model
+      if (e.ctrlKey && lowerKey === 'n') {
+        e.preventDefault()
+        if (!pendingNewRow) {
+          pendingNewRow = {
+            id: '',
+            enabled: true,
+            provider: 'openai',
+            webSearch: true,
+            contextWindow: 8192,
+            tpm: 8192,
+            rpm: 60,
+            tpd: 100000,
+            otpm: undefined,
+            rpd: undefined,
+          }
+        }
+        activeIndex = models.length
+        selectedCol = 1 // name column
+        render()
+        applyCellSelection()
+        const inp = ul.querySelector('li.me-row:last-child .me-name-input')
+        if (inp) {
+          inp.focus()
+        }
+        ensureVisible()
+        return
+      }
+      
+      // Enter: Enter edit mode or toggle checkbox
       if (e.key === 'Enter') {
-        // Commit current input value into draft/pending and remain in editor
+        e.preventDefault()
+        
+        // Special case: Enabled checkbox (column 0)
+        if (selectedCol === 0) {
+          const m = models[activeIndex]
+          if (m) {
+            toggle(m.id)
+            render(m.id)
+            applyCellSelection()
+          }
+          return
+        }
+        
+        // Special case: WebSearch checkbox (column 3)
+        if (selectedCol === WEBSEARCH_COL_INDEX) {
+          const rowIdx = activeIndex
+          const isPending = !!pendingNewRow && rowIdx === models.length
+          
+          if (isPending) {
+            pendingNewRow.webSearch = !pendingNewRow.webSearch
+            __dirty = true
+            render()
+            applyCellSelection()
+          } else {
+            const m = models[rowIdx]
+            if (m) {
+              const id = m.id
+              const draft = draftById.get(id) || origById.get(id)
+              if (draft) {
+                draftById.set(id, { ...draft, webSearch: !draft.webSearch })
+                __dirty = true
+                render(id)
+                applyCellSelection()
+              }
+            }
+          }
+          return
+        }
+        
+        // Regular columns: enter edit mode
+        mode = 'edit'
+        updateModeBadge()
+        enterEditMode()
+        return
+      }
+      
+      // Space: Toggle checkboxes when focused on checkbox columns
+      if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault()
+        
+        // Toggle Enabled checkbox (column 0)
+        if (selectedCol === 0) {
+          const m = models[activeIndex]
+          if (m) {
+            toggle(m.id)
+            render(m.id)
+            applyCellSelection()
+          }
+          return
+        }
+        
+        // Toggle WebSearch checkbox (column 3)
+        if (selectedCol === WEBSEARCH_COL_INDEX) {
+          const rowIdx = activeIndex
+          const isPending = !!pendingNewRow && rowIdx === models.length
+          
+          if (isPending) {
+            pendingNewRow.webSearch = !pendingNewRow.webSearch
+            __dirty = true
+            render()
+            applyCellSelection()
+          } else {
+            const m = models[rowIdx]
+            if (m) {
+              const id = m.id
+              const draft = draftById.get(id) || origById.get(id)
+              if (draft) {
+                draftById.set(id, { ...draft, webSearch: !draft.webSearch })
+                __dirty = true
+                render(id)
+                applyCellSelection()
+              }
+            }
+          }
+          return
+        }
+        
+        // On non-checkbox columns, do nothing (prevent default scroll)
+        return
+      }
+      
+      // Escape: Close overlay (handled by openModal)
+      // Delete: Delete custom model
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const m = models[activeIndex]
+        if (m && !isBaseModel(m.id)) {
+          e.preventDefault()
+          // Track delete by id in stagedDeletes (Set of ids)
+          stagedDeletes.add(m.id)
+          __dirty = true
+          const nextIdx = Math.min(activeIndex, models.length - 2)
+          activeIndex = Math.max(0, nextIdx)
+          render(models[activeIndex]?.id)
+          applyCellSelection()
+          ensureVisible()
+        }
+        return
+      }
+      
+      return
+    }
+
+    // ========== EDIT MODE ==========
+    if (mode === 'edit') {
+      // Escape: Cancel editing, restore original value
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation() // Prevent other listeners on same element (openModal)
+        
+        // Restore original value by re-rendering
+        const m = models[activeIndex]
+        if (m) {
+          render(m.id)
+        } else {
+          render()
+        }
+        
+        // Exit edit mode
+        mode = 'navigation'
+        updateModeBadge()
+        document.activeElement.blur()
+        applyCellSelection()
+        ensureListFocus()
+        return
+      }
+      
+      // Enter: Commit changes and exit edit mode
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        
+        // Commit current input value
         const ae = document.activeElement
+        
+        // Number input
         if (ae && ae.classList.contains('me-num')) {
           const li = ae.closest('li')
           const id = li && li.dataset.id
           const field = ae.getAttribute('data-field')
           let val = Number(ae.value)
-          if (!Number.isFinite(val) || val < 0) val = 0
+          // Empty input should be treated as undefined/null (no limit)
+          if (ae.value === '' || ae.value === null || ae.value === undefined) {
+            val = undefined
+          } else if (!Number.isFinite(val) || val < 0) {
+            val = 0
+          }
           const scale = Number(ae.getAttribute('data-scale') || '1')
-          const absVal = val * scale
+          const absVal = val !== undefined ? val * scale : undefined
+          
           if (ae.getAttribute('data-pending') === '1') {
             if (pendingNewRow) {
               pendingNewRow[field] = absVal
@@ -498,56 +807,89 @@ export function openModelEditor({ onClose, store }) {
           } else if (id) {
             const cur = draftById.get(id) || origById.get(id)
             if (cur) {
-              draftById.set(id, { ...cur, [field]: absVal })
+              const updated = { ...cur, [field]: absVal }
+              draftById.set(id, updated)
+              // If this is a staged add, update stagedAdds too
+              if (stagedAdds.has(id)) {
+                stagedAdds.set(id, { ...updated })
+              }
               __dirty = true
             }
           }
         }
-
-        // Handle provider field changes for existing models
-        if (ae && ae.classList.contains('me-provider-input')) {
+        
+        // Provider select
+        if (ae && ae.classList.contains('me-provider-select')) {
           const li = ae.closest('li')
           const id = li && li.dataset.id
-          const field = ae.getAttribute('data-field') // should be 'provider'
+          const field = ae.getAttribute('data-field')
           const val = (ae.value || '').trim()
-
+          
           if (ae.getAttribute('data-pending') === '1') {
-            // New row: update pending row
             if (pendingNewRow && field) {
               pendingNewRow[field] = val
               __dirty = true
             }
           } else if (id && field) {
-            // Existing row: update draft
             const cur = draftById.get(id) || origById.get(id)
             if (cur) {
-              draftById.set(id, { ...cur, [field]: val })
+              const updated = { ...cur, [field]: val }
+              draftById.set(id, updated)
+              // If this is a staged add, update stagedAdds too
+              if (stagedAdds.has(id)) {
+                stagedAdds.set(id, { ...updated })
+              }
               __dirty = true
             }
           }
         }
-
-        // Handle model ID field changes for existing models
-        if (
-          ae &&
-          ae.classList.contains('me-name-input') &&
-          ae.getAttribute('data-field') === 'id'
-        ) {
-          const li = ae.closest('li')
-          const oldId = li && li.dataset.id
-          const newId = (ae.value || '').trim()
-
-          if (oldId && newId && oldId !== newId) {
+        
+        // Name input (model ID)
+        if (ae && ae.classList.contains('me-name-input')) {
+          const nameVal = (ae.value || '').trim()
+          
+          if (ae.getAttribute('data-field') === 'id') {
             // Renaming existing model
-            const cur = draftById.get(oldId) || origById.get(oldId)
-            if (cur && !draftById.has(newId) && !origById.has(newId)) {
-              draftById.set(newId, { ...cur, id: newId })
-              draftById.delete(oldId)
-              stagedDeletes.set(oldId, cur)
-              stagedAdds.set(newId, { ...cur, id: newId })
+            const li = ae.closest('li')
+            const oldId = li && li.dataset.id
+            
+            if (oldId && nameVal && oldId !== nameVal) {
+              const cur = draftById.get(oldId) || origById.get(oldId)
+              if (cur && !draftById.has(nameVal) && !origById.has(nameVal)) {
+                draftById.set(nameVal, { ...cur, id: nameVal })
+                draftById.delete(oldId)
+                // Track delete of oldId in stagedDeletes (Set of ids)
+                stagedDeletes.add(oldId)
+                stagedAdds.set(nameVal, { ...cur, id: nameVal })
+                __dirty = true
+                render(nameVal)
+                const idx = models.findIndex((m) => m.id === nameVal)
+                if (idx >= 0) {
+                  activeIndex = idx
+                  ensureVisible()
+                }
+              }
+            }
+          } else {
+            // New row name input
+            if (nameVal && !draftById.has(nameVal) && !origById.has(nameVal)) {
+              const meta = {
+                enabled: true,
+                provider: pendingNewRow?.provider || 'openai',
+                webSearch: pendingNewRow?.webSearch !== undefined ? pendingNewRow.webSearch : true,
+                contextWindow: pendingNewRow?.contextWindow || 8192,
+                tpm: pendingNewRow?.tpm || 8192,
+                rpm: pendingNewRow?.rpm || 60,
+                tpd: pendingNewRow?.tpd || 100000,
+                otpm: pendingNewRow?.otpm,
+                rpd: pendingNewRow?.rpd,
+              }
+              draftById.set(nameVal, { id: nameVal, ...meta })
+              stagedAdds.set(nameVal, { ...meta })
+              stagedDeletes.delete(nameVal)
               __dirty = true
-              render(newId)
-              const idx = models.findIndex((m) => m.id === newId)
+              render(nameVal)
+              const idx = models.findIndex((m) => m.id === nameVal)
               if (idx >= 0) {
                 activeIndex = idx
                 ensureVisible()
@@ -555,261 +897,43 @@ export function openModelEditor({ onClose, store }) {
             }
           }
         }
-
-        if (nameEditing) {
-          const inputEl = document.activeElement
-          const id = ((inputEl && inputEl.value) || '').trim()
-          if (id && !draftById.has(id) && !origById.has(id)) {
-            const meta = {
-              enabled: true,
-              webSearch: pendingNewRow?.webSearch !== undefined ? pendingNewRow.webSearch : true,
-              contextWindow: pendingNewRow?.contextWindow || 8192,
-              tpm: pendingNewRow?.tpm || 8192,
-              rpm: pendingNewRow?.rpm || 60,
-              tpd: pendingNewRow?.tpd || 100000,
-              otpm: pendingNewRow?.otpm,
+        
+        // Exit edit mode
+        mode = 'navigation'
+        updateModeBadge()
+        
+        // Get fresh reference to active element (in case render() was called by change event)
+        const currentActive = document.activeElement
+        
+        // For select elements, defer blur and refocus to avoid stuck focus
+        const isSelect = currentActive && currentActive.tagName === 'SELECT'
+        if (isSelect) {
+          // Use requestAnimationFrame to let browser finish dropdown close
+          requestAnimationFrame(() => {
+            const freshActive = document.activeElement
+            if (freshActive && typeof freshActive.blur === 'function') {
+              try {
+                freshActive.blur()
+              } catch {}
             }
-            draftById.set(id, { id, ...meta })
-            stagedAdds.set(id, { ...meta })
-            stagedDeletes.delete(id)
-            __dirty = true
-            selectedCol = 1
-            render(id)
-            const idx = models.findIndex((m) => m.id === id)
-            if (idx >= 0) {
-              activeIndex = idx
-              ensureVisible()
-            }
-            selectedCol = FIRST_NUMERIC_COL
             applyCellSelection()
-            enterEditMode()
-          }
-        }
-        document.activeElement.blur()
-        editing = false
-        e.preventDefault()
-        ensureListFocus()
-        return
-      }
-      if (lowerKey === 'h') {
-        e.preventDefault()
-        moveCol(-1)
-        return
-      }
-      if (lowerKey === 'l') {
-        e.preventDefault()
-        moveCol(1)
-        return
-      }
-      if (lowerKey === 'j' || e.key === 'ArrowDown') {
-        e.preventDefault()
-        document.activeElement.blur()
-        editing = false
-        selectedCol = null
-        move(1)
-        ensureListFocus()
-        return
-      }
-      if (lowerKey === 'k' || e.key === 'ArrowUp') {
-        e.preventDefault()
-        document.activeElement.blur()
-        editing = false
-        selectedCol = null
-        move(-1)
-        ensureListFocus()
-        return
-      }
-      if (e.key === 'PageDown') {
-        e.preventDefault()
-        document.activeElement.blur()
-        editing = false
-        selectedCol = null
-        movePage(1)
-        ensureListFocus()
-        return
-      }
-      if (e.key === 'PageUp') {
-        e.preventDefault()
-        document.activeElement.blur()
-        editing = false
-        selectedCol = null
-        movePage(-1)
-        ensureListFocus()
-        return
-      }
-      if (lowerKey === 'g') {
-        e.preventDefault()
-        document.activeElement.blur()
-        editing = false
-        selectedCol = null
-        if (e.shiftKey) {
-          activeIndex = pendingNewRow ? models.length : Math.max(0, models.length - 1)
+            ensureListFocus()
+          })
         } else {
-          activeIndex = 0
-        }
-        render(models[activeIndex]?.id)
-        ensureVisible()
-        ensureListFocus()
-        return
-      }
-      return
-    }
-    if (
-      isSpace ||
-      ['j', 'k', 'g', 'h', 'l', 'g'].includes(lowerKey) ||
-      handledKeys.includes(e.key) ||
-      (e.ctrlKey && lowerKey === 'n')
-    ) {
-      e.preventDefault()
-    }
-    // Enter at overlay level: no global save/close action
-    if (e.key === 'Enter') {
-      return
-    }
-    // Ctrl+N: start inline new row
-    if (e.ctrlKey && lowerKey === 'n') {
-      if (!pendingNewRow) {
-        pendingNewRow = {
-          id: '',
-          enabled: true,
-          provider: 'openai',
-          webSearch: true,
-          contextWindow: 8192,
-          tpm: 8192,
-          rpm: 60,
-          tpd: 100000,
-          otpm: undefined,
-          rpd: undefined,
-        }
-      }
-      activeIndex = models.length
-      selectedCol = 1 // name column
-      render()
-      applyCellSelection()
-      const inp = ul.querySelector('li.me-row:last-child .me-name-input')
-      if (inp) {
-        inp.focus()
-      }
-      ensureVisible()
-      return
-    }
-    // Row movement
-    if (lowerKey === 'j' || e.key === 'ArrowDown') {
-      move(1)
-      return
-    }
-    if (lowerKey === 'k' || e.key === 'ArrowUp') {
-      move(-1)
-      return
-    }
-    if (lowerKey === 'g' && !e.shiftKey) {
-      selectedCol = null
-      activeIndex = 0
-      render(models[0]?.id)
-      ensureVisible()
-      ensureListFocus()
-      return
-    }
-    if (lowerKey === 'g' && e.shiftKey) {
-      if (pendingNewRow) {
-        activeIndex = models.length
-        selectedCol = 1
-        render()
-        applyCellSelection()
-        enterEditMode()
-        ensureVisible()
-        ensureListFocus()
-        return
-      }
-      selectedCol = null
-      activeIndex = models.length - 1
-      render(models[activeIndex]?.id)
-      ensureVisible()
-      ensureListFocus()
-      return
-    }
-    if (e.key === 'PageDown') {
-      movePage(1)
-      return
-    }
-    if (e.key === 'PageUp') {
-      movePage(-1)
-      return
-    }
-    // Column movement
-    if (lowerKey === 'l') {
-      if (selectedCol === null) {
-        // Start at Model column (1) for existing rows, Provider column (2) for new rows
-        const isPending = !!pendingNewRow && activeIndex === models.length
-        selectedCol = isPending ? PROVIDER_COL_INDEX : 1 // Start at Model column for existing rows
-        applyCellSelection()
-        enterEditMode()
-        ensureVisible()
-        return
-      }
-      moveCol(1)
-      return
-    }
-    if (lowerKey === 'h') {
-      if (selectedCol === null) {
-        // Start at Model column (1) for existing rows, Provider column (2) for new rows
-        const isPending = !!pendingNewRow && activeIndex === models.length
-        selectedCol = isPending ? PROVIDER_COL_INDEX : 1 // Start at Model column for existing rows
-        applyCellSelection()
-        enterEditMode()
-        ensureVisible()
-        return
-      }
-      moveCol(-1)
-      return
-    }
-    // Toggle Search with 's' key when webSearch column is selected
-    if (lowerKey === 's' && selectedCol === WEBSEARCH_COL_INDEX) {
-      const rowIdx = activeIndex
-      const isPending = !!pendingNewRow && rowIdx === models.length
-      
-      if (isPending) {
-        pendingNewRow.webSearch = !pendingNewRow.webSearch
-        __dirty = true
-        render()
-        applyCellSelection()
-        enterEditMode()
-        ensureVisible()
-        return
-      }
-      
-      const cur = models[rowIdx]
-      if (cur) {
-        const id = cur.id
-        const draft = draftById.get(id) || origById.get(id)
-        if (draft) {
-          draftById.set(id, { ...draft, webSearch: !draft.webSearch })
-          __dirty = true
-          render(id)
+          // For other inputs, blur immediately
+          if (currentActive && typeof currentActive.blur === 'function') {
+            try {
+              currentActive.blur()
+            } catch {}
+          }
           applyCellSelection()
-          enterEditMode()
-          ensureVisible()
+          ensureListFocus()
         }
-      }
-      return
-    }
-    
-    // Toggle / provider switch for pending row
-    if (isSpace) {
-      const rowIdx = activeIndex
-      const isPending = !!pendingNewRow && rowIdx === models.length
-      if (selectedCol === 2 && isPending) {
-        pendingNewRow.provider = pendingNewRow.provider === 'openai' ? 'anthropic' : 'openai'
-        render()
-        applyCellSelection()
-        enterEditMode()
-        ensureVisible()
         return
       }
-      const cur = models[rowIdx]
-      if (cur) {
-        toggle(cur.id)
-      }
+      
+      // All other keys in edit mode: allow normal text editing
+      // (arrows move cursor within input, letters type, etc.)
       return
     }
   }
@@ -817,8 +941,7 @@ export function openModelEditor({ onClose, store }) {
     const rowsCount = models.length + (pendingNewRow ? 1 : 0)
     const prevIndex = activeIndex
     activeIndex = Math.min(rowsCount - 1, Math.max(0, activeIndex + delta))
-    // Reset column selection when changing rows
-    selectedCol = null
+    // Keep column selection when changing rows
     applyCellSelection()
     if (prevIndex !== activeIndex) {
       const lis = ul.querySelectorAll('li.me-row')
@@ -840,20 +963,18 @@ export function openModelEditor({ onClose, store }) {
       const isPending = !!pendingNewRow && activeIndex === models.length
       selectedCol = isPending ? PROVIDER_COL_INDEX : 1 // Start at Model column for existing rows, Provider for new rows
       applyCellSelection()
-      enterEditMode()
       return
     }
     let next = selectedCol + delta
     // Determine pending row and columns allowed
     const isPendingRow = !!pendingNewRow && activeIndex === models.length
 
-    // Allow navigation to all columns for both existing and pending rows
-    if (next < 1) next = 1 // Start from name column (1)
+    // Allow navigation to all columns including Enabled (0)
+    if (next < 0) next = 0
     if (next > LAST_COL) next = LAST_COL
     selectedCol = next
     applyCellSelection()
-    // Immediately enter edit mode for numeric cells
-    enterEditMode()
+    // Stay in navigation mode - user must press Enter to edit
   }
   function applyCellSelection() {
     // Clear previous
@@ -894,40 +1015,47 @@ export function openModelEditor({ onClose, store }) {
     ][selectedCol]
     const cell = sel && row.querySelector(sel)
     if (!cell) return
+    
     const nameInput = cell.querySelector('input.me-name-input')
     if (nameInput) {
-      editing = true
       nameInput.focus()
+      // Place cursor at end instead of selecting all
+      const len = nameInput.value.length
       try {
-        nameInput.select()
+        nameInput.setSelectionRange(len, len)
       } catch {}
       return
     }
 
-    const providerInput = cell.querySelector('input.me-provider-input')
-    if (providerInput) {
-      editing = true
-      providerInput.focus()
-      try {
-        providerInput.select()
-      } catch {}
+    const providerSelect = cell.querySelector('select.me-provider-select')
+    if (providerSelect) {
+      providerSelect.focus()
       return
     }
 
     const checkbox = cell.querySelector('input.me-checkbox')
     if (checkbox) {
-      editing = true
       checkbox.focus()
       return
     }
 
     const input = cell.querySelector('input.me-num')
     if (input) {
-      editing = true
       input.focus()
-      try {
-        input.select()
-      } catch {}
+      // Place cursor at end for number inputs
+      // Number inputs need special handling - use requestAnimationFrame for reliable positioning
+      requestAnimationFrame(() => {
+        const len = String(input.value).length
+        try {
+          input.setSelectionRange(len, len)
+        } catch {
+          // Fallback for inputs that don't support setSelectionRange
+          try {
+            input.selectionStart = len
+            input.selectionEnd = len
+          } catch {}
+        }
+      })
     }
   }
   function ensureVisible() {

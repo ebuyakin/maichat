@@ -331,16 +331,20 @@ export function updateModelMeta(id, patch) {
     next.contextWindow = num(patch.contextWindow, m.contextWindow)
   if (patch && 'tpm' in patch) next.tpm = num(patch.tpm, m.tpm)
   if (patch && 'rpm' in patch) next.rpm = num(patch.rpm, m.rpm)
-  if (patch && 'tpd' in patch) next.tpd = num(patch.tpd, m.tpd)
+  if (patch && 'tpd' in patch) {
+    const v = Number(patch.tpd)
+    if (Number.isFinite(v) && v >= 0) next.tpd = v
+    else if (patch.tpd === null || patch.tpd === undefined) delete next.tpd
+  }
   if (patch && 'otpm' in patch) {
     const v = Number(patch.otpm)
     if (Number.isFinite(v) && v >= 0) next.otpm = v
-    else if (patch.otpm === null) delete next.otpm
+    else if (patch.otpm === null || patch.otpm === undefined) delete next.otpm
   }
   if (patch && 'rpd' in patch) {
     const v = Number(patch.rpd)
     if (Number.isFinite(v) && v >= 0) next.rpd = v
-    else if (patch.rpd === null) delete next.rpd
+    else if (patch.rpd === null || patch.rpd === undefined) delete next.rpd
   }
   if (patch && 'provider' in patch) next.provider = String(patch.provider || 'openai')
   if (patch && 'webSearch' in patch) next.webSearch = Boolean(patch.webSearch)
