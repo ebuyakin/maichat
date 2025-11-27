@@ -33,8 +33,8 @@ Accurate context assembly (focus on token usage counts for different scenarios -
 22. new model addition - doesn't work. [~]
 23. documentation update - architecutre.md, docs-inventory.md, changelog/readme
 24. base models list update (hardcoded)
-25. URA vs User assumed tokens
+25. URA vs User assumed tokens [x]
 26. max attempts hardcoded in newMessage (should be taken from settings) [x]
-27. abort controller
+27. abort controller [x]
 
 

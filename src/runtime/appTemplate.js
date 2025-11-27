@@ -85,7 +85,7 @@ export function buildAppHTML({
           <span id="pendingTopic" title="Topic • Ctrl+T">${escapeHtmlForTextNode(pendingTopic)}</span>
         </div>
         <div class="input-meta-right">
-          <span id="attachIndicator" class="attach-indicator" ${attachCount === 0 ? 'hidden' : ''} title="Attached images • Ctrl+Shift+O" aria-label="${attachAria}" style="${attachIndicatorStyle}">
+          <span id="attachIndicator" class="attach-indicator" ${attachCount === 0 ? 'hidden' : ''} data-action="view-draft-images" role="button" tabindex="0" title="Attached images • Ctrl+Shift+O • Click to view" aria-label="${attachAria}" style="${attachIndicatorStyle}">
             <span class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3.5" y="5.5" width="17" height="13" rx="2" ry="2"></rect>

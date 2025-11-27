@@ -31,6 +31,7 @@ import { createModeManager, MODES } from './features/interaction/modes.js'
 import { bindHistoryErrorActions, bindSourcesActions, bindImageBadgeActions } from './features/history/historyView.js'
 import { openSourcesOverlay } from './features/history/sourcesOverlay.js'
 import { openImageOverlay } from './features/images/imageOverlay.js'
+import { bindDraftImageClick } from './features/images/draftImageIndicator.js'
 import { createHistoryRuntime } from './features/history/historyRuntime.js'
 import { getSettings, subscribeSettings } from './core/settings/index.js'
 import { decideRenderAction } from './runtime/renderPolicy.js'
@@ -227,6 +228,13 @@ bindImageBadgeActions(document.getElementById('history'), {
       openImageOverlay({ modeManager, mode: 'view', pair, startIndex: 0 })
     }
   },
+})
+
+// Bind draft image indicator click handler
+bindDraftImageClick({
+  indicatorElement: document.getElementById('attachIndicator'),
+  modeManager,
+  pendingMessageMeta
 })
 
 // Phase 14. Preload settings

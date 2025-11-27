@@ -11,6 +11,11 @@ import { extractEquations } from '../codeDisplay/equationExtractor.js'
 import { attachFromFiles, attachFromDataTransfer, getMany as getImagesByIds, detach as detachImage } from '../images/imageStore.js'
 import { estimateTokens, estimateImageTokens } from '../../core/context/tokenEstimator.js'
 import { openImageOverlay } from '../images/imageOverlay.js'
+import { 
+  updateIndicator, 
+  persistAttachments, 
+  cleanStaleAttachments as cleanStale 
+} from '../images/draftAttachments.js'
 import { IMAGE_QUOTAS } from '../images/quotas.js'
 
 // Topic history management (MRU list)
@@ -92,64 +97,23 @@ export function createInputKeyHandler({
 
   // Helper: update small attachments indicator (icon + count)
   function updateAttachIndicator() {
-    try {
-      const ind = document.getElementById('attachIndicator')
-      const cnt = document.getElementById('attachCount')
-      const n = Array.isArray(pendingMessageMeta.attachments)
-        ? pendingMessageMeta.attachments.length
-        : 0
-      if (!ind || !cnt) return
-      // Visibility: 0 -> hidden; 1 -> icon only; 2+ -> icon + number
-      if (n === 0) {
-        cnt.textContent = ''
-        ind.setAttribute('aria-label', 'No images attached')
-        ind.style.display = 'none'
-        ind.hidden = false // ensure CSS 'hidden' attr is not conflicting; display controls visibility
-      } else {
-        cnt.textContent = n > 1 ? String(n) : ''
-        ind.setAttribute('aria-label', n === 1 ? '1 image attached' : `${n} images attached`)
-        ind.style.display = 'inline-flex'
-        ind.hidden = false
-      }
-    } catch {}
+    updateIndicator(pendingMessageMeta.attachments)
   }
 
   // Persist draft attachments (and, by policy, current draft text) to localStorage.
   // Called only on explicit user actions (attach/paste/overlay remove), never on typing.
   function persistDraftAttachments() {
-    try {
-      const ids = Array.isArray(pendingMessageMeta.attachments)
-        ? pendingMessageMeta.attachments
-        : []
-      localStorage.setItem('maichat_draft_attachments', JSON.stringify(ids))
-      // Policy: when attachments exist, also persist current draft text for reload restore.
-      // When attachments are cleared, remove the draft text key to avoid restoring stale text alone.
-      if (ids.length > 0) {
-        try { localStorage.setItem('maichat_draft_text', inputField.value || '') } catch {}
-      } else {
-        try { localStorage.removeItem('maichat_draft_text') } catch {}
-      }
-    } catch {}
+    persistAttachments(
+      pendingMessageMeta.attachments,
+      inputField.value || ''
+    )
   }
 
   // Helper: validate and clean up stale attachment references
   async function cleanStaleAttachments() {
-    if (!Array.isArray(pendingMessageMeta.attachments)) return
-    const validIds = []
-    for (const id of pendingMessageMeta.attachments) {
-      try {
-        const rec = await getImagesByIds([id])
-        if (rec && rec[0]) {
-          validIds.push(id)
-        } else {
-          console.warn('[attach] removed stale reference:', id)
-        }
-      } catch {
-        console.warn('[attach] removed stale reference:', id)
-      }
-    }
-    if (validIds.length !== pendingMessageMeta.attachments.length) {
-      pendingMessageMeta.attachments = validIds
+    const cleaned = await cleanStale(pendingMessageMeta.attachments)
+    if (cleaned.length !== pendingMessageMeta.attachments.length) {
+      pendingMessageMeta.attachments = cleaned
       updateAttachIndicator()
     }
   }
