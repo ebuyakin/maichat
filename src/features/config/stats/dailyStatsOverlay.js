@@ -1,67 +1,6 @@
 import { openModal } from '../../../shared/openModal.js'
-
-function median(arr) {
-  if (!arr || !arr.length) return null
-  const sorted = arr.slice().sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
-}
-
-function formatResponseTime(ms) {
-  if (ms == null) return '—'
-  return `${(ms / 1000).toFixed(1)}s`
-}
-
-export function computeDailyCounts(pairs) {
-  // Group by local calendar day (YYYY-MM-DD)
-  const byDay = new Map()
-  for (const p of pairs) {
-    const d = new Date(p.createdAt || Date.now())
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    const existing = byDay.get(key)
-    const responseTimes = existing?.responseTimes || []
-    if (typeof p.responseMs === 'number') {
-      responseTimes.push(p.responseMs)
-    }
-    byDay.set(key, {
-      count: (existing?.count || 0) + 1,
-      responseTimes
-    })
-  }
-  const rows = Array.from(byDay.entries()).map(([day, data]) => ({
-    day,
-    count: data.count,
-    medianResponseTime: median(data.responseTimes)
-  }))
-  // Descending order (newest at top) for easier access to recent data
-  rows.sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0))
-  return rows
-}
-
-export function computeModelCounts(pairs) {
-  // Group by model
-  const byModel = new Map()
-  for (const p of pairs) {
-    const model = p.model || 'unknown'
-    const existing = byModel.get(model)
-    const responseTimes = existing?.responseTimes || []
-    if (typeof p.responseMs === 'number') {
-      responseTimes.push(p.responseMs)
-    }
-    byModel.set(model, {
-      count: (existing?.count || 0) + 1,
-      responseTimes
-    })
-  }
-  const rows = Array.from(byModel.entries()).map(([model, data]) => ({
-    model,
-    count: data.count,
-    medianResponseTime: median(data.responseTimes)
-  }))
-  // Sort by count descending (most used models first)
-  rows.sort((a, b) => b.count - a.count)
-  return rows
-}
+import { median, formatResponseTime, computeDailyCounts, computeModelCounts } from './activityStatsData.js'
+import { createTopicStatsTree } from './topicStatsTree.js'
 
 export function openDailyStatsOverlay({ store, activeParts, historyRuntime, modeManager }) {
   if (document.getElementById('dailyStatsOverlayRoot')) return
@@ -69,20 +8,29 @@ export function openDailyStatsOverlay({ store, activeParts, historyRuntime, mode
   const visiblePairIds = Array.from(new Set((activeParts.parts || []).map((p) => p.pairId)))
   const visiblePairs = visiblePairIds.map((id) => store.pairs.get(id)).filter(Boolean)
   
-  let viewMode = 'daily' // 'daily' or 'model'
+  let viewMode = 'daily' // 'daily' | 'model' | 'topic'
   
   function renderContent() {
-    const rows = viewMode === 'daily' ? computeDailyCounts(visiblePairs) : computeModelCounts(visiblePairs)
-    const { headerHtml, tableHtml, footerHtml } = rows.length ? generateTableAndFooter(rows, viewMode, visiblePairs) : emptyHtml()
-    
     const headerEl = root.querySelector('.stats-header-container')
-    headerEl.innerHTML = headerHtml
-    
     const bodyEl = root.querySelector('.stats-body')
-    bodyEl.innerHTML = tableHtml
-    
     const footerEl = root.querySelector('.stats-footer-container')
-    footerEl.innerHTML = footerHtml
+    
+    if (viewMode === 'topic') {
+      // Topic tree view - maintain header/footer structure for consistent sizing
+      headerEl.innerHTML = '<div class="stats-header" style="background:#1a1a1a;"><span class="stats-header-label">Topic</span><span class="stats-header-count">Direct</span><span class="stats-header-time">Total</span></div>'
+      bodyEl.innerHTML = ''
+      const treeEl = createTopicStatsTree({ store, visiblePairs })
+      bodyEl.appendChild(treeEl)
+      footerEl.innerHTML = '<div class="stats-footer" style="visibility:hidden;"><span>Total</span><span>0</span><span>&nbsp;</span></div>'
+    } else {
+      // Table views (daily/model)
+      const rows = viewMode === 'daily' ? computeDailyCounts(visiblePairs) : computeModelCounts(visiblePairs)
+      const { headerHtml, tableHtml, footerHtml } = rows.length ? generateTableAndFooter(rows, viewMode, visiblePairs) : emptyHtml()
+      
+      headerEl.innerHTML = headerHtml
+      bodyEl.innerHTML = tableHtml
+      footerEl.innerHTML = footerHtml
+    }
     
     // Update tab styling
     root.querySelectorAll('.tab-btn').forEach(btn => {
@@ -102,6 +50,7 @@ export function openDailyStatsOverlay({ store, activeParts, historyRuntime, mode
       <div class="stats-tabs" style="display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid #222;">
         <button class="tab-btn active" data-view="daily">By Date</button>
         <button class="tab-btn" data-view="model">By Model</button>
+        <button class="tab-btn" data-view="topic">By Topic</button>
       </div>
       <div class="stats-header-container"></div>
       <div class="stats-body" style="height:395px;overflow:auto;padding:5px;"></div>
@@ -120,6 +69,21 @@ export function openDailyStatsOverlay({ store, activeParts, historyRuntime, mode
   let tbody = null
   
   function setupNavigation() {
+    // For topic view, focus the tree container for keyboard navigation
+    if (viewMode === 'topic') {
+      tbody = null
+      rowEls = []
+      focusableCells = []
+      activeRowIndex = 0
+      // Focus the tree container to enable keyboard navigation
+      const tree = panel.querySelector('.topic-stats-tree')
+      if (tree) {
+        tree.focus()
+      }
+      return
+    }
+    
+    // Table navigation for daily/model views
     tbody = panel.querySelector('.stats-table tbody')
     rowEls = tbody ? Array.from(tbody.querySelectorAll('tr')) : []
     focusableCells = rowEls.map((tr) => tr.querySelector('td')).filter(Boolean)
@@ -173,14 +137,42 @@ export function openDailyStatsOverlay({ store, activeParts, historyRuntime, mode
     })
   })
   
-  // Tab keyboard switching (h/l or [/])
+  // Tab keyboard switching (h/l or [/]) and navigation
   panel.addEventListener('keydown', (e) => {
-    // h/l tab switching (without modifiers)
+    // In topic view, only use [/] for tab switching (h/l reserved for tree navigation)
+    if (viewMode === 'topic') {
+      if (e.key === '[' && !e.metaKey && !e.altKey && !e.ctrlKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+        const tabs = ['daily', 'model', 'topic']
+        const idx = tabs.indexOf(viewMode)
+        viewMode = tabs[(idx - 1 + tabs.length) % tabs.length]
+        renderContent()
+        return
+      }
+      if (e.key === ']' && !e.metaKey && !e.altKey && !e.ctrlKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+        const tabs = ['daily', 'model', 'topic']
+        const idx = tabs.indexOf(viewMode)
+        viewMode = tabs[(idx + 1) % tabs.length]
+        renderContent()
+        return
+      }
+      // Let h/l pass through to tree for expand/collapse
+      return
+    }
+    
+    // For table views, h/l or [/] for tab switching
     if ((e.key === 'h' || e.key === '[') && !e.metaKey && !e.altKey && !e.ctrlKey) {
       e.preventDefault()
       e.stopPropagation()
       e.stopImmediatePropagation()
-      viewMode = 'daily'
+      const tabs = ['daily', 'model', 'topic']
+      const idx = tabs.indexOf(viewMode)
+      viewMode = tabs[(idx - 1 + tabs.length) % tabs.length]
       renderContent()
       return
     }
@@ -188,7 +180,9 @@ export function openDailyStatsOverlay({ store, activeParts, historyRuntime, mode
       e.preventDefault()
       e.stopPropagation()
       e.stopImmediatePropagation()
-      viewMode = 'model'
+      const tabs = ['daily', 'model', 'topic']
+      const idx = tabs.indexOf(viewMode)
+      viewMode = tabs[(idx + 1) % tabs.length]
       renderContent()
       return
     }
@@ -259,7 +253,7 @@ function generateTableAndFooter(rows, viewMode, visiblePairs) {
   const firstColKey = viewMode === 'daily' ? 'day' : 'model'
   
   const headerHtml = `
-    <div class="stats-header">
+    <div class="stats-header" style="background:#1a1a1a;">
       <span class="stats-header-label">${firstColHeader}</span>
       <span class="stats-header-count">Count</span>
       <span class="stats-header-time">MRT</span>
@@ -277,7 +271,7 @@ function generateTableAndFooter(rows, viewMode, visiblePairs) {
     </table>`
   
   const footerHtml = `
-    <div class="stats-footer">
+    <div class="stats-footer" style="background:#1a1a1a;">
       <span class="stats-footer-label">Total</span>
       <span class="stats-footer-count">${total}</span>
       <span class="stats-footer-time">${formatResponseTime(overallMedian)}</span>
