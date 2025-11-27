@@ -21,7 +21,7 @@ import { openApiKeysOverlay } from '../config/apiKeysOverlay.js'
 import { openModelSelector } from '../config/modelSelector.js'
 import { openModelEditor } from '../config/modelEditor.js'
 import { openHelpOverlay } from '../config/helpOverlay.js'
-import { openDailyStatsOverlay } from '../config/dailyStatsOverlay.js'
+import { openDailyStatsOverlay } from '../config/stats/dailyStatsOverlay.js'
 import { getActiveModel, getModelMeta } from '../../core/models/modelCatalog.js'
 // Compose pipeline not yet moved (Phase 6.5). Use current send/ path.
 // Compose pipeline moved (Phase 6.5) to features/compose

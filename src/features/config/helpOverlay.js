@@ -87,7 +87,6 @@ export function openHelpOverlay({ onClose, modeManager }) {
             <div class="help-k">l</div><div class="help-d">Show link hints (1-9 to open)</div>
             <div class="help-k">Ctrl+Shift+S</div><div class="help-d">Open Sources overlay</div>
             <div class="help-k">i / i1-9</div><div class="help-d">View message images</div>
-            <div class="help-k">Ctrl+Shift+O</div><div class="help-d">View draft images</div>
             <div class="help-k">Ctrl+T</div><div class="help-d">Topic picker (reassign)</div>
             <div class="help-k">e</div><div class="help-d">Edit & resend (error row)</div>
             <div class="help-k">w</div><div class="help-d">Delete (error row)</div>

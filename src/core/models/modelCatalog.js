@@ -14,12 +14,12 @@ export const SUPPORTED_PROVIDERS = ['openai', 'anthropic', 'google', 'xai']
 const BASE_MODELS = [
   // OpenAI models (Tier 1 limits)
   { 
-    id: 'gpt-5', 
+    id: 'gpt-5.1', 
     provider: 'openai', 
     contextWindow: 400000, 
     tpm: 500000, 
     rpm: 500, 
-    tpd: 1500000,
+    tpd: 900000,
     webSearch: true,
   },
   { 
@@ -40,15 +40,6 @@ const BASE_MODELS = [
     tpd: 2000000,
     webSearch: true,
   },
-  { 
-    id: 'o4-mini', 
-    provider: 'openai', 
-    contextWindow: 128000, 
-    tpm: 200000, 
-    rpm: 500, 
-    tpd: 2000000,
-    webSearch: true,
-  },
   // Anthropic models (Tier 1 limits)
   {
     id: 'claude-sonnet-4-5-20250929',
@@ -60,7 +51,7 @@ const BASE_MODELS = [
     webSearch: true,
   },
   {
-    id: 'claude-opus-4-1-20250805',
+    id: 'claude-opus-4-5-20251101',
     provider: 'anthropic',
     contextWindow: 200000,
     tpm: 30000,
@@ -105,18 +96,9 @@ const BASE_MODELS = [
     rpd: 250,
     webSearch: true,
   },
-  {
-    id: 'gemini-2.0-flash',
-    provider: 'google',
-    contextWindow: 1000000,
-    tpm: 1000000,
-    rpm: 15,
-    rpd: 200,
-    webSearch: true,
-  },
   // xAI models (Tier 1 limits)
   {
-    id: 'grok-4-fast-non-reasoning',
+    id: 'grok-4-1-fast-non-reasoning',
     provider: 'xai',
     contextWindow: 2000000,
     tpm: 4000000,
@@ -124,7 +106,7 @@ const BASE_MODELS = [
     webSearch: true,
   },
   {
-    id: 'grok-4-fast-reasoning',
+    id: 'grok-4-1-fast-reasoning',
     provider: 'xai',
     contextWindow: 2000000,
     tpm: 4000000,

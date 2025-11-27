@@ -1,4 +1,4 @@
-import { openModal } from '../../shared/openModal.js'
+import { openModal } from '../../../shared/openModal.js'
 
 function median(arr) {
   if (!arr || !arr.length) return null
