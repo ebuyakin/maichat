@@ -138,6 +138,9 @@ async function sendAnthropicRequest({ model, apiKey, body, signal }) {
     })
   } catch (err) {
     storeFetchError(err, 'anthropic')
+    if (err.name === 'AbortError') {
+      throw new AdapterError('requestAborted', { cause: err })
+    }
     throw new AdapterError('fetchNetwork', { cause: err })
   }
   

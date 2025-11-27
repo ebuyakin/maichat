@@ -24,7 +24,7 @@ Accurate context assembly (focus on token usage counts for different scenarios -
 13. duplication of hardcoded provider list (adapters vs providers) - single source of truth [~] deferred
 14. boundary update on pending model change [x]
 15. TotalTokens reported - store it to compare vs estimated. store both estimaterd total. [x]
-16. recalculation of the estimated budgets upon settings changes or algo changes.
+16. recalculation of the estimated budgets upon settings changes or algo changes. [x]
 17. topic summary in activity stat.
 18. grok - web/twitter search. is twitter separate tool? [~]
 19. image icon - open overlay on click.
@@ -34,6 +34,7 @@ Accurate context assembly (focus on token usage counts for different scenarios -
 23. documentation update - architecutre.md, docs-inventory.md, changelog/readme
 24. base models list update (hardcoded)
 25. URA vs User assumed tokens
-26. max attempts hardcoded in newMessage (should be taken from settings)
+26. max attempts hardcoded in newMessage (should be taken from settings) [x]
+27. abort controller
 
 

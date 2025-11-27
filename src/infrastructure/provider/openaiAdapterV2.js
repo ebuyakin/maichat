@@ -93,7 +93,10 @@ async function sendOpenAIRequest({ model, apiKey, body, signal }) {
     })
   } catch (err) {
     storeFetchError(err, 'openai')
-    throw new AdapterError('fetchNetwork', 'Network error', { cause: err })
+    if (err.name === 'AbortError') {
+      throw new AdapterError('requestAborted', { cause: err })
+    }
+    throw new AdapterError('fetchNetwork', { cause: err })
   }
   
   const responseMs = Date.now() - tStart

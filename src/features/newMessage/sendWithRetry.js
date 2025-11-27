@@ -4,6 +4,7 @@ import { AdapterError, ADAPTERS } from '../../infrastructure/provider/adapterV2.
 import { getApiKey } from '../../infrastructure/api/keys.js'
 import { getStore } from '../../runtime/runtimeServices.js'
 import { getModelMeta } from '../../core/models/modelCatalog.js'
+import { getSettings } from '../../core/settings/index.js'
 
 /**
  * Load request configuration from topic and model
@@ -52,7 +53,6 @@ function loadRequestConfig(topicId, modelId) {
  * @param {number[]} params.selectedPairsTokens - Token costs for each history pair
  * @param {string} params.topicId - Topic ID (for loading systemMessage and options)
  * @param {string} params.modelId - Model ID
- * @param {number} params.maxRetries - Max retry attempts
  * @param {AbortSignal} params.signal - Abort signal for cancellation
  * @returns {Promise<Object>} { response, historyTokens }
  */
@@ -61,11 +61,14 @@ export async function sendWithRetry({
   selectedPairsTokens,
   topicId,
   modelId,
-  maxRetries,
   signal,
 }) {
   // Load configuration
   const { providerId, systemMessage, options } = loadRequestConfig(topicId, modelId)
+  
+  // Get max retry attempts from settings
+  const settings = getSettings()
+  const maxRetries = settings.maxTrimAttempts || 10
   
   // Get provider adapter
   const adapter = ADAPTERS[providerId]

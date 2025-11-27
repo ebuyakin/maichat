@@ -28,7 +28,7 @@ export async function sendNewMessage({
   editingPairId,
 }) {
   // Phase 0: Initialize pair and show user message
-  const { pair } = await initializePair({
+  const { pair, signal } = await initializePair({
     userText,
     pendingImageIds,
     topicId,
@@ -72,8 +72,7 @@ export async function sendNewMessage({
       selectedPairsTokens,
       topicId,
       modelId,
-      maxRetries: 5,
-      signal: null,  // TODO: Add abort controller from lifecycle
+      signal,
     })
     historyTokens = histTokens
     

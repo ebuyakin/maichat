@@ -222,7 +222,7 @@ export const SETTINGS_SCHEMA = {
   assumedUserTokens: {
     defaultValue: 256,
     renderAction: 'none',
-    control: { type: 'number', min: 0, max: 10000, step: 10 },
+    control: { type: 'hidden' },
     ui: { label: 'Assumed User Tokens', tab: 'context' },
   },
   

@@ -118,8 +118,8 @@ export async function initializePair({
   // Render with appropriate preserve mode
   historyRuntime.renderCurrentView({ preserveActive: isReask })
   
-  // Begin send (shows "AI thinking" badge)
-  lifecycle.beginSend()
+  // Begin send (shows "AI thinking" badge) and get abort signal
+  const signal = lifecycle.beginSend()
   interaction.updateSendDisabled()  // Trigger send button UI update
   
   // Activate message
@@ -142,5 +142,5 @@ export async function initializePair({
   }
   // Re-ask: keep current scroll position (will be aligned when response arrives)
   
-  return result
+  return { ...result, signal }
 }

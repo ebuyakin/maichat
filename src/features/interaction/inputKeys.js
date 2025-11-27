@@ -435,14 +435,28 @@ export function createInputKeyHandler({
     
     // Ctrl+C to abort pending request
     if (e.key === 'c' && e.ctrlKey && !e.shiftKey && !e.metaKey) {
-      const controller = window.__maichat && window.__maichat.requestController
-      if (lifecycle.isPending() && controller) {
-        e.preventDefault()
-        controller.abort()
-        return true
+      if (!lifecycle.isPending()) {
+        // Not pending - pass through (no-op)
+        return false
       }
-      // If not pending, pass through (no-op)
-      return false
+      
+      e.preventDefault()
+      
+      // Check which pipeline is active
+      const USE_NEW_PIPELINE = localStorage.getItem('maichat_use_new_pipeline') === 'true'
+      
+      if (USE_NEW_PIPELINE) {
+        // NEW PIPELINE: Use lifecycle abort
+        lifecycle.abortRequest()
+      } else {
+        // OLD PIPELINE: Use global controller
+        const controller = window.__maichat && window.__maichat.requestController
+        if (controller) {
+          controller.abort()
+        }
+      }
+      
+      return true
     }
     // Shift+Enter = new line (don't send)
     if (e.key === 'Enter' && e.shiftKey) {

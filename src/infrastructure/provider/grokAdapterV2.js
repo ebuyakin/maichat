@@ -98,6 +98,9 @@ async function sendGrokRequest({ model, apiKey, body, signal }) {
     })
   } catch (err) {
     storeFetchError(err, 'grok')
+    if (err.name === 'AbortError') {
+      throw new AdapterError('requestAborted', { cause: err })
+    }
     throw new AdapterError('fetchNetwork', { cause: err })
   }
   

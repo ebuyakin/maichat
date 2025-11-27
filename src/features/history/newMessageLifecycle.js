@@ -1,5 +1,7 @@
 // newMessageLifecycle moved from ui/newMessageLifecycle.js
 import { escapeHtml } from '../../shared/util.js'
+import { getSettings } from '../../core/settings/index.js'
+
 export function createNewMessageLifecycle({
   store,
   activeParts,
@@ -11,6 +13,7 @@ export function createNewMessageLifecycle({
   scrollController,
 }) {
   let pendingSend = false
+  let currentAbortController = null
   let lastReplyPairId = null
   let activeFilterQuery = ''
   const hasDocument = typeof document !== 'undefined'
@@ -27,14 +30,41 @@ export function createNewMessageLifecycle({
   function getFilterQuery() {
     return activeFilterQuery
   }
+  function createAbortController() {
+    const controller = new AbortController()
+    const settings = getSettings()
+    const timeoutSec = settings.requestTimeoutSec || 120
+    const timeoutMs = timeoutSec * 1000
+    const timeoutId = setTimeout(() => {
+      controller.abort()
+    }, timeoutMs)
+    
+    // Cleanup timeout when abort happens (from any source)
+    controller.signal.addEventListener('abort', () => {
+      clearTimeout(timeoutId)
+    }, { once: true })
+    
+    return controller
+  }
   function isPending() {
     return pendingSend
   }
   function beginSend() {
     pendingSend = true
+    currentAbortController = createAbortController()
+    return currentAbortController.signal
   }
   function completeSend() {
     pendingSend = false
+    currentAbortController = null
+  }
+  function abortRequest() {
+    if (currentAbortController && pendingSend) {
+      currentAbortController.abort()
+    }
+  }
+  function getCurrentSignal() {
+    return currentAbortController ? currentAbortController.signal : null
   }
   function userAtLogicalEnd() {
     const act = activeParts.active()
@@ -171,6 +201,8 @@ export function createNewMessageLifecycle({
     beginSend,
     completeSend,
     isPending,
+    abortRequest,
+    getCurrentSignal,
     handleNewAssistantReply,
     updateNewReplyBadgeVisibility,
     jumpToNewReply,

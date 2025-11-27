@@ -365,6 +365,9 @@ export function classifyErrorCode(message) {
   // Network
   if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed'))
     return 'error: net'
+  // Abort
+  if (msg.includes('abort'))
+    return 'error: abort'
   return 'error: unknown'
 }
 // Bind normal re-ask button actions (non-error). Caller provides onReask(pairId)
