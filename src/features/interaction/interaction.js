@@ -801,6 +801,7 @@ export function createInteraction({
       e.preventDefault()
       const prevMode = modeManager.mode
       openSettingsOverlay({
+        store,
         onClose: () => {
           modeManager.set(prevMode)
         },

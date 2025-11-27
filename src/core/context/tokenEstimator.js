@@ -6,6 +6,7 @@ import { anthropicEstimator } from '../../infrastructure/provider/tokenEstimatio
 import { geminiEstimator } from '../../infrastructure/provider/tokenEstimation/geminiEstimator.js'
 import { grokEstimator } from '../../infrastructure/provider/tokenEstimation/grokEstimator.js'
 import { fallbackEstimator } from '../../infrastructure/provider/tokenEstimation/fallbackEstimator.js'
+import { getContextWindow, getModelMeta, SUPPORTED_PROVIDERS } from '../models/modelCatalog.js'
 
 // S17: Provider estimator registry
 const PROVIDER_ESTIMATORS = {
@@ -98,7 +99,6 @@ export function estimatePairTokens(pair, charsPerToken = 4, providerId = 'openai
   return textTokens + imageTokens
 }
 
-import { getContextWindow, getModelMeta } from '../models/modelCatalog.js'
 export function getModelBudget(model) {
   const cw = getContextWindow(model)
   const meta = getModelMeta(model)
@@ -198,6 +198,7 @@ export function computeContextBoundaryNew(
   }
 }
 
+// old function. not used in newMessage based routine
 export function computeContextBoundary(
   orderedPairs,
   { charsPerToken = 4, assumedUserTokens = 0, model } = {}
@@ -246,4 +247,28 @@ export function computeContextBoundary(
       charsPerToken,
     },
   }
+}
+
+/**
+ * Recalculate estimatedTokenUsage for all pairs when charPerToken setting changes.
+ * Updates in-memory store and persists to IndexedDB in a single transaction.
+ * 
+ * @param {Object} store - MemoryStore instance
+ * @param {number} charsPerToken - Characters per token ratio from settings
+ * @returns {Promise<number>} Number of pairs updated
+ */
+export async function recalculateAllTokenEstimates(store, charsPerToken) {
+  const pairs = store.getAllPairs()
+  if (!pairs.length) return 0
+  
+  const updates = []
+  for (const pair of pairs) {
+    const estimatedTokenUsage = {}
+    for (const providerId of SUPPORTED_PROVIDERS) {
+      estimatedTokenUsage[providerId] = estimatePairTokens(pair, charsPerToken, providerId)
+    }
+    updates.push({ id: pair.id, patch: { estimatedTokenUsage } })
+  }
+  
+  return store.bulkUpdatePairs(updates)
 }

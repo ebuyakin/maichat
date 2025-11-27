@@ -207,6 +207,7 @@ export function createAppMenuController({
     } else if (action === 'settings') {
       const prev = modeManager.mode
       openSettingsOverlay({
+        store,
         onClose: () => {
           modeManager.set(prev)
         },

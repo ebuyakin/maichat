@@ -3,6 +3,9 @@
 import { getSettings, saveSettings, getDefaultSettings } from '../../core/settings/index.js'
 import { SETTINGS_SCHEMA } from '../../core/settings/schema.js'
 import { openModal } from '../../shared/openModal.js'
+import { recalculateAllTokenEstimates } from '../../core/context/tokenEstimator.js'
+import { openConfirmOverlay } from '../command/confirmOverlay.js'
+import { openAlertOverlay } from '../../shared/alertOverlay.js'
 
 /**
  * Generate form controls for a specific tab from schema
@@ -54,7 +57,7 @@ function generateControlsForTab(tabName, existing) {
     .join('\n              ')
 }
 
-export function openSettingsOverlay({ onClose }) {
+export function openSettingsOverlay({ onClose, store }) {
   if (document.getElementById('settingsOverlayRoot')) return
   const existing = getSettings()
   const root = document.createElement('div')
@@ -396,6 +399,81 @@ export function openSettingsOverlay({ onClose }) {
     el.addEventListener('change', () => markDirty())
     el.addEventListener('input', () => markDirty())
   })
+  
+  // CPT change handler: trigger recalculation on blur if value changed
+  const cptInput = form.querySelector('input[name="charsPerToken"]')
+  if (cptInput) {
+    cptInput.addEventListener('blur', async () => {
+      const newValue = parseFloat(cptInput.value)
+      const oldValue = baseline.charsPerToken
+      
+      if (isNaN(newValue) || newValue === oldValue) return
+      
+      // Show confirmation modal
+      const confirmed = await openConfirmOverlay({
+        modeManager: window.__modeManager,
+        title: 'Recalculate Token Estimates',
+        message: 
+          `Chars Per Token changed from ${oldValue} to ${newValue}.\n\n` +
+          `Recalculate all stored token estimates?\n\n` +
+          `This will update all message pairs in the database and may take a few seconds.`
+      })
+      
+      if (!confirmed) {
+        // Revert to original value
+        cptInput.value = String(oldValue)
+        return
+      }
+      
+      // User confirmed - save CPT and recalculate
+      try {
+        // Disable form during recalculation
+        const formElements = form.querySelectorAll('input,select,button')
+        formElements.forEach(el => el.disabled = true)
+        
+        // Save CPT immediately
+        saveSettings({ charsPerToken: newValue })
+        
+        // Show progress in button
+        const originalText = saveCloseBtn.textContent
+        saveCloseBtn.textContent = 'Recalculating token estimates...'
+        
+        // Recalculate
+        const count = await recalculateAllTokenEstimates(store, newValue)
+        console.log(`Recalculated ${count} message pairs with CPT=${newValue}`)
+        
+        // Update baseline so it won't trigger again
+        baseline.charsPerToken = newValue
+        persistedThisSession = true
+        
+        // Restore UI
+        saveCloseBtn.textContent = originalText
+        formElements.forEach(el => el.disabled = false)
+        
+        // Show success with alert overlay
+        await openAlertOverlay({
+          modeManager: window.__modeManager,
+          title: 'Recalculation Complete',
+          message: `Successfully recalculated ${count} message pairs.`
+        })
+      } catch (err) {
+        console.error('Token recalculation failed:', err)
+        
+        // Show error with alert overlay
+        await openAlertOverlay({
+          modeManager: window.__modeManager,
+          title: 'Recalculation Failed',
+          message: `Error: ${err.message}`
+        })
+        
+        // Restore UI
+        const formElements = form.querySelectorAll('input,select,button')
+        formElements.forEach(el => el.disabled = false)
+        saveCloseBtn.textContent = 'Save & Close'
+      }
+    })
+  }
+  
   window.addEventListener('keydown', function esc(e) {
     if (e.key === 'Escape') {
       e.preventDefault()

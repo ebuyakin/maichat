@@ -76,6 +76,9 @@ export class ContentPersistence {
       this._pairQueue.add(p.id)
       this._schedule()
     })
+    this.store.on('pairs:bulk-update', async (pairs) => {
+      await this.adapter.savePairsBulk(pairs)
+    })
     this.store.on('pair:delete', (id) => {
       this.adapter.deletePair(id)
     })

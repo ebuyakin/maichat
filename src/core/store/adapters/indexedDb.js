@@ -36,6 +36,20 @@ export class IndexedDbAdapter {
       r.onerror = () => rej(r.error)
     })
   }
+  async savePairsBulk(pairs) {
+    await this.init()
+    await new Promise((res, rej) => {
+      const tx = this.db.transaction(PAIRS, 'readwrite')
+      const store = tx.objectStore(PAIRS)
+      
+      for (const pair of pairs) {
+        store.put(pair)
+      }
+      
+      tx.oncomplete = () => res()
+      tx.onerror = () => rej(tx.error)
+    })
+  }
   async deletePair(id) {
     await this.init()
     await new Promise((res, rej) => {

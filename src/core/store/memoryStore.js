@@ -169,6 +169,23 @@ export class MemoryStore {
     this.emitter.emit('pair:delete', id)
     return true
   }
+  bulkUpdatePairs(updates) {
+    const updatedPairs = []
+    
+    for (const { id, patch } of updates) {
+      const existing = this.pairs.get(id)
+      if (!existing) continue
+      
+      Object.assign(existing, patch)
+      updatedPairs.push(existing)
+    }
+    
+    if (updatedPairs.length > 0) {
+      this.emitter.emit('pairs:bulk-update', updatedPairs)
+    }
+    
+    return updatedPairs.length
+  }
   getAllPairs() {
     return Array.from(this.pairs.values())
   }

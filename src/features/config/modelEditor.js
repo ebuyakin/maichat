@@ -524,8 +524,6 @@ export function openModelEditor({ onClose, store }) {
         activeIndex = idx
         ensureVisible()
       }
-      // Focus first numeric input of the row in navigation mode (don't enter edit yet)
-      selectedCol = FIRST_NUMERIC_COL
       applyCellSelection()
     }
   })
@@ -628,6 +626,8 @@ export function openModelEditor({ onClose, store }) {
         }
         activeIndex = models.length
         selectedCol = 1 // name column
+        mode = 'edit'
+        updateModeBadge()
         render()
         applyCellSelection()
         const inp = ul.querySelector('li.me-row:last-child .me-name-input')

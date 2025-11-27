@@ -1,6 +1,7 @@
-## current tasks, notes and comments. scope for the next release.
+## current tasks, notes and comments. scope for 1.2.5.
 
-Next release focus - accurate context assembly, performance optimization, debugging/tracking tools/infrastructure via localStorage.
+### V1.2.5 roadmap 
+Accurate context assembly (focus on token usage counts for different scenarios - images, long context, assistant responses, thoughts), performance optimization, debugging/tracking tools/infrastructure via localStorage. Cleaning the code. Some refactoring to improve performance and maintainence. Specifically refactoring of the new message routine.
 
 ### Work approach, constraints:
 1. Adhere to the architectural principles of the app. Prior to any update make special in-depth analysis whether the suggested changes match / align with the existing architecture and do not violate separation of concerns, layered organization, code isolation, no-duplication, simplicity and transparency criteria.
@@ -8,128 +9,31 @@ Next release focus - accurate context assembly, performance optimization, debugg
 3. Performance is the core benefit of the app. Avoid any recommendations that may impact routine operation of the app. Specifically DOM mutations, heavy computations, indexedDB transactions, Network operations. Pay special attention to message history rendering and dynamic updates of the history view - they should be designed to minimize latency, ensure smooth and visually pleasing user experience with minimum distractions. No interface flickeging, flashing or vibrating is acceptable.
 4. Implement changes in small steps preferably with one file per edit changes. Coordinate steps with User and let User test intermediate step where appropriate and manage repository commits.
 
-### Raw problems:
-1. UI: context boundary rendering - via DOM mutation (performace impact). Marking of off-context messages (color dimming - to settings, badge)  
-2. Attachments - only included from the current request. Not all history
-3. Messages with variants marking
+### Raw problems & bugs (unsorted, non-prioritized):
+1. UI: context boundary rendering - via DOM mutation (performace impact). Marking of off-context messages (color dimming - to settings, badge)  [x]
+2. Attachments - only included from the current request. Not all history [x]
+3. Messages with variants marking [?]
 5. dbg_pipeline_presend - include: token coun (system, user, history), message_count, attachments count.
-6. swapping messages - swapping budget counts.
+6. swapping messages - swapping budget counts. - newMessage routine, big one! [x]
+7. AI is thinking to show [x]
+8. update in case of reAsk error - preserve existing answer [x]
+9. feature flag - instead of ctrl-G [x]
+10. sendNewMessage() - returns the value, none taken in inputKeys.js [x]
+11. clean pendingImages after send. [x]
+12. context budget. MessagePair structure supplementation. [x]
+13. duplication of hardcoded provider list (adapters vs providers) - single source of truth [~] deferred
+14. boundary update on pending model change [x]
+15. TotalTokens reported - store it to compare vs estimated. store both estimaterd total. [x]
+16. recalculation of the estimated budgets upon settings changes or algo changes.
+17. topic summary in activity stat.
+18. grok - web/twitter search. is twitter separate tool? [~]
+19. image icon - open overlay on click.
+20. f1 view mode - Ctrl_Shift_O - view draft images - view attached images
+21. gemini - citations in the assistant body [x]
+22. new model addition - doesn't work. [~]
+23. documentation update - architecutre.md, docs-inventory.md, changelog/readme
+24. base models list update (hardcoded)
+25. URA vs User assumed tokens
+26. max attempts hardcoded in newMessage (should be taken from settings)
 
-
-### Assistant initiation message:
-Project Next Phase. Can you use #codebase and #file:docs to review the project and give me a brief summary of its purpose, approah, and current state. Use #file:_docs-inventory.csv as your guide for the documentation. pay attention to documents marked Core. ignore legacy_docs completely.
-
-### renminders:
-- delete applyOutOfContextStyling() - it's replaced.
-
-
-### Architectural analysis / remarks
-
-const __core = initRuntimeCore()
-const { store, persistence, activeParts, pendingMessageMeta } = __core
-
-const __preloadedState = await preloadState(store, { loadHistoryCount: true })
-const appEl = document.querySelector('#app')
-appEl.innerHTML = buildAppHTML(__preloadedState)
-
-const __runtime = attachDomBindings(__core)
-const historyRuntime = createHistoryRuntime(__runtime)
-
-const {
-  layoutHistoryPane,
-  applySpacingStyles,
-  renderCurrentView,
-  applyActiveMessage,
-  renderStatus,
-} = historyRuntime
-
-renderCurrentView({ preserveActive: false })
-requestAnimationFrame(layoutHistoryPane)
-
-const interaction = createInteraction({
-  ctx: __runtime,
-  dom: { commandInput, commandErrEl, inputField, sendBtn, historyPaneEl },
-  historyRuntime,
-  requestDebug,
-  hudRuntime,
-})
-
-bootstrap({ ctx: __runtime, historyRuntime, interaction, loadingEl, skipPersistenceInit: true, skipInitialRender: true })
-
-
-{modeManager, __core, store, activeParts, __runtime, historyRuntime, renderCurrentView,interaction,__initialSettings,}
-
-
-
-User: t general <Enter>
-│
-├─ commandKeys: setFilterQuery('t general')
-│
-├─ historyRuntime.renderCurrentView()
-│  │
-│  ├─ Filter pairs: [all 100 pairs] → [20 "general" topic pairs]
-│  │
-│  ├─ boundaryMgr.updateVisiblePairs([20 pairs])
-│  ├─ boundaryMgr.setModel('gpt-4')
-│  ├─ boundaryMgr.applySettings({charsPerToken:4, URA:5000})
-│  │
-│  ├─ boundaryMgr.getBoundary()
-│  │  │
-│  │  └─ computeContextBoundary([20 pairs], {model, URA, cpt})
-│  │     │
-│  │     ├─ For each pair (newest→oldest):
-│  │     │  └─ estimatePairTokens(pair, 4, 'openai')
-│  │     │     ├─ userChars/4 + assistantChars/4
-│  │     │     └─ + imageBudgets[].tokenCost.openai
-│  │     │
-│  │     ├─ Sum until exceeds 123K budget
-│  │     └─ Return { included: [15 pairs], excluded: [5 pairs] }
-│  │
-│  ├─ Extract includedPairIds = Set{'pair-1', 'pair-2', ...}
-│  │
-│  └─ historyView.renderMessages({ pairs, includedPairIds })
-│     │
-│     └─ For each pair:
-│        ├─ Check includedPairIds.has(pair.id)
-│        ├─ Add class="ooc" if excluded
-│        ├─ Set data-included="0" if excluded
-│        └─ Add <span class="off-badge">off</span> if excluded
-│
-User sees: 15 normal messages + 5 dimmed "off" messages
-
-
-- dbg_local storage - add timestamp
-- model overload error ----
-
-
-# How the app operates:
-main.js
-const __core = initRuntimeCore() // __core is an object with 7 plain properties and 2 functions
-__runtime = attachDomBindings(__core) // add one extra property historyView (so it's 8+2)
-historyRuntime = createHistoryRuntime(__runtime)
-
-
-Bugs:
-AI is thinking to show [x]
-update in case of reAsk error - preserve existing answer [x]
-feature flag - instead of ctrl-G [x]
-sendNewMessage() - returns the value, none taken in inputKeys.js [x]
-clean pendingImages after send. [x]
-context budget. MessagePair structure supplementation. [x]
-duplication of provider list - single source of truth [~] deferred
-boundary update on pending model change [x]
-TotalTokens reported - store it to compare vs estimated. store both estimaterd total.
-recalculation of the estimated budgets  
-topic summary in activity stat.
-
-context budget summary in activity stat
-image icon - open overlay on click.
-f1 view mode - Ctrl_Shift_O - view draft images - view attached images
-gemini - citations in the assistant body
-new model addition - doesn't work.
-
-
-# budgeting system.
-- don't mix estimates and reports
-- total token cost per provider
 
