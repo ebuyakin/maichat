@@ -37,7 +37,7 @@ Accurate context assembly (focus on token usage counts for different scenarios -
 26. max attempts hardcoded in newMessage (should be taken from settings) [x]
 27. abort controller [x]
 28. Topic editor - remember expand/collapse state. [x]
-29. PDF printing of the conversation
+29. PDF printing of the conversation [x]
 30. Tutorial update: pdf printing, model list update.
 31. New shortcut: include in F1, tutorial and keyboard_navigation.md document.
-32. Size of the headers in the message history.
+32. Size of the headers in the message history. [x]
