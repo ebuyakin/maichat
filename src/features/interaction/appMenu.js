@@ -13,6 +13,7 @@ export function createAppMenuController({
     openTopicEditor,
     openModelEditor,
     openDailyStatsOverlay,
+    openPrintSettingsOverlay,
     openSettingsOverlay,
     openApiKeysOverlay,
     openHelpOverlay,
@@ -204,6 +205,8 @@ export function createAppMenuController({
       })
     } else if (action === 'daily-stats') {
       openDailyStatsOverlay({ store, activeParts, historyRuntime, modeManager })
+    } else if (action === 'export-pdf') {
+      openPrintSettingsOverlay({ store, activeParts, modeManager })
     } else if (action === 'settings') {
       const prev = modeManager.mode
       openSettingsOverlay({

@@ -8,6 +8,7 @@
 @import './components/input.css';
 @import './components/overlays.css';
 @import './components/config.css';
+@import './components/printSettings.css';
 @import './components/instrumentation.css';
 @import '../features/codeDisplay/codeOverlay.css';
 @import '../features/codeDisplay/equationOverlay.css';

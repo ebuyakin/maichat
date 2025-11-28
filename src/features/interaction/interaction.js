@@ -19,6 +19,7 @@ import { openTopicEditor } from '../topics/topicEditor.js'
 import { openSettingsOverlay } from '../config/settingsOverlay.js'
 import { openApiKeysOverlay } from '../config/apiKeysOverlay.js'
 import { openModelSelector } from '../config/modelSelector.js'
+import { openPrintSettingsOverlay } from '../export/pdf/printSettingsOverlay.js'
 import { openModelEditor } from '../config/modelEditor.js'
 import { openHelpOverlay } from '../config/helpOverlay.js'
 import { openDailyStatsOverlay } from '../config/stats/dailyStatsOverlay.js'
@@ -485,6 +486,7 @@ export function createInteraction({
       openTopicEditor,
       openModelEditor,
       openDailyStatsOverlay,
+      openPrintSettingsOverlay,
       openSettingsOverlay,
       openApiKeysOverlay,
       openHelpOverlay,
@@ -692,6 +694,9 @@ export function createInteraction({
     } else if (e.shiftKey && k === 'd') {
       e.preventDefault()
       openDailyStatsOverlay({ store, activeParts, historyRuntime, modeManager })
+    } else if (e.shiftKey && k === 'r') {
+      e.preventDefault()
+      openPrintSettingsOverlay({ store, activeParts, modeManager })
     } else if (k === 'd' && !e.shiftKey) {
       e.preventDefault()
       modeManager.set('command')
