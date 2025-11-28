@@ -7,7 +7,6 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   let filter = ''
   let flat = []
   let activeIndex = 0
-  let expanded = new Set()
   let markedTopicId = null
   let editing = null
   let warningTimeout = null
@@ -17,11 +16,26 @@ export function openTopicEditor({ store, onSelect, onClose }) {
   const previousActive = document.activeElement
 
   const rootId = store.rootTopicId
-  for (const id of store.children.get(null) || []) {
-    if (id === rootId) {
-      for (const cid of store.children.get(rootId) || []) expanded.add(cid)
-    } else {
-      expanded.add(id)
+  
+  // Restore saved expansion state or use default
+  const savedExpanded = getSettings().topicTreeExpandedNodes
+  let expanded = new Set()
+  
+  if (savedExpanded && Array.isArray(savedExpanded)) {
+    // Restore saved state, filtering out deleted topics
+    for (const id of savedExpanded) {
+      if (store.topics.has(id)) {
+        expanded.add(id)
+      }
+    }
+  } else {
+    // Default: expand root's children
+    for (const id of store.children.get(null) || []) {
+      if (id === rootId) {
+        for (const cid of store.children.get(rootId) || []) expanded.add(cid)
+      } else {
+        expanded.add(id)
+      }
     }
   }
 
@@ -844,6 +858,8 @@ export function openTopicEditor({ store, onSelect, onClose }) {
     } catch {}
     backdrop.removeEventListener('keydown', onKey)
     // nothing global to remove; central blocker detaches on modal close
+    // Save expansion state before closing
+    saveSettings({ topicTreeExpandedNodes: [...expanded] })
     modal.close('manual')
     if (onClose) onClose({ dirty: !!sessionDirty })
     try {

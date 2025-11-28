@@ -25,7 +25,7 @@ Accurate context assembly (focus on token usage counts for different scenarios -
 14. boundary update on pending model change [x]
 15. TotalTokens reported - store it to compare vs estimated. store both estimaterd total. [x]
 16. recalculation of the estimated budgets upon settings changes or algo changes. [x]
-17. topic summary in activity stat.
+17. topic summary in activity stat. [x]
 18. grok - web/twitter search. is twitter separate tool? [~]
 19. image icon - open overlay on click. [x]
 20. f1 view mode - Ctrl_Shift_O - view draft images - view attached images [x]

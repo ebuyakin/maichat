@@ -6,11 +6,28 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }) {
   let filter = ''
   let flat = []
   let activeIndex = 0
-  const expanded = new Set()
   const previousActive = document.activeElement
   let inTreeFocus = false
   const rootId = store.rootTopicId
-  for (const id of store.children.get(rootId) || []) expanded.add(id)
+  
+  // Restore saved expansion state or use default
+  const savedExpanded = getSettings().topicTreeExpandedNodes
+  const expanded = new Set()
+  
+  if (savedExpanded && Array.isArray(savedExpanded)) {
+    // Restore saved state, filtering out deleted topics
+    for (const id of savedExpanded) {
+      if (store.topics.has(id)) {
+        expanded.add(id)
+      }
+    }
+  } else {
+    // Default: expand root's children
+    for (const id of store.children.get(rootId) || []) {
+      expanded.add(id)
+    }
+  }
+  
   const rootEl = document.createElement('div')
   rootEl.className = 'topic-picker-backdrop'
   rootEl.innerHTML = `<div class="topic-picker"><input type="text" class="tp-search" placeholder="Search (Ctrl+J to tree)"/><div class="tp-tree" role="tree" tabindex="0"></div></div>`
@@ -300,6 +317,8 @@ export function createTopicPicker({ store, modeManager, onSelect, onCancel }) {
   
   const modal = openModal({ modeManager, root: rootEl, closeKeys: [], restoreMode: true })
   function teardown() {
+    // Save expansion state before closing
+    saveSettings({ topicTreeExpandedNodes: [...expanded] })
     modal.close('manual')
     if (previousActive && previousActive.focus) {
       try {
