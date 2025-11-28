@@ -172,7 +172,7 @@ Ready when you are — type your first request below and press Enter.`
 
 function seedWelcomeMessage(store, topicId) {
   const { userText, assistantText } = buildWelcomePair()
-  store.addMessagePair({ topicId, model: 'gpt-5-nano', userText, assistantText })
+  store.addMessagePair({ topicId, model: 'gpt-5-mini', userText, assistantText })
 }
 
 export function shouldRunInitialSeeding(store) {
@@ -188,8 +188,8 @@ export function runInitialSeeding({ store }) {
   if (!shouldRunInitialSeeding(store)) return false
   // Topics
   const ids = seedTopics(store) || {}
-  // Models: prefer gpt-5-nano as default
-  setActiveModel('gpt-5-nano')
+  // Models: prefer gpt-5-mini as default
+  setActiveModel('gpt-5-mini')
   // Welcome message under Daily talk if present, else General, else root
   // Place welcome message under General (fallback to root if missing)
   const topicId = ids.General || store.rootTopicId

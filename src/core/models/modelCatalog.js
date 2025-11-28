@@ -11,7 +11,7 @@ const STORAGE_KEY = 'maichat_model_catalog_v2'
  */
 export const SUPPORTED_PROVIDERS = ['openai', 'anthropic', 'google', 'xai']
 
-const BASE_MODELS = [
+export const BASE_MODELS = [
   // OpenAI models (Tier 1 limits)
   { 
     id: 'gpt-5.1', 

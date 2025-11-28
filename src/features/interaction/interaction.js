@@ -945,7 +945,7 @@ export function createInteraction({
     }
   }
   async function reAskInPlace(pairId, model) {
-    const USE_NEW_PIPELINE = localStorage.getItem('maichat_use_new_pipeline') === 'true'
+    const USE_NEW_PIPELINE = localStorage.getItem('maichat_use_new_pipeline') !== 'false'
     
     if (USE_NEW_PIPELINE) {
       // === NEW PIPELINE ===

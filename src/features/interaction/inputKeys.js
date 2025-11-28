@@ -407,7 +407,7 @@ export function createInputKeyHandler({
       e.preventDefault()
       
       // Check which pipeline is active
-      const USE_NEW_PIPELINE = localStorage.getItem('maichat_use_new_pipeline') === 'true'
+      const USE_NEW_PIPELINE = localStorage.getItem('maichat_use_new_pipeline') !== 'false'
       
       if (USE_NEW_PIPELINE) {
         // NEW PIPELINE: Use lifecycle abort
@@ -429,7 +429,7 @@ export function createInputKeyHandler({
     
     // NEW MESSAGE PIPELINE ================================================================
     if (e.key === 'Enter') { // SEND MESSAGE LAUNCH
-      const USE_NEW_PIPELINE = localStorage.getItem('maichat_use_new_pipeline') === 'true'
+      const USE_NEW_PIPELINE = localStorage.getItem('maichat_use_new_pipeline') !== 'false'
       
       if (USE_NEW_PIPELINE) {
         // === NEW PIPELINE ===

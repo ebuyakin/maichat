@@ -57,6 +57,7 @@ Direct (global) overrides (work in any mode, even when an input has focus):
 | Ctrl+; | Open API Keys overlay | Overlay (Edit) (restores prev mode) |
 | Ctrl+M | Open model selector (INPUT mode only; chooses pending message model) | Overlay (Selection) (restores prev mode) |
 | Ctrl+Shift+M | Open model editor (all modes) | Enable/disable models (j/k move · Space toggle · Enter/Esc close) (restores prev mode) |
+| Ctrl+Shift+R | Open PDF export settings | Export filtered history to PDF (restores prev mode) |
 | Ctrl+, | Open settings overlay | Adjust preferences (restores prev mode) |
 | Ctrl+. | Open menu | Mode preserved (will migrate to helper) |
 | F1 | Help overlay | Esc / F1 close (restores prev mode) |

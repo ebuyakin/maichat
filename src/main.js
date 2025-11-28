@@ -42,6 +42,7 @@ import { init as initImageStore } from './features/images/imageStore.js'
 import { registerInspector } from './instrumentation/inspector.js'
 import { preloadState } from './runtime/preloadState.js'
 import { buildAppHTML } from './runtime/appTemplate.js'
+import { runMigrations } from './runtime/appMigrations.js'
 
 // phase 01. add event listeners
 window.addEventListener('error', (e) => {
@@ -55,7 +56,10 @@ window.addEventListener('unhandledrejection', (e) => {
   } catch {}
 })
 
-// phase 02. Initialize storage subsystems that must be ready before interaction wiring
+// phase 02. Run migrations FIRST (before anything reads localStorage)
+runMigrations()
+
+// phase 02.5 Initialize storage subsystems that must be ready before interaction wiring
 try {
   await initImageStore()
 } catch (e) {

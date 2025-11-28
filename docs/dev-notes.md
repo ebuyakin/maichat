@@ -39,5 +39,9 @@ Accurate context assembly (focus on token usage counts for different scenarios -
 28. Topic editor - remember expand/collapse state. [x]
 29. PDF printing of the conversation [x]
 30. Tutorial update: pdf printing, model list update.
-31. New shortcut: include in F1, tutorial and keyboard_navigation.md document.
+31. New shortcut: include in F1, tutorial and keyboard_navigation.md document.[x]
 32. Size of the headers in the message history. [x]
+33. Types.js - update messagePair.[x]
+34. initial default model - change to gpt-5-mini [x]
+35. migration mechanism. [x]
+36. changelog, release preparation

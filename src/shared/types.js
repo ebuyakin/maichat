@@ -14,32 +14,17 @@
  *   // @param {import('./shared/types.js').MessagePair} pair
  */
 
+// Import type definitions from authoritative source
 /**
- * Message pair - fundamental unit of conversation history.
- * Stores user request + assistant response with metadata and token budgets.
- * 
- * @typedef {Object} MessagePair
- * @property {string} id - Unique pair identifier (UUID)
- * @property {string} topicId - Associated topic ID
- * @property {string} model - Model identifier used for response (e.g., 'gpt-4', 'gemini-2.0-flash-exp')
- * @property {number} createdAt - Unix timestamp (milliseconds)
- * 
- * @property {string} userText - User message text (raw)
- * @property {string} assistantText - Assistant response text (raw)
- * @property {number} userChars - Character count of user text (ground truth)
- * @property {number} assistantChars - Character count of assistant text (ground truth)
- * 
- * @property {number} [assistantProviderTokens] - Provider-reported token count (highest precedence)
- * @property {number} [textTokens] - Legacy heuristic token estimate (deprecated, read-only)
- * @property {number} [attachmentTokens] - Legacy total image token estimate (deprecated)
- * 
- * @property {Array<string>} [attachments] - Legacy: image IDs attached to user message
- * @property {Array<ImageBudget>} [imageBudgets] - Denormalized image metadata (preferred)
- * 
- * @property {string} [lifecycleState] - State: 'pending' | 'done' | 'error'
- * @property {string} [errorMessage] - Error details if lifecycleState is 'error'
- * @property {number} [star] - User rating (0-3)
- * @property {string} [colorFlag] - Color flag: 'b' (blue) | 'g' (green) | null
+ * @typedef {import('../core/models/messagePair.js').MessagePair} MessagePair
+ */
+
+/**
+ * @typedef {import('../core/models/messagePair.js').CodeBlock} CodeBlock
+ */
+
+/**
+ * @typedef {import('../core/models/messagePair.js').EquationBlock} EquationBlock
  */
 
 /**

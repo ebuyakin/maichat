@@ -10,6 +10,7 @@ import {
   deleteModel,
   renameModel,
   SUPPORTED_PROVIDERS,
+  BASE_MODELS,
 } from '../../core/models/modelCatalog.js'
 import { openModal } from '../../shared/openModal.js'
 
@@ -273,18 +274,7 @@ export function openModelEditor({ onClose, store }) {
   listContainer?.addEventListener('scroll', updateScrollHints)
 
   function isBaseModel(id) {
-    return [
-      'gpt-5',
-      'gpt-5-mini',
-      'gpt-5-nano',
-      'o4-mini',
-      'claude-sonnet-4-5-20250929',
-      'claude-opus-4-1-20250929',
-      'claude-3-5-haiku-20241022',
-      'gemini-2-5-pro',
-      'gemini-2-5-flash',
-      'gemini-2-0-flash',
-    ].includes(id)
+    return BASE_MODELS.some(m => m.id === id)
   }
   ul.addEventListener('click', (e) => {
     const li = e.target.closest('li.me-row')
