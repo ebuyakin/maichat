@@ -180,7 +180,7 @@ export function computeContextBoundaryNew(
   const includedSet = new Set(included)
   const excluded = orderedPairs.filter(p => !includedSet.has(p))
   
-  console.log('tokenEstimator: total tokens in context: ',totalTokens) // debug
+  //console.log('tokenEstimator: total tokens in context: ',totalTokens) // debug
   
   return {
     included,

@@ -63,10 +63,12 @@ Cross-cutting enablers
      7) Call `bootstrap()` with flags to skip duplicate init/render
 
  - Runtime (startup wiring)
+   - `src/runtime/appMigrations.js` — version‑based migrations; runs phase 02 (before localStorage reads); tracks `maichat_app_version`
    - `src/runtime/runtimeSetup.js` — two‑phase setup:
      - `initRuntimeCore()` builds the DOM‑independent container (store, indexes, persistence, boundaryMgr, lifecycle, pending meta)
      - `attachDomBindings(core)` runs after the template is in the DOM; attaches `historyView` and a real `scrollController`
      - `initRuntime()` remains as a back‑compat wrapper calling both
+   - `src/runtime/runtimeServices.js` — service locator; global access to core services (store, lifecycle, historyRuntime, etc.) without parameter drilling; used by newMessage pipeline
    - `src/runtime/preloadState.js` — reads settings/draft/pending meta (+ counts) for first paint and applies spacing CSS vars to avoid CLS
    - `src/runtime/appTemplate.js` — pure template builder for the initial DOM
    - `src/runtime/bootstrap.js` — post‑wiring startup (providers → optional persistence init → catalog ensure → optional seeding → filter restore → layout sizing). Flags: `skipPersistenceInit`, `skipInitialRender`.
@@ -81,14 +83,15 @@ Cross-cutting enablers
 - Features (user-facing capabilities)
   - History: `src/features/history/*` — render and layout of message parts; stateless one‑shot scrolling; partitioning; active‑part control; post‑send focus rules.
   - Helpers: `spacingStyles.js` sets `:root` CSS vars (`--gap-outer`, `--gap-meta`, `--gap-intra`, `--gap-between`, `--part-padding`, `--fade-transition-ms`); `fadeVisibility.js` applies fade opacity.
+  - NewMessage: `src/features/newMessage/*` — production send pipeline (v1.2.5+); cleaner retry/trim logic; SSE streaming; replaces `compose/pipeline.js`. See `docs/new-message-pipeline-implementation.md`. Flag: `maichat_use_new_pipeline` (default: true; set 'false' for legacy).
   - Interaction: `src/features/interaction/*` — mode FSM and mode‑aware key routing; bindings for navigation, stars/flags, topic/model actions, send, and overlay invocation.
     - `pointerModeSwitcher.js` — capture-phase mouse/touch mode switching based on `[data-mode]` zones; excluded while a modal is active. Routing runs at window-bubble and is guarded by `modalIsActive()`.
       - Colon commands: dispatched from Command Mode via the same input; confirmation overlays use standard modal classes; input retains only the filter after execution. See `docs/colon_commands_spec.md`.
   - Command: `src/features/command/*` — filter DSL pipeline (lexer → parser → evaluator); pure computation of visible message IDs.
-    - Export: `src/features/export/*` — file export of the current filtered selection via `:export` (JSON default, plus Markdown and Plain Text). Ordering: `time` (chronological) or `topic` (topic tree pre‑order). Serializers are pure; downloads use a small Blob helper.
+    - Export: `src/features/export/*` — file export via `:export` (JSON/MD/TXT) and PDF (`export/pdf/*`). Ordering: `time` or `topic`. Serializers pure; downloads use Blob helper.
   - Topics: `src/features/topics/*` — keyboard‑first topic picker and editor (CRUD/move); updates topic references in store.
-  - Compose: `src/features/compose/pipeline.js` — request assembly and send attempts with bounded trimming; integrates with provider registry.
-  - Config: `src/features/config/*` — settings overlay (spacing, reading position, etc.), model selector/editor, API keys, and help overlays.
+  - Compose: `src/features/compose/pipeline.js` — legacy send pipeline; being replaced by NewMessage.
+  - Config: `src/features/config/*` — settings overlay (spacing, reading position, etc.), model selector/editor, API keys, help overlays, activity stats.
 
 - Infrastructure (external boundaries)
   - `src/infrastructure/provider/*` — provider registry and adapters.
@@ -127,8 +130,8 @@ Cross-cutting enablers
 
 ## Core flows
 
-- Startup (single‑paint): `initRuntimeCore()` → `persistence.init()` → `preloadState()` → `buildAppHTML()` (render once) → `attachDomBindings()` → `createHistoryRuntime()` → `bootstrap()` (skip duplicate init/render; may apply stored filter)
-  - Spacing CSS vars are applied during preload; first paint uses final values (no CLS)
+- Startup (single‑paint): `runMigrations()` (phase 02) → `initRuntimeCore()` → `persistence.init()` → `preloadState()` → `buildAppHTML()` (render once) → `attachDomBindings()` → `createHistoryRuntime()` → `bootstrap()` (skip duplicate init/render; may apply stored filter)
+  - Migrations run before any localStorage reads; spacing CSS vars applied during preload; first paint uses final values (no CLS)
   - If a stored filter exists, `bootstrap()` may re‑render once to apply it (optional future: restore filter pre‑render)
 - Filtering: Enter in COMMAND → lexer/parser/evaluator → visible IDs → history render.
 - Navigation: j/k/arrows move active part; default Ensure‑Visible; optional Typewriter Regime centers on j/k; only middle pane scrolls.

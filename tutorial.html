@@ -786,6 +786,9 @@ html[data-page="tutorial"] th {
       <li class="nav-item">
         <a href="#export-data">Export Data</a>
       </li>
+      <li class="nav-item">
+        <a href="#print-to-pdf">Print to PDF</a>
+      </li>
     </ul>
   </li>
   <li class="nav-item has-children collapsed">
@@ -852,17 +855,17 @@ html[data-page="tutorial"] th {
         <ol>
         <li>Press <kbd>Ctrl+M</kbd> to open the model selector</li>
         <li>Browse the available models based on your API keys:<ul>
-        <li><strong>OpenAI</strong>: GPT-5, GPT-5 mini, GPT-5 nano, o4-mini</li>
-        <li><strong>Anthropic</strong>: Claude Sonnet 4.5, Claude Opus 4.1, Claude 3.5 Haiku</li>
-        <li><strong>Google</strong>: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite</li>
-        <li><strong>xAI</strong>: Grok-4-fast-non-reasoning, Grok-4-fast-reasoning, Grok-code-fast-1</li>
+        <li><strong>OpenAI</strong>: GPT-5.1, GPT-5 mini, GPT-5 nano</li>
+        <li><strong>Anthropic</strong>: Claude Sonnet 4-5, Claude Opus 4-5, Claude Haiku 4-5</li>
+        <li><strong>Google</strong>: Gemini 3 Pro Preview, Gemini 2.5 Pro, Gemini 2.5 Flash</li>
+        <li><strong>xAI</strong>: Grok-4-1-fast-non-reasoning, Grok-4-1-fast-reasoning, Grok-code-fast-1</li>
         </ul>
         </li>
         <li>Select a model and press <kbd>Enter</kbd></li>
         </ol>
         <p>The selected model will be used for all messages until you change it.</p>
         <blockquote>
-        <p><strong>Tip:</strong> Not sure which to choose? Start with GPT-5 nano (OpenAI), Claude Sonnet 4.5 (Anthropic), or Gemini 2.5 Flash-Lite (Google) — they&#39;re fast and cost-effective.</p>
+        <p><strong>Tip:</strong> Not sure which to choose? Start with GPT-5 mini (OpenAI), Claude Sonnet 4-5 (Anthropic), or Gemini 2.5 Flash (Google) — they&#39;re fast and cost-effective.</p>
         </blockquote>
         <h3 id="step-3-send-your-first-message">Step 3: Send your first message</h3>
         <p>You start in <strong>Input Mode</strong> with the cursor already in the message box.</p>
@@ -1012,8 +1015,9 @@ html[data-page="tutorial"] th {
         <p><strong>Managing messages:</strong></p>
         <ul>
         <li><kbd>Ctrl+T</kbd> — Change the topic of the active message</li>
-        <li><kbd>e</kbd> — Edit and resend (only works on error messages)</li>
-        <li><kbd>d</kbd> — Delete message (only works on error messages)</li>
+        <li><kbd>e</kbd> — Re-ask (re-send with different model) or Edit and resend (for error messages)</li>
+        <li><kbd>Shift+E</kbd> — Swap between current and previous assistant response (if re-asked)</li>
+        <li><kbd>w</kbd> — Delete message (only works on error messages)</li>
         </ul>
         <p><strong>Viewing images:</strong></p>
         <ul>
@@ -1034,6 +1038,8 @@ html[data-page="tutorial"] th {
         <li><kbd>Ctrl+C</kbd> — Cancel/Abort sending message</li>
         <li><kbd>Ctrl+M</kbd> — Open model selector</li>
         <li><kbd>Ctrl+T</kbd> — Open topic selector</li>
+        <li><kbd>Ctrl+F</kbd> — Open file picker to attach images</li>
+        <li><kbd>Ctrl+Shift+O</kbd> — View/manage attached images before sending</li>
         </ul>
         <p><strong>Emacs-style text editing:</strong></p>
         <ul>
@@ -1363,7 +1369,7 @@ html[data-page="tutorial"] th {
         <li>Searches both user requests and assistant responses</li>
         <li>Use <code>*</code> as wildcard: <code>c'*error*'</code></li>
         </ul>
-        <p><strong>Model:</strong> <code>m'gpt-4o-mini'</code></p>
+        <p><strong>Model:</strong> <code>m'gpt-5-mini'</code></p>
         <ul>
         <li>Filter by which model generated the response</li>
         <li>Wildcards supported: <code>m'gpt*'</code> matches all GPT models</li>
@@ -1476,7 +1482,7 @@ html[data-page="tutorial"] th {
         <p>Similar to topics, model filters support patterns:</p>
         <p><strong>Exact ID:</strong></p>
         <ul>
-        <li><code>m'gpt-4o'</code></li>
+        <li><code>m'gpt-5*'</code></li>
         <li><code>m'claude-3.5-sonnet'</code></li>
         </ul>
         <p><strong>Wildcards:</strong></p>
@@ -1490,9 +1496,9 @@ html[data-page="tutorial"] th {
         <li><kbd>m</kbd> — Use currently selected model from Input Mode</li>
         </ul>
         <p><strong>Common comparisons:</strong></p>
-        <pre><code>(m&#39;gpt-4*&#39; | m&#39;claude*&#39;) &amp; t&#39;Coding...&#39;
+        <pre><code>(m&#39;gpt-5*&#39; | m&#39;claude*&#39;) &amp; t&#39;Coding...&#39;
         </code></pre>
-        <p>Compare GPT-4 vs Claude on coding questions.</p>
+        <p>Compare GPT-5 vs Claude on coding questions.</p>
         <h3 id="date-filters">Date Filters</h3>
         <p>Dates are flexible and support both absolute and relative forms.</p>
         <p><strong>Absolute dates:</strong></p>
@@ -1538,7 +1544,7 @@ html[data-page="tutorial"] th {
         </code></pre>
         <p>Work messages containing both &quot;authentication&quot; and &quot;bug&quot;.</p>
         <p><strong>Compare model outputs on a topic:</strong></p>
-        <pre><code>(m&#39;gpt-4*&#39; | m&#39;claude*&#39;) &amp; t&#39;Writing...&#39;
+        <pre><code>(m&#39;gpt-5*&#39; | m&#39;claude*&#39;) &amp; t&#39;Writing...&#39;
         </code></pre>
         <p>See which model you used for writing tasks.</p>
         <p><strong>Recent conversations excluding archives:</strong></p>
@@ -1793,7 +1799,7 @@ html[data-page="tutorial"] th {
         <p>If your filtered history is very large (hundreds of messages) or you&#39;re using a small context model, MaiChat may need to trim older messages to fit the token limit. You&#39;ll see this happen and can:</p>
         <ul>
         <li>Apply a more restrictive filter to focus on what matters most</li>
-        <li>Switch to a larger context model (e.g., Claude 3.5 Sonnet with 200K tokens)</li>
+        <li>Switch to a larger context model (e.g., Claude Sonnet 4-5 with 200K tokens)</li>
         <li>Accept the automatic trimming (often the best choice — newest messages usually matter most)</li>
         </ul>
         <p>The key point: <strong>You see what gets sent</strong>. The app marks which messages are in-context, so there are no surprises.</p>
@@ -1855,8 +1861,8 @@ html[data-page="tutorial"] th {
         <p><strong>Model-dependent:</strong></p>
         <ul>
         <li>Each model has a different context window (tokens it can handle)</li>
-        <li>GPT-4o: 128K tokens</li>
-        <li>Claude 3.5 Sonnet: 200K tokens</li>
+        <li>GPT-5.1: 400K tokens</li>
+        <li>Claude Sonnet 4-5: 200K tokens</li>
         <li>Switching models changes the boundary!</li>
         </ul>
         <p><strong>Settings that affect context:</strong></p>
@@ -1916,7 +1922,7 @@ html[data-page="tutorial"] th {
         <p>Only highly-rated work messages.</p>
         <p><strong>Deep context for complex questions:</strong></p>
         <ol>
-        <li>Switch to Claude 3.5 Sonnet (200K context)</li>
+        <li>Switch to Claude Sonnet 4-5 (200K context)</li>
         <li>Filter to relevant topic: <code>t'Project X...'</code></li>
         <li>Check counter: <kbd>o</kbd> to see boundary</li>
         <li>Send complex question requiring lots of context</li>
@@ -2320,19 +2326,19 @@ html[data-page="tutorial"] th {
         <li><p><strong>OpenAI</strong> (ChatGPT models)</p>
         <ul>
         <li>Get your key at <a href="https://platform.openai.com/api-keys">platform.openai.com/api-keys</a></li>
-        <li>Models: GPT-5, GPT-5 mini, GPT-5 nano, o4-mini</li>
+        <li>Models: GPT-5.1, GPT-5 mini, GPT-5 nano</li>
         </ul>
         </li>
         <li><p><strong>Anthropic</strong> (Claude models)</p>
         <ul>
         <li>Get your key at <a href="https://console.anthropic.com">console.anthropic.com</a></li>
-        <li>Models: Claude Sonnet 4.5, Claude Opus 4.1, Claude 3.5 Haiku</li>
+        <li>Models: Claude Sonnet 4-5, Claude Opus 4-5, Claude Haiku 4-5</li>
         </ul>
         </li>
         <li><p><strong>Google</strong> (Gemini models)</p>
         <ul>
         <li>Get your key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a></li>
-        <li>Models: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite</li>
+        <li>Models: Gemini 3 Pro Preview, Gemini 2.5 Pro, Gemini 2.5 Flash</li>
         </ul>
         </li>
         <li><p><strong>xAI</strong> (Grok models)</p>
@@ -2360,7 +2366,7 @@ html[data-page="tutorial"] th {
         <p><strong>What you see:</strong></p>
         <p>A table showing all available models with:</p>
         <ul>
-        <li><strong>Model ID</strong> — The unique identifier (e.g., <code>gpt-5</code>, <code>claude-sonnet-4-5-20250929</code>)</li>
+        <li><strong>Model ID</strong> — The unique identifier (e.g., <code>gpt-5.1</code>, <code>claude-sonnet-4-5-20250929</code>)</li>
         <li><strong>Enabled</strong> — Whether the model appears in the model selector (<kbd>Ctrl+M</kbd>)</li>
         <li><strong>Context Window</strong> — Maximum tokens the model can handle</li>
         <li><strong>TPM/RPM/TPD</strong> — Tokens/Requests per Minute, Tokens per Day limits</li>
@@ -2368,31 +2374,21 @@ html[data-page="tutorial"] th {
         <p><strong>Model categories:</strong></p>
         <p><strong>High-performance models</strong> (expensive, powerful):</p>
         <ul>
-        <li>GPT-5 (OpenAI) — 128K context</li>
-        <li>Claude Opus 4.1 (Anthropic) — 200K context</li>
-        <li>Claude Sonnet 4.5 (Anthropic) — 200K context (1M beta)</li>
-        <li>Gemini 2.5 Pro (Google) — 2M context</li>
-        </ul>
-        <p><strong>Balanced models</strong> (mid-tier):</p>
-        <ul>
-        <li>GPT-5 mini (OpenAI) — 128K context</li>
-        <li>Gemini 2.5 Flash (Google) — 1M context</li>
+        <li>GPT-5.1 (OpenAI) — 400K context</li>
+        <li>Claude Opus 4-5 (Anthropic) — 200K context</li>
+        <li>Claude Sonnet 4-5 (Anthropic) — 200K context</li>
+        <li>Gemini 3 Pro Preview (Google) — 1M context</li>
+        <li>Gemini 2.5 Pro (Google) — 1M context</li>
+        <li>grok-4-1-fast-reasoning (xAI) — 2M context, fast inference with reasoning</li>
         </ul>
         <p><strong>Fast/economical models</strong> (cheap, quick):</p>
         <ul>
-        <li>GPT-5 nano (OpenAI) — 128K context</li>
-        <li>Claude 3.5 Haiku (Anthropic) — 200K context</li>
-        <li>Gemini 2.5 Flash-Lite (Google) — 1M context</li>
-        <li>grok-4-fast-non-reasoning (xAI) — Fast inference without extended reasoning</li>
-        </ul>
-        <p><strong>Reasoning models</strong> (specialized):</p>
-        <ul>
-        <li>o4-mini (OpenAI) — Extended thinking time</li>
-        <li>grok-4-fast-reasoning (xAI) — Fast inference with reasoning capabilities</li>
-        </ul>
-        <p><strong>Coding models</strong> (specialized):</p>
-        <ul>
-        <li>grok-code-fast-1 (xAI) — Optimized for code generation and analysis</li>
+        <li>GPT-5 mini (OpenAI) — 400K context</li>
+        <li>GPT-5 nano (OpenAI) — 400K context</li>
+        <li>Claude Haiku 4-5 (Anthropic) — 200K context</li>
+        <li>Gemini 2.5 Flash (Google) — 1M context</li>
+        <li>grok-4-1-fast-non-reasoning (xAI) — 2M context</li>
+        <li>grok-code-fast-1 (xAI) — 256K context, optimized for code</li>
         </ul>
         <h3 id="managing-models">Managing Models</h3>
         <p><strong>Enable/disable models:</strong></p>
@@ -2653,9 +2649,9 @@ html[data-page="tutorial"] th {
         </ul>
         <p><strong>Storage location:</strong> Settings, API keys, model catalog, and topic tree are stored in <strong>localStorage</strong>. Conversation history (message pairs) is stored in <strong>IndexedDB</strong> for better performance with large datasets.</p>
         <h3 id="activity-statistics">Activity Statistics</h3>
-        <p>View activity breakdown for your currently filtered conversations with two different perspectives: by date or by model.</p>
+        <p>View activity breakdown for your currently filtered conversations with three different perspectives: by date, by model, or by topic.</p>
         <p><strong>Access:</strong> Press <kbd>Ctrl+Shift+D</kbd> from any mode, or use menu (<kbd>Ctrl+.</kbd> → Activity Stats)</p>
-        <p><strong>Two tabs available:</strong></p>
+        <p><strong>Three tabs available:</strong></p>
         <p><strong>1. By Date tab:</strong></p>
         <ul>
         <li>Date-by-date message count breakdown</li>
@@ -2670,10 +2666,19 @@ html[data-page="tutorial"] th {
         <li>Includes median response time per model</li>
         <li>Sorted by usage count</li>
         </ul>
+        <p><strong>3. By Topic tab:</strong></p>
+        <ul>
+        <li>Hierarchical tree view of message counts per topic</li>
+        <li>Shows both direct (in topic) and total (including subtopics) counts</li>
+        <li>Collapsible/expandable tree structure</li>
+        <li>Only displays topics that have messages in the filtered view</li>
+        <li>Format: <code>Topic name (direct/total)</code></li>
+        </ul>
         <p><strong>Navigation:</strong></p>
         <ul>
         <li><strong>Switch tabs:</strong> Press <kbd>h</kbd> / <kbd>l</kbd> or <code>[</code> / <code>]</code> keys</li>
-        <li><strong>Navigate rows:</strong> Use <kbd>j</kbd> / <kbd>k</kbd> or arrow keys</li>
+        <li><strong>Navigate rows:</strong> Use <kbd>j</kbd> / <kbd>k</kbd> or arrow keys (in Date/Model tabs)</li>
+        <li><strong>Navigate tree:</strong> Use <kbd>j</kbd> / <kbd>k</kbd> to move, <kbd>Enter</kbd> or click to expand/collapse (in Topic tab)</li>
         <li><strong>Jump:</strong> <kbd>g</kbd> to top, <kbd>G</kbd> to bottom</li>
         <li><strong>Close:</strong> Press <kbd>Esc</kbd></li>
         </ul>
@@ -2682,19 +2687,21 @@ html[data-page="tutorial"] th {
         <li><strong>Respects current filter</strong> — Shows stats only for visible messages (filtered set)</li>
         <li><strong>Response times</strong> — Median time gives you sense of model speed and API performance</li>
         <li><strong>Context-aware</strong> — Filter to a topic first, then check stats for that topic only</li>
+        <li><strong>Topic hierarchy</strong> — By Topic tab preserves your topic tree structure</li>
         </ul>
         <p><strong>Use cases:</strong></p>
         <ul>
-        <li>Quick activity overview across time or models</li>
+        <li>Quick activity overview across time, models, or topics</li>
         <li>Compare model performance (speed) side-by-side</li>
+        <li>See message distribution across your topic tree</li>
         <li>Verify filter is working as expected</li>
-        <li>Identify usage patterns (which models for which topics)</li>
+        <li>Identify usage patterns (which models for which topics, which topics are most active)</li>
         <li>See which days or models had slower responses</li>
         </ul>
         <p><strong>What it&#39;s NOT:</strong></p>
         <ul>
         <li>Not a cost tracker (no pricing/spending data)</li>
-        <li>Not exportable (shows only current data in overlay</li>
+        <li>Not exportable (shows only current data in overlay)</li>
         <li>Not historical in the sense of trends over time</li>
         </ul>
         <p><strong>Note:</strong> Data comes from IndexedDB (where conversation history is stored). Clearing browser data will delete this history.</p>
@@ -2840,6 +2847,66 @@ html[data-page="tutorial"] th {
         <li><strong>Use Markdown for sharing</strong> — Most readable for others</li>
         <li><strong>Check your filter</strong> — Verify message count before exporting</li>
         </ul>
+        <h3 id="print-to-pdf">Print to PDF</h3>
+        <p>Export conversations as professionally formatted PDF documents for printing, archiving, or sharing.</p>
+        <p><strong>How to access:</strong></p>
+        <ol>
+        <li>Press <kbd>Ctrl+Shift+R</kbd> (or open menu with <kbd>Ctrl+.</kbd> and select &quot;Export to PDF&quot;)</li>
+        <li>Configure formatting options in the dialog</li>
+        <li>Click &quot;Generate PDF&quot; to open print preview</li>
+        <li>Print or save as PDF from your browser&#39;s print dialog</li>
+        </ol>
+        <p><strong>Formatting options:</strong></p>
+        <p><strong>Typography:</strong></p>
+        <ul>
+        <li><strong>Font size</strong> — 10pt, 11pt (default), or 12pt for body text</li>
+        <li><strong>Code font size</strong> — 9pt (default), 10pt, or 11pt for code blocks</li>
+        <li><strong>Line spacing</strong> — 1.4, 1.6 (default), or 1.8 for readability</li>
+        </ul>
+        <p><strong>Layout:</strong></p>
+        <ul>
+        <li><strong>Orientation</strong> — Portrait (default) or Landscape</li>
+        <li><strong>Paper size</strong> — Determined by browser print settings (A4, Letter, etc.)</li>
+        </ul>
+        <p><strong>Metadata:</strong></p>
+        <ul>
+        <li><strong>Include topic name</strong> — Show topic path in header (default: on)</li>
+        <li><strong>Include date</strong> — Show export date in header (default: on)</li>
+        <li><strong>Include message count</strong> — Show number of messages in header (default: on)</li>
+        <li><strong>Custom title</strong> — Optional custom title for the document</li>
+        </ul>
+        <p><strong>Settings:</strong></p>
+        <ul>
+        <li><strong>Auto-open print dialog</strong> — Automatically open print preview after generation (default: off)</li>
+        <li><strong>Remember settings</strong> — Save preferences for next export (default: on)</li>
+        </ul>
+        <p><strong>What gets included:</strong></p>
+        <p>✓ Filtered message pairs (user + assistant)<br>✓ Topic paths and timestamps<br>✓ Code blocks with syntax preservation<br>✓ Message metadata (model, ratings)<br>✓ Formatted equations and markdown</p>
+        <p><strong>What does NOT get included:</strong></p>
+        <p>✗ Images (attachments are omitted in PDF)<br>✗ Interactive elements<br>✗ Error states or pending messages<br>✗ Off-context markers</p>
+        <p><strong>Tips:</strong></p>
+        <ul>
+        <li><strong>Filter first</strong> — Use Command Mode filters to select specific conversations before exporting</li>
+        <li><strong>Preview before printing</strong> — Check formatting in print preview</li>
+        <li><strong>Use landscape for code-heavy content</strong> — Better fit for wide code blocks</li>
+        <li><strong>Adjust font sizes</strong> — Smaller fonts fit more content per page</li>
+        <li><strong>Save as PDF</strong> — Use browser&#39;s &quot;Save as PDF&quot; option instead of printing to paper</li>
+        </ul>
+        <p><strong>Example workflow:</strong></p>
+        <pre><code># 1. Filter to specific topic
+        Ctrl+D → t&#39;Python Debugging...&#39; → Enter
+
+        # 2. Open PDF export
+        Ctrl+P
+
+        # 3. Configure
+        - Font: 11pt
+        - Orientation: Landscape
+        - Include metadata: Yes
+
+        # 4. Generate and save
+        Click &quot;Generate PDF&quot; → Save as PDF
+        </code></pre>
       </section>
 
       <section id="errors">

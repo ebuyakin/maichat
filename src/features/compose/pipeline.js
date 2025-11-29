@@ -71,7 +71,7 @@ export function buildMessages({ includedPairs, newUserText, newUserAttachments =
       ...(newUserAttachments.length > 0 && { attachments: newUserAttachments })
     })
   }
-  console.log('pipeline messages: ',msgs) // debug?
+  // console.log('pipeline messages: ',msgs) // debug?
   return /** @type {Message[]} */ (msgs)
 }
 

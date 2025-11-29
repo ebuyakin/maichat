@@ -5,6 +5,63 @@ All notable changes to MaiChat will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2025-11-29
+
+### Added
+
+#### New Message Pipeline
+- Modern send architecture with improved token estimation (per-provider image costs, foundation for future provider-specific tokenizers)
+- Cleaner retry/trim logic with better error handling
+- Enhanced SSE streaming support
+- Service locator pattern for cleaner dependencies
+- Controlled via `maichat_use_new_pipeline` localStorage flag (default: enabled)
+
+#### PDF Export
+- Export conversations to formatted PDF (`Ctrl+Shift+R`)
+- Configurable typography, layout, and metadata
+- Settings persistence with auto-open option
+
+#### Activity Statistics
+- "By Topic" tab with hierarchical message distribution
+- Direct and total (including subtopics) counts per topic
+- Collapsible topic tree view
+
+#### App Versioning
+- Version tracking and automated migrations system
+- Handles settings and data structure evolution across releases
+
+### Changed
+
+#### Model Catalog Updates
+- OpenAI: gpt-5.1, gpt-5-mini, gpt-5-nano (400K context)
+- Anthropic: claude-sonnet/opus/haiku-4-5 series (200K context)
+- Google: gemini-3-pro-preview, gemini-2.5-pro/flash (1M context)
+- xAI: grok-4-1-* series (2M context)
+- Removed deprecated models (o4-mini, older Claude 3.5/Gemini versions)
+
+#### UI Improvements
+- Model Editor redesigned for improved navigation and new model creation
+- Topic tree expand/collapse state now persists across sessions
+- Adjusted heading sizes in message history for better visual hierarchy
+
+### Fixed
+- Context boundary rendering now uses CSS classes instead of DOM mutations (performance improvement)
+- Image attachments now correctly included from full history, not just current request
+- Budget calculations preserved when swapping response variants
+- Pending draft images properly cleared after message send
+- Context boundary updates when pending model changes
+- Re-ask errors now preserve existing assistant response
+- Abort controller properly integrated in send pipeline
+- Message pair structure now stores both estimated and actual token usage for accuracy tracking
+- Default model changed to gpt-5-mini (was gpt-5-nano)
+
+### Internal
+- Performance analysis identified DOM manipulation as primary rendering bottleneck
+- Legacy compose pipeline retained for backward compatibility
+- Debug console statements cleanup
+
+---
+
 ## [1.2.0] - 2025-11-07
 
 ### Added

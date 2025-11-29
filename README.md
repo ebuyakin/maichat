@@ -23,7 +23,7 @@ Deploy your own instance:
   <br>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-  [![Version](https://img.shields.io/badge/version-1.2.0-green.svg)](CHANGELOG.md)
+  [![Version](https://img.shields.io/badge/version-1.2.5-green.svg)](CHANGELOG.md)
   
 </div>
 
@@ -35,10 +35,11 @@ Deploy your own instance:
 - **⌨️ Keyboard-Centric Workflow** - Vim-inspired modal interface (Input/View/Command), zero mouse required
 - **🔍 Powerful Search & Filtering** - CLI-style query language with boolean operators, filter by topic/model/date/content/rating
 - **🎯 Context Control** - Visual context boundary, precise token management, filter before sending
-- **🤖 Multi-Model Support** - OpenAI (GPT‑5 family), Anthropic Claude (latest 4.x), Google Gemini 2.x, xAI Grok 4 – all in one interface
-- **🖼️ Image Attachments** - Send screenshots and images to vision-capable models (GPT-4o, Claude 3.5, Gemini, Grok)
+- **🤖 Multi-Model Support** - OpenAI (GPT-5.1/mini/nano), Anthropic Claude 4-5, Google Gemini 3/2.5, xAI Grok 4-1 – all in one interface
+- **🖼️ Image Attachments** - Send screenshots and images to vision-capable models (GPT-5, Claude, Gemini, Grok)
 - **🌐 Web Search** - Native search integration for all providers with citations
-- **📊 Activity Statistics** - Track usage by date and model with response time analytics
+- **📊 Activity Statistics** - Track usage by date, model, and topic with response time analytics
+- **📄 PDF Export** - Export conversations to formatted PDF with customizable layout
 - **🔒 Privacy First** - 100% client-side, all data stored locally, no backend, open source (MIT)
 A keyboard-first, minimal, client-side app for organizing and running conversations with multiple LLMs in one unified interface.
 
@@ -137,10 +138,10 @@ npm run tutorial:watch
 - **Multi-model** - compare context sizes across different models
 
 ### Multi-Model Support
-- **OpenAI:** GPT‑5, GPT‑5 mini, GPT‑5 nano, o4‑mini
-- **Anthropic:** Claude Sonnet 4.5, Claude Opus 4.1, Claude Haiku 4.5
-- **Google:** Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.0 Flash
-- **xAI:** Grok 4 Fast (reasoning & non‑reasoning), Grok Code Fast 1
+- **OpenAI:** GPT-5.1, GPT-5 mini, GPT-5 nano (400K context)
+- **Anthropic:** Claude Sonnet 4-5, Claude Opus 4-5, Claude Haiku 4-5 (200K context)
+- **Google:** Gemini 3 Pro Preview, Gemini 2.5 Pro, Gemini 2.5 Flash (1M context)
+- **xAI:** Grok 4-1 Fast (reasoning & non-reasoning), Grok Code Fast 1 (2M context)
 - Easy model switching, per-topic defaults
 
 ## 🗂️ Project Structure

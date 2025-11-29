@@ -440,7 +440,7 @@ export function openSettingsOverlay({ onClose, store }) {
         
         // Recalculate
         const count = await recalculateAllTokenEstimates(store, newValue)
-        console.log(`Recalculated ${count} message pairs with CPT=${newValue}`)
+        // console.log(`Recalculated ${count} message pairs with CPT=${newValue}`) // debug
         
         // Update baseline so it won't trigger again
         baseline.charsPerToken = newValue

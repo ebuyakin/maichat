@@ -1,15 +1,14 @@
 Filename                                     , Last Modified       , Type    , Status
-ARCHITECTURE.md                              , 2025-11-01 17:36    , Core    , Effective
-_action-plan-template.md                     , 2025-11-15 19:00    , Template, Effective
-_style-guide.md                              , 2025-11-15 19:00    , Core    , Effective
+ARCHITECTURE.md                              , 2025-11-29 12:06    , Core    , Effective
+_action-plan-template.md                     , 2025-11-12 12:32    , Template, Effective
+_style-guide.md                              , 2025-11-18 17:35    , Core    , Effective
 adapters-overview.md                         , 2025-10-24 14:50    , Analysis, Effective
 assistant-styling-experiments.md             , 2025-11-06 20:53    , Analysis, Draft
-bug-response-not-rendered-while-typing.md    , 2025-11-15 18:30    , Analysis, Effective
 cli_filtering_language.md                    , 2025-10-29 16:45    , Core    , Effective
 colon_commands_spec.md                       , 2025-10-29 16:47    , Core    , Effective
 context-boundary-analysis.md                 , 2025-11-08 17:55    , Analysis, Draft
-context-boundary-and-image-budgeting.md      , 2025-11-15 19:00    , Analysis, Active
-dev-notes.md                                 , 2025-11-15 17:00    , Analysis, Effective
+context-boundary-and-image-budgeting.md      , 2025-11-16 14:23    , Analysis, Effective
+dev-notes.md                                 , 2025-11-28 21:51    , Analysis, Effective
 focus_management.md                          , 2025-09-15 16:47    , Core    , Effective
 font-and-background-styling-investigation.md , 2025-11-04 14:20    , Analysis, Draft
 gemini_integration_spec.md                   , 2025-10-11 11:09    , Spec    , Effective
@@ -20,23 +19,30 @@ history_navigation_redesign.md               , 2025-10-24 12:02    , Spec    , E
 image_messages_spec.md                       , 2025-10-27 13:20    , Spec    , Effective
 initial_load_flow_diagram.md                 , 2025-10-17 12:41    , Analysis, Effective
 inline_content_rendering.md                  , 2025-10-24 19:36    , Spec    , Effective
-keyboard_reference.md                        , 2025-11-05 18:36    , Core    , Effective
+keyboard_reference.md                        , 2025-11-28 17:18    , Core    , Effective
 m24_multiple_providers.md                    , 2025-09-22 11:04    , Spec    , Effective
 markdown-math-code-rendering-investigation.md, 2025-11-01 21:21    , Analysis, Effective
 message_delete_and_images_refactoring.md     , 2025-10-31 16:34    , Spec    , Effective
 message_rendering_pipeline.md                , 2025-11-04 13:13    , Analysis, Effective
 messages_with_code_snippets.md               , 2025-10-24 12:04    , Spec    , Effective
 model_catalogue.md                           , 2025-10-14 09:51    , Spec    , Effective
-new_message_workflow.md                      , 2025-09-13 18:57    , Core    , Effective
+new-message-pipeline-implementation.md       , 2025-11-28 21:27    , Spec    , Effective
+new-message-routine.md                       , 2025-11-25 09:43    , Analysis, Effective
+new_message_workflow.md                      , 2025-09-13 18:57    , Core    , Superseded
 overlays.md                                  , 2025-09-17 18:21    , Spec    , Effective
 project_vision.md                            , 2025-09-13 13:56    , Core    , Effective
+renderCurrentView-performance-analysis.md    , 2025-11-29 11:00    , Analysis, Effective
 rendering_enhancement_refactoring.md         , 2025-10-15 13:48    , Spec    , Effective
 response_variants_spec.md                    , 2025-11-05 18:42    , Spec    , Effective
 scroll_alignment_investigation.md            , 2025-10-08 12:08    , Analysis, Effective
 scroll_alignment_refactoring.md              , 2025-10-11 13:17    , Spec    , Effective
 scroll_positioning_spec.md                   , 2025-09-22 12:18    , Spec    , Superseded
 scrolling_patterns.md                        , 2025-10-05 16:48    , Analysis, Effective
-send-message-architecture.md                 , 2025-11-15 17:45    , Analysis, Effective
+send-message-architecture-redesign.md        , 2025-11-16 15:27    , Analysis, Effective
+send-message-architecture.md                 , 2025-11-15 17:02    , Analysis, Effective
+send-message-dependency-trace.md             , 2025-11-16 14:19    , Analysis, Effective
+send-message-input-specification.md          , 2025-11-16 14:10    , Spec    , Effective
+send-request-flow-analysis.md                , 2025-11-16 13:49    , Analysis, Effective
 settings-render-actions-analysis.md          , 2025-11-04 17:24    , Analysis, Draft
 settings_refactoring.md                      , 2025-10-10 13:42    , Spec    , Effective
 timeout_abort_spec.md                        , 2025-10-17 12:05    , Spec    , Effective

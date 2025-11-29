@@ -28,15 +28,15 @@ Before sending your first message, select which AI model to use:
 
 1. Press `Ctrl+M` to open the model selector
 2. Browse the available models based on your API keys:
-   - **OpenAI**: GPT-5, GPT-5 mini, GPT-5 nano, o4-mini
-   - **Anthropic**: Claude Sonnet 4.5, Claude Opus 4.1, Claude 3.5 Haiku
-   - **Google**: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite
-   - **xAI**: Grok-4-fast-non-reasoning, Grok-4-fast-reasoning, Grok-code-fast-1
+   - **OpenAI**: GPT-5.1, GPT-5 mini, GPT-5 nano
+   - **Anthropic**: Claude Sonnet 4-5, Claude Opus 4-5, Claude Haiku 4-5
+   - **Google**: Gemini 3 Pro Preview, Gemini 2.5 Pro, Gemini 2.5 Flash
+   - **xAI**: Grok-4-1-fast-non-reasoning, Grok-4-1-fast-reasoning, Grok-code-fast-1
 3. Select a model and press `Enter`
 
 The selected model will be used for all messages until you change it.
 
-> **Tip:** Not sure which to choose? Start with GPT-5 nano (OpenAI), Claude Sonnet 4.5 (Anthropic), or Gemini 2.5 Flash-Lite (Google) — they're fast and cost-effective.
+> **Tip:** Not sure which to choose? Start with GPT-5 mini (OpenAI), Claude Sonnet 4-5 (Anthropic), or Gemini 2.5 Flash (Google) — they're fast and cost-effective.
 
 ### Step 3: Send your first message
 
@@ -186,8 +186,9 @@ Beyond navigation, View Mode lets you manage your messages:
 
 **Managing messages:**
 - `Ctrl+T` — Change the topic of the active message
-- `e` — Edit and resend (only works on error messages)
-- `d` — Delete message (only works on error messages)
+- `e` — Re-ask (re-send with different model) or Edit and resend (for error messages)
+- `Shift+E` — Swap between current and previous assistant response (if re-asked)
+- `w` — Delete message (only works on error messages)
 
 **Viewing images:**
 - `i` — View image(s) in active message (opens immediately for single image)
@@ -207,6 +208,8 @@ When composing messages, these editing shortcuts speed up your workflow:
 - `Ctrl+C` — Cancel/Abort sending message
 - `Ctrl+M` — Open model selector
 - `Ctrl+T` — Open topic selector
+- `Ctrl+F` — Open file picker to attach images
+- `Ctrl+Shift+O` — View/manage attached images before sending
 
 **Emacs-style text editing:**
 - `Ctrl+A` — Move cursor to start of line
@@ -555,7 +558,7 @@ Each filter targets a specific attribute of your message pairs (user request + a
 - Searches both user requests and assistant responses
 - Use `*` as wildcard: `c'*error*'`
 
-**Model:** `m'gpt-4o-mini'`
+**Model:** `m'gpt-5-mini'`
 - Filter by which model generated the response
 - Wildcards supported: `m'gpt*'` matches all GPT models
 - Bare `m` (no quotes) uses your currently selected model
@@ -675,7 +678,7 @@ Topics support powerful pattern matching:
 Similar to topics, model filters support patterns:
 
 **Exact ID:**
-- `m'gpt-4o'`
+- `m'gpt-5*'`
 - `m'claude-3.5-sonnet'`
 
 **Wildcards:**
@@ -688,9 +691,9 @@ Similar to topics, model filters support patterns:
 
 **Common comparisons:**
 ```
-(m'gpt-4*' | m'claude*') & t'Coding...'
+(m'gpt-5*' | m'claude*') & t'Coding...'
 ```
-Compare GPT-4 vs Claude on coding questions.
+Compare GPT-5 vs Claude on coding questions.
 
 ### Date Filters
 
@@ -750,7 +753,7 @@ Work messages containing both "authentication" and "bug".
 
 **Compare model outputs on a topic:**
 ```
-(m'gpt-4*' | m'claude*') & t'Writing...'
+(m'gpt-5*' | m'claude*') & t'Writing...'
 ```
 See which model you used for writing tasks.
 
@@ -1037,7 +1040,7 @@ In most cases, your filtered history will **fit completely** into the context. F
 
 If your filtered history is very large (hundreds of messages) or you're using a small context model, MaiChat may need to trim older messages to fit the token limit. You'll see this happen and can:
 - Apply a more restrictive filter to focus on what matters most
-- Switch to a larger context model (e.g., Claude 3.5 Sonnet with 200K tokens)
+- Switch to a larger context model (e.g., Claude Sonnet 4-5 with 200K tokens)
 - Accept the automatic trimming (often the best choice — newest messages usually matter most)
 
 The key point: **You see what gets sent**. The app marks which messages are in-context, so there are no surprises.
@@ -1104,8 +1107,8 @@ MaiChat uses a **prediction algorithm** before you send:
 
 **Model-dependent:**
 - Each model has a different context window (tokens it can handle)
-- GPT-4o: 128K tokens
-- Claude 3.5 Sonnet: 200K tokens
+- GPT-5.1: 400K tokens
+- Claude Sonnet 4-5: 200K tokens
 - Switching models changes the boundary!
 
 **Settings that affect context:**
@@ -1178,7 +1181,7 @@ s>=2 & t'Work...'
 Only highly-rated work messages.
 
 **Deep context for complex questions:**
-1. Switch to Claude 3.5 Sonnet (200K context)
+1. Switch to Claude Sonnet 4-5 (200K context)
 2. Filter to relevant topic: `t'Project X...'`
 3. Check counter: `o` to see boundary
 4. Send complex question requiring lots of context
@@ -1572,15 +1575,15 @@ MaiChat supports four major AI providers. You need at least one API key to use t
 
 1. **OpenAI** (ChatGPT models)
    - Get your key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-   - Models: GPT-5, GPT-5 mini, GPT-5 nano, o4-mini
+   - Models: GPT-5.1, GPT-5 mini, GPT-5 nano
    
 2. **Anthropic** (Claude models)
    - Get your key at [console.anthropic.com](https://console.anthropic.com)
-   - Models: Claude Sonnet 4.5, Claude Opus 4.1, Claude 3.5 Haiku
+   - Models: Claude Sonnet 4-5, Claude Opus 4-5, Claude Haiku 4-5
    
 3. **Google** (Gemini models)
    - Get your key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-   - Models: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite
+   - Models: Gemini 3 Pro Preview, Gemini 2.5 Pro, Gemini 2.5 Flash
 
 4. **xAI** (Grok models)
    - Get your key at [console.x.ai](https://console.x.ai)
@@ -1605,7 +1608,7 @@ MaiChat comes with a pre-configured catalog of popular models. You can enable/di
 **What you see:**
 
 A table showing all available models with:
-- **Model ID** — The unique identifier (e.g., `gpt-5`, `claude-sonnet-4-5-20250929`)
+- **Model ID** — The unique identifier (e.g., `gpt-5.1`, `claude-sonnet-4-5-20250929`)
 - **Enabled** — Whether the model appears in the model selector (`Ctrl+M`)
 - **Context Window** — Maximum tokens the model can handle
 - **TPM/RPM/TPD** — Tokens/Requests per Minute, Tokens per Day limits
@@ -1613,27 +1616,20 @@ A table showing all available models with:
 **Model categories:**
 
 **High-performance models** (expensive, powerful):
-- GPT-5 (OpenAI) — 128K context
-- Claude Opus 4.1 (Anthropic) — 200K context
-- Claude Sonnet 4.5 (Anthropic) — 200K context (1M beta)
-- Gemini 2.5 Pro (Google) — 2M context
-
-**Balanced models** (mid-tier):
-- GPT-5 mini (OpenAI) — 128K context
-- Gemini 2.5 Flash (Google) — 1M context
+- GPT-5.1 (OpenAI) — 400K context
+- Claude Opus 4-5 (Anthropic) — 200K context
+- Claude Sonnet 4-5 (Anthropic) — 200K context
+- Gemini 3 Pro Preview (Google) — 1M context
+- Gemini 2.5 Pro (Google) — 1M context
+- grok-4-1-fast-reasoning (xAI) — 2M context, fast inference with reasoning
 
 **Fast/economical models** (cheap, quick):
-- GPT-5 nano (OpenAI) — 128K context
-- Claude 3.5 Haiku (Anthropic) — 200K context
-- Gemini 2.5 Flash-Lite (Google) — 1M context
-- grok-4-fast-non-reasoning (xAI) — Fast inference without extended reasoning
-
-**Reasoning models** (specialized):
-- o4-mini (OpenAI) — Extended thinking time
-- grok-4-fast-reasoning (xAI) — Fast inference with reasoning capabilities
-
-**Coding models** (specialized):
-- grok-code-fast-1 (xAI) — Optimized for code generation and analysis
+- GPT-5 mini (OpenAI) — 400K context
+- GPT-5 nano (OpenAI) — 400K context
+- Claude Haiku 4-5 (Anthropic) — 200K context
+- Gemini 2.5 Flash (Google) — 1M context
+- grok-4-1-fast-non-reasoning (xAI) — 2M context
+- grok-code-fast-1 (xAI) — 256K context, optimized for code
 
 ### Managing Models
 
@@ -1888,11 +1884,11 @@ Configure app-wide behavior and appearance through the Settings panel.
 
 ### Activity Statistics
 
-View activity breakdown for your currently filtered conversations with two different perspectives: by date or by model.
+View activity breakdown for your currently filtered conversations with three different perspectives: by date, by model, or by topic.
 
 **Access:** Press `Ctrl+Shift+D` from any mode, or use menu (`Ctrl+.` → Activity Stats)
 
-**Two tabs available:**
+**Three tabs available:**
 
 **1. By Date tab:**
 - Date-by-date message count breakdown
@@ -1906,9 +1902,17 @@ View activity breakdown for your currently filtered conversations with two diffe
 - Includes median response time per model
 - Sorted by usage count
 
+**3. By Topic tab:**
+- Hierarchical tree view of message counts per topic
+- Shows both direct (in topic) and total (including subtopics) counts
+- Collapsible/expandable tree structure
+- Only displays topics that have messages in the filtered view
+- Format: `Topic name (direct/total)`
+
 **Navigation:**
 - **Switch tabs:** Press `h` / `l` or `[` / `]` keys
-- **Navigate rows:** Use `j` / `k` or arrow keys
+- **Navigate rows:** Use `j` / `k` or arrow keys (in Date/Model tabs)
+- **Navigate tree:** Use `j` / `k` to move, `Enter` or click to expand/collapse (in Topic tab)
 - **Jump:** `g` to top, `G` to bottom
 - **Close:** Press `Esc`
 
@@ -1916,17 +1920,19 @@ View activity breakdown for your currently filtered conversations with two diffe
 - **Respects current filter** — Shows stats only for visible messages (filtered set)
 - **Response times** — Median time gives you sense of model speed and API performance
 - **Context-aware** — Filter to a topic first, then check stats for that topic only
+- **Topic hierarchy** — By Topic tab preserves your topic tree structure
 
 **Use cases:**
-- Quick activity overview across time or models
+- Quick activity overview across time, models, or topics
 - Compare model performance (speed) side-by-side
+- See message distribution across your topic tree
 - Verify filter is working as expected
-- Identify usage patterns (which models for which topics)
+- Identify usage patterns (which models for which topics, which topics are most active)
 - See which days or models had slower responses
 
 **What it's NOT:**
 - Not a cost tracker (no pricing/spending data)
-- Not exportable (shows only current data in overlay
+- Not exportable (shows only current data in overlay)
 - Not historical in the sense of trends over time
 
 **Note:** Data comes from IndexedDB (where conversation history is stored). Clearing browser data will delete this history.
@@ -2080,6 +2086,79 @@ d<30 & s>=2 :export
 - **Use JSON for backups** — Most complete format
 - **Use Markdown for sharing** — Most readable for others
 - **Check your filter** — Verify message count before exporting
+
+### Print to PDF
+
+Export conversations as professionally formatted PDF documents for printing, archiving, or sharing.
+
+**How to access:**
+
+1. Press `Ctrl+Shift+R` (or open menu with `Ctrl+.` and select "Export to PDF")
+2. Configure formatting options in the dialog
+3. Click "Generate PDF" to open print preview
+4. Print or save as PDF from your browser's print dialog
+
+**Formatting options:**
+
+**Typography:**
+- **Font size** — 10pt, 11pt (default), or 12pt for body text
+- **Code font size** — 9pt (default), 10pt, or 11pt for code blocks
+- **Line spacing** — 1.4, 1.6 (default), or 1.8 for readability
+
+**Layout:**
+- **Orientation** — Portrait (default) or Landscape
+- **Paper size** — Determined by browser print settings (A4, Letter, etc.)
+
+**Metadata:**
+- **Include topic name** — Show topic path in header (default: on)
+- **Include date** — Show export date in header (default: on)
+- **Include message count** — Show number of messages in header (default: on)
+- **Custom title** — Optional custom title for the document
+
+**Settings:**
+- **Auto-open print dialog** — Automatically open print preview after generation (default: off)
+- **Remember settings** — Save preferences for next export (default: on)
+
+**What gets included:**
+
+✓ Filtered message pairs (user + assistant)  
+✓ Topic paths and timestamps  
+✓ Code blocks with syntax preservation  
+✓ Message metadata (model, ratings)  
+✓ Formatted equations and markdown
+
+**What does NOT get included:**
+
+✗ Images (attachments are omitted in PDF)  
+✗ Interactive elements  
+✗ Error states or pending messages  
+✗ Off-context markers
+
+**Tips:**
+
+- **Filter first** — Use Command Mode filters to select specific conversations before exporting
+- **Preview before printing** — Check formatting in print preview
+- **Use landscape for code-heavy content** — Better fit for wide code blocks
+- **Adjust font sizes** — Smaller fonts fit more content per page
+- **Save as PDF** — Use browser's "Save as PDF" option instead of printing to paper
+
+**Example workflow:**
+
+```
+# 1. Filter to specific topic
+Ctrl+D → t'Python Debugging...' → Enter
+
+# 2. Open PDF export
+Ctrl+P
+
+# 3. Configure
+- Font: 11pt
+- Orientation: Landscape
+- Include metadata: Yes
+
+# 4. Generate and save
+Click "Generate PDF" → Save as PDF
+```
 
 ## Common Errors and Solutions {#errors}
 

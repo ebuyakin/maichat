@@ -31,17 +31,19 @@ Accurate context assembly (focus on token usage counts for different scenarios -
 20. f1 view mode - Ctrl_Shift_O - view draft images - view attached images [x]
 21. gemini - citations in the assistant body [x]
 22. new model addition - doesn't work. [~]
-23. documentation update - architecutre.md, docs-inventory.md, changelog/readme
+23. documentation update - architecutre.md, docs-inventory.md, changelog/readme [x]
 24. base models list update (hardcoded)[x]
 25. URA vs User assumed tokens [x]
 26. max attempts hardcoded in newMessage (should be taken from settings) [x]
 27. abort controller [x]
 28. Topic editor - remember expand/collapse state. [x]
 29. PDF printing of the conversation [x]
-30. Tutorial update: pdf printing, model list update.
+30. Tutorial update: pdf printing, model list update. [x]
 31. New shortcut: include in F1, tutorial and keyboard_navigation.md document.[x]
 32. Size of the headers in the message history. [x]
 33. Types.js - update messagePair.[x]
 34. initial default model - change to gpt-5-mini [x]
 35. migration mechanism. [x]
 36. changelog, release preparation
+37. logs/debugs - double check. [x]
+38. filter application speed analysis [x]

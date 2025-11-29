@@ -314,7 +314,7 @@ export async function executeSendWorkflow({
           if (!afterIncludedIds.has(pid)) trimmed++
         })
         if (trimmed > 0) {
-          console.log(`[context] large prompt trimmed ${trimmed} older pair(s)`) // debug?
+          // console.log(`[context] large prompt trimmed ${trimmed} older pair(s)`) // debug?
         }
       }
     }
